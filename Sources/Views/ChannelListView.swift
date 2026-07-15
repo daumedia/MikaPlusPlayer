@@ -16,7 +16,7 @@ struct ChannelListView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: PlayerTheme.sectionSpacing) {
                 PlayerHeader(
-                    subline: "MIKA+ · \(playlist.channelCount) SENDER",
+                    subline: "MIKA+PLAYER · \(playlist.channelCount) SENDER",
                     title: playlist.name
                 )
 

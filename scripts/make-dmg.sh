@@ -18,7 +18,7 @@ DMG="$DIST/MikaPlusPlayer-v$VER.dmg"
 if command -v create-dmg >/dev/null 2>&1; then
     echo "==> create-dmg (hübsches Layout)"
     create-dmg \
-        --volname "MikaPlusPlayer" \
+        --volname "Mika+Player" \
         --window-size 600 400 \
         --icon-size 128 \
         --icon "MikaPlusPlayer.app" 150 200 \
@@ -30,7 +30,7 @@ else
     STAGE=$(mktemp -d)
     cp -R "$APP" "$STAGE/"
     ln -s /Applications "$STAGE/Applications"
-    hdiutil create -volname "MikaPlusPlayer" -srcfolder "$STAGE" \
+    hdiutil create -volname "Mika+Player" -srcfolder "$STAGE" \
         -ov -format UDZO -imagekey zlib-level=9 "$DMG" >/dev/null
     rm -rf "$STAGE"
 fi

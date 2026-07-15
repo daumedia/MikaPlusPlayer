@@ -14,7 +14,7 @@ struct FavoritesView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: PlayerTheme.sectionSpacing) {
-                PlayerHeader(subline: "MIKA+ · FAVORITEN", title: "Favoriten")
+                PlayerHeader(subline: "MIKA+PLAYER · FAVORITEN", title: "Favoriten")
 
                 if favorites.isEmpty {
                     emptyState
