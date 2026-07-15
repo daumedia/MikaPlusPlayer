@@ -57,6 +57,40 @@ protocol PlaybackEngine: AnyObject, Observable {
     /// Liefert die SwiftUI-Oberfläche für diese Engine (VideoPlayer bzw.
     /// ein in SwiftUI eingebetteter VLC-Drawable-View).
     func makePlayerView() -> AnyView
+
+    // MARK: - Picture-in-Picture (optional)
+    //
+    // Nur AVKit-Engines können echtes System-PiP (`AVPictureInPictureController`).
+    // VLCKit u. a. erben die No-Op-Defaults aus der Extension unten und melden
+    // `supportsPictureInPicture == false`, sodass die UI den PiP-Button ausblendet.
+
+    /// Ob diese Engine System-PiP unterstützt (Hardware + Engine-Fähigkeit).
+    var supportsPictureInPicture: Bool { get }
+    /// Ob PiP gerade aktiv ist (schwebendes Systemfenster).
+    var isPictureInPictureActive: Bool { get }
+    /// Startet PiP (No-Op, wenn nicht unterstützt oder nicht spielbereit).
+    func startPictureInPicture()
+    /// Beendet PiP und holt die Wiedergabe zurück in die App.
+    func stopPictureInPicture()
+    /// Schaltet PiP anhand von `isPictureInPictureActive` um.
+    func togglePictureInPicture()
+    /// Aktiviert automatischen PiP-Start, wenn die App (iOS) in den Hintergrund geht.
+    /// Nur der Einzel-Player nutzt das; Multiview lässt es aus, um konkurrierende
+    /// Auto-Starts aus mehreren Slots zu vermeiden.
+    func setAutomaticPictureInPicture(_ enabled: Bool)
+}
+
+/// No-Op-Defaults für PiP: Engines ohne System-PiP (VLCKit, künftige) müssen
+/// nichts implementieren und melden automatisch „nicht unterstützt".
+extension PlaybackEngine {
+    var supportsPictureInPicture: Bool { false }
+    var isPictureInPictureActive: Bool { false }
+    func startPictureInPicture() {}
+    func stopPictureInPicture() {}
+    func togglePictureInPicture() {
+        isPictureInPictureActive ? stopPictureInPicture() : startPictureInPicture()
+    }
+    func setAutomaticPictureInPicture(_ enabled: Bool) {}
 }
 
 /// Wählt die passende Engine für einen Stream.
