@@ -14,7 +14,7 @@ struct PlaylistsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PlayerTheme.sectionSpacing) {
-                PlayerHeader(subline: "MIKA+ · PLAYLISTS", title: "Playlists") {
+                PlayerHeader(subline: "MIKA+PLAYER · PLAYLISTS", title: "Playlists") {
                     Button { showingImport = true } label: {
                         Image(systemName: "plus")
                     }
