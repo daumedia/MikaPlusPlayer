@@ -47,4 +47,19 @@ final class PlaybackEngineTests: XCTestCase {
         engine.togglePlayPause()
         XCTAssertFalse(engine.isPaused)
     }
+
+    /// PiP ist zu Beginn nicht aktiv.
+    func testPictureInPictureInactiveInitially() {
+        let engine = AVKitPlaybackEngine()
+        XCTAssertFalse(engine.isPictureInPictureActive)
+    }
+
+    /// PiP-Steuerung ist ein sicherer No-Op, solange kein sichtbarer Layer/kein
+    /// spielbereiter Stream existiert – der Zustand bleibt unverändert inaktiv.
+    func testTogglePictureInPictureIsSafeWithoutOnscreenLayer() {
+        let engine = AVKitPlaybackEngine()
+        engine.setAutomaticPictureInPicture(true)
+        engine.togglePictureInPicture()
+        XCTAssertFalse(engine.isPictureInPictureActive)
+    }
 }

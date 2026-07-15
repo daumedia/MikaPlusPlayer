@@ -16,8 +16,7 @@ struct MultiviewTile: View {
             Color.black
             slot.engine.makePlayerView()
                 // Nicht-fokussierte Kacheln fangen keine Klicks ab, damit der
-                // Fokus-Tap zuverlässig greift (AVKit-VideoPlayer hätte sonst eigene
-                // Controls darüber). Der fokussierte Player behält seine Controls.
+                // Fokus-Tap (onTapGesture unten) zuverlässig greift.
                 .allowsHitTesting(isFocused)
             stateOverlay
             chrome

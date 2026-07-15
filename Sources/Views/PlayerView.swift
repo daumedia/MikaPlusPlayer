@@ -80,7 +80,11 @@ struct PlayerView: View {
             autoHideTask?.cancel()
             hudTask?.cancel()
             resetOrientation()
-            engine?.pause()
+            // Bei aktivem PiP NICHT pausieren – sonst würgt der Ansichtswechsel
+            // (App in den Hintergrund / Auto-PiP) die schwebende Wiedergabe ab.
+            if engine?.isPictureInPictureActive != true {
+                engine?.pause()
+            }
         }
     }
 
@@ -105,20 +109,24 @@ struct PlayerView: View {
     private var controlsOverlay: some View {
         if controlsVisible, case .playing = engine?.state {
             VStack {
-                HStack {
+                HStack(spacing: 12) {
                     Spacer()
+                    if engine?.supportsPictureInPicture == true {
+                        Button(action: togglePiP) {
+                            controlIcon(engine?.isPictureInPictureActive == true
+                                        ? "pip.exit" : "pip.enter")
+                        }
+                        .buttonStyle(.plain)
+                        .help("Bild-in-Bild")
+                    }
                     Button(action: toggleFullscreen) {
-                        Image(systemName: isFullscreen
-                              ? "arrow.down.right.and.arrow.up.left"
-                              : "arrow.up.left.and.arrow.down.right")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(12)
-                            .background(.black.opacity(0.5), in: Circle())
+                        controlIcon(isFullscreen
+                                    ? "arrow.down.right.and.arrow.up.left"
+                                    : "arrow.up.left.and.arrow.down.right")
                     }
                     .buttonStyle(.plain)
-                    .padding(isFullscreen ? 24 : 12)
                 }
+                .padding(isFullscreen ? 24 : 12)
                 Spacer()
                 bottomControls
             }
@@ -301,6 +309,8 @@ struct PlayerView: View {
             toggleMute(); return .handled
         case "f":
             toggleFullscreen(); return .handled
+        case "p":
+            togglePiP(); return .handled
         case "+", "=":
             changeVolume(volumeStep); return .handled
         case "-":
@@ -322,6 +332,11 @@ struct PlayerView: View {
         engine.toggleMute()
         flashControls()
         showHUD(.mute(engine.isMuted))
+    }
+
+    private func togglePiP() {
+        engine?.togglePictureInPicture()
+        flashControls()
     }
 
     private func changeVolume(_ delta: Double) {
@@ -385,6 +400,8 @@ struct PlayerView: View {
             let newEngine = PlaybackEngineFactory.engine(for: channel.streamURL)
             engine = newEngine
             newEngine.load(channel.streamURL)
+            // Nur der Einzel-Player startet automatisch PiP beim App-Wechsel (iOS).
+            newEngine.setAutomaticPictureInPicture(true)
         } else {
             engine?.play()
         }
