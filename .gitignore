@@ -11,3 +11,14 @@ dist/
 
 # macOS
 .DS_Store
+
+# Website (Next.js / Vercel, siehe web/)
+web/node_modules/
+web/.next/
+web/out/
+web/.vercel/
+web/next-env.d.ts
+web/*.tsbuildinfo
+web/.env
+web/.env.local
+web/.env.*.local
