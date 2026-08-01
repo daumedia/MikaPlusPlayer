@@ -10,7 +10,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GH_REPO="Mukaarts/MikaPlusPlayer"   # ggf. anpassen (muss zur SUFeedURL passen)
+GH_REPO="daumedia/MikaPlusPlayer"   # ggf. anpassen (muss zur SUFeedURL passen)
 
 bash "$ROOT/scripts/build-macos.sh"
 bash "$ROOT/scripts/make-dmg.sh"

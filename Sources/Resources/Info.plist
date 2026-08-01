@@ -25,7 +25,7 @@
 	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
 	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/Mukaarts/MikaPlusPlayer/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
 	<key>SUEnableAutomaticChecks</key>
