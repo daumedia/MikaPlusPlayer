@@ -226,7 +226,7 @@ Einzelschritte: `scripts/build-macos.sh` (xcodebuild Release → `build/MikaPlus
 
 ### Veröffentlichen (GitHub Releases)
 
-1. GitHub-Release **`v<version>`** im Repo anlegen (Standard: `Mukaarts/MikaPlusPlayer` –
+1. GitHub-Release **`v<version>`** im Repo anlegen (Standard: `daumedia/MikaPlusPlayer` –
    in `Info.plist`/`scripts/release.sh` anpassbar).
 2. `dist/MikaPlusPlayer-v<version>.dmg` als **Release-Asset** hochladen.
 3. `appcast.xml` committen & auf **`main`** pushen.

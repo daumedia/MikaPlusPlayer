@@ -1,7 +1,7 @@
 export const SITE_NAME = "Mika+Player";
 export const SITE_TAGLINE = "IPTV player for macOS";
 
-export const REPO_OWNER = "Mukaarts";
+export const REPO_OWNER = "daumedia";
 export const REPO_NAME = "MikaPlusPlayer";
 export const GITHUB_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}`;
 export const RELEASES_URL = `${GITHUB_URL}/releases`;

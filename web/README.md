@@ -62,7 +62,7 @@ fill in `content/screenshots.ts`.
 
 The repository root is an Xcode project, so Vercel needs pointing at this folder.
 
-1. vercel.com → **Add New… → Project** → import `Mukaarts/MikaPlusPlayer`.
+1. vercel.com → **Add New… → Project** → import `daumedia/MikaPlusPlayer`.
 2. **Root Directory** → Edit → select `web`. The framework preset switches to Next.js afterwards.
    Leave "Include source files outside of the Root Directory" **off**.
 3. Leave build, output and install commands on their defaults.
