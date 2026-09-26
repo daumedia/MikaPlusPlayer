@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { OPEN_GRAPH_DEFAULTS } from "@/lib/metadata";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -50,10 +51,8 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    type: "website",
+    ...OPEN_GRAPH_DEFAULTS,
     url: "/",
-    siteName: SITE_NAME,
-    locale: "en_US",
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description,
   },

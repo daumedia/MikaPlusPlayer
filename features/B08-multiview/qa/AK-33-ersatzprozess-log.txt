@@ -1,0 +1,13 @@
+# AK-33 · Ersatzbeleg: regulär gestarteter Prozess (kein Test-Host), AVPlayer lädt eine HLS-Adresse mit erfundenen Zugangsdaten wie eine HLS-Kachel
+# Adresse: http://127.0.0.1:18978/live/qa-user/<pass>/7.m3u8 (lokaler python-http.server, Segmente ohne Tonspur, Player stumm + Lautstärke 0)
+# Befehl: /usr/bin/log show --style compact --start "2026-09-26 16:25:34" --predicate 'process == "b08ersatz"'
+# Zeilen:      470 · Treffer Passwort: 0 · Treffer /live/: 0 · <private>: 15
+# Mock-Protokoll (Anfragen kamen an):
+127.0.0.1 - - [26/Sep/2026 16:25:34] "GET /live/qa-user/<pass>/7.m3u8 HTTP/1.1" 200 -
+127.0.0.1 - - [26/Sep/2026 16:25:34] "GET /live/qa-user/<pass>/7.m3u8 HTTP/1.1" 200 -
+127.0.0.1 - - [26/Sep/2026 16:25:34] "GET /live/qa-user/<pass>/seg000.ts HTTP/1.1" 200 -
+127.0.0.1 - - [26/Sep/2026 16:25:34] "GET /live/qa-user/<pass>/seg001.ts HTTP/1.1" 200 -
+# Verbindungszeilen des Network-Frameworks im regulären Prozess (Adresse nur als Hash):
+2026-09-26 16:25:34.875 Df b08ersatz[68129:73b600] [com.apple.network:connection] [C1 C63C4BCC-F0C8-4E9A-AFB6-7DCBF63ECBF6 IPv4#e3b9f3ea:18978 tcp, url hash: dff45ecf, definite, attribution: developer, context: com.apple.CFNetwork
+2026-09-26 16:25:34.880 Df b08ersatz[68129:73b5ff] [com.apple.network:connection] [C1 C63C4BCC-F0C8-4E9A-AFB6-7DCBF63ECBF6 IPv4#e3b9f3ea:18978 tcp, traffic class: 500, url hash: dff45ecf, definite, attribution: developer] cancel
+# Gegenstück im Test-Host: siehe angriff4-log-auszug.txt (volle Adresse samt Benutzer und Passwort)

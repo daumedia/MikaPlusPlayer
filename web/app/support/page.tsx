@@ -1,14 +1,66 @@
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import Link from "next/link";
 import { FAQ } from "@/content/faq";
 import { SETUP_STEPS } from "@/content/setup-steps";
+import { pageMetadata } from "@/lib/metadata";
 import { DEMO_PLAYLIST, ISSUES_URL } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const generateMetadata = pageMetadata({
+  path: "/support",
   title: "Support",
   description:
     "Set up an Xtream Codes login or an M3U playlist in Mika+Player, get past the first-launch warning, and find answers to the questions that come up most.",
-  alternates: { canonical: "/support" },
-};
+});
+
+const codeClass = "rounded bg-ink/[0.06] px-1 font-mono text-[0.85em] text-ink";
+
+/**
+ * Apple, "Updates to runtime protection in macOS Sequoia" (6 August 2024): Control-click no longer
+ * overrides Gatekeeper; the way through is System Settings > Privacy & Security. Apple's Mac User
+ * Guide "Open a Mac app from an unknown developer": Open Anyway, available for about an hour after
+ * the blocked attempt, confirmed with the login password.
+ */
+const FIRST_LAUNCH_STEPS: readonly { id: string; body: ReactNode }[] = [
+  { id: "drag", body: "Open the DMG and drag Mika+Player to Applications." },
+  {
+    id: "checksum",
+    body: (
+      <>
+        Check the download before you open it. In Terminal, type{" "}
+        <code className={codeClass}>shasum -a 256</code> and a space, drag the DMG into the window and
+        press Return. The result has to match the SHA-256 shown under the download button on the{" "}
+        <Link href="/" className="text-accent-ink underline underline-offset-4">
+          home page
+        </Link>{" "}
+        and in the{" "}
+        <Link href="/changelog" className="text-accent-ink underline underline-offset-4">
+          changelog
+        </Link>
+        . A match means the file is exactly the one attached to the GitHub release.
+      </>
+    ),
+  },
+  {
+    id: "attempt",
+    body: "Open Mika+Player from the Applications folder once. macOS refuses and shows a warning — close it.",
+  },
+  {
+    id: "open-anyway",
+    body: (
+      <>
+        Open{" "}
+        <strong className="font-semibold text-ink">System Settings → Privacy &amp; Security</strong>,
+        scroll to Security and click{" "}
+        <strong className="font-semibold text-ink">Open Anyway</strong>. The button is there for
+        about an hour after the blocked attempt.
+      </>
+    ),
+  },
+  {
+    id: "confirm",
+    body: "Confirm with your login password. macOS keeps the exception — later launches are normal.",
+  },
+];
 
 const KEYS: readonly { key: string; action: string }[] = [
   { key: "Space", action: "Play or pause" },
@@ -30,27 +82,27 @@ export default function SupportPage() {
       </p>
 
       {/* First launch */}
-      <section className="mt-14">
+      <section id="first-launch" className="mt-14 scroll-mt-20">
         <h2 className="headline text-2xl">First launch on macOS</h2>
         <p className="mt-3 leading-relaxed text-ink-soft">
-          Mika+Player is signed ad-hoc rather than notarised, so macOS refuses the first launch and
-          says the developer cannot be verified. To get past it:
+          Mika+Player is signed ad-hoc rather than notarised, so macOS blocks the first launch.
+          Since macOS 15 Sequoia, Control-clicking the app and choosing Open no longer gets past
+          that — the way through is System Settings:
         </p>
         <ol className="mt-5 space-y-3">
-          {[
-            "Open the DMG and drag Mika+Player to Applications.",
-            "Open the Applications folder in Finder.",
-            "Right-click Mika+Player and choose Open.",
-            "Confirm in the dialog. macOS remembers the choice — later launches are normal.",
-          ].map((line, index) => (
-            <li key={line} className="flex gap-3.5">
+          {FIRST_LAUNCH_STEPS.map((step, index) => (
+            <li key={step.id} className="flex gap-3.5">
               <span className="font-mono text-xs leading-6 text-ink-faint">
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <span className="leading-relaxed text-ink-soft">{line}</span>
+              <span className="leading-relaxed text-ink-soft">{step.body}</span>
             </li>
           ))}
         </ol>
+        <p className="mt-5 text-sm leading-relaxed text-ink-soft">
+          On macOS 14 Sonoma, Control-clicking Mika+Player in Applications and choosing Open works
+          as well.
+        </p>
       </section>
 
       {/* Playlists */}

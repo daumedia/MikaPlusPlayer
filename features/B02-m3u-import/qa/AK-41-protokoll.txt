@@ -1,0 +1,6 @@
+AK-41|testHost(xcodebuild)|eintraege=6472|trefferMitPasswort=1|subsysteme=["com.apple.CFNetwork": 1]|privateDatenSichtbar=true|eintraegeDerApp=0
+
+AK-41|sonde b02logprobe (swiftc -O aus Sources/: PlaylistImporter, M3UParser, Xtream*, StreamURLResolver, Playlist, Channel, AppEnvironment; aus der Shell gestartet, nicht aus Xcode)|2026-09-16 22:43
+AK-41|faelle=Port zu (get.php?username=qa-user&password=<PASSWORT>), Weiterleitungsschleife, HTTP 404, unbekannter Host mit Benutzerinfo
+AK-41|meldungen=Netzwerkfehler: Could not connect to the server. / too many HTTP redirects / HTTP 404 / A server with the specified hostname could not be found.
+AK-41|log show --predicate 'process == "b02logprobe"' --info --debug|zeilen=579|mitPasswort=0|mitBenutzer=0|<private>=31

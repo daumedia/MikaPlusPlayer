@@ -1,0 +1,1 @@
+AK-39|sender=17|streamSchemataInDB=["data:", "file:", "ftp:", "http:", "javascript:", "mailto:", "rtmp:", "rtp:", "rtsp:", "smb:", "udp:", "vlc:", "x-apple.systempreferences:"]|logos=["file:///etc/hosts", "javascript:alert(1)", "logos/relativ.png", "smb://nas.local/logo.png"]|ohneSchemaGespeichert=false

@@ -15,6 +15,8 @@ struct PlayerView: View {
     /// Die aktuell verwendete Engine. Über `any PlaybackEngine` typisiert,
     /// damit der View engine-unabhängig bleibt.
     @State private var engine: (any PlaybackEngine)?
+    /// Adresse ließ sich nicht bilden (z. B. Xtream-Zugangsdaten fehlen im Schlüsselbund).
+    @State private var resolveError: String?
     @State private var isFullscreen = false
     @State private var showControls = true
     @State private var autoHideTask: Task<Void, Never>?
@@ -45,6 +47,8 @@ struct PlayerView: View {
                 stateOverlay(engine)
                 controlsOverlay
                 hudOverlay
+            } else if let resolveError {
+                failureView(resolveError)
             } else {
                 ProgressView().tint(.white)
             }
@@ -219,7 +223,7 @@ struct PlayerView: View {
             }
         } actions: {
             Button("Erneut versuchen") {
-                engine?.load(channel.streamURL)
+                retry()
             }
             .buttonStyle(.borderedProminent)
             .tint(.playerAccent)
@@ -229,6 +233,27 @@ struct PlayerView: View {
 
     private var isRawTransportStream: Bool {
         StreamType(url: channel.streamURL) == .transportStream
+    }
+
+    /// Abspielbare Adresse – bei Xtream mit Zugangsdaten aus dem Schlüsselbund (B01 · BUG-01).
+    private func playableURL() -> URL? {
+        do {
+            let url = try StreamURLResolver.playableURL(for: channel)
+            resolveError = nil
+            return url
+        } catch {
+            resolveError = error.localizedDescription
+            return nil
+        }
+    }
+
+    private func retry() {
+        guard let url = playableURL() else { return }
+        if let engine {
+            engine.load(url)
+        } else {
+            startIfNeeded()
+        }
     }
 
     // MARK: - Steuerung
@@ -397,9 +422,10 @@ struct PlayerView: View {
 
     private func startIfNeeded() {
         if engine == nil {
-            let newEngine = PlaybackEngineFactory.engine(for: channel.streamURL)
+            guard let url = playableURL() else { return }
+            let newEngine = PlaybackEngineFactory.engine(for: url)
             engine = newEngine
-            newEngine.load(channel.streamURL)
+            newEngine.load(url)
             // Nur der Einzel-Player startet automatisch PiP beim App-Wechsel (iOS).
             newEngine.setAutomaticPictureInPicture(true)
         } else {

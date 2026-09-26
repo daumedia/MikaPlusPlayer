@@ -1,0 +1,12 @@
+2026-09-26T13:54:38Z [Debug] Echtes SQL der ChannelListView (CoreData SQLDebug, stderr des Test-Hosts)
+  Öffnen:
+    SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZPLAYLISTID = ?
+    SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZPLAYLISTID = ? ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive , t0.Z_PK
+    SELECT Z_PK, ZPLAYLIST FROM ZCHANNEL WHERE ZPLAYLIST IN (1)
+  Chip „Sport“:
+    SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE ( t0.ZPLAYLISTID = ? AND  t0.ZGROUP = ?) ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive , t0.Z_PK
+  Chip + Suche „alpha“:
+    SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE (( t0.ZPLAYLISTID = ? AND  NSCoreDataStringSearch( t0.ZNAME, ?, 417, 1)) AND  t0.ZGROUP = ?) ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive , t0.Z_PK
+  nur Suche „alpha“:
+    SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE ( t0.ZPLAYLISTID = ? AND  NSCoreDataStringSearch( t0.ZNAME, ?, 417, 1)) ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive , t0.Z_PK
+  Ausführungszeiten: CoreData: annotation: total fetch execution time: 0.0003s for 1 rows. · CoreData: annotation: total fetch execution time: 0.0005s for 3 rows. · CoreData: annotation: total fetch execution time: 0.0003s for 3 rows. · CoreData: annotation: total fetch execution time: 0.0003s for 2 rows. · CoreData: annotation: total fetch execution time: 0.0003s for 1 rows. · CoreData: annotation: total fetch execution time: 0.0003s for 1 rows.

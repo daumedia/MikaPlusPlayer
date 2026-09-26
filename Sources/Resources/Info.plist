@@ -30,6 +30,14 @@
 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<!-- B09 · BUG-08: EdDSA-Signatur des Archivs VOR dem Einhängen/Entpacken prüfen
+	     (Sparkle 2.9.3, AppInstaller.m). Wirkt ab der Version, die diesen Schlüssel enthält;
+	     braucht nur die sparkle:edSignature, die generate_appcast ohnehin setzt.
+	     SURequireSignedFeed fehlt bewusst noch: Mit ihm verwirft Sparkle jeden unsignierten
+	     Feed – die heutige appcast.xml ist unsigniert. Erst setzen, wenn der Feed signiert
+	     veröffentlicht ist (scripts/release.sh, SIGNIERTER_FEED=1). -->
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 
 	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
 	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den

@@ -1,0 +1,1 @@
+Angriff-05|anfrage=GET /get.php?username=qa-user&password=qa-pass-b02a5&type=m3u_plus HTTP/1.1|kopfzeilen=["Host: 127.0.0.1:55409", "Accept: */*", "Accept-Language: de-DE,de;q=0.9", "Connection: keep-alive", "Accept-Encoding: gzip, deflate", "User-Agent: Mika+Player/3 CFNetwork/3896.100.1.1.1 Darwin/27.0.0"]|verbindungenZuLogoUndStreamHost=0

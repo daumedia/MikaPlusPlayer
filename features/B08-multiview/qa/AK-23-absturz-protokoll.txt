@@ -1,0 +1,173 @@
+# AK-23 / FB-01 · Absturz im Raster – Nachstellung je Fall in eigenem Test-Host-Prozess (qa-crash.sh), 2026-09-26
+# Kopie mit eigener Bundle-ID lu.daumedia.MikaPlusPlayer.b08qa, Datenbank in-memory, Medien ohne Tonspur.
+# Bedienung: echtes Fenster „Multiview“ (Szene Window), Klick auf das X per Mausereignis bzw. performClose (roter Knopf).
+# Debug = Build-for-Testing Debug (dd/), Release = Build-for-Testing Release (dd-release/, Optimierung -O, Grenzprüfung aktiv).
+# Absturzberichte: ~/Library/Logs/DiagnosticReports/MikaPlusPlayer-*.ips mit bundleID …b08qa, hier nur als Auszug
+# (Kopf, Ausnahme, auslösender Thread); die Rohdateien enthalten Gerätedaten und bleiben außerhalb des Repositorys.
+
+== Fall schliessen-raster-4 · Debug
+16:09:26.977|AK-23|FALL schliessen-raster-4|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:09:29.116|SHOT|AK-23-vorher-raster-4|1280x720
+16:09:29.116|AK-23|roter Knopf im Raster mit 4
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- schliessen-raster-4-Debug-MikaPlusPlayer-2026-09-26-160930.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   libswiftCore.dylib     closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     Array._checkSubscript(_:wasNativeTypeChecked:) 
+   libswiftCore.dylib     Array.subscript.getter 
+   MikaPlusPlayer.debug.d closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+
+== Fall schliessen-raster-4 · Release
+16:16:58.758|AK-23|FALL schliessen-raster-4|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Release
+16:17:00.820|SHOT|AK-23-vorher-raster-4|1280x720
+16:17:00.821|AK-23|roter Knopf im Raster mit 4
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- schliessen-raster-4-Release-MikaPlusPlayer-2026-09-26-161702.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   MikaPlusPlayer         Swift runtime failure: Index out of range /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array._checkSubscript(_:wasNativeTypeChecked:) /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array.subscript.getter /<compiler-generated>:None
+   MikaPlusPlayer         closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+   SwiftUICore            ForEachChild.updateValue() 
+
+== Fall schliessen-raster-1 · Debug
+16:09:56.780|AK-23|FALL schliessen-raster-1|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:09:58.866|SHOT|AK-23-vorher-raster-1|1280x720
+16:09:58.867|AK-23|roter Knopf im Raster mit 1
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- schliessen-raster-1-Debug-MikaPlusPlayer-2026-09-26-161002.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   libswiftCore.dylib     closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     Array._checkSubscript(_:wasNativeTypeChecked:) 
+   libswiftCore.dylib     Array.subscript.getter 
+   MikaPlusPlayer.debug.d closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+
+== Fall schliessen-raster-1 · Release
+16:17:30.764|AK-23|FALL schliessen-raster-1|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Release
+16:17:32.842|SHOT|AK-23-vorher-raster-1|1280x720
+16:17:32.843|AK-23|roter Knopf im Raster mit 1
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- schliessen-raster-1-Release-MikaPlusPlayer-2026-09-26-161734.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   MikaPlusPlayer         Swift runtime failure: Index out of range /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array._checkSubscript(_:wasNativeTypeChecked:) /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array.subscript.getter /<compiler-generated>:None
+   MikaPlusPlayer         closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+   SwiftUICore            ForEachChild.updateValue() 
+
+== Fall x-3auf2 · Debug
+16:08:43.811|AK-23|FALL x-3auf2|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:08:45.886|SHOT|AK-23-vorher-raster-3|1280x720
+16:08:45.893|AK-23|Klick auf X bei (935.0, 474.0)
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- x-3auf2-Debug-MikaPlusPlayer-2026-09-26-160849.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   libswiftCore.dylib     closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     Array._checkSubscript(_:wasNativeTypeChecked:) 
+   libswiftCore.dylib     Array.subscript.getter 
+   MikaPlusPlayer.debug.d closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+
+== Fall x-3auf2 · Release
+16:18:01.103|AK-23|FALL x-3auf2|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Release
+16:18:03.185|SHOT|AK-23-vorher-raster-3|1280x720
+16:18:03.191|AK-23|Klick auf X bei (935.0, 474.0)
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- x-3auf2-Release-MikaPlusPlayer-2026-09-26-161804.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   MikaPlusPlayer         Swift runtime failure: Index out of range /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array._checkSubscript(_:wasNativeTypeChecked:) /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array.subscript.getter /<compiler-generated>:None
+   MikaPlusPlayer         closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+   SwiftUICore            ForEachChild.updateValue() 
+
+== Fall x-1auf0 · Debug
+16:11:11.745|AK-23|FALL x-1auf0|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:11:13.836|SHOT|AK-23-vorher-raster-1|1280x720
+16:11:13.842|AK-23|Klick auf X bei (1577.0, 810.0)
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- x-1auf0-Debug-MikaPlusPlayer-2026-09-26-161115.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   libswiftCore.dylib     closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     _assertionFailure(_:_:file:line:flags:) 
+   libswiftCore.dylib     Array._checkSubscript(_:wasNativeTypeChecked:) 
+   libswiftCore.dylib     Array.subscript.getter 
+   MikaPlusPlayer.debug.d closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+
+== Fall x-1auf0 · Release
+16:18:30.268|AK-23|FALL x-1auf0|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Release
+16:18:32.390|SHOT|AK-23-vorher-raster-1|1280x720
+16:18:32.396|AK-23|Klick auf X bei (1577.0, 810.0)
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+-- x-1auf0-Release-MikaPlusPlayer-2026-09-26-161834.ips
+   app=MikaPlusPlayer bundle=lu.daumedia.MikaPlusPlayer.b08qa version=1.1 build=3 os=macOS 27.0 (26A428)
+   exception=EXC_BREAKPOINT signal=SIGTRAP termination=Trace/BPT trap: 5
+   MikaPlusPlayer         Swift runtime failure: Index out of range /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array._checkSubscript(_:wasNativeTypeChecked:) /<compiler-generated>:None
+   MikaPlusPlayer         specialized Array.subscript.getter /<compiler-generated>:None
+   MikaPlusPlayer         closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift:79
+   SwiftUICore            closure #1 in ForEachChild.updateValue() 
+   SwiftUICore            ForEachChild.updateValue() 
+
+== Fall x-4auf3 · Debug
+16:13:32.376|AK-23|FALL x-4auf3|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:13:34.509|SHOT|AK-23-vorher-raster-4|1280x720
+16:13:34.518|AK-23|Klick auf X bei (1577.0, 474.0)
+16:13:37.338|AK-23|4→3 ohne Absturz|slots=3
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_RasterXVonVierAufDrei]' passed (6.629 seconds).
+   kein Absturzbericht (DiagnosticReports nach dem Lauf ohne Eintrag dieser Bundle-ID)
+
+== Fall x-4auf3 · Release
+16:18:53.523|AK-23|FALL x-4auf3|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Release
+16:18:55.614|SHOT|AK-23-vorher-raster-4|1280x720
+16:18:55.617|AK-23|Klick auf X bei (1577.0, 474.0)
+16:18:58.451|AK-23|4→3 ohne Absturz|slots=3
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_RasterXVonVierAufDrei]' passed (6.506 seconds).
+   kein Absturzbericht (DiagnosticReports nach dem Lauf ohne Eintrag dieser Bundle-ID)
+
+== Fall x-2auf1 · Debug
+16:13:58.208|AK-23|FALL x-2auf1|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:14:00.270|SHOT|AK-23-vorher-raster-2|1280x720
+16:14:00.276|AK-23|Klick auf X bei (1577.0, 810.0)
+16:14:03.104|AK-23|2→1 ohne Absturz|slots=1
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_RasterXVonZweiAufEins]' passed (6.348 seconds).
+   kein Absturzbericht (DiagnosticReports nach dem Lauf ohne Eintrag dieser Bundle-ID)
+
+== Fall fokus-schliessen-4 · Debug
+16:12:42.130|AK-23|FALL fokus-schliessen-4|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:12:44.219|SHOT|AK-23-vorher-raster-4|1280x720
+16:12:47.303|AK-23|Fokus, 4, Schließen ohne Absturz|slots=0
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_FokusMitVierFensterSchliessen]' passed (6.520 seconds).
+   kein Absturzbericht (DiagnosticReports nach dem Lauf ohne Eintrag dieser Bundle-ID)
+
+== Fall fokus-schliessen-4 · Release
+16:19:16.874|AK-23|FALL fokus-schliessen-4|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Release
+16:19:18.934|SHOT|AK-23-vorher-raster-4|1280x720
+16:19:21.986|AK-23|Fokus, 4, Schließen ohne Absturz|slots=0
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_FokusMitVierFensterSchliessen]' passed (6.894 seconds).
+   kein Absturzbericht (DiagnosticReports nach dem Lauf ohne Eintrag dieser Bundle-ID)
+
+== Fall beenden-raster · Debug
+16:14:27.101|AK-23|FALL beenden-raster|Build lu.daumedia.MikaPlusPlayer.b08qa|Konfiguration Debug
+16:14:29.155|SHOT|AK-23-vorher-raster-2|1280x720
+16:14:29.156|EC-15|NSApp.terminate bei offenem Raster mit 2
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+   kein Absturzbericht (DiagnosticReports nach dem Lauf ohne Eintrag dieser Bundle-ID)
+
+# Code-Stand: Sources/Views/MultiviewScreen.swift ist gegenüber Tag v1.1 unverändert (git diff v1.1 -- Sources/Views/MultiviewScreen.swift: leer).

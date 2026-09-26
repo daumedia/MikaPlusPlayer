@@ -102,8 +102,8 @@ struct PlaylistsView: View {
     // MARK: - Aktionen
 
     private func delete(_ playlist: Playlist) {
-        modelContext.delete(playlist)
-        try? modelContext.save()
+        // B01 · BUG-01: entfernt bei Xtream auch die Zugangsdaten aus dem Schlüsselbund.
+        try? PlaylistImporter(modelContext: modelContext).delete(playlist)
     }
 
     private func refresh(_ playlist: Playlist) async {

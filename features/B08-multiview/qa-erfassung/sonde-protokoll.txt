@@ -1,0 +1,1087 @@
+B08 · Multiview — Protokoll der Erfassungssonde (sdd-erfassen, 2026-09-16)
+===========================================================================
+
+Stand: c01f1cf + Reparatur B01 (eingefrorene Kopie snapshot-b01), ausgeführt in einer Scratchpad-Kopie
+(<sonde>, gelöscht) unter der Bundle-ID lu.daumedia.MikaPlusPlayer.b08probe, eigenes DerivedData,
+Sparkle-Feed abgeschaltet, In-Memory-Datenbank, Schlüsselbund nur im Test-Dienst
+lu.daumedia.MikaPlusPlayer.xtream.tests.<UUID> (je Lauf geleert). Sonden-Code: sonde.patch.
+Messumgebung: Apple M3 Max, macOS 27.0 (26A428), Debug-Build, parallel liefen Builds anderer Features.
+
+Ohne Ton:
+- Mock 127.0.0.1:18908 (mock/b08mock.py): MPEG-TS im Echtzeittakt aus einer ffmpeg-Datei OHNE Tonspur
+  (testsrc2, -an); HLS live per ffmpeg (-c copy aus derselben Datei, ohne Tonspur).
+- Nur T04 nutzt eine Tonspur: anullsrc, zusätzlich -af volume=0 (volumedetect: mean/max -91,0 dB,
+  digitale Stille) UND Engine-Lautstärke 0 (setVolume(0)) vor Wiedergabestart.
+- Audio-Fokus ausschließlich über Zustand geprüft: Engine-Flag isMuted und der Innenzustand des
+  eigentlichen Players (AVPlayer.isMuted bzw. VLCMediaPlayer.audio.isMuted) per Mirror.
+- Tastatur: -[NSResponder noResponderFor:] (ruft laut Disassembly bei keyDown: NSBeep) wurde in der
+  Sonde durch eine Zählfunktion ersetzt. Es gab keinen Warnton; "warnton-ausgelöst" zählt, wie oft er
+  entstanden wäre. Die Responder-Kette wurde vor jeder Taste geprüft.
+- Zugangsdaten erfunden: qa-user / qa-pass-b08. Kein echter Anbieter.
+
+Legende der Läufe
+- XCTest B08SessionTests (Test-Host der Mac-App):
+  T01 Hinzufügen 1–4, fünfter, clear() · T02 Fokus/Entfernen vor/auf/nach dem Fokus · T03 gleicher Sender
+  zweimal · T04 Audio-Fokus am VLC-Audiokanal · T05 Verbindungen je Kachel (Xtream TS/HLS, Limit 1,
+  fehlende Zugangsdaten) · T06 Fehler je Kachel · T07 Entfernen: Freigabe und Verbindung · T08 Pause ohne
+  Freigabe.
+  Hinweis zu T02 und zum ersten T07-Lauf: Die Testfunktion hielt selbst Slot-Referenzen fest. Die dort
+  gezeigten "lebt"/offenen Verbindungen nach dem Entfernen sind ein Artefakt der Sonde. Maßgeblich ist
+  "Lauf 2: test07 neu (ohne fremde Referenzen)".
+- App-Läufe (echte Szenen WindowGroup + Window("Multiview"), zeitgesteuert, synthetische Maus-/Tastatur-
+  ereignisse an eigene Fenster, Fensteraufnahmen nur der App-Fenster):
+  S1 ⊞ per Klick, voll, Fokus-Klick, Raster, Tastatur, zweites Hauptfenster, Favoriten-Tab, Schließen,
+     Wiederöffnen, Minimieren, Hauptfenster schließen.
+     Lauf 1 und 2: Abstürze im Sonden-Code (Klassenliste bzw. Accessibility-Abfrage), kein App-Befund.
+     Lauf 3: Absturz beim Schließen des Multiview-Fensters im Raster (App-Befund, siehe Absturzauszüge).
+     Lauf 4: vollständig (vor dem Schließen auf Fokus zurückgestellt). Die Fokus-Klicks in Lauf 3/4 kamen
+     nicht an, weil die App nicht aktiv war; mit aktiver App belegt S10 den Klickweg.
+  S2 Raster 4, X-Knöpfe nacheinander · S3 Raster 4, Fenster schließen · S4 Fokus 4, X des großen Streams
+  S5/S6 Playlist löschen bei laufendem Multiview (Raster/Fokus) · S7 Playlist aktualisieren (neue stream_ids)
+  S8 Fehler je Kachel und Anbieterlimit 1 · S9 Raster 2 → 1 → 0 per X · S10 Fokus-Klick mit aktiver App
+  S11/S12 Bild des großen Streams nach Fokuswechsel (VLC/HLS) · S13 Leerzustand, Fenster-Menü, ⊞ ohne
+  Zugangsdaten · S14 Raster mit einem Stream schließen · S15 App beenden bei offenem Raster.
+- Spalten der Zustandszeilen: [Index*=fokussiert] Name Engine state isMuted isPaused vol | Innenzustand.
+  mock: offeneTS = offene MPEG-TS-Verbindungen am Mock (#Verbindungsnummer, idle = Sekunden ohne Lesen);
+  playlistAbrufe6s = HLS-Playlist-Abrufe der letzten 6 s; tcpVerbindungenZumMock = lsof des App-Prozesses
+  (enthält auch die Abfragen der Sonde selbst).
+
+Testergebnis XCTest (xcodebuild test-without-building … -only-testing:MikaPlusPlayerTests/B08SessionTests)
+  Executed 8 tests, with 0 failures (0 unexpected) in 163.136 s
+  Lauf 2 test07: passed (15.480 s)
+
+App-Läufe (exit-Code)
+  APP-LAUF S1 beendet exit=133 nach 1s
+  APP-LAUF S1 beendet exit=139 nach 5s
+  APP-LAUF S1 beendet exit=133 nach 36s
+  APP-LAUF S1 beendet exit=0 nach 63s
+  APP-LAUF S10 beendet exit=0 nach 12s
+  APP-LAUF S3 beendet exit=133 nach 9s
+  APP-LAUF S2 beendet exit=133 nach 10s
+  APP-LAUF S9 beendet exit=133 nach 10s
+  APP-LAUF S4 beendet exit=0 nach 17s
+  APP-LAUF S11 beendet exit=0 nach 35s
+  APP-LAUF S12 beendet exit=0 nach 34s
+  APP-LAUF S5 beendet exit=0 nach 23s
+  APP-LAUF S6 beendet exit=0 nach 22s
+  APP-LAUF S7 beendet exit=0 nach 21s
+  APP-LAUF S8 beendet exit=0 nach 37s
+  APP-LAUF S13 beendet exit=0 nach 22s
+  APP-LAUF S14 beendet exit=133 nach 10s
+  APP-LAUF S15 beendet exit=0 nach 8s
+
+Absturzauszüge (auslösender Thread, Bundle lu.daumedia.MikaPlusPlayer.b08probe, macOS 27.0)
+================================================================================================
+-- crash-S1lauf3-schliessen-im-raster.ips
+   {'codes': '0x0000000000000001, 0x00000001a533556c', 'rawCodes': [1, 7066572140], 'type': 'EXC_BREAKPOINT', 'signal': 'SIGTRAP'} Trace/BPT trap: 5
+   libswiftCore.dylib closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib Array._checkSubscript(_:wasNativeTypeChecked:)  
+   libswiftCore.dylib Array.subscript.getter  
+   MikaPlusPlayer.debug.dylib closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift 79
+   SwiftUICore closure #1 in ForEachChild.updateValue()  
+   SwiftUICore ForEachChild.updateValue()  
+   SwiftUICore partial apply for implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:)  
+   AttributeGraph AG::Graph::UpdateStack::update()  
+   AttributeGraph AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int)  
+   AttributeGraph AG::Graph::value_ref(AG::AttributeID, unsigned int, AGSwiftMetadata const*, unsigned char&)  
+   AttributeGraph AGGraphGetWeakValue  
+   SwiftUICore ViewGraph.layoutComputer.getter  
+   SwiftUICore closure #1 in ViewGraphRootValueUpdater._sizeThatFits(_:)  
+   SwiftUICore ViewGraphRootValueUpdater._updateViewGraph<A>(body:)  
+   SwiftUICore ViewGraphRootValueUpdater._sizeThatFits(_:)  
+   SwiftUI NSHostingView.minSize()  
+   SwiftUI NSHostingView.minSizeRoundedRespectingSizingOptions()  
+   SwiftUI NSHostingView.updateWindowContentSizeExtremaIfNecessary()  
+   SwiftUI NSHostingView.updateConstraints()  
+   SwiftUI @objc NSHostingView.updateConstraints()  
+   AppKit ?  
+-- crash-S3-2026-09-16-214818.ips
+   {'codes': '0x0000000000000001, 0x00000001a533556c', 'rawCodes': [1, 7066572140], 'type': 'EXC_BREAKPOINT', 'signal': 'SIGTRAP'} Trace/BPT trap: 5
+   libswiftCore.dylib closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib Array._checkSubscript(_:wasNativeTypeChecked:)  
+   libswiftCore.dylib Array.subscript.getter  
+   MikaPlusPlayer.debug.dylib closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift 79
+   SwiftUICore closure #1 in ForEachChild.updateValue()  
+   SwiftUICore ForEachChild.updateValue()  
+   SwiftUICore partial apply for implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:)  
+   AttributeGraph AG::Graph::UpdateStack::update()  
+   AttributeGraph AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int)  
+   AttributeGraph AG::Graph::value_ref(AG::AttributeID, unsigned int, AGSwiftMetadata const*, unsigned char&)  
+   AttributeGraph AGGraphGetWeakValue  
+   SwiftUICore ViewGraph.layoutComputer.getter  
+   SwiftUICore closure #1 in ViewGraphRootValueUpdater._sizeThatFits(_:)  
+   SwiftUICore ViewGraphRootValueUpdater._updateViewGraph<A>(body:)  
+   SwiftUICore ViewGraphRootValueUpdater._sizeThatFits(_:)  
+   SwiftUI NSHostingView.minSize()  
+   SwiftUI NSHostingView.minSizeRoundedRespectingSizingOptions()  
+   SwiftUI NSHostingView.updateWindowContentSizeExtremaIfNecessary()  
+   SwiftUI NSHostingView.updateConstraints()  
+   SwiftUI @objc NSHostingView.updateConstraints()  
+   AppKit ?  
+-- crash-S2-2026-09-16-214833.ips
+   {'codes': '0x0000000000000001, 0x00000001a533556c', 'rawCodes': [1, 7066572140], 'type': 'EXC_BREAKPOINT', 'signal': 'SIGTRAP'} Trace/BPT trap: 5
+   libswiftCore.dylib closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib Array._checkSubscript(_:wasNativeTypeChecked:)  
+   libswiftCore.dylib Array.subscript.getter  
+   MikaPlusPlayer.debug.dylib closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift 79
+   SwiftUICore closure #1 in ForEachChild.updateValue()  
+   SwiftUICore ForEachChild.updateValue()  
+   SwiftUICore partial apply for implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:)  
+   AttributeGraph AG::Graph::UpdateStack::update()  
+   AttributeGraph AG::Subgraph::update(unsigned int)  
+   SwiftUICore GraphHost.flushTransactions()  
+   SwiftUI closure #1 in closure #1 in closure #1 in NSHostingView.beginTransaction()  
+   SwiftUICore partial apply for closure #1 in ViewGraphRootValueUpdater.updateGraph<A>(body:)  
+   SwiftUICore ViewGraphRootValueUpdater._updateViewGraph<A>(body:)  
+   SwiftUICore ViewGraphRootValueUpdater.updateGraph<A>(body:)  
+   SwiftUI closure #1 in closure #1 in NSHostingView.beginTransaction()  
+   SwiftUICore <deduplicated_symbol>  
+   SwiftUICore specialized static NSRunLoop.flushObservers()  
+   SwiftUICore @objc closure #1 in static NSRunLoop.addObserver(_:)  
+   CoreFoundation __CFRUNLOOP_IS_CALLING_OUT_TO_AN_OBSERVER_CALLBACK_FUNCTION__  
+   CoreFoundation __CFRunLoopDoObservers  
+   CoreFoundation _CFRunLoopRunSpecificWithOptions  
+-- crash-S9-2026-09-16-214854.ips
+   {'codes': '0x0000000000000001, 0x00000001a533556c', 'rawCodes': [1, 7066572140], 'type': 'EXC_BREAKPOINT', 'signal': 'SIGTRAP'} Trace/BPT trap: 5
+   libswiftCore.dylib closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib Array._checkSubscript(_:wasNativeTypeChecked:)  
+   libswiftCore.dylib Array.subscript.getter  
+   MikaPlusPlayer.debug.dylib closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift 79
+   SwiftUICore closure #1 in ForEachChild.updateValue()  
+   SwiftUICore ForEachChild.updateValue()  
+   SwiftUICore partial apply for implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:)  
+   AttributeGraph AG::Graph::UpdateStack::update()  
+   AttributeGraph AG::Subgraph::update(unsigned int)  
+   SwiftUICore GraphHost.flushTransactions()  
+   SwiftUI closure #1 in closure #1 in closure #1 in NSHostingView.beginTransaction()  
+   SwiftUICore partial apply for closure #1 in ViewGraphRootValueUpdater.updateGraph<A>(body:)  
+   SwiftUICore ViewGraphRootValueUpdater._updateViewGraph<A>(body:)  
+   SwiftUICore ViewGraphRootValueUpdater.updateGraph<A>(body:)  
+   SwiftUI closure #1 in closure #1 in NSHostingView.beginTransaction()  
+   SwiftUICore <deduplicated_symbol>  
+   SwiftUICore specialized static NSRunLoop.flushObservers()  
+   SwiftUICore @objc closure #1 in static NSRunLoop.addObserver(_:)  
+   CoreFoundation __CFRUNLOOP_IS_CALLING_OUT_TO_AN_OBSERVER_CALLBACK_FUNCTION__  
+   CoreFoundation __CFRunLoopDoObservers  
+   CoreFoundation _CFRunLoopRunSpecificWithOptions  
+-- crash-S14-2026-09-16-215744.ips
+   {'codes': '0x0000000000000001, 0x00000001a533556c', 'rawCodes': [1, 7066572140], 'type': 'EXC_BREAKPOINT', 'signal': 'SIGTRAP'} Trace/BPT trap: 5
+   libswiftCore.dylib closure #1 in closure #1 in _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib _assertionFailure(_:_:file:line:flags:)  
+   libswiftCore.dylib Array._checkSubscript(_:wasNativeTypeChecked:)  
+   libswiftCore.dylib Array.subscript.getter  
+   MikaPlusPlayer.debug.dylib closure #1 in closure #1 in closure #1 in closure #1 in MultiviewScreen.gridLayout.getter MultiviewScreen.swift 79
+   SwiftUICore closure #1 in ForEachChild.updateValue()  
+   SwiftUICore ForEachChild.updateValue()  
+   SwiftUICore partial apply for implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:)  
+   AttributeGraph AG::Graph::UpdateStack::update()  
+   AttributeGraph AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int)  
+   AttributeGraph AG::Graph::value_ref(AG::AttributeID, unsigned int, AGSwiftMetadata const*, unsigned char&)  
+   AttributeGraph AGGraphGetWeakValue  
+   SwiftUICore ViewGraph.layoutComputer.getter  
+   SwiftUICore closure #1 in ViewGraphRootValueUpdater._sizeThatFits(_:)  
+   SwiftUICore ViewGraphRootValueUpdater._updateViewGraph<A>(body:)  
+   SwiftUICore ViewGraphRootValueUpdater._sizeThatFits(_:)  
+   SwiftUI NSHostingView.minSize()  
+   SwiftUI NSHostingView.minSizeRoundedRespectingSizingOptions()  
+   SwiftUI NSHostingView.updateWindowContentSizeExtremaIfNecessary()  
+   SwiftUI NSHostingView.updateConstraints()  
+   SwiftUI @objc NSHostingView.updateConstraints()  
+   AppKit ?  
+   (App-Stderr jeweils: Swift/ContiguousArrayBuffer.swift:695: Fatal error: Index out of range)
+
+Sondenprotokoll (probe.log, vollständig)
+========================================
+B08PROBE|  -0.00|=== -[B08SessionTests test01_HinzufuegenBisVierFuenfterAbgewiesen]
+B08PROBE|   0.00|T01|leer|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|   0.01|T01|nach add(A HLS)|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] A HLS AVKit state=loading isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=unknown
+B08PROBE|   0.09|T01|nach add(B TS)|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] A HLS AVKit state=loading isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=unknown
+        [1] B TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   0.10|T01|nach add(C HLS)|slots=3 focusedIndex=0 canAddMore=true layout=focus
+        [0*] A HLS AVKit state=loading isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=unknown
+        [1] B TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] C HLS AVKit state=loading isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=unknown
+B08PROBE|   0.10|T01|nach add(D TS)|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] A HLS AVKit state=loading isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=unknown
+        [1] B TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] C HLS AVKit state=loading isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=unknown
+        [3] D TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   0.10|T01|nach add(E) (fünfter)|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] A HLS AVKit state=loading isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=unknown
+        [1] B TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] C HLS AVKit state=loading isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=unknown
+        [3] D TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   6.11|T01|nach 6 s|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] A HLS AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [1] B TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] C HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [3] D TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   6.12|T01|mock|offeneTS=2 ["/ts/t01b.ts#2(idle=0.1s)", "/ts/t01d.ts#1(idle=0.1s)"] | playlistAbrufe6s=["/hls/t01a/live.m3u8:4x[200]", "/hls/t01c/live.m3u8:4x[200]"]
+B08PROBE|   6.12|T01|mock|fuenfterAngefragt=0
+B08PROBE|   6.12|T01|nach clear()|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|   6.12|T01|engines direkt nach clear|A HLS=frei B TS=frei C HLS=frei D TS=frei
+B08PROBE|  11.19|T01|engines 5 s nach clear|A HLS=frei B TS=frei C HLS=frei D TS=frei
+B08PROBE|  11.20|T01|mock 5 s nach clear|offeneTS=0 [] | playlistAbrufe6s=[]
+B08PROBE|  11.20|T01|mock geschlossen|["/ts/t01d.ts#1[client-getrennt(BrokenPipeError), 6.2s]", "/ts/t01b.ts#2[client-getrennt(BrokenPipeError), 6.2s]"]
+B08PROBE|  11.34|=== -[B08SessionTests test02_FokusUndEntfernen]
+B08PROBE|  15.40|T02|vier Streams|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] R1 HLS AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [1] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] R3 HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [3] R4 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.40|T02|setFocus(2)|slots=4 focusedIndex=2 canAddMore=false layout=focus
+        [0] R1 HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [1] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2*] R3 HLS AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [3] R4 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.40|T02|setFocus(7) ungültig|slots=4 focusedIndex=2 canAddMore=false layout=focus
+        [0] R1 HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [1] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2*] R3 HLS AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [3] R4 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.40|T02|setFocus(-1) ungültig|slots=4 focusedIndex=2 canAddMore=false layout=focus
+        [0] R1 HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [1] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2*] R3 HLS AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [3] R4 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.40|T02|remove(R1) vor dem Fokus|slots=3 focusedIndex=1 canAddMore=true layout=focus
+        [0] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] R3 HLS AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [2] R4 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.40|T02|R1 entfernt|isPaused=true
+B08PROBE|  15.40|T02|remove(R3) = fokussiert|slots=2 focusedIndex=1 canAddMore=true layout=focus
+        [0] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] R4 TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|  15.41|T02|add(R5)|slots=3 focusedIndex=1 canAddMore=true layout=focus
+        [0] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] R4 TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [2] R5 TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.41|T02|setFocus(letzter)|slots=3 focusedIndex=2 canAddMore=true layout=focus
+        [0] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1] R4 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2*] R5 TS VLC state=loading isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|  15.41|T02|remove(letzter = fokussiert)|slots=2 focusedIndex=1 canAddMore=true layout=focus
+        [0] R2 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] R4 TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|  15.41|T02|setFocus(0)|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] R2 TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] R4 TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.41|T02|remove(nach dem Fokus)|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] R2 TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|  15.41|T02|remove(unbekannte ID)|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] R2 TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|  15.41|T02|remove(letzter verbleibender)|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  15.42|T02|add(R6) nach leer|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] R6 HLS AVKit state=loading isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=unknown
+B08PROBE|  19.42|T02|R1/R3 4 s nach Entfernen|R1=lebt R3=lebt
+B08PROBE|  19.43|T02|mock|offeneTS=3 ["/ts/t02r2.ts#3(idle=0.1s)", "/ts/t02r4.ts#4(idle=0s)", "/ts/t02r5.ts#5(idle=0s)"] | playlistAbrufe6s=["/hls/t02r1/live.m3u8:2x[200]", "/hls/t02r3/live.m3u8:2x[200]", "/hls/t02r6/live.m3u8:3x[200]"]
+B08PROBE|  22.45|T02|mock nach clear|offeneTS=3 ["/ts/t02r2.ts#3(idle=1.9s)", "/ts/t02r4.ts#4(idle=1.9s)", "/ts/t02r5.ts#5(idle=0s)"] | playlistAbrufe6s=["/hls/t02r1/live.m3u8:3x[200]", "/hls/t02r3/live.m3u8:3x[200]", "/hls/t02r6/live.m3u8:1x[200]"]
+B08PROBE|  22.52|=== -[B08SessionTests test03_GleicherSenderZweimal]
+B08PROBE|  22.53|T03|zweimal derselbe Channel|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] Doppelt TS VLC state=loading isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateStopped audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] Doppelt TS VLC state=loading isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  22.53|T03|slotIDs verschieden=true|gleicheEngine=false
+B08PROBE|  27.60|T03|nach 5 s|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] Doppelt TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] Doppelt TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  27.60|T03|mock|offeneTS=2 ["/ts/t03same.ts#6(idle=0.1s)", "/ts/t03same.ts#7(idle=0.1s)"] | playlistAbrufe6s=[]
+B08PROBE|  27.66|=== -[B08SessionTests test04_AudioFokusVLCMitStummerTonspur]
+B08PROBE|  27.67|T04|direkt nach add (Audiokanal noch nicht da)|slots=3 focusedIndex=0 canAddMore=true layout=focus
+        [0*] V1 TS Stille VLC state=loading isMuted=false isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateStopped audio.isMuted=false audio.volume=0 audioTracks=2
+        [1] V2 TS Stille VLC state=loading isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=0 audioTracks=2
+        [2] V3 TS ohne Tonspur VLC state=loading isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=0 audioTracks=0
+B08PROBE|  32.73|T04|nach 5 s|slots=3 focusedIndex=0 canAddMore=true layout=focus
+        [0*] V1 TS Stille VLC state=playing isMuted=false isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=0 audioTracks=2
+        [1] V2 TS Stille VLC state=playing isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=0 audioTracks=2
+        [2] V3 TS ohne Tonspur VLC state=playing isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=0 audioTracks=0
+B08PROBE|  33.23|T04|setFocus(1)|slots=3 focusedIndex=1 canAddMore=true layout=focus
+        [0] V1 TS Stille VLC state=playing isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=0 audioTracks=2
+        [1*] V2 TS Stille VLC state=playing isMuted=false isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=0 audioTracks=2
+        [2] V3 TS ohne Tonspur VLC state=playing isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=0 audioTracks=0
+B08PROBE|  33.73|T04|setFocus(2) (Stream ohne Tonspur)|slots=3 focusedIndex=2 canAddMore=true layout=focus
+        [0] V1 TS Stille VLC state=playing isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=0 audioTracks=2
+        [1] V2 TS Stille VLC state=playing isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=0 audioTracks=2
+        [2*] V3 TS ohne Tonspur VLC state=playing isMuted=false isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=0 audioTracks=0
+B08PROBE|  34.27|T04|remove(fokussierter V3)|slots=2 focusedIndex=1 canAddMore=true layout=focus
+        [0] V1 TS Stille VLC state=playing isMuted=true isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=0 audioTracks=2
+        [1*] V2 TS Stille VLC state=playing isMuted=false isPaused=false vol=0.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=0 audioTracks=2
+B08PROBE|  34.33|=== -[B08SessionTests test05_VerbindungenXtream]
+B08PROBE|  34.35|T05|import TS|sender=["MV Sender 101", "MV Sender 102", "MV Sender 103", "MV Sender 104"]|gespeichert=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|  36.88|T05|1 Kachel(n)|offeneTS=1 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0s)"] | playlistAbrufe6s=[]
+B08PROBE|  39.45|T05|2 Kachel(n)|offeneTS=2 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#12(idle=0s)"] | playlistAbrufe6s=[]
+B08PROBE|  42.01|T05|3 Kachel(n)|offeneTS=3 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#12(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#13(idle=0s)"] | playlistAbrufe6s=[]
+B08PROBE|  44.57|T05|4 Kachel(n)|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#12(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#13(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#14(idle=0s)"] | playlistAbrufe6s=[]
+B08PROBE|  44.57|T05|vier Xtream-TS|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  48.65|T05|nach clear|offeneTS=0 [] | playlistAbrufe6s=[]
+B08PROBE|  57.79|T05|Limit 1, vier Kacheln|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  57.79|T05|Limit 1|offeneTS=1 ["/live/qa-user/qa-pass-b08/101.ts#15(idle=0.1s)"] | playlistAbrufe6s=[]
+B08PROBE|  68.94|T05|vier Xtream-HLS|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [1] MV Sender 102 AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [2] MV Sender 103 AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [3] MV Sender 104 AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+B08PROBE|  68.94|T05|HLS vier Kacheln|offeneTS=0 [] | playlistAbrufe6s=["/live/qa-user/qa-pass-b08/101.m3u8:3x[200]", "/live/qa-user/qa-pass-b08/102.m3u8:3x[200]", "/live/qa-user/qa-pass-b08/103.m3u8:3x[200]", "/live/qa-user/qa-pass-b08/104.m3u8:3x[200]"]
+B08PROBE|  77.05|T05|HLS 8 s nach clear|offeneTS=0 [] | playlistAbrufe6s=[]
+B08PROBE|  77.09|T05|add ohne Schlüsselbund-Eintrag|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  77.21|=== -[B08SessionTests test06_FehlerJeKachel]
+B08PROBE|  79.25|T06|nach 2 s|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] 404 HLS AVKit state=failed(The requested URL was not found on this server.) isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=0.0 item=failed
+        [1] 404 TS VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] Abbruch TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] Abbruch HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+B08PROBE|  83.25|T06|nach 6 s|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] 404 HLS AVKit state=failed(The requested URL was not found on this server.) isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=0.0 item=failed
+        [1] 404 TS VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] Abbruch TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] Abbruch HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+B08PROBE|  91.33|T06|nach 14 s|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] 404 HLS AVKit state=failed(The requested URL was not found on this server.) isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=0.0 item=failed
+        [1] 404 TS VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] Abbruch TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStatePaused audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] Abbruch HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+B08PROBE| 107.38|T06|nach 30 s|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] 404 HLS AVKit state=failed(The requested URL was not found on this server.) isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=0.0 item=failed
+        [1] 404 TS VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] Abbruch TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStatePaused audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] Abbruch HLS AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+B08PROBE| 107.39|T06|mock|["/abort/t06c.ts#16[server-abbruch, 4s]"]
+B08PROBE| 115.43|T06|zweite Session nach 8 s|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] Hängt TS VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] OK TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] Port zu HLS AVKit state=failed(Could not connect to the server.) isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=0.0 item=failed
+        [3] Port zu TS VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE| 119.47|T06|hängende Kachel entfernt|engine=lebt|isPaused=Optional(true)
+B08PROBE| 122.75|=== -[B08SessionTests test07_EntfernenPauseFreigabeVerbindung]
+B08PROBE| 127.82|T07|beide spielen|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] VLC spielt VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] AVKit spielt AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+B08PROBE| 127.82|T07|mock vorher|offeneTS=1 ["/ts/t07vlc.ts#18(idle=0s)"] | playlistAbrufe6s=["/hls/t07av/live.m3u8:4x[200]"]
+B08PROBE| 127.82|T07|direkt nach remove|VLC=lebt AVKit=lebt
+B08PROBE| 129.84|T07|2 s nach remove|VLC=lebt AVKit=lebt|offeneTS=1 ["/ts/t07vlc.ts#18(idle=0s)"] | playlistAbrufe6s=["/hls/t07av/live.m3u8:3x[200]"]
+B08PROBE| 132.85|T07|5 s nach remove|VLC=lebt AVKit=lebt|offeneTS=1 ["/ts/t07vlc.ts#18(idle=0.1s)"] | playlistAbrufe6s=["/hls/t07av/live.m3u8:3x[200]"]
+B08PROBE| 137.87|T07|10 s nach remove|VLC=lebt AVKit=lebt|offeneTS=1 ["/ts/t07vlc.ts#18(idle=4.9s)"] | playlistAbrufe6s=["/hls/t07av/live.m3u8:3x[200]"]
+B08PROBE| 137.88|T07|mock geschlossen|[]
+B08PROBE| 137.92|=== -[B08SessionTests test08_PauseHaeltVerbindung]
+B08PROBE| 142.96|T08|spielen|VLC playing | AVKit playing|offeneTS=1 ["/ts/t08vlc.ts#19(idle=0s)"] | playlistAbrufe6s=["/hls/t08av/live.m3u8:4x[200]"]
+B08PROBE| 145.98|T08|3 s pausiert (Engine gehalten)|VLC isPlaying=vlc.isPlaying=false vlc.state=VLCMediaPlayerStatePaused audio.isMuted=true audio.volume=100 audioTracks=0|offeneTS=1 ["/ts/t08vlc.ts#19(idle=0s)"] | playlistAbrufe6s=["/hls/t08av/live.m3u8:2x[200]"]
+B08PROBE| 153.02|T08|10 s pausiert (Engine gehalten)|VLC isPlaying=vlc.isPlaying=false vlc.state=VLCMediaPlayerStatePaused audio.isMuted=true audio.volume=100 audioTracks=0|offeneTS=1 ["/ts/t08vlc.ts#19(idle=0.1s)"] | playlistAbrufe6s=["/hls/t08av/live.m3u8:3x[200]"]
+B08PROBE| 163.08|T08|20 s pausiert (Engine gehalten)|VLC isPlaying=vlc.isPlaying=false vlc.state=VLCMediaPlayerStatePaused audio.isMuted=true audio.volume=100 audioTracks=0|offeneTS=1 ["/ts/t08vlc.ts#19(idle=5.5s)"] | playlistAbrufe6s=["/hls/t08av/live.m3u8:3x[200]"]
+B08PROBE|--- Lauf 2: test07 neu (ohne fremde Referenzen)
+B08PROBE|   0.00|=== -[B08SessionTests test07_EntfernenPauseFreigabeVerbindung]
+B08PROBE|   5.12|T07|vorher|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] VLC spielt VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] AVKit spielt AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [2] VLC lädt VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] AVKit lädt AVKit state=loading isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=unknown
+B08PROBE|   5.13|T07|mock vorher|offeneTS=1 ["/ts/t07vlc.ts#1(idle=0.1s)"] | playlistAbrufe6s=["/hang/t07hang2/live.m3u8:1x[0]", "/hls/t07av/live.m3u8:4x[200]"]
+B08PROBE|   5.17|T07|direkt nach remove|VLC spielt=frei AVKit spielt=frei VLC lädt=frei AVKit lädt=frei
+B08PROBE|   7.20|T07|2 s nach remove|VLC spielt=frei AVKit spielt=frei VLC lädt=frei AVKit lädt=frei|offeneTS=0 [] | playlistAbrufe6s=["/hls/t07av/live.m3u8:2x[200]"]
+B08PROBE|  10.23|T07|5 s nach remove|VLC spielt=frei AVKit spielt=frei VLC lädt=frei AVKit lädt=frei|offeneTS=0 [] | playlistAbrufe6s=[]
+B08PROBE|  15.31|T07|10 s nach remove|VLC spielt=frei AVKit spielt=frei VLC lädt=frei AVKit lädt=frei|offeneTS=0 [] | playlistAbrufe6s=[]
+B08PROBE|  15.32|T07|mock geschlossen|["/ts/t07vlc.ts#1[client-getrennt(BrokenPipeError), 5.1s]"]
+B08PROBE|  15.32|T07|mock hang-protokoll|MOCK|1789565019.606|HANG|127.0.0.1:49501|/hang/t07hang2/live.m3u8 ; MOCK|1789565019.626|HANG|127.0.0.1:49504|/hang/t07hang.ts ; MOCK|1789565024.662|HANGCLOSED|127.0.0.1:49501|/hang/t07hang2/live.m3u8 ; MOCK|1789565024.688|HANGCLOSED|127.0.0.1:49504|/hang/t07hang.ts
+B08PROBE|--- APP-LAUF S1 15:24:11
+B08PROBE|--- APP-LAUF S1 beendet exit=133 nach 1s
+B08PROBE|--- APP-LAUF S1 15:24:54
+B08PROBE|   0.00|=== APP|szenario=S1|pid=63843|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.65D62092-7C30-42C0-9A92-C40B8FC52600|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.67|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   2.71|S1|start|fenster=["Playlists[760x720]"]
+B08PROBE|   2.77|SHOT|mac-01-hauptfenster-playlists|1800x900|fenster=Playlists
+B08PROBE|--- APP-LAUF S1 beendet exit=139 nach 5s
+B08PROBE|--- APP-LAUF S1 15:25:30
+B08PROBE|   0.00|=== APP|szenario=S1|pid=66695|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.6D8FB6A7-60EB-458B-B8B9-0A6D65452497|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.73|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   3.82|S1|start|fenster=["Playlists[760x720]"]
+B08PROBE|   3.90|SHOT|mac-01-hauptfenster-playlists|1520x1440|fenster=Playlists
+B08PROBE|   5.09|S1|senderliste|titel=Xtream MV|karte101=role=AXBusyIndicator label=MV Sender 101, Test title= help=Zu Multiview hinzufügen value=0 enabled=1 frame=720x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|   5.11|SHOT|mac-02-senderliste-plus-buttons|1520x1440|fenster=Xtream MV
+B08PROBE|   6.50|S1|klick ⊞ offset=57.0|slots 0→1|hauptfensterTitel=Xtream MV|multiviewOffen=true
+B08PROBE|   6.50|S1|⊞-Mitte bei maxX-57.0
+B08PROBE|   9.16|S1|nach 1. ⊞|hauptfensterTitel=Xtream MV (bleibt Senderliste = kein Player geöffnet)
+B08PROBE|   9.16|S1|nach 1. ⊞|fenster=["Xtream MV[760x720]", "Multiview[1280x720]"]
+B08PROBE|   9.16|S1|1 Stream|picker|enabled=false|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|   9.16|S1|1 Stream|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|   9.23|S1|1 Stream|mock|offeneTS=1 ["/live/qa-user/qa-pass-b08/101.ts#2(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=4
+B08PROBE|  10.77|SHOT|mac-03-multiview-ein-stream-fokus|1920x1200|fenster=Multiview
+B08PROBE|  12.77|S1|⊞ 102|slots=2|focusedIndex=0|mvKey=false
+B08PROBE|  12.77|S1|2 Streams|picker|enabled=true|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  14.80|S1|⊞ 103|slots=3|focusedIndex=0|mvKey=false
+B08PROBE|  14.80|S1|3 Streams|picker|enabled=true|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  16.81|S1|⊞ 104|slots=4|focusedIndex=0|mvKey=false
+B08PROBE|  16.81|S1|4 Streams|picker|enabled=true|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  20.82|S1|4 Streams|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  20.89|S1|4 Streams|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#2(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#3(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#4(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#5(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  20.90|S1|voll|karte101=role=AXBusyIndicator label=MV Sender 101, Test title= help=Multiview voll (max. 4) value=0 enabled=1 frame=720x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  20.92|SHOT|mac-04-senderliste-multiview-voll|1520x1440|fenster=Xtream MV
+B08PROBE|  22.30|S1|⊞ bei voll|slots=4|hauptfensterTitel=MV Sender 101
+B08PROBE|  23.93|SHOT|mac-05-multiview-vier-fokus|1920x1200|fenster=Multiview
+B08PROBE|  23.93|S1|entfernen-knöpfe|["1777,645", "1761,629", "1761,486", "1761,343"]
+B08PROBE|  24.96|S1|klick auf zweite kleine Kachel
+B08PROBE|  24.96|S1|nach Fokus-Klick|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  25.01|S1|nach Fokus-Klick|mock|offeneTS=5 ["/live/qa-user/qa-pass-b08/101.ts#2(idle=0s)", "/live/qa-user/qa-pass-b08/101.ts#6(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#3(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#4(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#5(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=8
+B08PROBE|  25.04|SHOT|mac-06-multiview-fokus-gewechselt|1920x1200|fenster=Multiview
+B08PROBE|  25.05|LAYOUT|klick auf Segment 1|enabled=true|danach session.layout=grid
+B08PROBE|  26.60|S1|nach Raster|picker|enabled=true|selected=1|labels=["Fokus", "Raster"]|session.layout=grid
+B08PROBE|  26.66|SHOT|mac-07-multiview-vier-raster|1920x1200|fenster=Multiview
+B08PROBE|  27.73|S1|Raster Klick auf Kachel oben links|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  27.79|S1|Raster Klick auf Kachel oben links|mock|offeneTS=5 ["/live/qa-user/qa-pass-b08/101.ts#2(idle=0.1s)", "/live/qa-user/qa-pass-b08/101.ts#6(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#3(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#4(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#5(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=8
+B08PROBE|  27.83|SHOT|mac-08-multiview-raster-fokus-oben-links|1920x1200|fenster=Multiview
+B08PROBE|  28.36|S1|tastatur|responderKette=["AppKitWindow", "AppKitWindowController", "AppKitApplication", "AppDelegate"]|warnton-abgefangen-in=["NSResponder"]
+B08PROBE|  28.79|S1|taste Leertaste|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  29.22|S1|taste M|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  29.64|S1|taste F|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  30.07|S1|taste P|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  30.50|S1|taste Pfeil hoch|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  30.93|S1|taste Pfeil runter|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  31.37|S1|taste Esc|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  31.78|S1|taste 1|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  32.21|S1|taste Tab|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  32.21|S1|menü neues Fenster|New Window
+B08PROBE|  33.31|S1|nach neuem Fenster|fenster=["MV Sender 101[760x720]", "Multiview[960x600]", "Playlists[900x450]"]
+B08PROBE|  34.50|S1|zweites Fenster|titel=Xtream MV|karte103=role=AXBusyIndicator label=MV Sender 103, Test title= help=Multiview voll (max. 4) value=0 enabled=1 frame=660x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  34.53|SHOT|mac-09-zweites-hauptfenster-voll|1400x1280|fenster=Xtream MV
+B08PROBE|  35.91|S1|zweites Fenster Favoriten-Tab|press=false|titel=Favoriten|karte104=role=AXBusyIndicator label=MV Sender 104, Test title= help=Multiview voll (max. 4) value=0 enabled=1 frame=660x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  35.94|SHOT|mac-10-favoriten-tab-voll|1400x1280|fenster=Favoriten
+B08PROBE|  35.94|S1|schließen|schließe Multiview über den roten Fensterknopf
+B08PROBE|--- APP-LAUF S1 beendet exit=133 nach 36s
+B08PROBE|--- APP-LAUF S1 15:27:42
+B08PROBE|   0.00|=== APP|szenario=S1|pid=74542|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.E4303B22-E2DC-4FA7-BC5D-B6A03239ACAB|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.72|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   3.80|S1|start|fenster=["Playlists[760x720]"]
+B08PROBE|   3.88|SHOT|mac-01-hauptfenster-playlists|1520x1440|fenster=Playlists
+B08PROBE|   5.08|S1|senderliste|titel=Xtream MV|karte101=role=AXBusyIndicator label=MV Sender 101, Test title= help=Zu Multiview hinzufügen value=0 enabled=1 frame=720x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|   5.12|SHOT|mac-02-senderliste-plus-buttons|1520x1440|fenster=Xtream MV
+B08PROBE|   6.48|S1|klick ⊞ offset=57.0|slots 0→1|hauptfensterTitel=Xtream MV|multiviewOffen=true
+B08PROBE|   6.48|S1|⊞-Mitte bei maxX-57.0
+B08PROBE|   9.15|S1|nach 1. ⊞|hauptfensterTitel=Xtream MV (bleibt Senderliste = kein Player geöffnet)
+B08PROBE|   9.15|S1|nach 1. ⊞|fenster=["Xtream MV[760x720]", "Multiview[960x600]"]
+B08PROBE|   9.15|S1|1 Stream|picker|enabled=false|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|   9.15|S1|1 Stream|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|   9.28|S1|1 Stream|mock|offeneTS=1 ["/live/qa-user/qa-pass-b08/101.ts#7(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=4
+B08PROBE|  10.83|SHOT|mac-03-multiview-ein-stream-fokus|1920x1200|fenster=Multiview
+B08PROBE|  12.80|S1|⊞ 102|slots=2|focusedIndex=0|mvKey=false
+B08PROBE|  12.80|S1|2 Streams|picker|enabled=true|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  14.83|S1|⊞ 103|slots=3|focusedIndex=0|mvKey=false
+B08PROBE|  14.83|S1|3 Streams|picker|enabled=true|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  16.80|S1|⊞ 104|slots=4|focusedIndex=0|mvKey=false
+B08PROBE|  16.80|S1|4 Streams|picker|enabled=true|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  21.05|S1|4 Streams|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  21.12|S1|4 Streams|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#7(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#8(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#9(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#10(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  21.12|S1|voll|karte101=role=AXBusyIndicator label=MV Sender 101, Test title= help=Multiview voll (max. 4) value=0 enabled=1 frame=720x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  21.14|SHOT|mac-04-senderliste-multiview-voll|1520x1440|fenster=Xtream MV
+B08PROBE|  24.12|S1|⊞ bei voll|slots=4|hauptfensterTitel=MV Sender 101
+B08PROBE|  24.12|S1|⊞ bei voll|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  24.19|S1|⊞ bei voll|mock|offeneTS=5 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0s)", "/live/qa-user/qa-pass-b08/101.ts#7(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#8(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#9(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#10(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=8
+B08PROBE|  24.22|SHOT|mac-05a-klick-auf-grauen-plus-oeffnet-player|1520x1440|fenster=MV Sender 101
+B08PROBE|  24.23|AX|element fehlt|Zurück
+B08PROBE|  27.40|S1|zurück aus Player|press=false|titel=Xtream MV
+B08PROBE|  27.40|S1|3 s nach Zurück|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  27.47|S1|3 s nach Zurück|mock|offeneTS=5 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0s)", "/live/qa-user/qa-pass-b08/101.ts#7(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#8(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#9(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#10(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=8
+B08PROBE|  29.11|SHOT|mac-05-multiview-vier-fokus|1920x1200|fenster=Multiview
+B08PROBE|  29.11|S1|x-knöpfe|groß=1777,645|klein=["1761,629", "1761,486", "1761,343"]
+B08PROBE|  29.11|S1|fokus-klick Videofläche|trefferKette=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>> < NSThemeFrame
+B08PROBE|  30.11|S1|fokus-klick Videofläche|focusedIndex 0→0
+B08PROBE|  30.11|S1|fokus-klick unter dem Namen|trefferKette=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>> < NSThemeFrame
+B08PROBE|  31.17|S1|fokus-klick unter dem Namen|focusedIndex 0→0
+B08PROBE|  31.17|S1|nach Fokus-Klick|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  31.24|S1|nach Fokus-Klick|mock|offeneTS=5 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0.4s)", "/live/qa-user/qa-pass-b08/101.ts#7(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#8(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#9(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#10(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=8
+B08PROBE|  31.27|SHOT|mac-06-multiview-nach-fokus-klick|1920x1200|fenster=Multiview
+B08PROBE|  31.27|LAYOUT|klick auf Segment 1|enabled=true|danach session.layout=grid
+B08PROBE|  32.87|S1|nach Raster|picker|enabled=true|selected=1|labels=["Fokus", "Raster"]|session.layout=grid
+B08PROBE|  32.90|SHOT|mac-07-multiview-vier-raster|1920x1200|fenster=Multiview
+B08PROBE|  32.90|S1|raster fokus-klick unten rechts|trefferKette=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>> < NSThemeFrame
+B08PROBE|  33.93|S1|raster fokus-klick|focusedIndex 0→0
+B08PROBE|  33.94|S1|Raster nach Fokus-Klick|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  34.01|S1|Raster nach Fokus-Klick|mock|offeneTS=5 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=0.3s)", "/live/qa-user/qa-pass-b08/101.ts#7(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#8(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#9(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#10(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=6
+B08PROBE|  34.04|SHOT|mac-08-multiview-raster-nach-fokus-klick|1920x1200|fenster=Multiview
+B08PROBE|  34.57|S1|tastatur|responderKette=["AppKitWindow", "AppKitWindowController", "AppKitApplication", "AppDelegate"]|warnton-abgefangen-in=["NSResponder"]
+B08PROBE|  35.00|S1|taste Leertaste|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  35.43|S1|taste M|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  35.87|S1|taste F|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  36.30|S1|taste P|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  36.71|S1|taste Pfeil hoch|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  37.12|S1|taste Pfeil runter|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  37.54|S1|taste Esc|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  37.98|S1|taste 1|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  38.40|S1|taste Tab|warnton-ausgelöst=2 (keyDown:@AppDelegate,keyUp:@AppDelegate)|engineZustand geändert=false|fullscreen=false|layout=grid|focus=0
+B08PROBE|  38.41|LAYOUT|klick auf Segment 0|enabled=true|danach session.layout=focus
+B08PROBE|  39.47|S1|zurück auf Fokus|picker|enabled=true|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  39.47|S1|menü neues Fenster|New Window
+B08PROBE|  40.60|S1|nach neuem Fenster|fenster=["Xtream MV[760x720]", "Multiview[960x600]", "Playlists[900x450]"]
+B08PROBE|  41.80|S1|zweites Fenster|titel=Xtream MV|karte103=role=AXBusyIndicator label=MV Sender 103, Test title= help=Multiview voll (max. 4) value=0 enabled=1 frame=660x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  41.84|SHOT|mac-09-zweites-hauptfenster-voll|1400x1280|fenster=Xtream MV
+B08PROBE|  43.23|S1|zweites Fenster Favoriten-Tab|press=false|titel=Favoriten|karte104=role=AXBusyIndicator label=MV Sender 104, Test title= help=Multiview voll (max. 4) value=0 enabled=1 frame=660x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  43.26|SHOT|mac-10-favoriten-tab-voll|1400x1280|fenster=Favoriten
+B08PROBE|  43.26|S1|schließen|schließe Multiview über den roten Fensterknopf
+B08PROBE|  43.79|S1|direkt nach Schließen|slots=0|mvSichtbar=false
+B08PROBE|  43.79|S1|direkt nach Schließen|engines|MV Sender 101=freigegeben MV Sender 102=freigegeben MV Sender 103=freigegeben MV Sender 104=freigegeben
+B08PROBE|  46.80|S1|3 s nach Schließen|engines|MV Sender 101=freigegeben MV Sender 102=freigegeben MV Sender 103=freigegeben MV Sender 104=freigegeben
+B08PROBE|  46.80|S1|3 s nach Schließen|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  46.87|S1|3 s nach Schließen|mock|offeneTS=1 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=13.2s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=2
+B08PROBE|  52.20|S1|8 s nach Schließen|engines|MV Sender 101=freigegeben MV Sender 102=freigegeben MV Sender 103=freigegeben MV Sender 104=freigegeben
+B08PROBE|  52.20|S1|8 s nach Schließen|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  52.27|S1|8 s nach Schließen|mock|offeneTS=1 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=18.6s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=2
+B08PROBE|  52.28|S1|nach Schließen|zweitesFenster karte104=role=AXBusyIndicator label=MV Sender 104, Test title= help=Zu Multiview hinzufügen value=0 enabled=1 frame=660x76 actions=["Rectangle Split Two By Two", "Favourite"]|erstesFenster karte101=role=AXBusyIndicator label=MV Sender 101, Test title= help=Zu Multiview hinzufügen value=0 enabled=1 frame=720x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  52.28|S1|geschlossene Verbindungen|["/live/qa-user/qa-pass-b08/101.ts#7[client-getrennt(BrokenPipeError), 38.2s]", "/live/qa-user/qa-pass-b08/102.ts#8[client-getrennt(BrokenPipeError), 32.2s]", "/live/qa-user/qa-pass-b08/103.ts#9[client-getrennt(BrokenPipeError), 30.2s]", "/live/qa-user/qa-pass-b08/104.ts#10[client-getrennt(BrokenPipeError), 28.1s]"]
+B08PROBE|  55.40|S1|⊞ im Favoriten-Tab|slots 0→1|zweitesFensterTitel=Favoriten|multiviewOffen=true
+B08PROBE|  55.40|S1|wieder geöffnet, 1 Stream|picker|enabled=false|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  55.40|S1|wieder geöffnet|fenster=["Xtream MV[760x720]", "Multiview[960x600]", "Favoriten[700x640]"]
+B08PROBE|  57.02|SHOT|mac-11-multiview-wieder-offen-ein-stream|1920x1200|fenster=Multiview
+B08PROBE|  60.08|S1|minimiert|slots=1|isMiniaturized=true
+B08PROBE|  60.08|S1|minimiert|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 104 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|  60.15|S1|minimiert|mock|offeneTS=2 ["/live/qa-user/qa-pass-b08/101.ts#11(idle=26.5s)", "/live/qa-user/qa-pass-b08/104.ts#12(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  62.25|S1|wiederhergestellt|slots=1
+B08PROBE|  62.29|S1|beide Hauptfenster geschlossen|fenster=["Multiview[960x600]"]
+B08PROBE|  62.29|S1|beide Hauptfenster geschlossen|slots=1 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 104 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|  62.38|S1|beide Hauptfenster geschlossen|mock|offeneTS=0 [] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  62.38|S1|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  62.44|ENDE|szenario=S1|beepEreignisse=["keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate", "keyDown:@AppDelegate", "keyUp:@AppDelegate"]
+B08PROBE|--- APP-LAUF S1 beendet exit=0 nach 63s
+B08PROBE|--- APP-LAUF S10 21:47:24
+B08PROBE|   0.00|=== APP|szenario=S10|pid=6625|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.9D6EE116-4445-4B54-9B64-57509EA84ACF|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.60|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   6.94|S10|app aktiv=true|mvKey=true
+B08PROBE|   6.94|S10|vorher|slots=3 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   7.01|S10|vorher|mock|offeneTS=3 ["/live/qa-user/qa-pass-b08/101.ts#13(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#14(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#15(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=6
+B08PROBE|   8.28|S10|klick mit Zeitabstand auf zweite kleine Kachel|trefferKette=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>> < NSThemeFrame|focusedIndex=2
+B08PROBE|   8.28|S10|nachher|slots=3 focusedIndex=2 canAddMore=true layout=focus
+        [0] MV Sender 101 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2*] MV Sender 103 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+B08PROBE|   8.34|S10|nachher|mock|offeneTS=3 ["/live/qa-user/qa-pass-b08/101.ts#13(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#14(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#15(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=6
+B08PROBE|   8.39|SHOT|s10-fokus-klick|1920x1200|fenster=Multiview
+B08PROBE|   8.39|S10|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  11.04|ENDE|szenario=S10|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S10 beendet exit=0 nach 12s
+B08PROBE|--- APP-LAUF S3 21:48:03
+B08PROBE|  -0.00|=== APP|szenario=S3|pid=8870|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.B30D0446-F686-4E17-8D95-8DC205149DB9|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.69|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   8.59|SHOT|s3-raster-vor-schliessen|1920x1200|fenster=Multiview
+B08PROBE|   8.59|S3|vor Schließen|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   8.65|S3|vor Schließen|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#16(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#17(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#18(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#19(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|   8.65|S3|schließen im Raster|schließe Multiview über den roten Fensterknopf
+B08PROBE|--- APP-LAUF S3 beendet exit=133 nach 9s
+B08PROBE|--- APP-LAUF S2 21:48:23
+B08PROBE|   0.00|=== APP|szenario=S2|pid=9233|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.AAADD89C-E62C-4FCC-B0D9-A2393E6E2180|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.66|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   6.03|S2|Raster gesetzt (Binding wie der Picker)
+B08PROBE|   7.65|SHOT|s2-raster-vier|1920x1200|fenster=Multiview
+B08PROBE|   7.65|S2|schritt 1|klick X auf Kachel 1 von 4|slots vorher=4
+B08PROBE|   9.25|S2|schritt 1|slots nachher=3|focus=0|picker=true
+B08PROBE|   9.30|SHOT|s2-raster-nach-schritt-1|1920x1200|fenster=Multiview
+B08PROBE|   9.30|S2|schritt 2|klick X auf Kachel 1 von 3|slots vorher=3
+B08PROBE|--- APP-LAUF S2 beendet exit=133 nach 10s
+B08PROBE|--- APP-LAUF S9 21:48:44
+B08PROBE|   0.00|=== APP|szenario=S9|pid=9992|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.23CC56D7-2F70-47C8-83D0-1726D89387C1|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.70|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   7.64|S9|klick X auf rechte (letzte) Kachel|slots=2
+B08PROBE|   9.22|S9|slots=1
+B08PROBE|   9.29|SHOT|s9-raster-eine-kachel|1920x1200|fenster=Multiview
+B08PROBE|   9.30|S9|klick X auf letzte verbleibende Kachel
+B08PROBE|--- APP-LAUF S9 beendet exit=133 nach 10s
+B08PROBE|--- APP-LAUF S4 21:49:05
+B08PROBE|   0.00|=== APP|szenario=S4|pid=10322|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.2133DD4E-E84D-482E-91AF-DAD21C308A99|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.60|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   6.00|S4|schritt 1|x-knöpfe=["1777,645", "1761,629", "1761,486", "1761,343"]|slots=4|focus=0
+B08PROBE|   7.53|S4|schritt 1|nachher slots=4|focus=1
+B08PROBE|   7.53|S4|schritt 1|slots=4 focusedIndex=1 canAddMore=false layout=focus
+        [0] MV Sender 101 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] MV Sender 102 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   7.60|S4|schritt 1|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#26(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#27(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#28(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#29(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|   7.64|SHOT|s4-fokus-nach-schritt-1|1920x1200|fenster=Multiview
+B08PROBE|   7.64|S4|schritt 2|x-knöpfe=["1777,645", "1761,629", "1761,486", "1761,343"]|slots=4|focus=1
+B08PROBE|   9.15|S4|schritt 2|nachher slots=4|focus=0
+B08PROBE|   9.15|S4|schritt 2|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   9.22|S4|schritt 2|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#26(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#27(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#28(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#29(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|   9.25|SHOT|s4-fokus-nach-schritt-2|1920x1200|fenster=Multiview
+B08PROBE|   9.26|S4|schritt 3|x-knöpfe=["1777,645", "1761,629", "1761,486", "1761,343"]|slots=4|focus=0
+B08PROBE|  10.85|S4|schritt 3|nachher slots=4|focus=1
+B08PROBE|  10.85|S4|schritt 3|slots=4 focusedIndex=1 canAddMore=false layout=focus
+        [0] MV Sender 101 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] MV Sender 102 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  10.92|S4|schritt 3|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#26(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#27(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#28(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#29(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  10.95|SHOT|s4-fokus-nach-schritt-3|1920x1200|fenster=Multiview
+B08PROBE|  10.95|S4|schritt 4|x-knöpfe=["1777,645", "1761,629", "1761,486", "1761,343"]|slots=4|focus=1
+B08PROBE|  12.48|S4|schritt 4|nachher slots=4|focus=0
+B08PROBE|  12.48|S4|schritt 4|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  12.55|S4|schritt 4|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#26(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#27(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#28(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#29(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  12.58|SHOT|s4-fokus-nach-schritt-4|1920x1200|fenster=Multiview
+B08PROBE|  12.58|S4|schritt 5|x-knöpfe=["1777,645", "1761,629", "1761,486", "1761,343"]|slots=4|focus=0
+B08PROBE|  14.18|S4|schritt 5|nachher slots=4|focus=1
+B08PROBE|  14.18|S4|schritt 5|slots=4 focusedIndex=1 canAddMore=false layout=focus
+        [0] MV Sender 101 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] MV Sender 102 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  14.25|S4|schritt 5|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#26(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#27(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#28(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#29(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  14.29|SHOT|s4-fokus-nach-schritt-5|1920x1200|fenster=Multiview
+B08PROBE|  14.29|S4|schritt 6|x-knöpfe=["1777,645", "1761,629", "1761,486", "1761,343"]|slots=4|focus=1
+B08PROBE|  15.89|S4|schritt 6|nachher slots=4|focus=0
+B08PROBE|  15.89|S4|schritt 6|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.95|S4|schritt 6|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#26(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#27(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#28(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#29(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  15.99|SHOT|s4-fokus-nach-schritt-6|1920x1200|fenster=Multiview
+B08PROBE|  15.99|S4|überlebt|slots=4
+B08PROBE|  15.99|S4|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  16.53|ENDE|szenario=S4|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S4 beendet exit=0 nach 17s
+B08PROBE|--- APP-LAUF S11 21:51:37
+B08PROBE|   0.00|=== APP|szenario=S11|pid=18132|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.C60FFFE4-5459-408F-91E6-6216B799C96F|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.68|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   9.06|S11|vorher|slots=3 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   9.13|S11|vorher|mock|offeneTS=3 ["/live/qa-user/qa-pass-b08/101.ts#30(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#31(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#32(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=6
+B08PROBE|   9.17|S11|großer Stream MV Sender 101|schwarzAnteil=0.0
+B08PROBE|   9.20|SHOT|s11-0-vor-fokuswechsel|1920x1200|fenster=Multiview
+B08PROBE|  10.27|S11|1 s nach setFocus(1)|großer Stream MV Sender 102|schwarzAnteil=1.0|state=playing
+B08PROBE|  14.55|S11|5 s nach setFocus(1)|großer Stream MV Sender 102|schwarzAnteil=1.0|state=playing
+B08PROBE|  24.80|S11|15 s nach setFocus(1)|großer Stream MV Sender 102|schwarzAnteil=1.0|state=playing
+B08PROBE|  24.82|SHOT|s11-1-nach-fokuswechsel-15s|1920x1200|fenster=Multiview
+B08PROBE|  26.98|S11|nach Fenstergröße geändert|schwarzAnteil=1.0
+B08PROBE|  31.22|S11|nach Raster→Fokus|großer Stream MV Sender 102|schwarzAnteil=0.0
+B08PROBE|  31.25|SHOT|s11-2-nach-raster-fokus|2000x1280|fenster=Multiview
+B08PROBE|  31.25|S11|nachher|slots=3 focusedIndex=1 canAddMore=true layout=focus
+        [0] MV Sender 101 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [1*] MV Sender 102 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  31.32|S11|nachher|mock|offeneTS=3 ["/live/qa-user/qa-pass-b08/101.ts#30(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#31(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#32(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=6
+B08PROBE|  31.32|S11|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  33.93|ENDE|szenario=S11|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S11 beendet exit=0 nach 35s
+B08PROBE|--- APP-LAUF S12 21:52:23
+B08PROBE|  -0.00|=== APP|szenario=S12|pid=21125|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.D8440351-3185-437A-B6A8-75526408CED3|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.63|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   8.81|S12|vorher|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] M3U HLS A AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+        [1] M3U HLS B AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+B08PROBE|   8.88|S12|vorher|mock|offeneTS=0 [] | playlistAbrufe6s=["/hls/m3ua/live.m3u8:2x[200]", "/hls/m3ub/live.m3u8:2x[200]"]|tcpVerbindungenZumMock=5
+B08PROBE|   8.92|S12|großer Stream M3U HLS A|schwarzAnteil=0.0
+B08PROBE|   8.95|SHOT|s12-0-vor-fokuswechsel|1920x1200|fenster=Multiview
+B08PROBE|   9.97|S12|1 s nach setFocus(1)|großer Stream M3U HLS B|schwarzAnteil=0.0|state=playing
+B08PROBE|  14.05|S12|5 s nach setFocus(1)|großer Stream M3U HLS B|schwarzAnteil=0.0|state=playing
+B08PROBE|  24.19|S12|15 s nach setFocus(1)|großer Stream M3U HLS B|schwarzAnteil=0.0|state=playing
+B08PROBE|  24.22|SHOT|s12-1-nach-fokuswechsel-15s|1920x1200|fenster=Multiview
+B08PROBE|  26.27|S12|nach Fenstergröße geändert|schwarzAnteil=0.0
+B08PROBE|  30.48|S12|nach Raster→Fokus|großer Stream M3U HLS B|schwarzAnteil=0.0
+B08PROBE|  30.52|SHOT|s12-2-nach-raster-fokus|2000x1280|fenster=Multiview
+B08PROBE|  30.52|S12|nachher|slots=2 focusedIndex=1 canAddMore=true layout=focus
+        [0] M3U HLS A AVKit state=playing isMuted=true isPaused=false vol=1.0 | avPlayer.isMuted=true volume=1.0 rate=1.0 item=ready
+        [1*] M3U HLS B AVKit state=playing isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=1.0 item=ready
+B08PROBE|  30.59|S12|nachher|mock|offeneTS=0 [] | playlistAbrufe6s=["/hls/m3ua/live.m3u8:3x[200]", "/hls/m3ub/live.m3u8:3x[200]"]|tcpVerbindungenZumMock=5
+B08PROBE|  30.59|S12|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  33.19|ENDE|szenario=S12|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S12 beendet exit=0 nach 34s
+B08PROBE|--- APP-LAUF S5 21:53:09
+B08PROBE|   0.00|=== APP|szenario=S5|pid=22288|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.FF0484EA-47BD-4CAF-9679-FB05195BF52F|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.68|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   2.89|PLUS|sender fehlt
+B08PROBE|   8.63|S5|vor Löschen|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   8.69|S5|vor Löschen|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#33(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#34(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#35(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#36(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|   8.75|SHOT|s5-vor-loeschen|1920x1200|fenster=Multiview
+B08PROBE|   8.76|S5|playlist gelöscht|schlüsselbundEintrag=false
+B08PROBE|   9.29|S5|nach Löschen|slotChannels isDeleted=[false, false, false, false]|modelContext=["nil", "nil", "nil", "nil"]
+B08PROBE|  12.46|S5|3 s nach Löschen|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  12.53|S5|3 s nach Löschen|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#33(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#34(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#35(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#36(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  12.55|SHOT|s5-nach-loeschen|1920x1200|fenster=Multiview
+B08PROBE|  15.20|S5|X nach Löschen|slots=3
+B08PROBE|  15.20|S5|nach Fokus+X|slots=3 focusedIndex=0 canAddMore=true layout=grid
+        [0*] MV Sender 102 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.27|S5|nach Fokus+X|mock|offeneTS=3 ["/live/qa-user/qa-pass-b08/102.ts#34(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#35(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#36(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=6
+B08PROBE|  17.33|S5|vor dem Schließen auf Fokus umgestellt (Raster-Absturz S3 vermeiden)
+B08PROBE|  18.39|S5|schließen|schließe Multiview über den roten Fensterknopf
+B08PROBE|  21.95|S5|überlebt|slots=0
+B08PROBE|  21.95|S5|3 s nach Schließen|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  22.02|S5|3 s nach Schließen|mock|offeneTS=0 [] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  22.02|ENDE|szenario=S5|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S5 beendet exit=0 nach 23s
+B08PROBE|--- APP-LAUF S6 21:53:43
+B08PROBE|   0.00|=== APP|szenario=S6|pid=24056|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.E16E8B36-F4D9-4780-8441-246AFB820DA2|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.68|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   2.91|PLUS|sender fehlt
+B08PROBE|   8.54|S6|vor Löschen|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   8.60|S6|vor Löschen|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#37(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#38(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#39(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#40(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|   8.66|SHOT|s6-vor-loeschen|1920x1200|fenster=Multiview
+B08PROBE|   8.67|S6|playlist gelöscht|schlüsselbundEintrag=false
+B08PROBE|   9.20|S6|nach Löschen|slotChannels isDeleted=[false, false, false, false]|modelContext=["nil", "nil", "nil", "nil"]
+B08PROBE|  12.40|S6|3 s nach Löschen|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  12.46|S6|3 s nach Löschen|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#37(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#38(idle=0.1s)", "/live/qa-user/qa-pass-b08/103.ts#39(idle=0.1s)", "/live/qa-user/qa-pass-b08/104.ts#40(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  12.51|SHOT|s6-nach-loeschen|1920x1200|fenster=Multiview
+B08PROBE|  15.14|S6|X nach Löschen|slots=4
+B08PROBE|  15.14|S6|nach Fokus+X|slots=4 focusedIndex=0 canAddMore=false layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  15.21|S6|nach Fokus+X|mock|offeneTS=4 ["/live/qa-user/qa-pass-b08/101.ts#37(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#38(idle=0s)", "/live/qa-user/qa-pass-b08/103.ts#39(idle=0s)", "/live/qa-user/qa-pass-b08/104.ts#40(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=7
+B08PROBE|  17.34|S6|schließen|schließe Multiview über den roten Fensterknopf
+B08PROBE|  20.91|S6|überlebt|slots=0
+B08PROBE|  20.91|S6|3 s nach Schließen|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  20.98|S6|3 s nach Schließen|mock|offeneTS=0 [] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  20.98|ENDE|szenario=S6|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S6 beendet exit=0 nach 22s
+B08PROBE|--- APP-LAUF S7 21:54:16
+B08PROBE|   0.00|=== APP|szenario=S7|pid=25647|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.E662DBF3-EEE7-46EE-9C8E-464A3C623780|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.66|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   7.02|S7|vor Aktualisieren|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   7.09|S7|vor Aktualisieren|mock|offeneTS=2 ["/live/qa-user/qa-pass-b08/101.ts#41(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#42(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=5
+B08PROBE|   7.10|S7|aktualisiert|neue streamURLs=["http://127.0.0.1:18908/live/201.ts", "http://127.0.0.1:18908/live/202.ts", "http://127.0.0.1:18908/live/203.ts", "http://127.0.0.1:18908/live/204.ts"]
+B08PROBE|   8.16|S7|nach Aktualisieren|slotChannels isDeleted=[false, false]|name=["MV Sender 101", "MV Sender 102"]|alteObjekteNochInPlaylist=[false, false]
+B08PROBE|  11.35|S7|3 s nach Aktualisieren|slots=2 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  11.42|S7|3 s nach Aktualisieren|mock|offeneTS=2 ["/live/qa-user/qa-pass-b08/101.ts#41(idle=0.1s)", "/live/qa-user/qa-pass-b08/102.ts#42(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=5
+B08PROBE|  11.48|SHOT|s7-nach-aktualisieren|1920x1200|fenster=Multiview
+B08PROBE|  14.60|S7|neuer 101 zusätzlich|slots=3 focusedIndex=0 canAddMore=true layout=focus
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 101 VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  14.67|S7|neuer 101 zusätzlich|mock|offeneTS=3 ["/live/qa-user/qa-pass-b08/101.ts#41(idle=0s)", "/live/qa-user/qa-pass-b08/102.ts#42(idle=0s)", "/live/qa-user/qa-pass-b08/201.ts#43(idle=0s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=6
+B08PROBE|  14.71|SHOT|s7-alter-und-neuer-sender|1920x1200|fenster=Multiview
+B08PROBE|  15.88|S7|senderliste|karte101=role=AXBusyIndicator label=MV Sender 101, Test title= help=Zu Multiview hinzufügen value=0 enabled=1 frame=720x76 actions=["Rectangle Split Two By Two", "Favourite"]
+B08PROBE|  15.88|S7|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  19.62|S7|nach Schließen|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  19.69|S7|nach Schließen|mock|offeneTS=0 [] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  19.70|ENDE|szenario=S7|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S7 beendet exit=0 nach 21s
+B08PROBE|--- APP-LAUF S8 21:54:48
+B08PROBE|   0.00|=== APP|szenario=S8|pid=26792|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.5B546902-D3AA-4604-B2C0-C9083B7CB109|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.68|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   8.53|S8|5 s|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] M3U 404 HLS AVKit state=failed(The requested URL was not found on this server.) isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=0.0 item=failed
+        [1] M3U 404 TS VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] M3U Abbruch TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] M3U TS C VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|   8.60|S8|5 s|mock|offeneTS=1 ["/ts/m3uc.ts#45(idle=0.1s)"] | playlistAbrufe6s=["/err404/m3ud/live.m3u8:2x[404]"]|tcpVerbindungenZumMock=5
+B08PROBE|   8.65|SHOT|s8-fehler-5s|1920x1200|fenster=Multiview
+B08PROBE|  18.74|S8|15 s|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] M3U 404 HLS AVKit state=failed(The requested URL was not found on this server.) isMuted=false isPaused=false vol=1.0 | avPlayer.isMuted=false volume=1.0 rate=0.0 item=failed
+        [1] M3U 404 TS VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] M3U Abbruch TS VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStatePaused audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] M3U TS C VLC state=playing isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  18.81|S8|15 s|mock|offeneTS=1 ["/ts/m3uc.ts#45(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=5
+B08PROBE|  18.84|SHOT|s8-fehler-15s|1920x1200|fenster=Multiview
+B08PROBE|  19.84|S8|zwischen|schließe Multiview über den roten Fensterknopf
+B08PROBE|  32.53|S8|Limit 1|slots=4 focusedIndex=0 canAddMore=false layout=grid
+        [0*] MV Sender 101 VLC state=playing isMuted=false isPaused=false vol=1.0 | vlc.isPlaying=true vlc.state=VLCMediaPlayerStateBuffering audio.isMuted=false audio.volume=100 audioTracks=0
+        [1] MV Sender 102 VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [2] MV Sender 103 VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+        [3] MV Sender 104 VLC state=idle isMuted=true isPaused=false vol=1.0 | vlc.isPlaying=false vlc.state=VLCMediaPlayerStateStopped audio.isMuted=true audio.volume=100 audioTracks=0
+B08PROBE|  32.60|S8|Limit 1|mock|offeneTS=1 ["/live/qa-user/qa-pass-b08/101.ts#46(idle=0.1s)"] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  32.64|SHOT|s8-anbieterlimit-eins|1920x1200|fenster=Multiview
+B08PROBE|  33.70|S8|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  36.26|ENDE|szenario=S8|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S8 beendet exit=0 nach 37s
+B08PROBE|--- APP-LAUF S13 21:57:00
+B08PROBE|   0.00|=== APP|szenario=S13|pid=32564|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.BD67CFDC-50F1-41C0-BE8F-9A21073CB039|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.67|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   8.68|S13|schritt 1|X geklickt|slots 3→2|focus=0|picker=true
+B08PROBE|  10.22|S13|schritt 2|X geklickt|slots 2→1|focus=0|picker=false
+B08PROBE|  11.78|S13|schritt 3|X geklickt|slots 1→0|focus=0|picker=false
+B08PROBE|  12.81|S13|leer|fensterOffen=true
+B08PROBE|  12.82|S13|leerzustand-texte|["Multiview", "Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen.", "Layout", "Fokus1", "Raster0"]
+B08PROBE|  12.82|S13|leer|picker|enabled=false|selected=0|labels=["Fokus", "Raster"]|session.layout=focus
+B08PROBE|  12.88|SHOT|s13-leerzustand|1920x1200|fenster=Multiview
+B08PROBE|  12.88|S13|leer|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  12.96|S13|leer|mock|offeneTS=0 [] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  12.96|S13|fenster-menü|["Minimize[⌘m]", "Zoom[]", "[⌘]", "Multiview[]", "[⌘]", "Bring All to Front[]", "[⌘]", "Playlists[⌘]"]
+B08PROBE|  12.96|S13|schließen leer|schließe Multiview über den roten Fensterknopf
+B08PROBE|  16.11|S13|über Fenster-Menü geöffnet|fensterOffen=true|slots=0
+B08PROBE|  16.13|SHOT|s13-ueber-fenstermenue-leer|1920x1200|fenster=Multiview
+B08PROBE|  16.13|S13|schließen nach Menü|schließe Multiview über den roten Fensterknopf
+B08PROBE|  19.74|S13|⊞ ohne Zugangsdaten|slots=0|fensterOffen=true
+B08PROBE|  19.78|SHOT|s13-plus-ohne-zugangsdaten|1920x1200|fenster=Multiview
+B08PROBE|  19.78|S13|⊞ ohne Zugangsdaten|slots=0 focusedIndex=0 canAddMore=true layout=focus
+B08PROBE|  19.84|S13|⊞ ohne Zugangsdaten|mock|offeneTS=0 [] | playlistAbrufe6s=[]|tcpVerbindungenZumMock=3
+B08PROBE|  19.84|S13|ende|schließe Multiview über den roten Fensterknopf
+B08PROBE|  21.42|ENDE|szenario=S13|beepEreignisse=[]
+B08PROBE|--- APP-LAUF S13 beendet exit=0 nach 22s
+B08PROBE|--- APP-LAUF S14 21:57:33
+B08PROBE|   0.00|=== APP|szenario=S14|pid=33747|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.4C3FBE31-8689-4DE8-A97E-3D4F94762251|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.69|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   6.00|LAYOUT|klick auf Segment 1|enabled=true|danach session.layout=grid
+B08PROBE|   9.13|S14|ein Stream im Raster|picker|enabled=false|selected=1|labels=["Fokus", "Raster"]|session.layout=grid
+B08PROBE|   9.18|SHOT|s14-raster-ein-stream-picker-gesperrt|1920x1200|fenster=Multiview
+B08PROBE|   9.18|S14|schließen im Raster mit einem Stream|schließe Multiview über den roten Fensterknopf
+B08PROBE|--- APP-LAUF S14 beendet exit=133 nach 10s
+B08PROBE|--- APP-LAUF S15 21:59:14
+B08PROBE|   0.00|=== APP|szenario=S15|pid=39171|bundle=lu.daumedia.MikaPlusPlayer.b08probe|schlüsselbundDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.0E9372B2-37AE-460B-A506-2C59F90AE56F|beepAbfangIn=["NSResponder"]
+B08PROBE|   1.64|IMPORT|m3u=6|xtream=4|xtreamStreamURLs=["http://127.0.0.1:18908/live/101.ts", "http://127.0.0.1:18908/live/102.ts", "http://127.0.0.1:18908/live/103.ts", "http://127.0.0.1:18908/live/104.ts"]
+B08PROBE|   7.63|S15|NSApp.terminate bei offenem Multiview im Raster (4 Streams)
+B08PROBE|--- APP-LAUF S15 beendet exit=0 nach 8s
+
+Mock: Öffnen/Schließen der MPEG-TS-Verbindungen und Abweisungen (Auszug mock.log)
+================================================================================
+MOCK|1789564444.835|OPEN|#1|127.0.0.1:65042|/ts/a.ts
+MOCK|1789564447.938|CLOSE|#1|127.0.0.1:65042|/ts/a.ts|client-getrennt(BrokenPipeError)|bytes=664016|dauer=3.1s
+MOCK|1789564776.390|OPEN|#1|127.0.0.1:65454|/ts/t01d.ts
+MOCK|1789564776.390|OPEN|#2|127.0.0.1:65455|/ts/t01b.ts
+MOCK|1789564782.595|CLOSE|#1|127.0.0.1:65454|/ts/t01d.ts|client-getrennt(BrokenPipeError)|bytes=1066148|dauer=6.2s
+MOCK|1789564782.595|CLOSE|#2|127.0.0.1:65455|/ts/t01b.ts|client-getrennt(BrokenPipeError)|bytes=1066148|dauer=6.2s
+MOCK|1789564787.627|OPEN|#3|127.0.0.1:65474|/ts/t02r2.ts
+MOCK|1789564787.635|OPEN|#4|127.0.0.1:65475|/ts/t02r4.ts
+MOCK|1789564791.673|OPEN|#5|127.0.0.1:65478|/ts/t02r5.ts
+MOCK|1789564798.712|CLOSE|#3|127.0.0.1:65474|/ts/t02r2.ts|client-getrennt(BrokenPipeError)|bytes=1468280|dauer=11.1s
+MOCK|1789564798.721|CLOSE|#4|127.0.0.1:65475|/ts/t02r4.ts|client-getrennt(BrokenPipeError)|bytes=1468280|dauer=11.1s
+MOCK|1789564798.781|OPEN|#6|127.0.0.1:65484|/ts/t03same.ts
+MOCK|1789564798.785|OPEN|#7|127.0.0.1:65485|/ts/t03same.ts
+MOCK|1789564798.874|CLOSE|#5|127.0.0.1:65478|/ts/t02r5.ts|client-getrennt(BrokenPipeError)|bytes=1195868|dauer=7.2s
+MOCK|1789564803.917|OPEN|#8|127.0.0.1:65489|/tsa/t04v1.ts
+MOCK|1789564803.920|OPEN|#9|127.0.0.1:65490|/tsa/t04v2.ts
+MOCK|1789564803.924|OPEN|#10|127.0.0.1:65491|/ts/t04v3.ts
+MOCK|1789564803.986|CLOSE|#6|127.0.0.1:65484|/ts/t03same.ts|client-getrennt(BrokenPipeError)|bytes=936428|dauer=5.2s
+MOCK|1789564803.987|CLOSE|#7|127.0.0.1:65485|/ts/t03same.ts|client-getrennt(BrokenPipeError)|bytes=936428|dauer=5.2s
+MOCK|1789564810.127|CLOSE|#10|127.0.0.1:65491|/ts/t04v3.ts|client-getrennt(BrokenPipeError)|bytes=1066148|dauer=6.2s
+MOCK|1789564810.615|OPEN|#11|127.0.0.1:65498|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789564810.726|CLOSE|#8|127.0.0.1:65489|/tsa/t04v1.ts|client-getrennt(BrokenPipeError)|bytes=1158832|dauer=6.8s
+MOCK|1789564810.727|CLOSE|#9|127.0.0.1:65490|/tsa/t04v2.ts|client-getrennt(BrokenPipeError)|bytes=1158832|dauer=6.8s
+MOCK|1789564813.155|OPEN|#12|127.0.0.1:65506|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789564815.726|OPEN|#13|127.0.0.1:65513|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789564818.276|OPEN|#14|127.0.0.1:65519|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789564820.958|CLOSE|#12|127.0.0.1:65506|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=1273700|dauer=7.8s
+MOCK|1789564820.977|CLOSE|#14|127.0.0.1:65519|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=612128|dauer=2.7s
+MOCK|1789564821.017|CLOSE|#11|127.0.0.1:65498|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1610972|dauer=10.4s
+MOCK|1789564821.031|CLOSE|#13|127.0.0.1:65513|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=949400|dauer=5.3s
+MOCK|1789564825.965|OPEN|#15|127.0.0.1:65530|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789564825.967|LIMIT|127.0.0.1:65531|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789564825.968|LIMIT|127.0.0.1:65532|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789564825.969|LIMIT|127.0.0.1:65533|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789564825.969|LIMIT|127.0.0.1:65534|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789564825.974|LIMIT|127.0.0.1:65535|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789564825.975|LIMIT|127.0.0.1:49152|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789564825.975|LIMIT|127.0.0.1:49153|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789564825.976|LIMIT|127.0.0.1:49154|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789564825.982|LIMIT|127.0.0.1:49155|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789564825.982|LIMIT|127.0.0.1:49156|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789564825.983|LIMIT|127.0.0.1:49157|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789564825.984|LIMIT|127.0.0.1:49158|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789564834.170|CLOSE|#15|127.0.0.1:65530|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1325588|dauer=8.2s
+MOCK|1789564853.514|OPEN|#16|127.0.0.1:49201|/abort/t06c.ts
+MOCK|1789564857.519|CLOSE|#16|127.0.0.1:49201|/abort/t06c.ts|server-abbruch|bytes=780764|dauer=4.0s
+MOCK|1789564883.715|HANG|127.0.0.1:49242|/hang/t06e.ts
+MOCK|1789564883.715|OPEN|#17|127.0.0.1:49240|/ts/t06f.ts
+MOCK|1789564895.921|CLOSE|#17|127.0.0.1:49240|/ts/t06f.ts|client-getrennt(BrokenPipeError)|bytes=1844468|dauer=12.2s
+MOCK|1789564898.926|HANGCLOSED|127.0.0.1:49242|/hang/t06e.ts
+MOCK|1789564899.039|OPEN|#18|127.0.0.1:49389|/ts/t07vlc.ts
+MOCK|1789564914.147|CLOSE|#18|127.0.0.1:49389|/ts/t07vlc.ts|client-getrennt(BrokenPipeError)|bytes=1598000|dauer=15.1s
+MOCK|1789564914.194|OPEN|#19|127.0.0.1:49399|/ts/t08vlc.ts
+MOCK|1789564939.349|CLOSE|#19|127.0.0.1:49399|/ts/t08vlc.ts|client-getrennt(BrokenPipeError)|bytes=2454152|dauer=25.2s
+MOCK|1789565019.606|HANG|127.0.0.1:49501|/hang/t07hang2/live.m3u8
+MOCK|1789565019.626|OPEN|#1|127.0.0.1:49503|/ts/t07vlc.ts
+MOCK|1789565019.626|HANG|127.0.0.1:49504|/hang/t07hang.ts
+MOCK|1789565024.662|HANGCLOSED|127.0.0.1:49501|/hang/t07hang2/live.m3u8
+MOCK|1789565024.688|HANGCLOSED|127.0.0.1:49504|/hang/t07hang.ts
+MOCK|1789565024.732|CLOSE|#1|127.0.0.1:49503|/ts/t07vlc.ts|client-getrennt(BrokenPipeError)|bytes=923456|dauer=5.1s
+MOCK|1789565135.910|OPEN|#2|127.0.0.1:49772|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789565141.930|OPEN|#3|127.0.0.1:49774|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789565143.882|OPEN|#4|127.0.0.1:49780|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789565145.912|OPEN|#5|127.0.0.1:49783|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789565152.008|OPEN|#6|127.0.0.1:49791|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789565166.735|CLOSE|#3|127.0.0.1:49774|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=3478940|dauer=24.8s
+MOCK|1789565166.785|CLOSE|#4|127.0.0.1:49780|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=3232472|dauer=22.9s
+MOCK|1789565166.814|CLOSE|#6|127.0.0.1:49791|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=2181740|dauer=14.8s
+MOCK|1789565166.816|CLOSE|#2|127.0.0.1:49772|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=4270232|dauer=30.9s
+MOCK|1789565166.818|CLOSE|#5|127.0.0.1:49783|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=2973032|dauer=20.9s
+MOCK|1789565267.954|OPEN|#7|127.0.0.1:49866|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789565273.986|OPEN|#8|127.0.0.1:49869|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789565275.941|OPEN|#9|127.0.0.1:49870|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789565277.998|OPEN|#10|127.0.0.1:49871|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789565284.204|OPEN|#11|127.0.0.1:49874|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789565306.104|CLOSE|#10|127.0.0.1:49871|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=3907016|dauer=28.1s
+MOCK|1789565306.150|CLOSE|#9|127.0.0.1:49870|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=4179428|dauer=30.2s
+MOCK|1789565306.155|CLOSE|#7|127.0.0.1:49866|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=5217188|dauer=38.2s
+MOCK|1789565306.189|CLOSE|#8|127.0.0.1:49869|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=4438868|dauer=32.2s
+MOCK|1789565315.456|OPEN|#12|127.0.0.1:49882|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789565325.170|CLOSE|#11|127.0.0.1:49874|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1494224|dauer=41.0s
+MOCK|1789565325.259|CLOSE|#12|127.0.0.1:49882|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=1533140|dauer=9.8s
+MOCK|1789588047.619|OPEN|#13|127.0.0.1:55535|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588047.677|OPEN|#14|127.0.0.1:55536|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588047.684|OPEN|#15|127.0.0.1:55537|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588053.420|CLOSE|#13|127.0.0.1:55535|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1014260|dauer=5.8s
+MOCK|1789588056.083|CLOSE|#14|127.0.0.1:55536|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=1351532|dauer=8.4s
+MOCK|1789588056.088|CLOSE|#15|127.0.0.1:55537|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=1351532|dauer=8.4s
+MOCK|1789588086.387|OPEN|#16|127.0.0.1:55560|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588086.459|OPEN|#17|127.0.0.1:55561|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588086.466|OPEN|#18|127.0.0.1:55562|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588086.471|OPEN|#19|127.0.0.1:55563|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789588092.365|CLOSE|#17|127.0.0.1:55561|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=1027232|dauer=5.9s
+MOCK|1789588092.371|CLOSE|#18|127.0.0.1:55562|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=1027232|dauer=5.9s
+MOCK|1789588092.376|CLOSE|#19|127.0.0.1:55563|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=1027232|dauer=5.9s
+MOCK|1789588092.390|CLOSE|#16|127.0.0.1:55560|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1040204|dauer=6.0s
+MOCK|1789588106.480|OPEN|#20|127.0.0.1:55587|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588106.560|OPEN|#21|127.0.0.1:55588|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588106.569|OPEN|#22|127.0.0.1:55589|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588106.575|OPEN|#23|127.0.0.1:55590|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789588111.466|CLOSE|#21|127.0.0.1:55588|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=897512|dauer=4.9s
+MOCK|1789588113.174|CLOSE|#22|127.0.0.1:55589|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=1118036|dauer=6.6s
+MOCK|1789588113.179|CLOSE|#23|127.0.0.1:55590|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=1118036|dauer=6.6s
+MOCK|1789588113.185|CLOSE|#20|127.0.0.1:55587|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1131008|dauer=6.7s
+MOCK|1789588127.597|OPEN|#24|127.0.0.1:55616|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588127.677|OPEN|#25|127.0.0.1:55617|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588134.200|CLOSE|#24|127.0.0.1:55616|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1118036|dauer=6.6s
+MOCK|1789588134.282|CLOSE|#25|127.0.0.1:55617|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=1118036|dauer=6.6s
+MOCK|1789588148.689|OPEN|#26|127.0.0.1:55639|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588148.763|OPEN|#27|127.0.0.1:55640|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588148.770|OPEN|#28|127.0.0.1:55641|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588148.776|OPEN|#29|127.0.0.1:55642|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789588162.064|CLOSE|#27|127.0.0.1:55640|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=1987160|dauer=13.3s
+MOCK|1789588162.076|CLOSE|#28|127.0.0.1:55641|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=1987160|dauer=13.3s
+MOCK|1789588162.081|CLOSE|#29|127.0.0.1:55642|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=1987160|dauer=13.3s
+MOCK|1789588162.090|CLOSE|#26|127.0.0.1:55639|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=2000132|dauer=13.4s
+MOCK|1789588301.010|OPEN|#30|127.0.0.1:55831|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588301.100|OPEN|#31|127.0.0.1:55832|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588301.107|OPEN|#32|127.0.0.1:55833|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588329.702|CLOSE|#31|127.0.0.1:55832|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=3971876|dauer=28.6s
+MOCK|1789588329.711|CLOSE|#32|127.0.0.1:55833|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=3971876|dauer=28.6s
+MOCK|1789588329.716|CLOSE|#30|127.0.0.1:55831|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=3984848|dauer=28.7s
+MOCK|1789588392.107|OPEN|#33|127.0.0.1:55996|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588392.165|OPEN|#34|127.0.0.1:55997|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588392.171|OPEN|#35|127.0.0.1:55998|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588392.177|OPEN|#36|127.0.0.1:55999|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789588403.113|CLOSE|#33|127.0.0.1:55996|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1688804|dauer=11.0s
+MOCK|1789588407.870|CLOSE|#34|127.0.0.1:55997|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=2298488|dauer=15.7s
+MOCK|1789588407.872|CLOSE|#35|127.0.0.1:55998|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=2298488|dauer=15.7s
+MOCK|1789588407.881|CLOSE|#36|127.0.0.1:55999|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=2298488|dauer=15.7s
+MOCK|1789588426.321|OPEN|#37|127.0.0.1:56030|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588426.406|OPEN|#38|127.0.0.1:56031|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588426.414|OPEN|#39|127.0.0.1:56032|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588426.420|OPEN|#40|127.0.0.1:56033|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789588441.007|CLOSE|#38|127.0.0.1:56031|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=2155796|dauer=14.6s
+MOCK|1789588441.017|CLOSE|#39|127.0.0.1:56032|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=2155796|dauer=14.6s
+MOCK|1789588441.022|CLOSE|#40|127.0.0.1:56033|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=2155796|dauer=14.6s
+MOCK|1789588441.026|CLOSE|#37|127.0.0.1:56030|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=2168768|dauer=14.7s
+MOCK|1789588459.546|OPEN|#41|127.0.0.1:56071|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588459.626|OPEN|#42|127.0.0.1:56072|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588468.233|OPEN|#43|127.0.0.1:56076|/live/qa-user/qa-pass-b08/201.ts
+MOCK|1789588472.827|CLOSE|#42|127.0.0.1:56072|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=1974188|dauer=13.2s
+MOCK|1789588472.835|CLOSE|#43|127.0.0.1:56076|/live/qa-user/qa-pass-b08/201.ts|client-getrennt(BrokenPipeError)|bytes=858596|dauer=4.6s
+MOCK|1789588472.849|CLOSE|#41|127.0.0.1:56071|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1987160|dauer=13.3s
+MOCK|1789588491.841|OPEN|#44|127.0.0.1:56110|/abort/m3uf.ts
+MOCK|1789588491.842|OPEN|#45|127.0.0.1:56111|/ts/m3uc.ts
+MOCK|1789588495.846|CLOSE|#44|127.0.0.1:56110|/abort/m3uf.ts|server-abbruch|bytes=780764|dauer=4.0s
+MOCK|1789588509.043|CLOSE|#45|127.0.0.1:56111|/ts/m3uc.ts|client-getrennt(BrokenPipeError)|bytes=2493068|dauer=17.2s
+MOCK|1789588512.504|OPEN|#46|127.0.0.1:56127|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588512.522|LIMIT|127.0.0.1:56128|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789588512.524|LIMIT|127.0.0.1:56129|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789588512.525|LIMIT|127.0.0.1:56130|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789588512.526|LIMIT|127.0.0.1:56131|/live/qa-user/qa-pass-b08/102.ts|abgewiesen
+MOCK|1789588512.530|LIMIT|127.0.0.1:56132|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789588512.531|LIMIT|127.0.0.1:56133|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789588512.532|LIMIT|127.0.0.1:56134|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789588512.533|LIMIT|127.0.0.1:56135|/live/qa-user/qa-pass-b08/103.ts|abgewiesen
+MOCK|1789588512.536|LIMIT|127.0.0.1:56136|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789588512.537|LIMIT|127.0.0.1:56137|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789588512.538|LIMIT|127.0.0.1:56138|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789588512.539|LIMIT|127.0.0.1:56139|/live/qa-user/qa-pass-b08/104.ts|abgewiesen
+MOCK|1789588522.810|CLOSE|#46|127.0.0.1:56127|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1598000|dauer=10.3s
+MOCK|1789588623.531|OPEN|#47|127.0.0.1:56255|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588623.592|OPEN|#48|127.0.0.1:56256|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588623.598|OPEN|#49|127.0.0.1:56257|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588629.497|CLOSE|#48|127.0.0.1:56256|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=1027232|dauer=5.9s
+MOCK|1789588631.103|CLOSE|#49|127.0.0.1:56257|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=1234784|dauer=7.5s
+MOCK|1789588632.635|CLOSE|#47|127.0.0.1:56255|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1442336|dauer=9.1s
+MOCK|1789588656.713|OPEN|#50|127.0.0.1:56289|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588656.787|OPEN|#51|127.0.0.1:56290|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588661.590|CLOSE|#51|127.0.0.1:56290|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=884540|dauer=4.8s
+MOCK|1789588663.214|CLOSE|#50|127.0.0.1:56289|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=1105064|dauer=6.5s
+MOCK|1789588757.130|OPEN|#52|127.0.0.1:56487|/live/qa-user/qa-pass-b08/101.ts
+MOCK|1789588757.199|OPEN|#53|127.0.0.1:56489|/live/qa-user/qa-pass-b08/102.ts
+MOCK|1789588757.206|OPEN|#54|127.0.0.1:56490|/live/qa-user/qa-pass-b08/103.ts
+MOCK|1789588757.213|OPEN|#55|127.0.0.1:56491|/live/qa-user/qa-pass-b08/104.ts
+MOCK|1789588762.102|CLOSE|#53|127.0.0.1:56489|/live/qa-user/qa-pass-b08/102.ts|client-getrennt(BrokenPipeError)|bytes=897512|dauer=4.9s
+MOCK|1789588762.111|CLOSE|#54|127.0.0.1:56490|/live/qa-user/qa-pass-b08/103.ts|client-getrennt(BrokenPipeError)|bytes=897512|dauer=4.9s
+MOCK|1789588762.118|CLOSE|#55|127.0.0.1:56491|/live/qa-user/qa-pass-b08/104.ts|client-getrennt(BrokenPipeError)|bytes=897512|dauer=4.9s
+MOCK|1789588762.132|CLOSE|#52|127.0.0.1:56487|/live/qa-user/qa-pass-b08/101.ts|client-getrennt(BrokenPipeError)|bytes=910484|dauer=5.0s

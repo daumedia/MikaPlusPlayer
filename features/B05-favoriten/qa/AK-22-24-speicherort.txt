@@ -1,0 +1,9 @@
+2026-09-26T14:15:22Z app-pfad-macos=~/Library/Application Support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store
+2026-09-26T14:15:22Z outcome=noLegacyStore
+2026-09-26T14:15:22Z <probe>/Application Support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store|rechte=644|isExcludedFromBackup=false
+2026-09-26T14:15:22Z <probe>/Application Support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store-wal|rechte=644|isExcludedFromBackup=false
+2026-09-26T14:15:22Z <probe>/Application Support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store-shm|rechte=644|isExcludedFromBackup=false
+2026-09-26T14:15:22Z <probe>/Application Support/lu.daumedia.MikaPlusPlayer|rechte=755|isExcludedFromBackup=false
+2026-09-26T14:15:22Z ~/Library rechte=700 (nur Metadaten gelesen)
+2026-09-26T14:15:22Z userdefaults-treffer=false
+2026-09-26T14:15:22Z fremder-prozess /usr/bin/sqlite3 (pid 91837)|status=0|ausgabe=B05ORT Favorit

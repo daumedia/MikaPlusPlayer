@@ -50,11 +50,14 @@ final class MultiviewSession {
 
     /// Fügt einen Sender hinzu, erzeugt sofort dessen Engine und startet die Wiedergabe.
     /// Der erste Stream wird fokussiert (mit Ton), alle weiteren starten stumm.
+    /// Lässt sich keine abspielbare Adresse bilden (Xtream-Zugangsdaten fehlen), wird nichts hinzugefügt.
     func add(_ channel: Channel) {
         guard canAddMore else { return }
-        let engine = PlaybackEngineFactory.engine(for: channel.streamURL)
+        // B01 · BUG-01: Xtream-Adressen erst hier mit Zugangsdaten aus dem Schlüsselbund.
+        guard let url = try? StreamURLResolver.playableURL(for: channel) else { return }
+        let engine = PlaybackEngineFactory.engine(for: url)
         let isFirst = slots.isEmpty
-        engine.load(channel.streamURL)
+        engine.load(url)
         // Sollwert sofort setzen – bei VLC greift er, sobald der Audiokanal nach
         // `.playing` existiert (der Delegate ruft `applyAudio()` erneut).
         engine.setMuted(!isFirst)

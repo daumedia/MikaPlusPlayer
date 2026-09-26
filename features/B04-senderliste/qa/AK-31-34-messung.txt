@@ -1,0 +1,111 @@
+2026-09-26T13:51:01Z [Release] AK-31/32/33 · 17000 Sender in 1 Playlist(s), Last 63.9/35.9/27.5
+  ohne Filter: 17000 Treffer, kalt 258.6 ms, warm 260.7/262.5/258.7/258.6 ms
+  Suche „a“: 7359 Treffer, kalt 113.3 ms, warm 115.1/115.1/118.3/113.9 ms
+  Suche „Sport“: 686 Treffer, kalt 15.5 ms, warm 16.5/15.7/15.6/16.2 ms
+  Suche „fußball“: 679 Treffer, kalt 15.5 ms, warm 15.8/15.9/17.8/15.8 ms
+  Suche „Anime 97 4K“: 2 Treffer, kalt 6.4 ms, warm 5.5/5.8/5.6/5.7 ms
+  Suche ohne Treffer: 0 Treffer, kalt 6.2 ms, warm 5.8/5.8/5.9/5.6 ms
+  Suche 10.000 Zeichen: 0 Treffer, kalt 11.2 ms, warm 10.9/10.8/10.8/10.8 ms
+  Gruppe „DE | Sport“: 58 Treffer, kalt 2.0 ms, warm 2.0/1.9/1.8/1.8 ms
+  Gruppe + Suche „HD“: 34 Treffer, kalt 6.8 ms, warm 6.9/6.7/6.5/6.3 ms
+  Chips berechnen (loadGroups): 300 Gruppen, kalt 199.8 ms, warm 199.9/197.9/201.9 ms
+  Filter + Gruppe: SCAN t0 / USE TEMP B-TREE FOR ORDER BY
+  Filter der App (ZPLAYLISTID): SCAN t0 / USE TEMP B-TREE FOR ORDER BY
+  über die Beziehung (ZPLAYLIST, von der App nicht benutzt): SEARCH t0 USING INDEX ZCHANNEL_ZPLAYLIST_INDEX (ZPLAYLIST=?) / USE TEMP B-TREE FOR ORDER BY
+  Indizes auf ZCHANNEL: ZCHANNEL_ZPLAYLIST_INDEX
+2026-09-26T13:51:53Z [Release] AK-34/EC-12 · 17000 Sender, 1 Playlist(s), Fenster 1.100 × 850 pt, Last 70.2/42.2/30.3, Anlegen der Daten 2.2 s
+  Liste öffnen (Runde 1): längste Blockade 681 ms
+  Liste verlassen (Runde 1): längste Blockade 90 ms
+  Liste öffnen (Runde 2): längste Blockade 895 ms
+  Liste verlassen (Runde 2): längste Blockade 70 ms
+  tippen „F“: längste Blockade 312 ms
+  tippen „Fu“: längste Blockade 153 ms
+  tippen „Fuß“: längste Blockade 68 ms
+  tippen „Fußb“: längste Blockade 70 ms
+  tippen „Fußba“: längste Blockade 76 ms
+  tippen „Fußbal“: längste Blockade 68 ms
+  tippen „Fußball“: längste Blockade 67 ms
+  tippen „Fußball “: längste Blockade 68 ms
+  tippen „Fußball 1“: längste Blockade 126 ms
+  tippen „Fußball 12“: längste Blockade 100 ms
+  Suchfeld leeren: längste Blockade 444 ms
+  ein Zeichen „a“: längste Blockade 173 ms
+  Suchfeld leeren (2): längste Blockade 304 ms
+  Chip „DE | Sport“ wählen: längste Blockade 194 ms
+  Chip abwählen: längste Blockade 565 ms
+  8 Zeichen im Abstand von 100 ms: längste Blockade 427 ms, Eingabe dauerte 1.1 s statt 0,8 s
+  Speicherbedarf mit offener Liste: 128 MB
+2026-09-26T13:52:10Z [Release] AK-31/32/33 · 34000 Sender in 2 Playlist(s), Last 58.0/41.1/30.2
+  ohne Filter: 17000 Treffer, kalt 259.2 ms, warm 262.2/262.9/261.5/264.1 ms
+  Suche „a“: 7359 Treffer, kalt 115.7 ms, warm 115.2/117.9/115.1/116.6 ms
+  Suche „Sport“: 686 Treffer, kalt 16.7 ms, warm 16.6/17.0/16.5/16.8 ms
+  Suche „fußball“: 679 Treffer, kalt 18.0 ms, warm 16.3/16.9/16.2/16.5 ms
+  Suche „Anime 97 4K“: 2 Treffer, kalt 6.7 ms, warm 6.4/6.3/6.7/6.5 ms
+  Suche ohne Treffer: 0 Treffer, kalt 6.1 ms, warm 6.5/6.4/6.5/7.1 ms
+  Suche 10.000 Zeichen: 0 Treffer, kalt 13.5 ms, warm 12.2/11.5/11.9/11.7 ms
+  Gruppe „DE | Sport“: 58 Treffer, kalt 2.7 ms, warm 2.5/2.6/2.7/2.4 ms
+  Gruppe + Suche „HD“: 34 Treffer, kalt 8.0 ms, warm 7.4/7.1/7.5/7.1 ms
+  Chips berechnen (loadGroups): 300 Gruppen, kalt 204.2 ms, warm 204.4/202.3/204.2 ms
+  Filter + Gruppe: SCAN t0 / USE TEMP B-TREE FOR ORDER BY
+  Filter der App (ZPLAYLISTID): SCAN t0 / USE TEMP B-TREE FOR ORDER BY
+  über die Beziehung (ZPLAYLIST, von der App nicht benutzt): SEARCH t0 USING INDEX ZCHANNEL_ZPLAYLIST_INDEX (ZPLAYLIST=?) / USE TEMP B-TREE FOR ORDER BY
+  Indizes auf ZCHANNEL: ZCHANNEL_ZPLAYLIST_INDEX
+2026-09-26T13:53:00Z [Release] AK-34/EC-12 · 17000 Sender, 2 Playlist(s), Fenster 1.100 × 850 pt, Last 74.6/47.9/33.3, Anlegen der Daten 4.4 s
+  Liste öffnen (Runde 1): längste Blockade 686 ms
+  Liste verlassen (Runde 1): längste Blockade 98 ms
+  Liste öffnen (Runde 2): längste Blockade 895 ms
+  Liste verlassen (Runde 2): längste Blockade 77 ms
+  tippen „F“: längste Blockade 327 ms
+  tippen „Fu“: längste Blockade 302 ms
+  tippen „Fuß“: längste Blockade 70 ms
+  tippen „Fußb“: längste Blockade 70 ms
+  tippen „Fußba“: längste Blockade 69 ms
+  tippen „Fußbal“: längste Blockade 68 ms
+  tippen „Fußball“: längste Blockade 69 ms
+  tippen „Fußball “: längste Blockade 68 ms
+  tippen „Fußball 1“: längste Blockade 130 ms
+  tippen „Fußball 12“: längste Blockade 101 ms
+  Suchfeld leeren: längste Blockade 472 ms
+  ein Zeichen „a“: längste Blockade 178 ms
+  Suchfeld leeren (2): längste Blockade 310 ms
+  Chip „DE | Sport“ wählen: längste Blockade 188 ms
+  Chip abwählen: längste Blockade 575 ms
+  8 Zeichen im Abstand von 100 ms: längste Blockade 423 ms, Eingabe dauerte 1.1 s statt 0,8 s
+  Speicherbedarf mit offener Liste: 121 MB
+2026-09-26T13:59:18Z [Debug] AK-31/32/33 · 17000 Sender in 1 Playlist(s), Last 69.8/77.3/52.8
+  ohne Filter: 17000 Treffer, kalt 243.9 ms, warm 263.4/260.1/254.6/256.3 ms
+  Suche „a“: 7359 Treffer, kalt 111.8 ms, warm 112.9/110.1/107.7/116.2 ms
+  Suche „Sport“: 686 Treffer, kalt 15.2 ms, warm 15.5/15.5/15.0/14.9 ms
+  Suche „fußball“: 679 Treffer, kalt 15.1 ms, warm 15.1/15.1/15.6/15.7 ms
+  Suche „Anime 97 4K“: 2 Treffer, kalt 5.9 ms, warm 5.6/5.4/5.4/5.5 ms
+  Suche ohne Treffer: 0 Treffer, kalt 5.7 ms, warm 5.5/5.5/5.6/5.6 ms
+  Suche 10.000 Zeichen: 0 Treffer, kalt 10.7 ms, warm 10.8/10.6/10.7/10.6 ms
+  Gruppe „DE | Sport“: 58 Treffer, kalt 2.0 ms, warm 1.8/1.8/1.7/1.7 ms
+  Gruppe + Suche „HD“: 34 Treffer, kalt 6.3 ms, warm 6.1/6.0/6.2/6.3 ms
+  Chips berechnen (loadGroups): 300 Gruppen, kalt 199.3 ms, warm 202.7/194.2/191.9 ms
+  Filter + Gruppe: SCAN t0 / USE TEMP B-TREE FOR ORDER BY
+  Filter der App (ZPLAYLISTID): SCAN t0 / USE TEMP B-TREE FOR ORDER BY
+  über die Beziehung (ZPLAYLIST, von der App nicht benutzt): SEARCH t0 USING INDEX ZCHANNEL_ZPLAYLIST_INDEX (ZPLAYLIST=?) / USE TEMP B-TREE FOR ORDER BY
+  Indizes auf ZCHANNEL: ZCHANNEL_ZPLAYLIST_INDEX
+2026-09-26T14:00:06Z [Debug] AK-34/EC-12 · 17000 Sender, 1 Playlist(s), Fenster 1.100 × 850 pt, Last 37.3/67.4/50.5, Anlegen der Daten 2.1 s
+  Liste öffnen (Runde 1): längste Blockade 877 ms
+  Liste verlassen (Runde 1): längste Blockade 72 ms
+  Liste öffnen (Runde 2): längste Blockade 839 ms
+  Liste verlassen (Runde 2): längste Blockade 87 ms
+  tippen „F“: längste Blockade 317 ms
+  tippen „Fu“: längste Blockade 307 ms
+  tippen „Fuß“: längste Blockade 80 ms
+  tippen „Fußb“: längste Blockade 75 ms
+  tippen „Fußba“: längste Blockade 69 ms
+  tippen „Fußbal“: längste Blockade 78 ms
+  tippen „Fußball“: längste Blockade 65 ms
+  tippen „Fußball “: längste Blockade 68 ms
+  tippen „Fußball 1“: längste Blockade 145 ms
+  tippen „Fußball 12“: längste Blockade 105 ms
+  Suchfeld leeren: längste Blockade 455 ms
+  ein Zeichen „a“: längste Blockade 186 ms
+  Suchfeld leeren (2): längste Blockade 298 ms
+  Chip „DE | Sport“ wählen: längste Blockade 188 ms
+  Chip abwählen: längste Blockade 551 ms
+  8 Zeichen im Abstand von 100 ms: längste Blockade 404 ms, Eingabe dauerte 1.0 s statt 0,8 s
+  Speicherbedarf mit offener Liste: 221 MB

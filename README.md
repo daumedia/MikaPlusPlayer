@@ -62,7 +62,9 @@ In Xcode oben das passende **Schema** wählen und ⌘R:
 ### Code-Signing
 
 - **macOS** (`MikaPlusPlayer-macOS`): „Sign to Run Locally" (`CODE_SIGN_STYLE = Manual`,
-  `CODE_SIGN_IDENTITY = "-"`) → läuft **ohne** Apple-Development-Team.
+  `CODE_SIGN_IDENTITY = "-"`) → läuft **ohne** Apple-Development-Team. Die Konfiguration **Release**
+  läuft mit Hardened Runtime und ohne `get-task-allow` (`ENABLE_HARDENED_RUNTIME = YES`,
+  `CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO`); Debug bleibt debugbar.
 - **iOS** (`MikaPlusPlayer`): `CODE_SIGN_STYLE = Automatic` mit hinterlegtem
   `DEVELOPMENT_TEAM` (in `project.yml`). Simulator läuft ohnehin team-frei.
 
@@ -117,7 +119,7 @@ nutzt, ist die **App-Sandbox deaktiviert** – wie bei den anderen Mika+ Apps. D
 | Entitlement | Wert | Zweck |
 |---|---|---|
 | `com.apple.security.app-sandbox` | `false` | keine Sandbox (DMG-Distribution + Sparkle) |
-| `com.apple.security.cs.disable-library-validation` | `true` | Laden der eingebetteten Sparkle.framework/XPC unter Hardened Runtime |
+| `com.apple.security.cs.disable-library-validation` | `true` | nötig, solange die App **ad hoc** signiert ist: Das Release läuft mit Hardened Runtime, und ohne dieses Entitlement bricht der Start beim Laden von `VLCKit.framework` ab („different Team IDs" – ad-hoc-Signaturen haben keine Team-ID). Mit Developer-ID-Signatur entfernen |
 
 > Ohne Sandbox hat die App vollen Netzwerk-/Dateizugriff; die früheren
 > `network.client`/`files.user-selected.read-only`-Einträge sind dann nicht mehr nötig.
@@ -192,8 +194,10 @@ wählen, dann *Anmelden & importieren*. Die App lädt Kategorien + Live-Sender �
 > kannst du auf HLS umstellen und ohne VLCKit auskommen.
 
 Implementierung: `Services/XtreamCodes.swift` (Credentials/URL-Bau) und
-`Services/XtreamClient.swift` (player_api → `ParsedChannel`). Beim Refresh werden die
-Zugangsdaten aus der gespeicherten `player_api`-`sourceURL` rekonstruiert.
+`Services/XtreamClient.swift` (player_api → `ParsedChannel`). Benutzername und Passwort liegen
+im Schlüsselbund (`Services/XtreamCredentialStore.swift`), nicht in der Datenbank; abspielbare
+Stream-Adressen bildet erst `Services/StreamURLResolver.swift` beim Abspielen. Ein eingegebenes
+`https://` bleibt erhalten, ohne Schema wird `http://` verwendet.
 
 ## Release & Auto-Update (Sparkle + DMG)
 
@@ -202,10 +206,13 @@ Die macOS-App enthält den **Sparkle-Auto-Updater** (wie die anderen Mika+ Apps)
 aus; zusätzlich prüft Sparkle automatisch (`SUEnableAutomaticChecks`).
 
 **Konfiguration:**
-- `Info.plist`: `SUFeedURL` (appcast im Repo) + `SUPublicEDKey` (familienweiter EdDSA-Public-Key).
-- Sparkle ist nur am **macOS-Target** als SPM-Dependency; Xcode bettet `Sparkle.framework`
-  automatisch ein und signiert es. Der Updater-Code (`Services/SparkleUpdater.swift`) ist mit
-  `#if os(macOS)` gekapselt.
+- `Info.plist`: `SUFeedURL` (appcast im Repo) + `SUPublicEDKey` (familienweiter EdDSA-Public-Key) +
+  `SUVerifyUpdateBeforeExtraction` (EdDSA-Signatur des DMG wird **vor** dem Einhängen geprüft).
+  `SURequireSignedFeed` ist noch nicht gesetzt: erst, wenn die veröffentlichte `appcast.xml` signiert ist
+  (`release.sh` signiert sie ab dem nächsten Release), sonst verwirft Sparkle den Feed.
+- Sparkle ist nur am **macOS-Target** als SPM-Dependency, exakt gepinnt auf **2.9.3** (`project.yml`);
+  Xcode bettet `Sparkle.framework` automatisch ein und signiert es. Der Updater-Code
+  (`Services/SparkleUpdater.swift`) ist mit `#if os(macOS)` gekapselt.
 
 **Privater Signaturschlüssel:** liegt in der macOS-Keychain (einmalig via Sparkles
 `generate_keys` erzeugt; hier bereits vorhanden und familienweit geteilt). Niemals committen.
@@ -213,13 +220,23 @@ aus; zusätzlich prüft Sparkle automatisch (`SUEnableAutomaticChecks`).
 ### Release bauen
 
 ```sh
-# Build (Release) -> DMG -> signierter appcast.xml in einem Schritt:
+# Prüfen -> Build (Release) -> DMG -> Prüfen -> appcast.xml (signiert) -> Prüfen:
 bash scripts/release.sh
 ```
 
 Erzeugt:
 - `dist/MikaPlusPlayer-v<version>.dmg`
-- `appcast.xml` (Repo-Root) mit signiertem Eintrag (`sparkle:edSignature`)
+- `appcast.xml` (Repo-Root): die **versionierte** `appcast.xml` plus der neue Eintrag
+  (`sparkle:edSignature`), der Feed selbst ist signiert. `dist/appcast.xml` wird nicht mehr verwendet.
+
+Gegenprüfungen (`scripts/b09_release_check.sh`, einzeln aufrufbar): **vor dem Build** Feed-Adresse,
+sauberer Feed, Build-Nummer größer als die höchste `sparkle:version`, Anzeigeversion noch nicht
+veröffentlicht, Härtung und Sparkle-Pin, sauberer Git-Stand; **am Bundle/DMG** `codesign --verify`,
+kein `get-task-allow`, Hardened Runtime, Versionen und Schlüssel im Bundle, App im DMG = geprüftes
+Bundle; **am Feed** bestehende Einträge unverändert, URL/Länge, EdDSA-Signatur des DMG und des Feeds
+gegen `SUPublicEDKey` (`scripts/b09_ed25519.swift`, nur öffentlicher Schlüssel). Jeder `[BEFUND]` bricht
+ab, bevor `appcast.xml` geändert wird. `[ offen]` nennt bekannte offene Punkte (ad-hoc-Signatur,
+Notarisierung, Feed-Pflicht); mit `STRENG=1` brechen auch sie ab.
 
 Einzelschritte: `scripts/build-macos.sh` (xcodebuild Release → `build/MikaPlusPlayer.app`),
 `scripts/make-dmg.sh` (DMG via `create-dmg`, sonst `hdiutil`).
@@ -229,23 +246,52 @@ Einzelschritte: `scripts/build-macos.sh` (xcodebuild Release → `build/MikaPlus
 1. GitHub-Release **`v<version>`** im Repo anlegen (Standard: `daumedia/MikaPlusPlayer` –
    in `Info.plist`/`scripts/release.sh` anpassbar).
 2. `dist/MikaPlusPlayer-v<version>.dmg` als **Release-Asset** hochladen.
-3. `appcast.xml` committen & auf **`main`** pushen.
+3. **Danach** `appcast.xml` committen & auf **`main`** pushen (vorher liefe der Download ins Leere).
+   `appcast.xml` nicht mehr von Hand ändern – die Feed-Signatur würde ungültig.
 
-Version erhöhen: `MARKETING_VERSION` (und ggf. `CURRENT_PROJECT_VERSION`) in `project.yml`,
-`xcodegen generate`, dann `scripts/release.sh`.
+Version erhöhen (vor dem Release, beides **Pflicht**): `MARKETING_VERSION` **und**
+`CURRENT_PROJECT_VERSION` in `project.yml`. Sparkle vergleicht nur `CURRENT_PROJECT_VERSION`
+(`CFBundleVersion`); ist sie nicht größer als die höchste `sparkle:version` im Feed, bekommt keine
+Installation das Update. Änderung committen, dann `scripts/release.sh`.
 
 ### Öffentliche Distribution (Developer ID + Notarisierung)
 
 Die Skripte signieren **ad-hoc** (gut zum lokalen Testen). Für Verteilung an andere Macs
-ohne Gatekeeper-Warnung mit **Developer ID** signieren und **notarisieren**:
+ohne Gatekeeper-Warnung mit **Developer ID** signieren und **notarisieren**. Die Reihenfolge ist
+entscheidend: erst die App signieren, dann das DMG daraus bauen, signieren, notarisieren und heften –
+und **erst danach** den Feed-Eintrag erzeugen, weil die EdDSA-Signatur über die endgültigen DMG-Bytes
+geht (Heften verändert das DMG). `release.sh` bildet diesen Weg noch nicht ab; die Schritte von Hand:
 
 ```sh
-codesign --force --options runtime --deep \
-  --sign "Developer ID Application: <Name> (<TEAMID>)" build/MikaPlusPlayer.app
-xcrun notarytool submit dist/MikaPlusPlayer-v<version>.dmg \
-  --apple-id <id> --team-id <TEAMID> --password <app-spezifisches-pw> --wait
+ID="Developer ID Application: <Name> (<TEAMID>)"
+
+# 1) Release direkt mit Developer ID bauen (Hardened Runtime ist im Release an; Xcode signiert
+#    die eingebetteten Frameworks von innen nach außen – kein `codesign --deep`)
+xcodebuild build -project MikaPlusPlayer.xcodeproj -scheme MikaPlusPlayer-macOS -configuration Release \
+  -destination 'platform=macOS' -derivedDataPath build/dd \
+  CODE_SIGN_IDENTITY="$ID" DEVELOPMENT_TEAM=<TEAMID> OTHER_CODE_SIGN_FLAGS=--timestamp
+rm -rf build/MikaPlusPlayer.app && cp -R build/dd/Build/Products/Release/MikaPlusPlayer.app build/
+codesign --verify --strict --verbose=2 build/MikaPlusPlayer.app
+
+# 2) App notarisieren und heften (Zugang einmalig: xcrun notarytool store-credentials <profil>)
+ditto -c -k --keepParent build/MikaPlusPlayer.app build/MikaPlusPlayer.zip
+xcrun notarytool submit build/MikaPlusPlayer.zip --keychain-profile <profil> --wait
+xcrun stapler staple build/MikaPlusPlayer.app
+
+# 3) DMG aus der gehefteten App bauen, signieren, notarisieren, heften
+bash scripts/make-dmg.sh
+codesign --sign "$ID" --timestamp dist/MikaPlusPlayer-v<version>.dmg
+xcrun notarytool submit dist/MikaPlusPlayer-v<version>.dmg --keychain-profile <profil> --wait
 xcrun stapler staple dist/MikaPlusPlayer-v<version>.dmg
+spctl -a -vv build/MikaPlusPlayer.app
+spctl -a -vv -t open --context context:primary-signature dist/MikaPlusPlayer-v<version>.dmg
+
+# 4) Erst jetzt: Feed-Eintrag wie in scripts/release.sh (Kopie der versionierten appcast.xml + DMG in
+#    einem leeren Ordner, generate_appcast, sign_update, b09_release_check.sh feed), dann veröffentlichen.
 ```
+
+Mit Developer ID außerdem `disable-library-validation` aus den Entitlements entfernen und
+`CODE_SIGN_IDENTITY` in `project.yml` umstellen.
 
 ## Test einer Playlist
 

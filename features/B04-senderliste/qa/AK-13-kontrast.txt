@@ -1,0 +1,6 @@
+2026-09-26T13:41:17Z [Debug] Weiß auf Akzentfarbe: hell 3.76 : 1, dunkel 2.77 : 1 (15-pt-Text, WCAG AA fordert 4,5 : 1)
+2026-09-26T13:55:08Z [Debug] Akzentfarbe aus PlayerTheme (aufgelöst): hell (239, 68, 68) → Weiß 3.76 : 1, dunkel (248, 113, 113) → Weiß 2.77 : 1 (15-pt-Text medium, WCAG AA 4,5 : 1)
+  Gerendert (Fensteraufnahme, gewählter Chip „Sport“): hell: Fläche (233, 105, 91), Schrift (255, 255, 255), 3.16 : 1 · dunkel: Fläche (242, 142, 134), Schrift (255, 255, 255), 2.33 : 1
+2026-09-26T13:57:43Z [Debug] Akzentfarbe aus PlayerTheme (aufgelöst): hell (239, 68, 68) → Weiß 3.76 : 1, dunkel (248, 113, 113) → Weiß 2.77 : 1 (15-pt-Text medium, WCAG AA 4,5 : 1)
+  Gerendert (Fensteraufnahme, gewählter Chip „Sport“): hell: Fläche (233, 105, 91), Schrift (255, 255, 255), 3.16 : 1 · dunkel: Fläche (242, 142, 134), Schrift (255, 255, 255), 2.33 : 1
+2026-09-26T13:58:34Z [Debug] Weiß auf Akzentfarbe: hell 3.76 : 1, dunkel 2.77 : 1 (15-pt-Text, WCAG AA fordert 4,5 : 1)

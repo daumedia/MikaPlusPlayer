@@ -1,0 +1,5 @@
+AK-05|klasse=NSOpenPanel|alsSheet=true|erlaubteTypen=["public.m3u-playlist", "public.plain-text"]|mehrfachauswahl=false|dateien=true|ordner=false|waehlbar=["(ohne Endung)=false", "M3U8=true", "csv=true", "html=false", "json=false", "log=true", "m3u=true", "m3u8=true", "md=true", "pls=false", "swift=true", "txt=true", "xspf=false"]
+AK-05|dialogAbgebrochen|alertNachAbbruch=[]|playlists=0|sheetOffen=true|dateiButton=true
+AK-27|datei|alert=["AXSheet:alert", "AXStaticText:Fehler", "AXStaticText:Die Playlist enthält keine gültigen Sender.", "AXButton:OK"]|nachOK felder=["QA Datei Fehler"]|button=true|sheetOffen=true|playlists=0
+AK-16|ueberDialog|sheetGeschlossen=true|playlists=1|zeilen=["AXButton:qa-dialog, 2 Sender"]
+AK-29|datei|abbrechenNach0.5s|sheetZuNach=9.55s|maxMainThreadBlockade=9.23s|playlists=["qa-dialog=2", "gross-3000=3000"]|build=Debug

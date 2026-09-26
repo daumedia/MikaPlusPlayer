@@ -1,0 +1,15 @@
+# /usr/bin/log show --predicate 'processID == 86054' --start '2026-09-26 16:14:30' --info --debug (Test-Host des letzten Gesamtlaufs, eigene Bundle-ID lu.daumedia.MikaPlusPlayer.qa1b05)
+zeilen=9991
+treffer 'B05LOGMARKER'=0
+treffer 'B05LOGPLAYLIST'=0
+treffer 'b05logmarker.tvg'=0
+treffer 'B05LOGGRUPPE'=0
+treffer 'B05ORT'=0
+treffer 'B05MARKER'=0
+treffer 'B05REST'=0
+treffer 'Logo Sender'=0
+treffer 'Voll Zwei'=0
+treffer 'Das Erste HD'=0
+treffer '/logos/sender-' (Logo-Adressen aus AK-25)=78, Ebene:  78 Default 
+# Beispielzeile (gekürzt):
+2026-09-26 16:15:22.514213+0200 0x6fac48yer: (Network) [com.apple.network:connection] [C95 AF550A8D-8D07-41AF-8FEC-2A414326B5C9 127.0.0.1:50246 tcp, url: http://127.0.0.1:50246/logos/sender-3.png, defi

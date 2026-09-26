@@ -1,0 +1,550 @@
+# B04 Senderliste — Protokoll der Erfassungssonde (2026-09-16)
+# Code-Stand main@c01f1cf, Kopie unter eigener Bundle-ID, Debug-Build, Apple M3 Max, macOS 27.
+# Erfundene Daten, lokale Mock-Hosts 127.0.0.1:18790 / localhost:18791. Zeilen 'B04PROBE|…' aus den Testläufen.
+
+== Lauf run10-20 ==
+setup|semantik=41|andere=1
+search|""|db=41|" Leerzeichen vorn","#Hash TV","😀 Emoji TV","100% Hits","1LIVE","3sat","Å TV","ARD"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=1.2
+search|"ard"|db=3|"ARD","ard alpha","ＡＲＤ Fullwidth"|memGleich=false|nurSpeicher=[]|nurDB=["ＡＲＤ Fullwidth"]|ms=0.3
+search|"ARD"|db=3|"ARD","ard alpha","ＡＲＤ Fullwidth"|memGleich=false|nurSpeicher=[]|nurDB=["ＡＲＤ Fullwidth"]|ms=0.2
+search|"Ard"|db=3|"ARD","ard alpha","ＡＲＤ Fullwidth"|memGleich=false|nurSpeicher=[]|nurDB=["ＡＲＤ Fullwidth"]|ms=0.2
+search|"münchen"|db=2|"BR München HD","MÜNCHEN TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.2
+search|"munchen"|db=2|"BR München HD","MÜNCHEN TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.2
+search|"MUNCHEN"|db=2|"BR München HD","MÜNCHEN TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.2
+search|"muenchen"|db=0||memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"strasse"|db=2|"Strasse 2","Straße TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"straße"|db=2|"Strasse 2","Straße TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"STRASSE"|db=2|"Strasse 2","Straße TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"ecran"|db=2|"ecran basic","Écran Plus"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"ÉCRAN"|db=2|"ecran basic","Écran Plus"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.2
+search|" ard"|db=0||memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"ard "|db=2|"ard alpha","ＡＲＤ Fullwidth"|memGleich=false|nurSpeicher=[]|nurDB=["ＡＲＤ Fullwidth"]|ms=0.1
+search|" "|db=27|" Leerzeichen vorn","#Hash TV","😀 Emoji TV","100% Hits","Å TV","ard alpha","ＡＲＤ Fullwidth","Ärger TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.4
+search|"  "|db=1|"Sport  2"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"%"|db=1|"100% Hits"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"_"|db=1|"under_score"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"*"|db=1|"Stern*Kanal"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"?"|db=1|"Frage?TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"\\"|db=1|"Back\\slash"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"\'"|db=1|"O\'Reilly TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"\""|db=1|"Quote \"TV\""|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"ＡＲＤ"|db=3|"ARD","ard alpha","ＡＲＤ Fullwidth"|memGleich=false|nurSpeicher=[]|nurDB=["ARD", "ard alpha"]|ms=0.2
+search|"istanbul"|db=2|"istanbul 2","İstanbul TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"İstanbul"|db=2|"istanbul 2","İstanbul TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.2
+search|"ελλ"|db=1|"Ελληνικά"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"ΕΛΛ"|db=1|"Ελληνικά"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"первый"|db=1|"Первый канал"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"😀"|db=1|"😀 Emoji TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"fi"|db=2|"ﬁlm ligature","film normal"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"ﬁ"|db=2|"ﬁlm ligature","film normal"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"film"|db=2|"ﬁlm ligature","film normal"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"oe"|db=1|"oeuvre"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"œ"|db=1|"Œuvre"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"ø"|db=1|"Ølstrup"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"o"|db=13|" Leerzeichen vorn","😀 Emoji TV","film normal","lodz tv","Łódź TV","O\'Reilly TV","oeuvre","Quote \"TV\""|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.3
+search|"lodz"|db=1|"lodz tv"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"łódź"|db=1|"Łódź TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"10"|db=2|"100% Hits","Sport 10"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=1.6
+search|"sport 2"|db=1|"Sport 2"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.2
+search|"sport  2"|db=1|"Sport  2"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"#"|db=1|"#Hash TV"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"hits"|db=1|"100% Hits"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|"zdf"|db=1|"ZDFneo"|memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+search|<10000 Zeichen>|db=0||memGleich=true|nurSpeicher=[]|nurDB=[]|ms=0.1
+sort|db|" Leerzeichen vorn" "#Hash TV" "😀 Emoji TV" "100% Hits" "1LIVE" "3sat" "Å TV" "ARD" "ard alpha" "ＡＲＤ Fullwidth" "Ärger TV" "arte" "Back\\slash" "BR München HD" "ecran basic" "Écran Plus" "ﬁlm ligature" "film normal" "Frage?TV" "istanbul 2" "İstanbul TV" "lodz tv" "Łódź TV" "MÜNCHEN TV" "O\'Reilly TV" "oeuvre" "Œuvre" "Ølstrup" "Quote \"TV\"" "Sport  2" "Sport 10" "Sport 2" "Stern*Kanal" "Strasse 2" "Straße TV" "under_score" "ZDFneo" "Zebra" "Ελληνικά" "Первый канал" "قناة الاولى"
+sort|localizedCompare|" Leerzeichen vorn" "#Hash TV" "😀 Emoji TV" "100% Hits" "1LIVE" "3sat" "Å TV" "ARD" "ard alpha" "ＡＲＤ Fullwidth" "Ärger TV" "arte" "Back\\slash" "BR München HD" "ecran basic" "Écran Plus" "ﬁlm ligature" "film normal" "Frage?TV" "istanbul 2" "İstanbul TV" "lodz tv" "Łódź TV" "MÜNCHEN TV" "O\'Reilly TV" "oeuvre" "Œuvre" "Ølstrup" "Quote \"TV\"" "Sport  2" "Sport 10" "Sport 2" "Stern*Kanal" "Strasse 2" "Straße TV" "under_score" "ZDFneo" "Zebra" "Ελληνικά" "Первый канал" "قناة الاولى"
+sort|localizedStandard|" Leerzeichen vorn" "#Hash TV" "😀 Emoji TV" "1LIVE" "3sat" "100% Hits" "Å TV" "ARD" "ard alpha" "Ärger TV" "ＡＲＤ Fullwidth" "arte" "Back\\slash" "BR München HD" "ecran basic" "Écran Plus" "ﬁlm ligature" "film normal" "Frage?TV" "istanbul 2" "İstanbul TV" "lodz tv" "Łódź TV" "MÜNCHEN TV" "O\'Reilly TV" "oeuvre" "Œuvre" "Ølstrup" "Quote \"TV\"" "Sport  2" "Sport 2" "Sport 10" "Stern*Kanal" "Strasse 2" "Straße TV" "under_score" "ZDFneo" "Zebra" "Ελληνικά" "Первый канал" "قناة الاولى"
+sort|swiftLess|" Leerzeichen vorn" "#Hash TV" "100% Hits" "1LIVE" "3sat" "ARD" "BR München HD" "Back\\slash" "Frage?TV" "MÜNCHEN TV" "O\'Reilly TV" "Quote \"TV\"" "Sport  2" "Sport 10" "Sport 2" "Stern*Kanal" "Strasse 2" "Straße TV" "ZDFneo" "Zebra" "ard alpha" "arte" "ecran basic" "film normal" "istanbul 2" "lodz tv" "oeuvre" "under_score" "Ärger TV" "Å TV" "Écran Plus" "Ølstrup" "İstanbul TV" "Łódź TV" "Œuvre" "Ελληνικά" "Первый канал" "قناة الاولى" "ﬁlm ligature" "ＡＲＤ Fullwidth" "😀 Emoji TV"
+chips|anzahl=13|"10 Musik" "2 Musik" "News" "News\n" "SPORT" "Sport" "Tab" "Zebra" "kids" "sport" "Ärger" "Österreich" "Ünter"
+chipTreffer|"10 Musik"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"2 Musik"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"News"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"News\n"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"SPORT"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"Sport"|gefiltert=2|exaktGespeichert=2|nachTrimmen=6
+chipTreffer|"Tab"|gefiltert=0|exaktGespeichert=0|nachTrimmen=2
+chipTreffer|"Zebra"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"kids"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"sport"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"Ärger"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"Österreich"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+chipTreffer|"Ünter"|gefiltert=2|exaktGespeichert=2|nachTrimmen=2
+alle|36
+suche+gruppe|K00+Sport|["K00a Sender", "K00b Sender"]
+suche+gruppe|K01(gehoert zu ' Sport')+Sport|[]
+chipsEineGruppe|["Sport"]|leisteSichtbar=false
+chipsKeineGruppe|[]
+
+== Lauf run21 ==
+schritt|ui-01-nachPush|AXButton=8 AXGroup=1 AXOpaqueProviderGroup=1 AXScrollArea=2 AXScrollBar=1 AXStaticText=2 AXValueIndicator=1|texte=MIKA+PLAYER · 8 SENDER / UI Playlist|chips=Alle / Kino / News / Sport
+snapshot|ui-01-nachPush|bytes=5551
+ui|suchfeldGefunden=true|toolbarItems=3
+ui|pressSport=true
+schritt|ui-02-sport|AXButton=8 AXGroup=1 AXOpaqueProviderGroup=1 AXScrollArea=2 AXScrollBar=1 AXStaticText=2 AXValueIndicator=1|texte=MIKA+PLAYER · 8 SENDER / UI Playlist|chips=Alle / Kino / News / Sport
+snapshot|ui-02-sport|bytes=5237
+ui|pressSportErneut=true
+schritt|ui-03-sport-erneut|AXButton=8 AXGroup=1 AXOpaqueProviderGroup=1 AXScrollArea=2 AXScrollBar=1 AXStaticText=2 AXValueIndicator=1|texte=MIKA+PLAYER · 8 SENDER / UI Playlist|chips=Alle / Kino / News / Sport
+snapshot|ui-03-sport-erneut|bytes=5551
+ui|pressKino=true
+schritt|ui-04-kino|AXButton=8 AXGroup=1 AXOpaqueProviderGroup=1 AXScrollArea=2 AXScrollBar=1 AXStaticText=2 AXValueIndicator=1|texte=MIKA+PLAYER · 8 SENDER / UI Playlist|chips=Alle / Kino / News / Sport
+snapshot|ui-04-kino|bytes=5275
+schritt|ui-05-suche-ohne-treffer|AXButton=8 AXGroup=1 AXScrollArea=2 AXScrollBar=1 AXStaticText=4 AXValueIndicator=1|texte=MIKA+PLAYER · 8 SENDER / UI Playlist / No Results for “zzz-kein-treffer” / Check the spelling or try a new search.|chips=Alle / Kino / News / Sport
+snapshot|ui-05-suche-ohne-treffer|bytes=6520
+schritt|ui-06-suche-sport|AXButton=8 AXGroup=1 AXOpaqueProviderGroup=1 AXScrollArea=2 AXScrollBar=1 AXStaticText=2 AXValueIndicator=1|texte=MIKA+PLAYER · 8 SENDER / UI Playlist|chips=Alle / Kino / News / Sport
+snapshot|ui-06-suche-sport|bytes=6520
+schritt|ui-07-leere-playlist|AXButton=4 AXGroup=1 AXImage=1 AXScrollArea=1 AXScrollBar=1 AXStaticText=4 AXValueIndicator=1|texte=MIKA+PLAYER · 0 SENDER / Leere Playlist / Keine Sender / Diese Playlist enthält keine Sender.|chips=
+snapshot|ui-07-leere-playlist|bytes=4205
+ui|leerePlaylistChips| |  |  | 
+schritt|ui-08-erneut-geoeffnet|AXButton=8 AXGroup=1 AXOpaqueProviderGroup=1 AXScrollArea=2 AXScrollBar=1 AXStaticText=2 AXValueIndicator=1|texte=MIKA+PLAYER · 8 SENDER / UI Playlist|chips=Alle / Kino / News / Sport
+snapshot|ui-08-erneut-geoeffnet|bytes=5551
+
+== Lauf run30 ==
+seed|perf1|liste0|17000 Sender|ms=57291
+seed|perf1|dateiBytes=77824|speicherMB=91
+seed|perf2|liste0|17000 Sender|ms=57523
+seed|perf2|liste1|17000 Sender|ms=59150
+seed|perf2|dateiBytes=6803456|speicherMB=64
+
+== Lauf run31 ==
+perf|perf1|senderGesamt=17000|listen=1
+query|perf1|alle|treffer=17000|kaltMs=267.8|warmMs=257.5,252.9,252.3,252.4
+query|perf1|suche-sport|treffer=686|kaltMs=15.0|warmMs=14.5,14.4,14.4,14.4
+query|perf1|suche-fussball|treffer=679|kaltMs=14.7|warmMs=14.7,14.7,14.7,14.7
+query|perf1|suche-selten|treffer=2|kaltMs=5.2|warmMs=5.1,5.1,5.1,5.1
+query|perf1|suche-ohne-treffer|treffer=0|kaltMs=5.2|warmMs=5.2,5.2,5.2,5.2
+query|perf1|suche-ein-zeichen|treffer=7359|kaltMs=110.2|warmMs=110.2,109.8,110.0,109.9
+query|perf1|gruppe|treffer=58|kaltMs=1.9|warmMs=1.8,1.7,1.7,1.7
+query|perf1|gruppe+suche|treffer=34|kaltMs=6.1|warmMs=5.9,5.9,5.9,5.9
+query|perf1|suche-lang-10000|treffer=0|kaltMs=10.1|warmMs=10.1,10.1,10.0,10.0
+query|perf1|loadGroups|gruppen=300|kaltMs=213.7|warmMs=205.3,200.7,204.4
+query|perf1|speicherMB=51
+perf|perf2|senderGesamt=34000|listen=2
+query|perf2|alle|treffer=17000|kaltMs=258.7|warmMs=255.7,255.5,254.7,253.6
+query|perf2|suche-sport|treffer=686|kaltMs=15.6|warmMs=15.1,15.1,15.1,15.1
+query|perf2|suche-fussball|treffer=679|kaltMs=15.3|warmMs=15.2,15.3,15.9,15.5
+query|perf2|suche-selten|treffer=2|kaltMs=5.8|warmMs=5.6,5.7,5.7,5.6
+query|perf2|suche-ohne-treffer|treffer=0|kaltMs=5.7|warmMs=5.7,5.7,5.7,5.7
+query|perf2|suche-ein-zeichen|treffer=7359|kaltMs=111.3|warmMs=113.0,111.8,111.7,111.2
+query|perf2|gruppe|treffer=58|kaltMs=2.4|warmMs=2.3,2.3,2.3,2.3
+query|perf2|gruppe+suche|treffer=34|kaltMs=6.6|warmMs=6.4,6.4,6.4,6.3
+query|perf2|suche-lang-10000|treffer=0|kaltMs=10.6|warmMs=10.6,10.6,10.5,10.5
+query|perf2|loadGroups|gruppen=300|kaltMs=203.0|warmMs=205.7,203.5,208.4
+query|perf2|speicherMB=54
+
+== Lauf run40a ==
+fenster|sichtbar=true|isVisible=true
+logosA|MARK|push|t=1789559530.1|speicherMB=37
+nudge|scrollViews=["1539/48"]
+nudge|durchgescrollt|doc=1539|t=1789559534.9
+logosA|nach6s|t=1789559540.1|spinner=y=1469|speicherMB=56
+logosA|nach12s|t=1789559546.1|spinner=y=1469|speicherMB=56
+logosA|MARK|liste-verlassen|t=1789559546.1
+logosA|MARK|nach-verlassen|t=1789559548.1|speicherMB=51
+
+== Lauf runA ==
+fenster|sichtbar=true|isVisible=true
+logosA|MARK|push|t=1789559592.6|speicherMB=37
+nudge|scrollViews=["1539/48"]
+nudge|durchgescrollt|doc=1539|t=1789559604.2
+logosA|nach6s|t=1789559609.4|spinner=y=1469,y=1297|speicherMB=55
+logosA|nach12s|t=1789559615.4|spinner=y=1469,y=1297|speicherMB=55
+logosA|MARK|liste-verlassen|t=1789559615.4
+logosA|MARK|nach-verlassen|t=1789559617.4|speicherMB=50
+fenster|sichtbar=true|isVisible=true
+cache|zweiterAufbau|start|t=1789559618.2
+nudge|scrollViews=["1539/48"]
+nudge|durchgescrollt|doc=1539|t=1789559629.8
+cache|t=1789559635.8|spinner=y=1469,y=1297
+cache|cachesVerzeichnis=~/Library/Caches
+cache|CacheDbVorhanden=false
+cache|URLCache|speicherBelegt=0|platteBelegt=543392|speicherLimit=512000|platteLimit=20000000
+
+== Lauf runA2 ==
+fenster|sichtbar=true|isVisible=true
+logosB|MARK|push|t=1789559644.0|speicherMB=37
+nudge|scrollViews=["752/48"]
+nudge|durchgescrollt|doc=752|t=1789559650.4
+logosB|nach4s|t=1789559653.6|spinner=y=682|speicherMB=640
+logosB|nach10s|t=1789559659.6|spinner=y=682|speicherMB=640
+logosB|nach20s|t=1789559669.6|spinner=y=682|speicherMB=646
+logosB|MARK|liste-verlassen|t=1789559669.6
+logosB|MARK|nach-verlassen|t=1789559672.6|speicherMB=62
+fenster|sichtbar=true|isVisible=true
+logosC|MARK|push|t=1789559673.5|speicherMB=62
+nudge|scrollViews=["752/48"]
+nudge|durchgescrollt|doc=752|t=1789559679.6
+logosC|nach4s|t=1789559682.8|spinner=y=682,y=510,y=596|speicherMB=63
+logosC|nach25s|t=1789559703.8|spinner=y=682,y=510,y=596|speicherMB=63
+logosC|nach70s|t=1789559748.8|spinner=y=682,y=510,y=596|speicherMB=64
+logosC|MARK|liste-verlassen|t=1789559748.8
+logosC|MARK|nach-verlassen|t=1789559753.8|speicherMB=64
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["762/48"]
+nudge|durchgescrollt|doc=762|t=1789559760.8
+single|ohne-logo|spinnerNach6s=1
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["1018/48"]
+nudge|durchgescrollt|doc=1018|t=1789559774.7
+single|https-geschlossen|spinnerNach6s=1
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["986/48"]
+nudge|durchgescrollt|doc=986|t=1789559788.4
+single|http-geschlossen|spinnerNach6s=1
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["730/48"]
+nudge|durchgescrollt|doc=730|t=1789559800.4
+single|file-url|spinnerNach6s=0
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["602/48"]
+nudge|durchgescrollt|doc=602|t=1789559811.3
+single|html|spinnerNach6s=0
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["570/48"]
+nudge|durchgescrollt|doc=570|t=1789559822.0
+single|404|spinnerNach6s=0
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["666/48"]
+nudge|durchgescrollt|doc=666|t=1789559833.5
+single|png-ok|spinnerNach6s=0
+fenster|sichtbar=true|isVisible=true
+nudge|scrollViews=["986/48"]
+nudge|durchgescrollt|doc=986|t=1789559847.2
+single|unbekannter-host|spinnerNach6s=1
+
+== Lauf runC ==
+refresh|importiert|5 Sender|gruppen=["Kino", "News", "Sport"]
+fenster|sichtbar=true|isVisible=true
+refresh|vorher|AXButton:Alle | AXButton:Kino | AXButton:News | AXButton:Sport | AXStaticText:MIKA+PLAYER · 5 SENDER | AXStaticText:Refresh | AXButton: | AXButton: | AXButton: | AXButton:
+refresh|pressKino=true
+refresh|kinoGewaehlt|MIKA+PLAYER · 5 SENDER | Refresh
+refresh|durchgefuehrt=true|fehler=-|neueGruppenInDB=["Doku", "News", "Sport"]|channelCount=3
+refresh|nachher|AXButton:Alle | AXButton:Kino | AXButton:News | AXButton:Sport | AXStaticText:MIKA+PLAYER · 3 SENDER | AXStaticText:Refresh | AXStaticText:Keine Sender | AXStaticText:Diese Playlist enthält keine Sender. | AXButton: | AXButton: | AXButton: | AXButton:
+refresh|nachAlle|MIKA+PLAYER · 3 SENDER | Refresh
+
+== Lauf runG ==
+fenster|sichtbar=true|isVisible=true|groesse=1100x882|hosting=1100x850
+render2|runde1|oeffnen|maxBlockadeMs=626|speicherMB=128
+render2|runde1|verlassen|maxBlockadeMs=100
+fenster|sichtbar=true|isVisible=true|groesse=1100x882|hosting=1100x850
+render2|runde2|oeffnen|maxBlockadeMs=817|speicherMB=152
+render2|runde2|verlassen|maxBlockadeMs=111
+fenster|sichtbar=true|isVisible=true|groesse=1100x882|hosting=1100x850
+render2|tippen|"F"|maxBlockadeMs=143
+render2|tippen|"Fu"|maxBlockadeMs=88
+render2|tippen|"Fuß"|maxBlockadeMs=47
+render2|tippen|"Fußb"|maxBlockadeMs=47
+render2|tippen|"Fußba"|maxBlockadeMs=43
+render2|tippen|"Fußbal"|maxBlockadeMs=45
+render2|tippen|"Fußball"|maxBlockadeMs=100
+render2|tippen|"Fußball "|maxBlockadeMs=48
+render2|tippen|"Fußball 1"|maxBlockadeMs=90
+render2|tippen|"Fußball 12"|maxBlockadeMs=79
+render2|leeren|maxBlockadeMs=378
+render2|gruppe|maxBlockadeMs=129
+render2|gruppe-weg|maxBlockadeMs=386
+render2|ein-zeichen-a|maxBlockadeMs=153
+render2|leeren2|maxBlockadeMs=278
+render2|schnellTippen100ms|maxBlockadeMs=341|dauerS=1.95|speicherMB=119
+
+== Lauf runH ==
+fenster|sichtbar=true|isVisible=true|groesse=900x732|hosting=900x700
+lazy|MARK|render-start|t=1789560379.2
+lazy|MARK|nach-2s|t=1789560381.2
+lazy|scrollView|dokumentHoehe=172100|sichtbar=700
+lazy|MARK|nach-scroll-mitte|t=1789560382.2
+lazy|MARK|nach-scroll-ende|t=1789560383.2
+lazy|MARK|nach-warten|t=1789560395.2
+lazy|MARK|liste-verlassen|t=1789560396.2
+lazy|MARK|ende|t=1789560406.2
+
+== Lauf runI ==
+fenster|sichtbar=true|isVisible=true|groesse=42x48|hosting=42x16
+log|suchfeldBenutzt=true
+log|fertig
+
+== Lauf runE ==
+attachScaling|n=500|ms=297|msProSender=0.59
+attachScaling|n=1000|ms=1088|msProSender=1.09
+attachScaling|n=2000|ms=4051|msProSender=2.03
+attachScaling|n=4000|ms=16314|msProSender=4.08
+
+== Hinweis: runA2/runC/run21/run40a liefen noch im zu kleinen Testfenster (42x48 pt, Hosting-View bestimmte die Fenstergröße); Anfragen und Zustände dort gelten, Sichtbarkeitsangaben nicht. runG/runH/Aufnahmen im 1100x850- bzw. 900x700-Fenster. run30: Seed ohne channels.append; runE: echter attach-Pfad ==
+
+== SQL aus com.apple.CoreData.SQLDebug (Lauf run31, dedupliziert) ==
+SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZCHANNELCOUNT, t0.ZCREATEDAT, t0.ZID, t0.ZISXTREAM, t0.ZLASTREFRESHED, t0.ZNAME, t0.ZSOURCEURL, t0.ZXTREAMOUTPUT FROM ZPLAYLIST t0 ORDER BY t0.ZCREATEDAT DESC, t0.Z_PK
+SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZPLAYLISTID = ? 
+SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZPLAYLISTID = ? ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive 
+SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE ( t0.ZPLAYLISTID = ? AND  NSCoreDataStringSearch( t0.ZNAME, ?, 417, 1)) ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive 
+SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE ( t0.ZPLAYLISTID = ? AND  t0.ZGROUP = ?) ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive 
+SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE (( t0.ZPLAYLISTID = ? AND  NSCoreDataStringSearch( t0.ZNAME, ?, 417, 1)) AND  t0.ZGROUP = ?) ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive 
+SELECT COUNT(*) FROM ZCHANNEL
+
+== Ausführungszeiten laut Core Data (Zeilen >= 7359) ==
+   1 total fetch execution time: 0.0820s for 7359 rows.
+   1 total fetch execution time: 0.0825s for 7359 rows.
+   1 total fetch execution time: 0.0828s for 7359 rows.
+   1 total fetch execution time: 0.0842s for 7359 rows.
+   1 total fetch execution time: 0.0854s for 7359 rows.
+   1 total fetch execution time: 0.0855s for 7359 rows.
+   1 total fetch execution time: 0.0865s for 7359 rows.
+   1 total fetch execution time: 0.0915s for 7359 rows.
+   2 total fetch execution time: 0.0931s for 7359 rows.
+   1 total fetch execution time: 0.1217s for 17000 rows.
+   1 total fetch execution time: 0.1269s for 17000 rows.
+   1 total fetch execution time: 0.1296s for 17000 rows.
+   1 total fetch execution time: 0.1309s for 17000 rows.
+   1 total fetch execution time: 0.1320s for 17000 rows.
+   1 total fetch execution time: 0.1323s for 17000 rows.
+   1 total fetch execution time: 0.1340s for 17000 rows.
+   1 total fetch execution time: 0.1341s for 17000 rows.
+   1 total fetch execution time: 0.1871s for 17000 rows.
+   1 total fetch execution time: 0.1886s for 17000 rows.
+   1 total fetch execution time: 0.1894s for 17000 rows.
+   1 total fetch execution time: 0.1964s for 17000 rows.
+   1 total fetch execution time: 0.1979s for 17000 rows.
+   1 total fetch execution time: 0.1989s for 17000 rows.
+   1 total fetch execution time: 0.1994s for 17000 rows.
+   1 total fetch execution time: 0.1999s for 17000 rows.
+   1 total fetch execution time: 0.2019s for 17000 rows.
+   1 total fetch execution time: 0.2057s for 17000 rows.
+
+== EXPLAIN QUERY PLAN (sqlite3 auf perf1.store, eigene Funktionen/Kollation ersetzt) ==
+-- WHERE ZPLAYLISTID = ? ORDER BY ZNAME
+QUERY PLAN
+|--SCAN t0
+`--USE TEMP B-TREE FOR ORDER BY
+-- WHERE ZPLAYLISTID = ? AND ZGROUP = ? ORDER BY ZNAME
+QUERY PLAN
+|--SCAN t0
+`--USE TEMP B-TREE FOR ORDER BY
+-- WHERE ZPLAYLIST = ? ORDER BY ZNAME (Vergleich, von der App nicht benutzt)
+QUERY PLAN
+|--SEARCH t0 USING INDEX ZCHANNEL_ZPLAYLIST_INDEX (ZPLAYLIST=?)
+`--USE TEMP B-TREE FOR ORDER BY
+-- Indizes
+ZCHANNEL_ZPLAYLIST_INDEX|CREATE INDEX ZCHANNEL_ZPLAYLIST_INDEX ON ZCHANNEL (ZPLAYLIST)
+
+== Anfragen am Mock-Logo-Host (requests.log, Zeit, Port, Ereignis, Pfad) ==
+1789559596.744 18790 ok /logo/a.png geliefert=True 
+1789559597.187 18791 ok /logo/b.png geliefert=True 
+1789559597.691 18790 ok /nocache/c.png geliefert=True 
+1789559598.441 18790 ok /nostore/d.png geliefert=True 
+1789559598.954 18790 ok /html geliefert=True 
+1789559599.698 18790 ok /pngtype-html geliefert=True 
+1789559600.208 18790 ok /json geliefert=True 
+1789559600.706 18790 ok /404 geliefert=True 
+1789559601.461 18790 ok /redirect?to=http://localhost:18791/logo/ziel.png geliefert=True 
+1789559601.477 18791 ok /logo/ziel.png geliefert=True 
+1789559623.3 18790 ok /nocache/c.png geliefert=True 
+1789559624.058 18790 ok /nostore/d.png geliefert=True 
+1789559624.559 18790 ok /html geliefert=True 
+1789559625.301 18790 ok /pngtype-html geliefert=True 
+1789559625.82 18790 ok /json geliefert=True 
+1789559626.323 18790 ok /404 geliefert=True 
+1789559647.924 18790 ok /bigdim.png geliefert=True 
+1789559648.969 18790 ok /bigfile.png geliefert=True 
+1789559649.445 18790 ok /redirect-loop geliefert=True 
+1789559649.457 18790 ok /redirect-loop geliefert=True 
+1789559649.458 18790 ok /redirect-loop geliefert=True 
+1789559649.46 18790 ok /redirect-loop geliefert=True 
+1789559649.461 18790 ok /redirect-loop geliefert=True 
+1789559649.462 18790 ok /redirect-loop geliefert=True 
+1789559649.464 18790 ok /redirect-loop geliefert=True 
+1789559649.465 18790 ok /redirect-loop geliefert=True 
+1789559649.466 18790 ok /redirect-loop geliefert=True 
+1789559649.467 18790 ok /redirect-loop geliefert=True 
+1789559649.468 18790 ok /redirect-loop geliefert=True 
+1789559649.469 18790 ok /redirect-loop geliefert=True 
+1789559649.47 18790 ok /redirect-loop geliefert=True 
+1789559649.471 18790 ok /redirect-loop geliefert=True 
+1789559649.475 18790 ok /redirect-loop geliefert=True 
+1789559649.476 18790 ok /redirect-loop geliefert=True 
+1789559649.477 18790 ok /redirect-loop geliefert=True 
+1789559649.48 18790 ok /redirect-loop geliefert=True 
+1789559649.481 18790 ok /redirect-loop geliefert=True 
+1789559649.483 18790 ok /redirect-loop geliefert=True 
+1789559649.485 18790 ok /redirect-loop geliefert=True 
+1789559677.364 18790 slow-start /slow/c00.png?d=20 geliefert=None 
+1789559678.118 18790 trickle-start /trickle?s=200 geliefert=None 
+1789559678.38 18790 closed-before-response /slow/c00.png?d=20 geliefert=None 20.0
+1789559678.626 18790 slow-start /slow/c02.png?d=90 geliefert=None 
+1789559678.911 18790 trickle-end /trickle?s=200 geliefert=None 
+1789559739.14 18790 closed-before-response /slow/c02.png?d=90 geliefert=None 90.0
+1789559759.002 18790 ok /nocache/fueller.png geliefert=True 
+1789559772.966 18790 ok /nocache/fueller.png geliefert=True 
+1789559786.684 18790 ok /nocache/fueller.png geliefert=True 
+1789559798.635 18790 ok /nocache/fueller.png geliefert=True 
+1789559809.825 18790 ok /nocache/fueller.png geliefert=True 
+1789559810.33 18790 ok /html?single=1 geliefert=True 
+1789559820.01 18790 ok /nocache/fueller.png geliefert=True 
+1789559820.753 18790 ok /404?single=1 geliefert=True 
+1789559831.697 18790 ok /nocache/fueller.png geliefert=True 
+1789559832.454 18790 ok /nocache/single.png geliefert=True 
+1789559845.409 18790 ok /nocache/fueller.png geliefert=True 
+1789559867.503 18790 slow-start /slow/998.png?d=8 geliefert=None 
+1789559867.503 18790 slow-start /slow/997.png?d=8 geliefert=None 
+1789559868.477 18790 slow-start /slow/1999.png?d=8 geliefert=None 
+1789559868.514 18790 closed-before-response /slow/998.png?d=8 geliefert=None 8.0
+1789559868.515 18790 closed-before-response /slow/997.png?d=8 geliefert=None 8.0
+1789559876.504 18790 slow-done /slow/1999.png?d=8 geliefert=True 
+1789559926.626 18790 ok /m3ufile/r.m3u geliefert=True 
+1789559930.081 18790 ok /m3ufile/r.m3u geliefert=True 
+1789560082.285 18790 ok /404?shot=1 geliefert=True 
+1789560083.039 18790 ok /html?shot=1 geliefert=True 
+1789560083.548 18790 ok /nocache/shot.png geliefert=True 
+1789560084.053 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.067 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.068 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.07 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.071 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.072 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.072 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.074 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.074 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.076 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.077 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.078 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.08 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.081 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.082 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.083 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.084 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.085 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.087 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.088 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.089 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560084.8 18790 slow-start /slow/shot.png?d=25 geliefert=None 
+1789560097.872 18790 closed-before-response /slow/shot.png?d=25 geliefert=None 25.0
+1789560149.734 18790 ok /404?shot=1 geliefert=True 
+1789560150.535 18790 ok /html?shot=1 geliefert=True 
+1789560151.34 18790 ok /nocache/shot.png geliefert=True 
+1789560152.53 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.543 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.544 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.545 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.546 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.547 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.548 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.55 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.551 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.552 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.553 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.554 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.556 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.557 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.558 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.559 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.56 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.561 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.562 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.563 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560152.564 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560153.343 18790 slow-start /slow/shot.png?d=25 geliefert=None 
+1789560167.021 18790 closed-before-response /slow/shot.png?d=25 geliefert=None 25.0
+1789560204.563 18790 ok /404?shot=1 geliefert=True 
+1789560205.367 18790 ok /html?shot=1 geliefert=True 
+1789560206.176 18790 ok /nocache/shot.png geliefert=True 
+1789560207.369 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.38 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.382 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.383 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.384 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.386 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.387 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.389 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.39 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.391 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.392 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.394 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.395 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.396 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.397 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.398 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.399 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.4 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.401 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.403 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560207.404 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560208.18 18790 slow-start /slow/shot.png?d=25 geliefert=None 
+1789560221.864 18790 closed-before-response /slow/shot.png?d=25 geliefert=None 25.0
+1789560253.132 18790 ok /nocache/shot.png geliefert=True 
+1789560253.133 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.133 18790 ok /404?shot=1 geliefert=True 
+1789560253.133 18790 ok /html?shot=1 geliefert=True 
+1789560253.133 18790 slow-start /slow/shot.png?d=25 geliefert=None 
+1789560253.14 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.14 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.141 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.141 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.142 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.142 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.143 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.143 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.144 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.144 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.145 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.145 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.145 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.146 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.146 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.147 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.147 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.147 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.148 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560253.148 18790 ok /redirect-loop?shot=1 geliefert=True 
+1789560266.119 18790 closed-before-response /slow/shot.png?d=25 geliefert=None 25.0
+1789560379.331 18790 slow-start /slow/2.png?d=8 geliefert=None 
+1789560379.331 18790 slow-start /slow/4.png?d=8 geliefert=None 
+1789560379.331 18790 slow-start /slow/1.png?d=8 geliefert=None 
+1789560379.331 18790 slow-start /slow/6.png?d=8 geliefert=None 
+1789560379.331 18790 slow-start /slow/5.png?d=8 geliefert=None 
+1789560379.331 18790 slow-start /slow/3.png?d=8 geliefert=None 
+1789560381.249 18790 slow-start /slow/1000.png?d=8 geliefert=None 
+1789560381.249 18790 slow-start /slow/1003.png?d=8 geliefert=None 
+1789560381.249 18790 slow-start /slow/1006.png?d=8 geliefert=None 
+1789560381.249 18790 slow-start /slow/1001.png?d=8 geliefert=None 
+1789560381.249 18790 slow-start /slow/1002.png?d=8 geliefert=None 
+1789560381.249 18790 slow-start /slow/1004.png?d=8 geliefert=None 
+1789560381.255 18790 closed-before-response /slow/4.png?d=8 geliefert=None 8.0
+1789560381.256 18790 closed-before-response /slow/3.png?d=8 geliefert=None 8.0
+1789560381.256 18790 closed-before-response /slow/1.png?d=8 geliefert=None 8.0
+1789560381.262 18790 closed-before-response /slow/6.png?d=8 geliefert=None 8.0
+1789560381.263 18790 closed-before-response /slow/5.png?d=8 geliefert=None 8.0
+1789560381.287 18790 closed-before-response /slow/2.png?d=8 geliefert=None 8.0
+1789560382.251 18790 slow-start /slow/1993.png?d=8 geliefert=None 
+1789560382.251 18790 slow-start /slow/1998.png?d=8 geliefert=None 
+1789560382.252 18790 slow-start /slow/1997.png?d=8 geliefert=None 
+1789560382.252 18790 slow-start /slow/1996.png?d=8 geliefert=None 
+1789560382.253 18790 slow-start /slow/1994.png?d=8 geliefert=None 
+1789560382.253 18790 slow-start /slow/1999.png?d=8 geliefert=None 
+1789560382.26 18790 closed-before-response /slow/1001.png?d=8 geliefert=None 8.0
+1789560382.26 18790 closed-before-response /slow/1003.png?d=8 geliefert=None 8.0
+1789560382.264 18790 closed-before-response /slow/1006.png?d=8 geliefert=None 8.0
+1789560382.264 18790 closed-before-response /slow/1004.png?d=8 geliefert=None 8.0
+1789560382.264 18790 closed-before-response /slow/1002.png?d=8 geliefert=None 8.0
+1789560382.267 18790 closed-before-response /slow/1000.png?d=8 geliefert=None 8.0
+1789560390.252 18790 slow-done /slow/1993.png?d=8 geliefert=True 
+1789560390.253 18790 slow-start /slow/1992.png?d=8 geliefert=None 
+1789560390.257 18790 slow-done /slow/1999.png?d=8 geliefert=True 
+1789560390.257 18790 slow-start /slow/1995.png?d=8 geliefert=None 
+1789560390.268 18790 slow-done /slow/1996.png?d=8 geliefert=True 
+1789560390.268 18790 slow-done /slow/1994.png?d=8 geliefert=True 
+1789560390.269 18790 slow-done /slow/1997.png?d=8 geliefert=True 
+1789560390.287 18790 slow-done /slow/1998.png?d=8 geliefert=True 
+1789560395.254 18790 closed-before-response /slow/1995.png?d=8 geliefert=None 8.0
+1789560395.266 18790 closed-before-response /slow/1992.png?d=8 geliefert=None 8.0
+Kopfzeilen einer App-Anfrage: {"Host": "127.0.0.1:18790", "Accept": "*/*", "Accept-Language": "de-DE,de;q=0.9", "Connection": "keep-alive", "Accept-Encoding": "gzip, deflate", "User-Agent": "Mika+Player/2 CFNetwork/3896.100.1.1.1 Darwin/27.0.0"}
+
+== Plattencache nach Lauf runA (cache-copy-A/Cache.db) ==
+1|2026-09-16 11:53:16|http://127.0.0.1:18790/logo/a.png|136
+2|2026-09-16 11:53:17|http://localhost:18791/logo/b.png|136
+3|2026-09-16 11:53:17|http://127.0.0.1:18790/nocache/c.png|136
+4|2026-09-16 11:53:18|http://127.0.0.1:18790/nostore/d.png|136
+5|2026-09-16 11:53:18|http://127.0.0.1:18790/html|35
+6|2026-09-16 11:53:19|http://127.0.0.1:18790/pngtype-html|35
+7|2026-09-16 11:53:20|http://127.0.0.1:18790/json|7
+8|2026-09-16 11:53:20|http://127.0.0.1:18790/404|9
+9|2026-09-16 11:53:21|http://127.0.0.1:18790/redirect?to=http://localhost:18791/logo/ziel.png|136
+
+== log stream --level debug auf eindeutigen Suchtext (runI) ==
+Filtering the log data using "composedMessage CONTAINS "QAMARKER4711""

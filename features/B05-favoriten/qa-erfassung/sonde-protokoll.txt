@@ -1,0 +1,201 @@
+# B05 Favoriten — Protokoll der Erfassungssonde (2026-09-16)
+# Code-Stand: c01f1cf + Reparatur B01 (Schnappschuss vom 2026-09-16), Kopie unter eigener Bundle-ID
+# lu.daumedia.MikaPlusPlayer.b05probe, Debug-Build, Test-Host der Mac-App, Apple M3 Max, macOS 27.0.
+# Datenbanken nur im Sondenordner (<sonde>/data) bzw. im Speicher; Mock nur auf 127.0.0.1 (zufälliger Port).
+# Erfundene Daten und Zugangsdaten (qa-user / qa-pass-b05). Kein Ton: Stream-Adressen auf 127.0.0.1:9 (geschlossen).
+# Zeilen 'B05PROBE|…' stammen aus den Testläufen; 'CoreData: sql:' aus com.apple.CoreData.SQLDebug=1 (nur Lauf t12).
+# Sternklicks sind synthetische Mausereignisse auf den Stern (rechter Kartenrand), Farbe per Pixelauswertung des gerenderten Fensters.
+
+== Lauf test00_AXBaumDerKarte ==
+B05PROBE|t00|karte|Das Erste HD|role=AXBusyIndicator|label=Das Erste HD, Vollprogramm|title=|value=0|help=Zu Multiview hinzufügen|frame=720x76|kinder=0|customActions=["Rectangle Split Two By Two", "Favourite"]|farbe=grau(69px)
+B05PROBE|t00|karte|ZDF|role=AXBusyIndicator|label=ZDF|title=|value=0|help=Zu Multiview hinzufügen|frame=720x76|kinder=0|customActions=["Rectangle Split Two By Two", "Favourite"]|farbe=grau(69px)
+B05PROBE|t00|nach-klick-stern|isFavorite=true|farbe=akzent(112px)|karten=["Das Erste HD, Vollprogramm", "ZDF"]
+B05PROBE|t00|custom-action-favourite|ok=true|zdfFavorit=true|aktionenDanach=["Rectangle Split Two By Two", "Favourite"]|karte=role=AXBusyIndicator|label=ZDF|title=|value=0|help=Zu Multiview hinzufügen|frame=720x76|farbe=akzent(112px)
+B05PROBE|screenshot|mac-00-karte-stern-per-aktion.png|760x400
+
+== Lauf test10_SternUmschaltenUndSpeichern ==
+B05PROBE|screenshot|mac-01-senderliste-ohne-favorit.png|760x520
+B05PROBE|t10|start|isFavorite=false|db=0|stern=grau(69px)
+B05PROBE|t10|nach-klick-synchron|isFavorite=true|hasChanges=false|db=1
+B05PROBE|t10|nach-klick|isFavorite=true|db=1|stern=akzent(112px)|karten=["arte, Vollprogramm", "Das Erste HD, Vollprogramm", "ZDF, Vollprogramm"]|kopfzeileNoch=true
+B05PROBE|screenshot|mac-02-senderliste-zdf-favorit.png|760x520
+B05PROBE|t10|zweiter-klick|isFavorite=false|db=0|stern=grau(69px)
+B05PROBE|t10|doppelklick|isFavorite=false|db=0
+B05PROBE|t10|ax-karte|role=AXBusyIndicator|label=Das Erste HD, Vollprogramm|title=|value=0|help=Zu Multiview hinzufügen|frame=720x76
+B05PROBE|t10|ax-druck-karte|dasErsteFavorit=false|texte="Back", "0"
+B05PROBE|screenshot|mac-02b-ax-druck-karte.png|760x520
+
+== Lauf test10b_KlickAufKarteOeffnetPlayer ==
+B05PROBE|t10b|klick-name|arteFavorit=false|texte="Back", "0"
+
+== Lauf test11_FavoritenTab ==
+B05PROBE|t11|leer|texte="MIKA+PLAYER · FAVORITEN", "Favoriten", "Favourite", "Keine Favoriten", "Markiere Sender mit dem Stern, um sie hier zu sammeln."|titel=Favoriten
+B05PROBE|screenshot|mac-03-favoriten-leer.png|760x620
+B05PROBE|t11|playlists-ohne-favoriten|texte="MIKA+PLAYER · FAVORITEN", "Favoriten", "Favourite", "Keine Favoriten", "Markiere Sender mit dem Stern, um sie hier zu sammeln."
+B05PROBE|t11|vier-favoriten|texte-von-oben="MIKA+PLAYER · FAVORITEN", "Favoriten", "3sat | 0", "Das Erste HD, Deutschland | 0", "Das Erste HD, Deutschland | 0", "KiKA, Kinder | 0"
+B05PROBE|screenshot|mac-04-favoriten-zwei-playlists-gleichnamig.png|760x620
+B05PROBE|t11|karten=["3sat", "Das Erste HD, Deutschland", "Das Erste HD, Deutschland", "KiKA, Kinder"]
+B05PROBE|t11|nach-entfernen-im-tab|karten=["3sat", "Das Erste HD, Deutschland", "KiKA, Kinder"]|db=["Das Erste HD/Anbieter A/0", "KiKA/Anbieter A/1", "ZDF/Anbieter A/0", "3sat/Anbieter B/1", "Das Erste HD/Anbieter B/1"]|a1=false|b1=true
+B05PROBE|screenshot|mac-05-favoriten-nach-entfernen.png|760x620
+B05PROBE|t11|live-wieder-gesetzt|karten=["3sat", "Das Erste HD, Deutschland", "Das Erste HD, Deutschland", "KiKA, Kinder"]
+B05PROBE|t11|klick-karte|texte="Back", "0"
+B05PROBE|screenshot|mac-05b-favoriten-klick-karte-player.png|760x652
+
+== Lauf test00 (erster Durchlauf): AX-Baum der Senderliste ==
+B01AX|t00-vorher|AXWindow Sonde | Sonde enabled=0 [NSWindow]
+B01AX|t00-vorher|  AXGroup  enabled=0 [NSHostingView<ModifiedContent<ModifiedContent<NavigationStack<NavigationPath, ChannelListView>, PassthroughModelContainerViewModifier>, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>>]
+B01AX|t00-vorher|    AXScrollArea  enabled=0 [HostingScrollView]
+B01AX|t00-vorher|      AXStaticText MIKA+PLAYER · 2 SENDER enabled=1 [AccessibilityNode]
+B01AX|t00-vorher|      AXStaticText Sonde enabled=1 [AccessibilityNode]
+B01AX|t00-vorher|      AXOpaqueProviderGroup  enabled=1 [AccessibilityLazyLayoutNode]
+B01AX|t00-vorher|        AXBusyIndicator Das Erste HD, Vollprogramm | 0 enabled=1 [AccessibilityNode]
+B01AX|t00-vorher|        AXBusyIndicator ZDF | 0 enabled=1 [AccessibilityNode]
+B01AX|t00-vorher|      AXTextField Sender suchen enabled=1 [AppKitSearchFieldCell]
+
+== Lauf test12_SortierungImTab (mit SQLDebug) ==
+B05PROBE|t12|sql-marker|generisch-Comparable
+CoreData: sql: SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZISFAVORITE = ? ORDER BY t0.ZNAME
+B05PROBE|t12|abfrage|generisch-Comparable|" Leerzeichen vorn", "#Hash TV", "100% Hits", "1LIVE", "ARD", "Oe24 TV", "Sport 10", "Sport 2", "Strasse 2", "Straße TV", "Zebra", "ard alpha", "arte", "ecran basic", "film normal", "istanbul 2", "zdf", "Ärger TV", "Écran Plus", "Ö3", "Österreich 1", "İstanbul TV", "Ελληνικά", "Первый канал", "ﬁlm ligature", "😀 Emoji TV"
+B05PROBE|t12|sql-marker|SortDescriptor(\.name)
+CoreData: sql: SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZISFAVORITE = ? ORDER BY t0.ZNAME COLLATE NSCollateFinderlike 
+B05PROBE|t12|abfrage|SortDescriptor(\.name)|" Leerzeichen vorn", "#Hash TV", "😀 Emoji TV", "1LIVE", "100% Hits", "ARD", "ard alpha", "Ärger TV", "arte", "ecran basic", "Écran Plus", "ﬁlm ligature", "film normal", "istanbul 2", "İstanbul TV", "Ö3", "Oe24 TV", "Österreich 1", "Sport 2", "Sport 10", "Strasse 2", "Straße TV", "zdf", "Zebra", "Ελληνικά", "Первый канал"
+B05PROBE|t12|sql-marker|localizedStandard
+CoreData: sql: SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZISFAVORITE = ? ORDER BY t0.ZNAME COLLATE NSCollateFinderlike 
+B05PROBE|t12|abfrage|localizedStandard|" Leerzeichen vorn", "#Hash TV", "😀 Emoji TV", "1LIVE", "100% Hits", "ARD", "ard alpha", "Ärger TV", "arte", "ecran basic", "Écran Plus", "ﬁlm ligature", "film normal", "istanbul 2", "İstanbul TV", "Ö3", "Oe24 TV", "Österreich 1", "Sport 2", "Sport 10", "Strasse 2", "Straße TV", "zdf", "Zebra", "Ελληνικά", "Первый канал"
+B05PROBE|t12|sql-marker|localized
+CoreData: sql: SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZISFAVORITE = ? ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive 
+B05PROBE|t12|abfrage|localized|" Leerzeichen vorn", "#Hash TV", "😀 Emoji TV", "100% Hits", "1LIVE", "ARD", "ard alpha", "Ärger TV", "arte", "ecran basic", "Écran Plus", "ﬁlm ligature", "film normal", "istanbul 2", "İstanbul TV", "Ö3", "Oe24 TV", "Österreich 1", "Sport 10", "Sport 2", "Strasse 2", "Straße TV", "zdf", "Zebra", "Ελληνικά", "Первый канал"
+B05PROBE|t12|sql-marker|lexical
+CoreData: sql: SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZISFAVORITE = ? ORDER BY t0.ZNAME
+B05PROBE|t12|abfrage|lexical|" Leerzeichen vorn", "#Hash TV", "100% Hits", "1LIVE", "ARD", "Oe24 TV", "Sport 10", "Sport 2", "Strasse 2", "Straße TV", "Zebra", "ard alpha", "arte", "ecran basic", "film normal", "istanbul 2", "zdf", "Ärger TV", "Écran Plus", "Ö3", "Österreich 1", "İstanbul TV", "Ελληνικά", "Первый канал", "ﬁlm ligature", "😀 Emoji TV"
+B05PROBE|t12|sql-marker|ansicht
+CoreData: sql: SELECT 0, t0.Z_PK, t0.Z_OPT, t0.ZGROUP, t0.ZID, t0.ZISFAVORITE, t0.ZLOGOURL, t0.ZNAME, t0.ZPLAYLISTID, t0.ZSTREAMURL, t0.ZTVGID, t0.ZPLAYLIST FROM ZCHANNEL t0 WHERE  t0.ZISFAVORITE = ? ORDER BY t0.ZNAME, t0.Z_PK
+B05PROBE|t12|ansicht|anzahl=26|" Leerzeichen vorn", "#Hash TV", "100% Hits", "1LIVE", "ARD", "Oe24 TV", "Sport 10", "Sport 2", "Strasse 2", "Straße TV", "Zebra", "ard alpha", "arte", "ecran basic", "film normal", "istanbul 2", "zdf", "Ärger TV", "Écran Plus", "Ö3", "Österreich 1", "İstanbul TV", "Ελληνικά", "Первый канал", "ﬁlm ligature", "😀 Emoji TV"
+B05PROBE|t12|sql-marker|ende
+
+== Lauf test20_AktualisierenM3U ==
+B05PROBE|t20|import|sender=21
+B05PROBE|t20|stufe1-favoriten|anzahl=14|"ARD@Anbieter M3U", "Beta@Anbieter M3U", "Café Kanal@Anbieter M3U", "Kanal  Zwei@Anbieter M3U", "KiKA@Anbieter M3U", "Leer-ID A@Anbieter M3U", "München TV@Anbieter M3U", "News@Anbieter M3U", "Phoenix@Anbieter M3U", "Sport1@Anbieter M3U", "Straße TV@Anbieter M3U", "Tagesschau24@Anbieter M3U", "ZDF HD@Anbieter M3U", "İstanbul TV@Anbieter M3U"
+B05PROBE|t20|stufe1-schluessel|"id: ", "id:ard.de", "id:beta.de", "id:kika.de", "id:phoenix.de", "id:zdf.de", "name:café kanal", "name:i̇stanbul tv", "name:kanal  zwei", "name:münchen tv", "name:news", "name:sport1", "name:straße tv", "name:tagesschau24"
+B05PROBE|t20|stufe2-umsortiert|anzahl=19|"ARD@Anbieter M3U", "Beta@Anbieter M3U", "Café Kanal@Anbieter M3U", "Kanal  Zwei@Anbieter M3U", "KiKA@Anbieter M3U", "Leer-ID A@Anbieter M3U", "Leer-ID B@Anbieter M3U", "München TV@Anbieter M3U", "NEWS@Anbieter M3U", "News@Anbieter M3U", "News@Anbieter M3U", "Phoenix@Anbieter M3U", "Sport1@Anbieter M3U", "Straße TV@Anbieter M3U", "Tagesschau24@Anbieter M3U", "ZDF FHD@Anbieter M3U", "ZDF HD@Anbieter M3U", "ZDF SD@Anbieter M3U", "İstanbul TV@Anbieter M3U"
+B05PROBE|t20|stufe3-abgewandelt|anzahl=12|"Beta HD@Anbieter M3U", "Café Kanal@Anbieter M3U", "Leer-ID A@Anbieter M3U", "Leer-ID B@Anbieter M3U", "MÜNCHEN TV@Anbieter M3U", "NEWS@Anbieter M3U", "News@Anbieter M3U", "News@Anbieter M3U", "SPORT1@Anbieter M3U", "ZDF FHD@Anbieter M3U", "ZDF HD@Anbieter M3U", "ZDF SD@Anbieter M3U"
+B05PROBE|t20|stufe4-kika-zurueck|kikaFavorit=false|anzahl=12
+B05PROBE|t20|stufe5-vor-aktualisieren|anzahl=7|"Beta HD@Anbieter M3U", "Café Kanal@Anbieter M3U", "Leer-ID A@Anbieter M3U", "MÜNCHEN TV@Anbieter M3U", "News@Anbieter M3U", "SPORT1@Anbieter M3U", "ZDF HD@Anbieter M3U"
+B05PROBE|t20|stufe5-nach-aktualisieren|anzahl=12|"Beta HD@Anbieter M3U", "Café Kanal@Anbieter M3U", "Leer-ID A@Anbieter M3U", "Leer-ID B@Anbieter M3U", "MÜNCHEN TV@Anbieter M3U", "NEWS@Anbieter M3U", "News@Anbieter M3U", "News@Anbieter M3U", "SPORT1@Anbieter M3U", "ZDF FHD@Anbieter M3U", "ZDF HD@Anbieter M3U", "ZDF SD@Anbieter M3U"
+B05PROBE|t20|stufe6-nur-sd|zdf="ZDF FHD", "ZDF HD", "ZDF SD"
+B05PROBE|t20|stufe7-http500|fehler=Netzwerkfehler: HTTP 500|favoritenGleich=true|senderObjekteGleich=true
+B05PROBE|t20|stufe7-leer|fehler=Die Playlist enthält keine gültigen Sender.|favoritenGleich=true|senderObjekteGleich=true
+B05PROBE|t20|stufe8-nichts-passt|anzahl=0|sender=1
+
+== Lauf test21_AktualisierenXtream ==
+B05PROBE|t21|import|sender=8|tvg="DE: ZDF HD→id:ZDF.de", "DE: ZDF FHD→id:ZDF.de", "DE: ZDF SD→id:ZDF.de", "DE: ARD HD→id:ARD.de", "→name:", "→name:", "DE: Sky Sport 1→name:de: sky sport 1", "DE: KiKA→id:kika.de"
+B05PROBE|t21|vorher|anzahl=4|"@127.0.0.1", "DE: KiKA@127.0.0.1", "DE: Sky Sport 1@127.0.0.1", "DE: ZDF HD@127.0.0.1"
+B05PROBE|t21|nachher|anzahl=5|"@127.0.0.1", "@127.0.0.1", "DE: ZDF FHD@127.0.0.1", "DE: ZDF HD@127.0.0.1", "DE: ZDF SD@127.0.0.1"
+
+== Lauf test22_ZweiPlaylistsGleicheTvgID ==
+B05PROBE|t22|start|"Das Erste HD@Anbieter A"
+B05PROBE|t22|nach-aktualisieren-B|"Das Erste HD@Anbieter A"|A-Objekt-unveraendert=true
+B05PROBE|t22|B-ZDF-markiert-dann-A-aktualisiert|"Das Erste HD@Anbieter A", "ZDF@Anbieter B"
+B05PROBE|t22|A-ohne-DasErste|"ZDF@Anbieter B"
+
+== Lauf test23_LokaleDatei ==
+B05PROBE|t23|lokal|isRemote=false|nachRefresh="Datei Zwei@t23"|objekteGleich=true
+
+== Lauf test30_PlaylistLoeschen ==
+B05PROBE|t30|vorher|karten="B05MARKER Glaube TV, Religion", "B05MARKER Partei TV, Politik", "Neutral B"
+B05PROBE|screenshot|mac-06-favoriten-vor-loeschen.png|760x520
+B05PROBE|t30|rohbytes-vorher|["t30.store-shm": 0, "t30.store": 0, "t30.store-wal": 10]
+B05PROBE|t30|nachher|karten="Neutral B"|texte="MIKA+PLAYER · FAVORITEN", "Favoriten", "Neutral B | 0"|alerts=[]|favoriten="Neutral B@Anbieter B"
+B05PROBE|screenshot|mac-07-favoriten-nach-loeschen.png|760x520
+B05PROBE|t30|rohbytes-nach-loeschen|["t30.store-wal": 10, "t30.store": 0, "t30.store-shm": 0]|zeilen=[["0"]]
+B05PROBE|t30|neu-importiert|favoritenA=0|alle="Neutral B@Anbieter B"
+B05PROBE|t30|rohbytes-nach-neuimport|["t30.store-wal": 12, "t30.store": 0, "t30.store-shm": 0]
+
+== Lauf test31_LoeschenRestbytes ==
+B05PROBE|t31|vorher|["t31.store-shm": 0, "t31.store": 0, "t31.store-wal": 2]
+B05PROBE|t31|nach-loeschen|["t31.store-shm": 0, "t31.store": 0, "t31.store-wal": 2]|zeilen=[["0"]]
+-- nach Prozessende (Bash, /usr/bin/sqlite3 und grep auf die Datei) --
+t31.store: B05REST-Vorkommen 0 · t31.store-wal: 0 Byte, 0 Vorkommen · ZCHANNEL-Zeilen 0 · freelist_count 5 · page_count 29
+t30.store (mit erneutem Import): PRAGMA secure_delete = 2 (FAST), journal_mode = wal
+
+== Lauf test40_SpeicherfehlerBeimUmschalten (8-MB-HFS+-Abbild unter <sonde>/data/voll, per hdiutil eingehängt, -nobrowse) ==
+B05PROBE|t40|autosave=true
+B05PROBE|t40|volume-gefuellt|bytes=7966720|frei=0
+CoreData: error: (13) database or disk is full
+SwiftData.DefaultStore save failed with error: Error Domain=NSSQLiteErrorDomain Code=13 "(null)" UserInfo={NSFilePath=<sonde>/data/voll/t40.store, NSSQLiteErrorDomain=13}
+B05PROBE|t40|nach-druck-voll|isFavorite=true|hasChanges=true|db=0|stern=akzent(112px)|tabZeigt=true|alerts=[]
+B05PROBE|screenshot|mac-08-speicher-voll-stern-gefuellt.png|700x420
+B05PROBE|screenshot|mac-09-speicher-voll-favoriten-tab.png|700x420
+B05PROBE|t40|expliziter-save|fehler=NSSQLiteErrorDomain 13|The operation couldn’t be completed. (NSSQLiteErrorDomain error 13.)|sqlite=13
+B05PROBE|t40|neuer-container-voll|favoriten=
+B05PROBE|t40|nach-3s-voll|db=0|hasChanges=true
+B05PROBE|t40|platz-frei-3s|db=0|hasChanges=true
+B05PROBE|t40|platz-frei-weiterer-stern|dbZwei=1|dbDrei=1|hasChanges=false
+B05PROBE|t40|entfernen-im-tab-voll|tabZeigt=false|isFavorite=false|db=1|alerts=[]
+B05PROBE|t40|neuer-container-nach-entfernen|favoriten="Voll Drei", "Voll Zwei"
+
+== Lauf test50_Leistung (17.000 bzw. 34.000 Sender, 50 bzw. 100 Favoriten) ==
+B05PROBE|t50|anlegen-17000|ms=2080
+B05PROBE|t50|abfrage|17000|sender=17000|favoriten=50|count=50|kaltMs=1.9|warmMs=1.0,1.0,1.0,1.0|countMs=0.4
+# Hinweis: 'schluessel=15' bei 50 Favoriten ist ein Artefakt der erfundenen tvg-ids (Muster <genre>.<i%100>.<land> wiederholt sich); gemessen wird hier nur die Dauer.
+B05PROBE|t50|refresh-schluessel-merken|17000|playlist=Groß 1|schluessel=15|kaltMs=1079|warmMs=10
+B05PROBE|t50|tab-oeffnen|maxBlockMs=70|karten=21
+B05PROBE|t50|im-tab-entfernen|syncMs=9|maxBlockMs=26|favoriten=49
+B05PROBE|t50|stern-in-liste-mit-offenem-tab|runde=0|ziel=AR: Anime 95 4K|syncMs=64|maxBlockMs=292
+B05PROBE|t50|stern-in-liste-mit-offenem-tab|runde=1|ziel=AR: Anime 95 4K|syncMs=86|maxBlockMs=309
+B05PROBE|t50|stern-in-liste-ohne-tab|runde=0|ziel=AR: Anime 95 4K|syncMs=90|maxBlockMs=318
+B05PROBE|t50|stern-in-liste-ohne-tab|runde=1|ziel=AR: Anime 95 4K|syncMs=94|maxBlockMs=226
+B05PROBE|t50|abfrage|34000|sender=34000|favoriten=100|count=100|kaltMs=3.4|warmMs=2.0,2.0,2.1,2.2|countMs=0.9
+B05PROBE|t50|refresh-schluessel-merken|34000|playlist=Groß 1|schluessel=15|kaltMs=1135|warmMs=11
+-- Schema und Abfrageplan (Bash, /usr/bin/sqlite3 auf <sonde>/data/perf.store, 34.000 Sender) --
+table|ZCHANNEL|CREATE TABLE ZCHANNEL ( Z_PK INTEGER PRIMARY KEY, Z_ENT INTEGER, Z_OPT INTEGER, ZISFAVORITE INTEGER, ZPLAYLIST INTEGER, ZGROUP VARCHAR, ZNAME VARCHAR, ZTVGID VARCHAR, ZID BLOB, ZLOGOURL VARCHAR, ZPLAYLISTID BLOB, ZSTREAMURL VARCHAR )
+index|ZCHANNEL_ZPLAYLIST_INDEX|CREATE INDEX ZCHANNEL_ZPLAYLIST_INDEX ON ZCHANNEL (ZPLAYLIST)
+QUERY PLAN
+|--SCAN t0
+`--USE TEMP B-TREE FOR ORDER BY
+34000|100
+
+== Lauf test60_KeinProtokoll (parallel: /usr/bin/log stream --level debug --predicate 'process == "MikaPlusPlayer"') ==
+B05PROBE|t60|druck-0|isFavorite=true|tab=true
+B05PROBE|t60|druck-1|isFavorite=false|tab=false
+B05PROBE|t60|druck-2|isFavorite=true|tab=true
+B05PROBE|t60|druck-3|isFavorite=false|tab=false
+log stream: 6830 Zeilen · Treffer 'B05LOG' (Sender- und Playlistname, tvg-id): 0 · Treffer 'favorit'/'ZISFAVORITE': 2 (nur Nachschlagen der Oberflächentexte:)
+  CFBundle strings: key: Favoriten, value: (null), table: Localizable, localizationNames: (null), result: <same as key>
+  CFBundle strings: key: Keine Favoriten, value: (null), table: Localizable, localizationNames: (null), result: <same as key>
+
+== Lauf test70_Speicherort ==
+B05PROBE|t70|app-pfad-macos|~/Library/Application Support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store
+B05PROBE|t70|datei|<sonde>/data/t70-support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store|rechte=644|isExcludedFromBackup=false
+B05PROBE|t70|datei|<sonde>/data/t70-support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store-wal|rechte=644|isExcludedFromBackup=false
+B05PROBE|t70|datei|<sonde>/data/t70-support/lu.daumedia.MikaPlusPlayer/MikaPlusPlayer.store-shm|rechte=644|isExcludedFromBackup=false
+B05PROBE|t70|datei|<sonde>/data/t70-support/lu.daumedia.MikaPlusPlayer|rechte=755|isExcludedFromBackup=false
+B05PROBE|t70|outcome=noLegacyStore
+
+== Lauf test80a_TabOffenWaehrendAktualisieren ==
+B05PROBE|t80a|vorher|karten="ZDF HD, Deutschland", "arte, Kultur"
+B05PROBE|screenshot|mac-10-favoriten-vor-aktualisieren.png|760x520
+B05PROBE|t80a|nachher|karten="ZDF HD, Deutschland", "ZDF SD, Deutschland", "arte, Kultur"
+B05PROBE|screenshot|mac-11-favoriten-nach-aktualisieren-dublette.png|760x520
+
+== Lauf test80b_PlayerAusTabWaehrendAktualisieren ==
+B05PROBE|t80b|player-offen|texte="Back", "0"
+B05PROBE|t80b|aktualisiere-jetzt
+B05PROBE|t80b|nach-aktualisieren|prozess-lebt|texte="Back", "0"
+B05PROBE|screenshot|mac-12-player-aus-tab-nach-aktualisieren.png|760x552
+
+== Lauf test90_LogoAnfragenImTab ==
+B05PROBE|t90|tab-geoeffnet|anfragen=3|pfade="/logos/sender-11.png", "/logos/sender-17.png", "/logos/sender-3.png"
+B05PROBE|t90|kopfzeilen|user-agent=Mika+Player/2 CFNetwork/3896.100.1.1.1 Darwin/27.0.0|accept-language=de-DE,de;q=0.9|cookie=-|referer=-
+B05PROBE|screenshot|mac-13-favoriten-mit-logos.png|760x620
+
+-- test70: tmutil isexcluded auf die Probedatei meldet [Excluded], weil /private/tmp systemweit von Time Machine ausgeschlossen ist; aussagekräftig ist nur isExcludedFromBackup=false der App.
+-- Rechte im echten Pfad (nur Verzeichnisse gelesen, keine Inhalte): ~/Library drwx------, ~/Library/Application Support drwx------+
+
+== Begleitbefehle außerhalb der Tests (Bash) ==
+xcodegen generate · xcodebuild build-for-testing / test-without-building -derivedDataPath build/dd-test -only-testing:MikaPlusPlayerTests/B05ProbeTests/<test>
+defaults write lu.daumedia.MikaPlusPlayer.b05probe com.apple.CoreData.SQLDebug -int 1   (nur für test12, danach wieder gelöscht)
+hdiutil create -size 8m -fs HFS+ -volname B05Voll voll.dmg · hdiutil attach -nobrowse -mountpoint <sonde>/data/voll voll.dmg · (nach test40) hdiutil detach
+Vorversuch mit Python/sqlite3 auf demselben Abbild: volles Volume → jede Schreibtransaktion „database or disk is full"; chflags uchg auf die -wal-Datei verhindert Schreiben über offene Verbindungen NICHT (verworfen)
+/usr/bin/log stream --level debug --style compact --predicate 'process == "MikaPlusPlayer"' (während test60)
+/usr/bin/sqlite3 <sonde>/data/perf.store "EXPLAIN QUERY PLAN …" · /usr/bin/sqlite3 t30.store "PRAGMA secure_delete; …"

@@ -1,0 +1,61 @@
+B06-QA · zweites Sample desselben Hängers (PID 44246, 2026-09-26 11:30, Lauf run-gesamt.log)
+Hänger im selben Übergang: testAK09 (6 VLC-Engines, 10 s Wiedergabe) -> tearDown (stop + freigeben) -> testAK10 (6 neue Engines).
+Hauptthread in VLCMediaPlayer.init -> config_GetFloat -> pthread_rwlock; 4 Threads in config_Get/PutPsz; 3 Threads in libvlc_media_player_destroy.
+
+    1716 Thread_2157293   DispatchQueue_1: com.apple.main-thread  (serial)
+    + 1716 completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)  (in libswift_Concurrency.dylib) + 1  [0x2be752d41]
+    +   1716 partial apply for specialized thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)  (in MikaPlusPlayerTests) + 1  [0x10cbb38e1]  /<compiler-generated>:0
+    +     1716 specialized thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)  (in MikaPlusPlayerTests) + 1  [0x10cbb2d1d]  /<compiler-generated>:0
+    +       1716 partial apply for thunk for @escaping @isolated(any) @callee_guaranteed @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cbb37a9]  /<compiler-generated>:0
+    +         1716 thunk for @escaping @isolated(any) @callee_guaranteed @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cbb2855]  /<compiler-generated>:0
+    +           1716 partial apply for thunk for @escaping @callee_guaranteed @Sendable @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cbb3651]  /<compiler-generated>:0
+    +             1716 thunk for @escaping @callee_guaranteed @Sendable @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cbb2785]  /<compiler-generated>:0
+    +               1716 partial apply for @objc closure #1 in B06EngineZustandTests.testAK10_VLCHTTPFehlerUndHostWegOhneMeldung()  (in MikaPlusPlayerTests) + 1  [0x10cef5279]  /<compiler-generated>:0
+    +                 1716 @objc closure #1 in B06EngineZustandTests.testAK10_VLCHTTPFehlerUndHostWegOhneMeldung()  (in MikaPlusPlayerTests) + 1  [0x10cef50a5]  /<compiler-generated>:0
+    +                   1716 B06EngineZustandTests.testAK10_VLCHTTPFehlerUndHostWegOhneMeldung()  (in MikaPlusPlayerTests) + 1080  [0x10cef2680]  B06EngineZustandTests.swift:215
+    +                     1716 B06EngineZustandTests.start(_:forceAVKit:)  (in MikaPlusPlayerTests) + 1480  [0x10cee12b0]  B06EngineZustandTests.swift:23
+    +                       1716 B06TestCase.mutedEngine(for:)  (in MikaPlusPlayerTests) + 52  [0x10cf78ce4]  B06Support.swift:898
+    +                         1716 static PlaybackEngineFactory.engine(for:)  (in MikaPlusPlayer.debug.dylib) + 164  [0x100fea4cc]  PlaybackEngine.swift:104
+    +                           1716 static PlaybackEngineFactory.makeVLCEngine()  (in MikaPlusPlayer.debug.dylib) + 32  [0x100fea61c]  PlaybackEngine.swift:114
+    +                             1716 VLCPlaybackEngine.__allocating_init()  (in MikaPlusPlayer.debug.dylib) + 28  [0x101042638]  VLCPlaybackEngine.swift:0
+    +                               1716 @objc VLCPlaybackEngine.init()  (in MikaPlusPlayer.debug.dylib) + 20  [0x1010428dc]  /<compiler-generated>:0
+    +                                 1716 VLCPlaybackEngine.init()  (in MikaPlusPlayer.debug.dylib) + 252  [0x101042740]  VLCPlaybackEngine.swift:30
+    +                                   1716 VLCMediaPlayer.__allocating_init()  (in MikaPlusPlayer.debug.dylib) + 32  [0x101042500]  NSObject.h:0
+    +                                     1716 @nonobjc VLCMediaPlayer.init()  (in MikaPlusPlayer.debug.dylib) + 16  [0x101044320]  /<compiler-generated>:0
+    +                                       1716 config_GetFloat  (in VLCKit) + 92  [0x105fedef4]  core.c:138
+    +                                         1716 _pthread_rwlock_lock_slow  (in libsystem_pthread.dylib) + 652  [0x191e52580]
+    +                                           1716 _pthread_rwlock_lock_wait  (in libsystem_pthread.dylib) + 72  [0x191e54400]
+    +                                             1716 __psynch_rw_rdlock  (in libsystem_kernel.dylib) + 8  [0x191e16280]
+    1716 Thread_2159143: com.apple.NSEventThread
+    + 1716 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1716 _pthread_start  (in libsystem_pthread.dylib) + 136  [0x191e55d00]
+
+    +                         1716 object_cxxDestructFromClass(objc_object*, objc_class*)  (in libobjc.A.dylib) + 116  [0x1919de278]
+    +                           1716 -[VLCMediaPlayer .cxx_destruct]  (in VLCKit) + 96  [0x105fc6b40]  VLCMediaPlayer.m:306
+    +                             1716 libvlc_media_player_destroy  (in VLCKit) + 232  [0x105fd8270]  media_player.c:915
+    +                               1716 _pthread_join  (in libsystem_pthread.dylib) + 620  [0x191e5803c]
+    +                                 1716 __ulock_wait  (in libsystem_kernel.dylib) + 8  [0x191e12af4]
+    1716 Thread_2506255   DispatchQueue_20227: handler.releaseQueue  (serial)
+    + 1716 start_wqthread  (in libsystem_pthread.dylib) + 8  [0x191e50ce0]
+    +   1716 _pthread_wqthread  (in libsystem_pthread.dylib) + 292  [0x191e51f9c]
+    +     1716 _dispatch_workloop_worker_thread  (in libdispatch.dylib) + 720  [0x191ca785c]
+--
+    +                         1716 object_cxxDestructFromClass(objc_object*, objc_class*)  (in libobjc.A.dylib) + 116  [0x1919de278]
+    +                           1716 -[VLCMediaPlayer .cxx_destruct]  (in VLCKit) + 96  [0x105fc6b40]  VLCMediaPlayer.m:306
+    +                             1716 libvlc_media_player_destroy  (in VLCKit) + 232  [0x105fd8270]  media_player.c:915
+    +                               1716 _pthread_join  (in libsystem_pthread.dylib) + 620  [0x191e5803c]
+    +                                 1716 __ulock_wait  (in libsystem_kernel.dylib) + 8  [0x191e12af4]
+    1716 Thread_2506258   DispatchQueue_20257: handler.releaseQueue  (serial)
+    + 1716 start_wqthread  (in libsystem_pthread.dylib) + 8  [0x191e50ce0]
+    +   1716 _pthread_wqthread  (in libsystem_pthread.dylib) + 292  [0x191e51f9c]
+    +     1716 _dispatch_workloop_worker_thread  (in libdispatch.dylib) + 720  [0x191ca785c]
+--
+    +                         1716 object_cxxDestructFromClass(objc_object*, objc_class*)  (in libobjc.A.dylib) + 116  [0x1919de278]
+    +                           1716 -[VLCMediaPlayer .cxx_destruct]  (in VLCKit) + 96  [0x105fc6b40]  VLCMediaPlayer.m:306
+    +                             1716 libvlc_media_player_destroy  (in VLCKit) + 232  [0x105fd8270]  media_player.c:915
+    +                               1716 _pthread_join  (in libsystem_pthread.dylib) + 620  [0x191e5803c]
+    +                                 1716 __ulock_wait  (in libsystem_kernel.dylib) + 8  [0x191e12af4]
+    1714 Thread_2829645
+    + 1714 start_wqthread  (in libsystem_pthread.dylib) + 8  [0x191e50ce0]
+    +   1714 _pthread_wqthread  (in libsystem_pthread.dylib) + 368  [0x191e51fe8]
+    +     1714 __workq_kernreturn  (in libsystem_kernel.dylib) + 8  [0x191e129ec]

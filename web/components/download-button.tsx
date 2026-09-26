@@ -1,9 +1,14 @@
 import { formatBytes } from "@/lib/format";
-import { MIN_MACOS } from "@/lib/site";
+import { LATEST_RELEASE_URL, MIN_MACOS } from "@/lib/site";
 import type { Release } from "@/lib/releases";
 
-export function DownloadButton({ release }: { release: Release }) {
-  const href = release.dmg?.url ?? release.htmlUrl;
+/**
+ * `release` is null when GitHub did not answer. The button then opens the newest release page
+ * instead of guessing a file, and the caption says so instead of naming a version.
+ */
+export function DownloadButton({ release }: { release: Release | null }) {
+  const dmg = release?.dmg ?? null;
+  const href = dmg?.url ?? release?.htmlUrl ?? LATEST_RELEASE_URL;
 
   return (
     <div className="space-y-2.5">
@@ -24,9 +29,15 @@ export function DownloadButton({ release }: { release: Release }) {
       </a>
 
       <p className="font-mono text-xs text-ink-soft">
-        Version {release.version}
-        {release.dmg ? ` · ${formatBytes(release.dmg.sizeBytes)}` : ""} · {MIN_MACOS} or later
+        {release ? `Version ${release.version}` : "Latest release on GitHub"}
+        {dmg ? ` · ${formatBytes(dmg.sizeBytes)}` : ""} · {MIN_MACOS} or later
       </p>
+
+      {dmg?.sha256 && (
+        <p className="max-w-md break-all font-mono text-[0.7rem] leading-relaxed text-ink-faint">
+          SHA-256 {dmg.sha256}
+        </p>
+      )}
     </div>
   );
 }

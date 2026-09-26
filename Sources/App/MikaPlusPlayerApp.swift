@@ -4,15 +4,19 @@ import SwiftData
 @main
 struct MikaPlusPlayerApp: App {
     /// Gemeinsamer SwiftData-Container für beide Plattformen.
-    let modelContainer: ModelContainer = {
-        let schema = Schema([Playlist.self, Channel.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        do {
-            return try ModelContainer(for: schema, configurations: [config])
-        } catch {
-            fatalError("ModelContainer konnte nicht erstellt werden: \(error)")
-        }
-    }()
+    let modelContainer: ModelContainer
+    /// B09 · BUG-13: Hinweis, falls die Datenbank beim Start beiseitegelegt werden musste.
+    @State private var storeNotice: StoreNoticeCenter
+
+    init() {
+        // B01 · BUG-04: app-eigener Speicherort, Übernahme der alten default.store; Test-Host im Speicher.
+        // B09 · BUG-13: versioniertes Schema mit Migrationsplan; nicht zu öffnende Datei wird beiseitegelegt
+        //               statt fatalError.
+        // B01 · BUG-01/BUG-03: danach Zugangsdaten aus Altbeständen in den Schlüsselbund, alten HTTP-Cache leeren.
+        let launch = AppPersistence.openAppStore()
+        modelContainer = launch.container
+        _storeNotice = State(initialValue: StoreNoticeCenter(notice: launch.outcome.notice))
+    }
 
     #if os(macOS)
     /// Sparkle-Auto-Updater (nur macOS).
@@ -24,6 +28,7 @@ struct MikaPlusPlayerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .storeRecoveryAlert(storeNotice)
             #if os(macOS)
                 .environment(multiview)
             #endif

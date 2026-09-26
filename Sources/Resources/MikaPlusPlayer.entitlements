@@ -6,8 +6,11 @@
 	     Sparkle-Updater wie bei den anderen Mika+ Apps funktioniert. -->
 	<key>com.apple.security.app-sandbox</key>
 	<false/>
-	<!-- Erlaubt das Laden der eingebetteten Sparkle.framework / XPC-Dienste
-	     unter Hardened Runtime (besonders bei Ad-hoc-Signatur). -->
+	<!-- Nötig, solange die App ad hoc signiert ist (B09 · BUG-09, belegt 2026-09-16):
+	     Das Release läuft mit Hardened Runtime (BUG-02). Ohne dieses Entitlement bricht der
+	     Start mit „mapping process and mapped file (non-platform) have different Team IDs"
+	     beim Laden von VLCKit.framework ab – ad-hoc-Signaturen haben keine Team-ID.
+	     Mit Developer-ID-Signatur (gleiche Team-ID für App und Frameworks) entfernen. -->
 	<key>com.apple.security.cs.disable-library-validation</key>
 	<true/>
 </dict>

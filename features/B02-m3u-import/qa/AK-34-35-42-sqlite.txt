@@ -1,0 +1,5 @@
+AK-34|benutzerinfo|ZPLAYLIST.ZSOURCEURL mit Passwort=1
+AK-34|sqlite|ZPLAYLIST.ZSOURCEURL mit Passwort=1|ZCHANNEL.ZSTREAMURL mit Passwort=3/3|rohBytes=["b02-qa.store-wal": 4, "b02-qa.store-shm": 0, "b02-qa.store": 0]|schluesselbund(Testdienst)=0|umstellung=CredentialMigrationResult(migratedPlaylists: 0, rewrittenChannels: 0, failedPlaylists: 0)|sourceURLDanach=1|abspielbarMitPasswort=3/3|isExcludedFromBackup=false
+AK-35|cache|nachImport api=1 bytes=8 dateien=["/privateCache.db-wal"] antwortkoerperMitPasswort=true|nachLoeschen api=1 bytes=8|no-store api=0 bytes=0|leeren1=true->api 0|neuerImport+leeren2=false->api 1
+AK-42|vorLoeschen=["b02-qa.store-wal": 4, "b02-qa.store-shm": 0, "b02-qa.store": 0]|nachLoeschenOffen zeilen=0 bytes=["b02-qa.store-shm": 0, "b02-qa.store": 0, "b02-qa.store-wal": 4]
+AK-42|nachSchliessen bytes=["b02-qa.store": 0, "b02-qa.store-shm": 0, "b02-qa.store-wal": 0]|cacheEintragBleibt=1|cookieBleibt=1

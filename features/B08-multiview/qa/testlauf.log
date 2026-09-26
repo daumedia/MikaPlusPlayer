@@ -1,0 +1,808 @@
+17:08:47.718|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:08:47.722|=== -[B08NachtragTests testAK06_AK07_PlusOhneZugangsdatenUndDoppelterSender] · mock 127.0.0.1:50438
+17:08:52.325|SHOT|AK-07-plus-ohne-zugangsdaten-leeres-fenster|1280x720
+17:08:52.325|AK-07|⊞ ohne Zugangsdaten|klick=true|slots=0|multiview offen=true|neue Fenster=["Multiview"]|sheets=0|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]|liveAnfragen +0|listentitel=QA Ohne Zugang
+17:08:57.464|SHOT|AK-06-derselbe-sender-zweimal|1280x720
+17:08:57.472|AK-06|⊞ zweimal auf denselben Sender|slots=["Doppel TS", "Doppel TS"]|ids verschieden=true|verbindungen=2|tooltip danach=Zu Multiview hinzufügen|labels=["Doppel TS", "Doppel TS"]
+17:08:58.999|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50439
+17:09:07.381|AK-14|aktive App|isActive=false|key=false
+17:10:01.389|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:10:01.392|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50443
+17:10:04.241|AK-14|aktive App|isActive=true|key=true
+17:10:07.827|SHOT|AK-14-fokus-klick-kleine-kachel|1280x720
+17:10:07.831|AK-14|Fokus|Mausklick auf 2. kleine Kachel|[0*] Eins HLS AVKit playing muted=false inner=0 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2] Drei HLS AVKit playing muted=true inner=1 | fokus=0 layout=focus|etiketten oben→unten=["Volume High", "Eins HLS", "Mute", "Zwei TS", "Mute", "Drei HLS"]
+17:10:08.834|AK-14|Klick auf das große Bild|fokus=0
+17:10:13.666|SHOT|AK-16-klicks-aufs-grosse-x-aktive-app|1280x720
+17:10:13.668|AK-16|aktive App|6 Klicks auf das große X bei (1562.0, 795.0, 30.0, 30.0)|fokus=[0, 0, 0, 0, 0, 0, 0]|slots=["Eins HLS", "Zwei TS", "Drei HLS"]
+17:10:17.146|SHOT|AK-14-raster-klick-unten-links-aktive-app|1280x720
+17:10:17.147|AK-14|Raster|Mausklick unten links|[0*] R1 VLC playing muted=false inner=0 ; [1] R2 AVKit playing muted=true inner=1 ; [2] R3 VLC playing muted=true inner=1 ; [3] R4 AVKit playing muted=true inner=1 | fokus=0 layout=grid
+17:10:24.455|SHOT|AK-15-vlc-echter-klick-2s|1280x720
+17:10:32.502|SHOT|AK-15-vlc-echter-klick-10s|1280x720
+17:10:32.511|AK-15|VLC|echter Klick wirkt=false|Schwarzanteil Hauptbild vorher/2 s/10 s=0.00/0.00/0.00|[0*] VLC A VLC playing muted=false inner=0 ; [1] VLC B VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:11:38.797|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:11:38.802|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50451
+17:11:42.544|AK-14|aktive App|isActive=true|key=true
+17:11:46.885|SHOT|AK-14-fokus-klick-kleine-kachel|1280x720
+17:11:46.892|AK-14|Fokus|Mausklick auf 2. kleine Kachel|[0] Eins HLS AVKit playing muted=true inner=1 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2*] Drei HLS AVKit playing muted=false inner=0 | fokus=2 layout=focus|etiketten oben→unten=["Volume High", "Drei HLS", "Mute", "Eins HLS", "Mute", "Zwei TS"]
+17:11:47.731|AK-14|Klick auf das große Bild|fokus=2
+17:11:52.652|SHOT|AK-16-klicks-aufs-grosse-x-aktive-app|1280x720
+17:11:52.653|AK-16|aktive App|6 Klicks auf das große X bei (1562.0, 795.0, 30.0, 30.0)|fokus=[2, 0, 1, 0, 1, 0, 1]|slots=["Eins HLS", "Zwei TS", "Drei HLS"]
+17:11:56.536|SHOT|AK-14-raster-klick-unten-links-aktive-app|1280x720
+17:11:56.536|AK-14|Raster|Mausklick unten links|[0] R1 VLC playing muted=true inner=1 ; [1] R2 AVKit playing muted=true inner=1 ; [2*] R3 VLC playing muted=false inner=0 ; [3] R4 AVKit playing muted=true inner=1 | fokus=2 layout=grid
+17:12:03.884|SHOT|AK-15-vlc-echter-klick-2s|1280x720
+17:12:11.913|SHOT|AK-15-vlc-echter-klick-10s|1280x720
+17:12:11.922|AK-15|VLC|echter Klick wirkt=true|Schwarzanteil Hauptbild vorher/2 s/10 s=0.00/1.00/1.00|[0] VLC A VLC playing muted=true inner=1 ; [1*] VLC B VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:12:35.328|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:12:35.331|=== -[B08NachtragTests testBF101_VierVLCKachelnAbbauenUndSofortNeu] · mock 127.0.0.1:50452
+17:12:35.724|BF-101|Start: 16 Runden mit je 4 VLC-Kacheln im echten Multiview-Fenster (ungerade: Fenster schließen und sofort ⊞, gerade: alle X in Folge und sofort ⊞)
+17:12:38.563|BF-101|Runde 1 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:12:41.287|BF-101|Runde 2 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:12:44.282|BF-101|Runde 3 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.3 s
+17:12:47.012|BF-101|Runde 4 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:12:50.356|BF-101|Runde 5 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.06 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.6 s
+17:12:53.110|BF-101|Runde 6 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.03 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:12:55.890|BF-101|Runde 7 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:12:58.652|BF-101|Runde 8 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:01.408|BF-101|Runde 9 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.05 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:04.170|BF-101|Runde 10 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:07.076|BF-101|Runde 11 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.05 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.2 s
+17:13:09.839|BF-101|Runde 12 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:12.547|BF-101|Runde 13 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:15.265|BF-101|Runde 14 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:18.042|BF-101|Runde 15 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:20.794|BF-101|Runde 16 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:13:20.794|BF-101|alle 16 Runden ohne Hänger (höchstens 4 VLC-Player gleichzeitig am Leben)
+17:13:48.030|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:13:48.033|=== -[B08NachtragTests testBF101_VierVLCKachelnAbbauenUndSofortNeu] · mock 127.0.0.1:50455
+17:13:48.421|BF-101|Start: 10 Runden mit je 4 VLC-Kacheln, Spielzeit 10.0 s im echten Multiview-Fenster (ungerade: Fenster schließen und sofort ⊞, gerade: alle X in Folge und sofort ⊞)
+17:13:59.781|BF-101|Runde 1 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.05 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:14:11.042|BF-101|Runde 2 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:14:22.301|BF-101|Runde 3 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:14:33.562|BF-101|Runde 4 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:14:44.810|BF-101|Runde 5 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:14:56.069|BF-101|Runde 6 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:15:07.365|BF-101|Runde 7 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:15:18.605|BF-101|Runde 8 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.05 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:15:29.844|BF-101|Runde 9 ok|Schließen|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:15:41.088|BF-101|Runde 10 ok|X×4|spielend=4/4 nach 0.1s|Abbau→4 neue Player in 0.04 s|lebende VLC-Player danach=4|alle frei + Verbindungen zu nach=0.1 s
+17:15:41.089|BF-101|alle 10 Runden ohne Hänger (höchstens 4 VLC-Player gleichzeitig am Leben)
+17:16:20.316|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:16:20.320|=== -[B08AbsturzTests testAK23_Gegenprobe_FokusMitVierFensterSchliessen] · mock 127.0.0.1:50463
+17:16:21.062|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonVierAufDrei] · mock 127.0.0.1:50464
+17:16:21.879|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonZweiAufEins] · mock 127.0.0.1:50465
+17:16:22.817|=== -[B08AbsturzTests testAK23_RasterMitEinemFensterSchliessen] · mock 127.0.0.1:50466
+17:16:23.734|=== -[B08AbsturzTests testAK23_RasterMitVierFensterSchliessen] · mock 127.0.0.1:50467
+17:16:24.752|=== -[B08AbsturzTests testAK23_RasterXVonDreiAufZwei] · mock 127.0.0.1:50468
+17:16:25.670|=== -[B08AbsturzTests testAK23_RasterXVonEinsAufNull] · mock 127.0.0.1:50469
+17:16:26.588|=== -[B08AbsturzTests testEC15_BeendenBeiOffenemRaster] · mock 127.0.0.1:50470
+17:16:27.505|=== -[B08HauptfensterTests testAK01_AK21_EchteHauptfensterTeilenEinMultiview] · mock 127.0.0.1:50471
+17:16:32.726|AK-01|echtes Hauptfenster|titel=QA Echt|karten=["Echt 1, QA | 0", "Echt 2, QA | 0", "Echt 3, QA | 0", "Echt 4, QA | 0", "Echt 5, QA | 0"]
+17:16:32.777|SHOT|AK-01-echtes-hauptfenster-senderliste|880x820
+17:16:33.551|AK-01|echtes Hauptfenster|nach ⊞|slots=["Echt 1"]|titel=QA Echt|multiview=Multiview
+17:16:34.508|AK-21|zweites Hauptfenster|titel=QA Echt|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:16:37.391|AK-21|nach 3 × ⊞ im zweiten Fenster|slots=["Echt 1", "Echt 2", "Echt 3", "Echt 4"]|tooltips erstes=["Multiview voll (max. 4)"] zweites=["Multiview voll (max. 4)"]
+17:16:37.422|SHOT|AK-21-erstes-hauptfenster-voll|880x820
+17:16:37.446|SHOT|AK-21-zweites-hauptfenster-voll|880x820
+17:16:38.469|AK-21|nach Schließen|slots=0|tooltips erstes=["Zu Multiview hinzufügen"] zweites=["Zu Multiview hinzufügen"]
+17:16:40.456|=== -[B08NachtragTests testAK06_AK07_PlusOhneZugangsdatenUndDoppelterSender] · mock 127.0.0.1:50472
+17:16:45.046|SHOT|AK-07-plus-ohne-zugangsdaten-leeres-fenster|1280x720
+17:16:45.049|AK-07|⊞ ohne Zugangsdaten|klick=true|slots=0|multiview offen=true|neue Fenster=["Multiview"]|sheets=0|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]|liveAnfragen +0|listentitel=QA Ohne Zugang
+17:16:50.182|SHOT|AK-06-derselbe-sender-zweimal|1280x720
+17:16:50.189|AK-06|⊞ zweimal auf denselben Sender|slots=["Doppel TS", "Doppel TS"]|ids verschieden=true|verbindungen=2|tooltip danach=Zu Multiview hinzufügen|labels=["Doppel TS", "Doppel TS"]
+17:16:51.569|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50473
+17:16:54.071|AK-14|aktive App|isActive=true|key=true
+17:16:57.913|SHOT|AK-14-fokus-klick-kleine-kachel|1280x720
+17:16:57.916|AK-14|Fokus|Mausklick auf 2. kleine Kachel|[0] Eins HLS AVKit playing muted=true inner=1 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2*] Drei HLS AVKit playing muted=false inner=0 | fokus=2 layout=focus|etiketten oben→unten=["Volume High", "Drei HLS", "Mute", "Eins HLS", "Mute", "Zwei TS"]
+17:16:58.733|AK-14|Klick auf das große Bild|fokus=2
+17:17:03.712|SHOT|AK-16-klicks-aufs-grosse-x-aktive-app|1280x720
+17:17:03.713|AK-16|aktive App|6 Klicks auf das große X bei (1562.0, 795.0, 30.0, 30.0)|fokus=[2, 0, 1, 0, 0, 0, 0]|slots=["Eins HLS", "Zwei TS", "Drei HLS"]
+17:17:07.218|SHOT|AK-14-raster-klick-unten-links-aktive-app|1280x720
+17:17:07.219|AK-14|Raster|Mausklick unten links|[0*] R1 VLC playing muted=false inner=0 ; [1] R2 AVKit playing muted=true inner=1 ; [2] R3 VLC playing muted=true inner=1 ; [3] R4 AVKit playing muted=true inner=1 | fokus=0 layout=grid
+17:17:14.503|SHOT|AK-15-vlc-echter-klick-2s|1280x720
+17:17:22.552|SHOT|AK-15-vlc-echter-klick-10s|1280x720
+17:17:22.561|AK-15|VLC|echter Klick wirkt=false|Schwarzanteil Hauptbild vorher/2 s/10 s=0.00/0.00/0.00|[0*] VLC A VLC playing muted=false inner=0 ; [1] VLC B VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:17:23.916|=== -[B08NachtragTests testBF101_VierVLCKachelnAbbauenUndSofortNeu] · mock 127.0.0.1:50478
+17:17:24.935|=== -[B08NeustartTests testAK02_AK24_EC09_NeustartGroesseBleibtBelegungNicht] · mock 127.0.0.1:50479
+17:17:25.754|=== -[B08OberflaecheTests testAK01_AK02_AK09_PlusFuegtHinzuUndOeffnetFensterMenueintrag] · mock 127.0.0.1:50480
+17:17:28.345|AK-01|karten=["Alpha HLS, QA | 0", "Beta TS, QA | 0", "Gamma, QA | 0"]|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:17:28.359|SHOT|AK-01-senderliste-plus|520x684
+17:17:29.016|AK-01|nach ⊞|slots=["Alpha HLS"]|fenster=Multiview 1280x720|listentitel vorher/nachher=QA Liste/QA Liste
+17:17:30.487|AK-01|zweiter ⊞|slots=2|vorderstes Fenster=Multiview
+17:17:31.738|AK-01|favoriten|karten=["Favorit TS, QA | 0"]|tooltips=["Zu Multiview hinzufügen"]
+17:17:33.919|SHOT|AK-01-multiview-drei|1280x720
+17:17:33.931|SHOT|AK-01-favoriten-plus|520x632
+17:17:33.933|AK-09|menue=["Minimize", "Zoom", "—", "Multiview", "—", "Bring All to Front", "—", "Favoriten", "QA Echt", "QA Liste"]|kürzel='' modifier=0
+17:17:36.111|AK-09|nach 2× Menü|fenster=1|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:17:37.604|=== -[B08OberflaecheTests testAK04_AK05_AK21_EC06_VollInAllenFensternKlickAufGrauOeffnetPlayer] · mock 127.0.0.1:50482
+17:17:40.249|EC-06|nach 1|fenster B tooltip=Zu Multiview hinzufügen
+17:17:40.906|EC-06|nach 2|fenster B tooltip=Zu Multiview hinzufügen
+17:17:41.555|EC-06|nach 3|fenster B tooltip=Zu Multiview hinzufügen
+17:17:42.171|EC-06|nach 4|fenster B tooltip=Multiview voll (max. 4)
+17:17:43.694|AK-04|tooltips A=["Multiview voll (max. 4)"] B=["Multiview voll (max. 4)"]|⊞-Kontrast aktiv/abgeblendet=25.06/3.85 (Verhältnis 0.15)
+17:17:43.707|SHOT|AK-04-liste-voll|520x684
+17:17:43.719|SHOT|AK-04-favoriten-voll|520x632
+17:17:43.750|SHOT|AK-04-multiview-vier|1280x720
+17:17:47.370|AK-05|klick auf grauen ⊞|fenstertitel QA Voll → Kanal 5 HLS|slots=4|neue AVPlayer=1 isMuted=[false] volume=[0.0]|anfragen Kanal 5=7|TS-Verbindungen=4|multiview fokussiert muted=false
+17:17:47.392|SHOT|AK-05-klick-auf-grauen-plus-oeffnet-player|520x684
+17:17:49.494|=== -[B08OberflaecheTests testAK08_AK19_LeerzustandUndLetztesXLaesstFensterOffen] · mock 127.0.0.1:50486
+17:17:49.831|SHOT|AK-08-leerzustand|1280x720
+17:17:49.832|AK-08|leer|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:17:51.857|AK-19|X|help=Stream entfernen|label=Close
+17:17:52.674|AK-08|nach X|slots=0|engine frei=true nach 0.8 s ab Klickbeginn|verbindung zu=true nach 0.8 s|fenster sichtbar=true|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:17:54.124|=== -[B08OberflaecheTests testAK10_FokusLayoutGeometrieUndEtiketten] · mock 127.0.0.1:50488
+17:17:56.153|SHOT|AK-10-fokus-vier|1280x720
+17:17:59.439|EC-12|Bild-in-Bild-Controller je Kachel=["AVKit:angelegt", "VLC:-", "AVKit:angelegt", "VLC:-"]|EC-13|CPU% und RSS(KB) des Test-Hosts mit 4 Streams (3 Proben)=["11.2 295808", "13.4 291920", "13.2 291920"]|[0*] Eins HLS AVKit playing muted=false inner=0 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2] Drei HLS AVKit playing muted=true inner=1 ; [3] Vier TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:17:59.444|AK-10|inhalt=(320.0, 165.0, 1280.0, 668.0)|großes X=(1562.0, 795.0, 30.0, 30.0)|kleine Kacheln=[(1344.0, 682.0, 240.0, 135.0), (1344.0, 539.0, 240.0, 135.0), (1344.0, 396.0, 240.0, 135.0)]
+17:17:59.452|AK-10|etiketten oben→unten=["Eins HLS", "Zwei TS", "Drei HLS", "Vier TS"]|symbole=["Volume High", "Mute", "Mute", "Mute"]
+17:17:59.466|AK-10|akzentrahmen links (Rotanteil am Rand)=0.94
+17:18:00.796|=== -[B08OberflaecheTests testAK11_AK12_AK13_RasterUmschalterUndEinzelnerStreamImRaster] · mock 127.0.0.1:50489
+17:18:03.308|AK-12|Klick auf „Raster“ wirkt=true|layout=grid
+17:18:06.095|SHOT|AK-11-raster-vier|1280x720
+17:18:06.097|AK-11|geometrie=["2: X=[\"(630,8)\", \"(1272,8)\"]", "3: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\"]", "4: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\", \"(1272,344)\"]"]|kachel=638x332|oben=2 unten=2
+17:18:06.894|AK-14|Raster|Mausklick auf Kachel unten links (App aktiv=false) → focusedIndex=0
+17:18:07.947|SHOT|AK-14-raster-fokus-unten-links|1280x720
+17:18:07.954|AK-14|Raster|setFocus(2)|[0] R1 TS VLC playing muted=true inner=1 ; [1] R2 HLS AVKit playing muted=true inner=1 ; [2*] R3 TS VLC playing muted=false inner=0 ; [3] R4 HLS AVKit playing muted=true inner=1 | fokus=2 layout=grid|Lautsprecher-Symbol bei=[(337.5, 474.0, 12.0, 9.0)]
+17:18:13.310|SHOT|AK-13-raster-ein-stream-umschalter-gesperrt|1280x720
+17:18:13.311|AK-12|umschalter=["0: Fokus|Raster gewählt=0 aktiv=false", "1: Fokus|Raster gewählt=0 aktiv=false", "2: Fokus|Raster gewählt=0 aktiv=true", "3: Fokus|Raster gewählt=1 aktiv=true", "4: Fokus|Raster gewählt=1 aktiv=true", "Raster mit 1: Fokus|Raster gewählt=1 aktiv=false"]|AK-13|slots=1 layout=grid
+17:18:14.691|=== -[B08OberflaecheTests testAK12_LayoutBleibtUeberSchliessenUndOeffnen] · mock 127.0.0.1:50492
+17:18:16.647|AK-12|nach Schließen/Öffnen|layout=grid|umschalter=Fokus|Raster gewählt=1 aktiv=false
+17:18:17.999|=== -[B08OberflaecheTests testAK14_AK15_FokuswechselVLCHauptbildSchwarzHLSKorrekt] · mock 127.0.0.1:50494
+17:18:22.102|SHOT|AK-15-vlc-vor-fokuswechsel|1280x720
+17:18:22.922|AK-14|VLC|Mausklick auf kleine Kachel wirkt=false (App aktiv=false)|[0] VLC Eins VLC playing muted=true inner=1 ; [1*] VLC Zwei VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:18:23.953|SHOT|AK-15-vlc-nach-fokuswechsel-1s|1280x720
+17:18:27.992|SHOT|AK-15-vlc-nach-fokuswechsel-5s|1280x720
+17:18:33.048|SHOT|AK-15-vlc-nach-fokuswechsel-10s|1280x720
+17:18:38.093|SHOT|AK-15-vlc-nach-fokuswechsel-15s|1280x720
+17:18:40.144|SHOT|AK-15-vlc-nach-groessenaenderung|1100x640
+17:18:44.205|SHOT|AK-15-vlc-nach-raster-und-zurueck|1280x720
+17:18:44.213|AK-15|VLC|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "1.00", "1.00", "1.00", "1.00", "1.00", "0.00"]|etiketten=["Volume High", "VLC Zwei", "Mute", "VLC Eins"]
+17:18:47.883|SHOT|AK-15-hls-vor-fokuswechsel|1280x720
+17:18:48.700|AK-14|HLS|Mausklick auf kleine Kachel wirkt=false (App aktiv=false)|[0] HLS Eins AVKit playing muted=true inner=1 ; [1*] HLS Zwei AVKit playing muted=false inner=0 | fokus=1 layout=focus
+17:18:49.759|SHOT|AK-15-hls-nach-fokuswechsel-1s|1280x720
+17:18:53.820|SHOT|AK-15-hls-nach-fokuswechsel-5s|1280x720
+17:18:58.905|SHOT|AK-15-hls-nach-fokuswechsel-10s|1280x720
+17:19:03.983|SHOT|AK-15-hls-nach-fokuswechsel-15s|1280x720
+17:19:06.068|SHOT|AK-15-hls-nach-groessenaenderung|1100x640
+17:19:10.158|SHOT|AK-15-hls-nach-raster-und-zurueck|1280x720
+17:19:10.170|AK-15|HLS|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "0.00", "0.00", "0.00", "0.00", "0.00", "0.00"]|etiketten=["Volume High", "HLS Zwei", "Mute", "HLS Eins"]
+17:19:11.613|=== -[B08OberflaecheTests testAK16_XDesGrossenStreamsVerdeckt] · mock 127.0.0.1:50500
+17:19:14.966|AK-16|großes X=(1562.0, 795.0, 30.0, 30.0)|erste kleine Kachel=(1344.0, 682.0, 240.0, 135.0)|X-Mitte liegt in der Kachel=true
+17:19:19.793|SHOT|AK-16-grosses-x-verdeckt|1280x720
+17:19:19.795|AK-16|6 Klicks auf das große X|fokus=[0, 0, 0, 0, 0, 0, 0]|slots=["Groß", "Klein"]
+17:19:19.796|AK-16|Hinweis: Fokus-Umschalten durch den Klick nicht beobachtbar – Tipp-Gesten reagieren nur bei aktiver App (aktiv=false)|hit=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>>
+17:19:20.615|AK-16|Accessibility-Druck auf großes X|ausgeführt=true|slots=["Klein"]
+17:19:21.981|=== -[B08OberflaecheTests testAK18_PlayerUndMultiviewHabenBeideTon] · mock 127.0.0.1:50501
+17:19:24.532|AK-18|player isMuted=Optional(false) volume=Optional(0.0)|multiview [0*] Multiview TS VLC playing muted=false inner=0 | fokus=0 layout=focus|titel=Player HLS
+17:19:24.541|SHOT|AK-18-player-neben-multiview|640x432
+17:19:25.919|=== -[B08OberflaecheTests testAK20_AK21_SchliessenLeertFuerAlleFenster] · mock 127.0.0.1:50502
+17:19:31.521|AK-20|roter Knopf|slots=0|engines frei=4/4|verbindungen zu nach 0.2 s|tooltips A=["Zu Multiview hinzufügen"] B=["Zu Multiview hinzufügen"]
+17:19:32.194|AK-20|nächster ⊞|fenster offen=true|slots=["S5"]
+17:19:33.604|=== -[B08OberflaecheTests testAK22_EC07_MinimiertUndOhneListenfensterLaeuftWeiter] · mock 127.0.0.1:50504
+17:19:40.056|AK-22|minimiert=true|slots=2|[0*] M1 VLC playing muted=false inner=0 ; [1] M2 VLC playing muted=true inner=1 | fokus=0 layout=focus|bytes +421120 in 3 s
+17:19:42.757|EC-07|⊞ bei minimiertem Fenster|slots=3|minimiert=false|sichtbar=true
+17:19:46.278|AK-22|ohne Listenfenster|slots=3|offen=3|bytes +644840 in 3 s
+17:19:47.755|=== -[B08OberflaecheTests testAK25_AK26_AK32_FehlerKachelnZeigenKeineAdresse] · mock 127.0.0.1:50506
+17:19:56.264|SHOT|AK-25-26-fehler-je-kachel|1280x720
+17:19:56.266|AK-32|labels=["Volume High", "404 HLS", "Close", "Wiedergabe fehlgeschlagen", "The requested URL was not found on this server.", "Mute", "Port zu HLS", "Close", "Wiedergabe fehlgeschlagen", "Could not connect to the server.", "Mute", "404 TS", "Close", "0", "Mute", "QA Kanal 1", "Close"]|ladeanzeigen=1|lecks=[]|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] 404 TS VLC idle muted=true inner=1 ; [3] QA Kanal 1 VLC playing muted=true inner=1 | fokus=0 layout=grid
+17:20:07.023|SHOT|AK-31-anbieterlimit-eine-verbindung|1280x720
+17:20:07.024|AK-31|UI|ladeanzeigen=3|fehlermeldungen=0|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=grid
+17:20:08.542|=== -[B08OberflaecheTests testAK29_KeineTastatursteuerungWarntonAbgefangen] · mock 127.0.0.1:50507
+17:20:09.356|=== -[B08OberflaecheTests testEC10_EC11_KleinesFensterUndLangerName] · mock 127.0.0.1:50508
+17:20:12.411|EC-10|minSize=(105.0, 106.0)|contentMinSize=(105.0, 106.0)
+17:20:12.420|SHOT|EC-10-kleinstes-fenster|105x106
+17:20:12.426|EC-10|angefordert 300x200 → fenster 105x106 inhalt 105x54|unterste kleine Kachel endet -383 pt über dem Fensterboden|EC-11 etiketten=["Volume High", "Sehr langer Sendername Sehr la…(460 Zeichen)", "Mute", "Kachel 2", "Close", "Close", "Mute", "Kachel 3", "Close", "Mute", "Kachel 4", "Close"]
+17:20:13.941|=== -[B08SessionTests testAK03_EC01_EC03_ErsterMitTonWeitereStummGemischt] · mock 127.0.0.1:50509
+17:20:14.048|AK-03|nach 1|[0*] A HLS AVKit loading muted=false inner=0 | fokus=0 layout=focus
+17:20:14.061|EC-03|VLC direkt nach add (vor Wiedergabe)|audio.muted=Optional(Optional(true))|state=loading
+17:20:14.127|AK-03|nach Start|[0*] A HLS AVKit playing muted=false inner=0 ; [1] B TS VLC playing muted=true inner=1 ; [2] C HLS AVKit playing muted=true inner=1 ; [3] D TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:20:15.584|=== -[B08SessionTests testAK04_FuenfterSenderKommtNichtHinzuKeineVerbindung] · mock 127.0.0.1:50510
+17:20:18.733|AK-04|slots=4|ids gleich=true|anfragen fuenfter=0|verbindungen=4 offen=4 offeneStreams=4 #1/tslive/ak04-1.ts #2/tslive/ak04-2.ts #3/tslive/ak04-3.ts #4/tslive/ak04-4.ts
+17:20:19.520|=== -[B08SessionTests testAK06_GleicherSenderZweimalZweiKachelnZweiVerbindungen] · mock 127.0.0.1:50511
+17:20:22.656|AK-06|slots=["Doppelt", "Doppelt"]|ids verschieden=true|gleiche Engine=false|verbindungen=2 offen=2 offeneStreams=2 #1/tslive/ak06.ts #2/tslive/ak06.ts
+17:20:23.453|=== -[B08SessionTests testAK07_OhneZugangsdatenKeineKachelKeineAnfrage] · mock 127.0.0.1:50512
+17:20:25.147|AK-07|slots=0|liveAnfragen vorher/nachher=0/0|resolver=nil
+17:20:25.963|=== -[B08SessionTests testAK14_AK17_EC02_FokusWandertUndEntfernenFuehrtNach] · mock 127.0.0.1:50514
+17:20:26.143|AK-14|setFocus(2)|[0] R1 AVKit playing muted=true inner=1 ; [1] R2 VLC playing muted=true inner=1 ; [2*] R3 AVKit playing muted=false inner=0 ; [3] R4 VLC playing muted=true inner=1 | fokus=2 layout=focus
+17:20:26.144|AK-17|remove vor Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R3 AVKit playing muted=false inner=0 ; [2] R4 VLC playing muted=true inner=1 | fokus=1 layout=focus
+17:20:26.145|AK-17|remove Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R4 VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:20:27.971|EC-02|[0*] R7 VLC playing muted=false inner=0 ; [1] R8 AVKit playing muted=true inner=1 | fokus=0 layout=focus|Medien ohne Tonspur, Lautstärke [0.0, 0.0]
+17:20:29.430|=== -[B08SessionTests testAK19_EC05_EntfernenGibtFreiUndSchliesstVerbindung] · mock 127.0.0.1:50515
+17:20:34.481|AK-19|vorher|[0*] VLC spielt VLC playing muted=false inner=0 ; [1] AVKit spielt AVKit playing muted=true inner=1 ; [2] VLC lädt VLC playing muted=true inner=1 ; [3] AVKit lädt AVKit loading muted=true inner=1 | fokus=0 layout=focus|verbindungen=5 offen=5 offeneStreams=3 #1/tslive/ak19-vlc.ts #2/hang/ak19-vlc-hang.ts #3/livehls/ak19-av/seg00007.ts #4/hang/ak19-av-hang/index.m3u8 #5/livehls/ak19-av/seg00003.ts
+17:20:34.698|AK-19|direkt nach remove|lebt=[]
+17:20:39.747|AK-19|Stream-Verbindungen zu nach s|["VLC spielt=0.0", "AVKit spielt=0.0", "VLC lädt=0.0", "AVKit lädt=0.0"]|HLS-Abrufe nach >1 s=0|leere Keep-alive-Verbindungen 5 s danach=2 ["#3/livehls/ak19-av/seg00007.ts", "#5/livehls/ak19-av/seg00003.ts"]
+17:21:19.774|AK-19|leere Keep-alive-Verbindung zu nach > 46 s ab Entfernen
+17:21:20.695|=== -[B08SessionTests testAK20_ClearGibtAlleEnginesUndVerbindungenFrei] · mock 127.0.0.1:50516
+17:21:29.141|AK-20|clear|Stream-Verbindungen zu nach=0.0 s|HLS-Abrufe nach >1 s=0|verbindungen=5 offen=2 offeneStreams=0 #4/livehls/ak20b/seg00007.ts #5/livehls/ak20b/seg00003.ts
+17:21:29.953|=== -[B08SessionTests testAK24_AK34_NichtsInDatenbankEinstellungenSchluesselbund] · mock 127.0.0.1:50517
+17:21:33.134|AK-34|hasChanges=false|store gleich=true|wal gleich=true|neue Einstellungen=[]
+17:21:33.960|=== -[B08SessionTests testAK25_AK26_FehlerJeKachel] · mock 127.0.0.1:50519
+17:21:34.029|AK-25|AVKit|nach 0.1 s|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] OK TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:21:37.054|AK-26|VLC|t=3s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:21:42.077|AK-26|VLC|t=8s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:21:50.174|AK-26|VLC|t=16s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:21:59.209|AK-26|VLC|t=25s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:22:19.215|AK-26|AVKit Segmente 404 ab 6 s|[0*] Segmente 404 HLS AVKit playing muted=false inner=0 | fokus=0 layout=focus|seg404=7
+17:22:20.053|=== -[B08SessionTests testAK27_EC14_Angriff8_LoeschenLaesstKachelnMitZugangsdatenLaufen] · mock 127.0.0.1:50524
+17:22:26.331|AK-27|nach Löschen|sqlite ZPLAYLIST=0 ZCHANNEL=0|schlüsselbund=leer|offen vorher/nachher=2/2|bytes +289520 in 2 s|[0] QA Kanal 1 VLC playing muted=true inner=1 ; [1*] QA Kanal 2 VLC playing muted=false inner=0 | fokus=1 layout=focus|namen=["QA Kanal 1", "QA Kanal 2"]|ohneKontext=[true, true]|isDeleted=[false, false]
+17:22:27.104|=== -[B08SessionTests testAK28_AktualisierenAlteAdresseUndZweiteKachel] · mock 127.0.0.1:50525
+17:22:31.388|AK-28|nach Aktualisieren|slots=["QA Kanal 1", "QA Kanal 1"]|offen=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/201.ts"]|alteAdresse=101.ts neu=201.ts
+17:22:32.299|=== -[B08SessionTests testAK30_NKachelnNVerbindungenMitZugangsdaten] · mock 127.0.0.1:50526
+17:22:42.516|AK-30|offene Verbindungen nach 1…4 Kacheln=[1, 2, 3, 4]|pfade=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/102.ts", "/live/qa-user/<pass>/103.ts", "/live/qa-user/<pass>/104.ts"]|user-agent=["VLC/3.0.21 LibVLC/3.0.21"]
+17:22:43.417|=== -[B08SessionTests testAK31_AnbieterlimitEinsDreiKachelnLadenEndlos] · mock 127.0.0.1:50527
+17:22:58.625|AK-31|limit 1|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=focus|status je Stream=[(key: "101.ts", value: [200]), (key: "102.ts", value: [403, 403, 403, 403]), (key: "103.ts", value: [403, 403, 403, 403]), (key: "104.ts", value: [403, 403, 403, 403])]|403-Versuche=[(key: "102.ts", value: "4× in 2 ms"), (key: "103.ts", value: "4× in 2 ms"), (key: "104.ts", value: "4× in 2 ms")]|verbindungen=13 offen=1 offeneStreams=1 #2/live/qa-user/<pass>/101.ts
+17:22:59.405|=== -[B08SessionTests testAngriff1_FremdeIDsUndFremdeZuordnung] · mock 127.0.0.1:50528
+17:23:00.568|Angriff1|fremde IDs ohne Wirkung|a=1 b=1|manipulierte Zuordnung: slots=1 liveAnfragen +0
+17:23:01.505|=== -[B08SessionTests testAngriff3_ZehnMalHinzufuegenUndFuenfZyklen] · mock 127.0.0.1:50529
+17:23:10.368|Angriff3|10× add → slots=4 offen=4|offen nach je clear=[0, 0, 0, 0, 0]|am Ende offen=0|verbindungen gesamt=24
+17:23:11.184|=== -[B08SessionTests testAngriff5_PayloadDerKachelnAmAnbieter] · mock 127.0.0.1:50531
+17:23:16.387|Angriff5|GET /live/qa-user/<pass>/101.ts|accept: */* · accept-language: en_US · host: 127.0.0.1:<port> · range: bytes=0- · user-agent: VLC/3.0.21 LibVLC/3.0.21
+17:23:16.389|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: BB2B437D-285B-4F6A-9E67-6709200E4059
+17:23:16.391|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: BB2B437D-285B-4F6A-9E67-6709200E4059
+17:23:16.392|Angriff5|GET /live/qa-user/<pass>/seg00003.ts|accept: */* · accept-encoding: identity · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: BB2B437D-285B-4F6A-9E67-6709200E4059
+17:23:17.220|=== -[B08SessionTests testAngriff7_EingabenSendernamenUndAdressen] · mock 127.0.0.1:50532
+17:23:18.331|SHOT|angriff7-namen-raster|900x644
+17:23:23.060|SHOT|angriff7-sonderzeichen-dateiadresse|900x644
+17:23:23.063|Angriff7|[0*] '; drop table ZCHANNEL; -- VLC playing muted=false inner=0 ; [1] <script>alert(1)</script> VLC playing muted=true inner=1 ; [2] ../../etc/passwd VLC playing muted=true inner=1 ; [3] Datei AVKit failed(Cannot Open) muted=true inner=1 | fokus=0 layout=focus|labels=["Volume High", "\'; drop table ZCHANNEL; --", "Mute", "<script>alert(1)</script>", "Close", "Close", "Mute", "../../etc/passwd", "Close", "Mute", "Datei", "Close", "Wiedergabe fehlgeschlagen", "Cannot Open"]
+17:23:23.839|=== -[B08SessionTests testEC04_PauseOhneFreigabeHaeltVerbindung] · mock 127.0.0.1:50533
+17:23:31.927|EC-04|8 s pausiert, Engine gehalten|VLC offen=1|HLS-Playlistabrufe=4|verbindungen=3 offen=3 offeneStreams=1 #1/tslive/ec04-vlc.ts #2/livehls/ec04-av/seg00009.ts #3/livehls/ec04-av/seg00003.ts
+17:24:05.278|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:24:05.282|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50534
+17:24:08.190|AK-14|aktive App|isActive=true|key=true
+17:24:12.388|SHOT|AK-14-fokus-klick-kleine-kachel|1280x720
+17:24:12.396|AK-14|Fokus|Mausklick auf 2. kleine Kachel|[0] Eins HLS AVKit playing muted=true inner=1 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2*] Drei HLS AVKit playing muted=false inner=0 | fokus=2 layout=focus|etiketten oben→unten=["Volume High", "Drei HLS", "Mute", "Eins HLS", "Mute", "Zwei TS"]
+17:24:13.203|AK-14|Klick auf das große Bild|fokus=2
+17:24:15.698|KLICK|App erneut aktiviert=true
+17:24:18.141|SHOT|AK-16-klicks-aufs-grosse-x-aktive-app|1280x720
+17:24:18.141|AK-16|aktive App|6 Klicks auf das große X bei (1562.0, 795.0, 30.0, 30.0)|fokus=[2, 0, 1, 0, 1, 0, 1]|slots=["Eins HLS", "Zwei TS", "Drei HLS"]
+17:24:21.298|KLICK|App erneut aktiviert=true
+17:24:22.134|SHOT|AK-14-raster-klick-unten-links-aktive-app|1280x720
+17:24:22.134|AK-14|Raster|Mausklick unten links|[0] R1 VLC playing muted=true inner=1 ; [1] R2 AVKit playing muted=true inner=1 ; [2*] R3 VLC playing muted=false inner=0 ; [3] R4 AVKit playing muted=true inner=1 | fokus=2 layout=grid
+17:24:26.626|KLICK|App erneut aktiviert=true
+17:24:29.460|SHOT|AK-15-vlc-echter-klick-2s|1280x720
+17:24:37.505|SHOT|AK-15-vlc-echter-klick-10s|1280x720
+17:24:37.515|AK-15|VLC|echter Klick wirkt=true|Schwarzanteil Hauptbild vorher/2 s/10 s=0.00/1.00/1.00|[0] VLC A VLC playing muted=true inner=1 ; [1*] VLC B VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:24:50.832|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:24:50.835|=== -[B08AbsturzTests testAK23_Gegenprobe_FokusMitVierFensterSchliessen] · mock 127.0.0.1:50538
+17:24:51.573|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonVierAufDrei] · mock 127.0.0.1:50539
+17:24:52.377|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonZweiAufEins] · mock 127.0.0.1:50540
+17:24:53.294|=== -[B08AbsturzTests testAK23_RasterMitEinemFensterSchliessen] · mock 127.0.0.1:50541
+17:24:54.211|=== -[B08AbsturzTests testAK23_RasterMitVierFensterSchliessen] · mock 127.0.0.1:50542
+17:24:55.227|=== -[B08AbsturzTests testAK23_RasterXVonDreiAufZwei] · mock 127.0.0.1:50543
+17:24:56.144|=== -[B08AbsturzTests testAK23_RasterXVonEinsAufNull] · mock 127.0.0.1:50544
+17:24:56.962|=== -[B08AbsturzTests testEC15_BeendenBeiOffenemRaster] · mock 127.0.0.1:50545
+17:24:57.882|=== -[B08HauptfensterTests testAK01_AK21_EchteHauptfensterTeilenEinMultiview] · mock 127.0.0.1:50546
+17:25:03.084|AK-01|echtes Hauptfenster|titel=QA Echt|karten=["Echt 1, QA | 0", "Echt 2, QA | 0", "Echt 3, QA | 0", "Echt 4, QA | 0", "Echt 5, QA | 0"]
+17:25:03.125|SHOT|AK-01-echtes-hauptfenster-senderliste|880x820
+17:25:03.866|AK-01|echtes Hauptfenster|nach ⊞|slots=["Echt 1"]|titel=QA Echt|multiview=Multiview
+17:25:04.823|AK-21|zweites Hauptfenster|titel=QA Echt|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:25:07.692|AK-21|nach 3 × ⊞ im zweiten Fenster|slots=["Echt 1", "Echt 2", "Echt 3", "Echt 4"]|tooltips erstes=["Multiview voll (max. 4)"] zweites=["Multiview voll (max. 4)"]
+17:25:07.712|SHOT|AK-21-erstes-hauptfenster-voll|880x820
+17:25:07.730|SHOT|AK-21-zweites-hauptfenster-voll|880x820
+17:25:08.772|AK-21|nach Schließen|slots=0|tooltips erstes=["Zu Multiview hinzufügen"] zweites=["Zu Multiview hinzufügen"]
+17:25:10.692|=== -[B08NachtragTests testAK06_AK07_PlusOhneZugangsdatenUndDoppelterSender] · mock 127.0.0.1:50547
+17:25:15.242|SHOT|AK-07-plus-ohne-zugangsdaten-leeres-fenster|1280x720
+17:25:15.244|AK-07|⊞ ohne Zugangsdaten|klick=true|slots=0|multiview offen=true|neue Fenster=["Multiview"]|sheets=0|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]|liveAnfragen +0|listentitel=QA Ohne Zugang
+17:25:20.290|SHOT|AK-06-derselbe-sender-zweimal|1280x720
+17:25:20.297|AK-06|⊞ zweimal auf denselben Sender|slots=["Doppel TS", "Doppel TS"]|ids verschieden=true|verbindungen=2|tooltip danach=Zu Multiview hinzufügen|labels=["Doppel TS", "Doppel TS"]
+17:25:21.804|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50548
+17:25:24.347|AK-14|aktive App|isActive=true|key=true
+17:25:28.971|KLICK|App erneut aktiviert=true
+17:25:29.820|SHOT|AK-14-fokus-klick-kleine-kachel|1280x720
+17:25:29.823|AK-14|Fokus|Mausklick auf 2. kleine Kachel|[0] Eins HLS AVKit playing muted=true inner=1 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2*] Drei HLS AVKit playing muted=false inner=0 | fokus=2 layout=focus|etiketten oben→unten=["Volume High", "Drei HLS", "Mute", "Eins HLS", "Mute", "Zwei TS"]
+17:25:30.637|AK-14|Klick auf das große Bild|fokus=2
+17:25:33.125|KLICK|App erneut aktiviert=true
+17:25:35.590|SHOT|AK-16-klicks-aufs-grosse-x-aktive-app|1280x720
+17:25:35.592|AK-16|aktive App|6 Klicks auf das große X bei (1562.0, 795.0, 30.0, 30.0)|fokus=[2, 0, 1, 0, 1, 0, 1]|slots=["Eins HLS", "Zwei TS", "Drei HLS"]
+17:25:38.342|KLICK|App erneut aktiviert=true
+17:25:39.178|SHOT|AK-14-raster-klick-unten-links-aktive-app|1280x720
+17:25:39.178|AK-14|Raster|Mausklick unten links|[0] R1 VLC playing muted=true inner=1 ; [1] R2 AVKit playing muted=true inner=1 ; [2*] R3 VLC playing muted=false inner=0 ; [3] R4 AVKit playing muted=true inner=1 | fokus=2 layout=grid
+17:25:43.632|KLICK|App erneut aktiviert=true
+17:25:46.677|SHOT|AK-15-vlc-echter-klick-2s|1280x720
+17:25:54.715|SHOT|AK-15-vlc-echter-klick-10s|1280x720
+17:25:54.725|AK-15|VLC|echter Klick wirkt=true|Schwarzanteil Hauptbild vorher/2 s/10 s=0.00/1.00/1.00|[0] VLC A VLC playing muted=true inner=1 ; [1*] VLC B VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:25:56.079|=== -[B08NachtragTests testBF101_VierVLCKachelnAbbauenUndSofortNeu] · mock 127.0.0.1:50549
+17:25:56.997|=== -[B08NeustartTests testAK02_AK24_EC09_NeustartGroesseBleibtBelegungNicht] · mock 127.0.0.1:50550
+17:25:57.917|=== -[B08OberflaecheTests testAK01_AK02_AK09_PlusFuegtHinzuUndOeffnetFensterMenueintrag] · mock 127.0.0.1:50552
+17:26:00.500|AK-01|karten=["Alpha HLS, QA | 0", "Beta TS, QA | 0", "Gamma, QA | 0"]|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:26:00.518|SHOT|AK-01-senderliste-plus|520x684
+17:26:01.147|AK-01|nach ⊞|slots=["Alpha HLS"]|fenster=Multiview 1280x720|listentitel vorher/nachher=QA Liste/QA Liste
+17:26:02.568|AK-01|zweiter ⊞|slots=2|vorderstes Fenster=Multiview
+17:26:03.810|AK-01|favoriten|karten=["Favorit TS, QA | 0"]|tooltips=["Zu Multiview hinzufügen"]
+17:26:05.965|SHOT|AK-01-multiview-drei|1280x720
+17:26:05.977|SHOT|AK-01-favoriten-plus|520x632
+17:26:05.978|AK-09|menue=["Minimize", "Minimize All", "Zoom", "Zoom All", "Fill", "Center", "—", "Move & Resize", "Full Screen Tile", "—", "Move to BenQ PD2725U (2)", "Move All to BenQ PD2725U (2)", "—", "Multiview", "—", "Bring All to Front", "Arrange in Front", "Remove Window from Set", "—", "Show Previous Tab", "Show Next Tab", "Move Tab to New Window", "Merge All Windows", "—", "—", "Favoriten", "QA Echt", "QA Liste"]|kürzel='' modifier=0
+17:26:08.125|AK-09|nach 2× Menü|fenster=1|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:26:09.613|=== -[B08OberflaecheTests testAK04_AK05_AK21_EC06_VollInAllenFensternKlickAufGrauOeffnetPlayer] · mock 127.0.0.1:50553
+17:26:12.198|EC-06|nach 1|fenster B tooltip=Zu Multiview hinzufügen
+17:26:12.841|EC-06|nach 2|fenster B tooltip=Zu Multiview hinzufügen
+17:26:13.464|EC-06|nach 3|fenster B tooltip=Zu Multiview hinzufügen
+17:26:14.086|EC-06|nach 4|fenster B tooltip=Multiview voll (max. 4)
+17:26:15.614|AK-04|tooltips A=["Multiview voll (max. 4)"] B=["Multiview voll (max. 4)"]|⊞-Kontrast aktiv/abgeblendet=25.06/3.85 (Verhältnis 0.15)
+17:26:15.626|SHOT|AK-04-liste-voll|520x684
+17:26:15.636|SHOT|AK-04-favoriten-voll|520x632
+17:26:15.673|SHOT|AK-04-multiview-vier|1280x720
+17:26:19.288|AK-05|klick auf grauen ⊞|fenstertitel QA Voll → Kanal 5 HLS|slots=4|neue AVPlayer=1 isMuted=[false] volume=[0.0]|anfragen Kanal 5=7|TS-Verbindungen=4|multiview fokussiert muted=false
+17:26:19.303|SHOT|AK-05-klick-auf-grauen-plus-oeffnet-player|520x684
+17:26:21.311|=== -[B08OberflaecheTests testAK08_AK19_LeerzustandUndLetztesXLaesstFensterOffen] · mock 127.0.0.1:50555
+17:26:21.653|SHOT|AK-08-leerzustand|1280x720
+17:26:21.654|AK-08|leer|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:26:23.677|AK-19|X|help=Stream entfernen|label=Close
+17:26:24.486|AK-08|nach X|slots=0|engine frei=true nach 0.8 s ab Klickbeginn|verbindung zu=true nach 0.8 s|fenster sichtbar=true|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:26:25.927|=== -[B08OberflaecheTests testAK10_FokusLayoutGeometrieUndEtiketten] · mock 127.0.0.1:50557
+17:26:27.992|SHOT|AK-10-fokus-vier|1280x720
+17:26:31.213|EC-12|Bild-in-Bild-Controller je Kachel=["AVKit:angelegt", "VLC:-", "AVKit:angelegt", "VLC:-"]|EC-13|CPU% und RSS(KB) des Test-Hosts mit 4 Streams (3 Proben)=["8.4 216096", "11.3 184064", "11.8 184224"]|[0*] Eins HLS AVKit playing muted=false inner=0 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2] Drei HLS AVKit playing muted=true inner=1 ; [3] Vier TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:26:31.217|AK-10|inhalt=(320.0, 165.0, 1280.0, 668.0)|großes X=(1562.0, 795.0, 30.0, 30.0)|kleine Kacheln=[(1344.0, 682.0, 240.0, 135.0), (1344.0, 539.0, 240.0, 135.0), (1344.0, 396.0, 240.0, 135.0)]
+17:26:31.225|AK-10|etiketten oben→unten=["Eins HLS", "Zwei TS", "Drei HLS", "Vier TS"]|symbole=["Volume High", "Mute", "Mute", "Mute"]
+17:26:31.232|AK-10|akzentrahmen links (Rotanteil am Rand)=0.93
+17:26:32.676|=== -[B08OberflaecheTests testAK11_AK12_AK13_RasterUmschalterUndEinzelnerStreamImRaster] · mock 127.0.0.1:50559
+17:26:35.171|AK-12|Klick auf „Raster“ wirkt=true|layout=grid
+17:26:37.956|SHOT|AK-11-raster-vier|1280x720
+17:26:37.958|AK-11|geometrie=["2: X=[\"(630,8)\", \"(1272,8)\"]", "3: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\"]", "4: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\", \"(1272,344)\"]"]|kachel=638x332|oben=2 unten=2
+17:26:38.753|AK-14|Raster|Mausklick auf Kachel unten links (App aktiv=false) → focusedIndex=0
+17:26:39.808|SHOT|AK-14-raster-fokus-unten-links|1280x720
+17:26:39.813|AK-14|Raster|setFocus(2)|[0] R1 TS VLC playing muted=true inner=1 ; [1] R2 HLS AVKit playing muted=true inner=1 ; [2*] R3 TS VLC playing muted=false inner=0 ; [3] R4 HLS AVKit playing muted=true inner=1 | fokus=2 layout=grid|Lautsprecher-Symbol bei=[(337.5, 474.0, 12.0, 9.0)]
+17:26:45.147|SHOT|AK-13-raster-ein-stream-umschalter-gesperrt|1280x720
+17:26:45.148|AK-12|umschalter=["0: Fokus|Raster gewählt=0 aktiv=false", "1: Fokus|Raster gewählt=0 aktiv=false", "2: Fokus|Raster gewählt=0 aktiv=true", "3: Fokus|Raster gewählt=1 aktiv=true", "4: Fokus|Raster gewählt=1 aktiv=true", "Raster mit 1: Fokus|Raster gewählt=1 aktiv=false"]|AK-13|slots=1 layout=grid
+17:26:46.679|=== -[B08OberflaecheTests testAK12_LayoutBleibtUeberSchliessenUndOeffnen] · mock 127.0.0.1:50561
+17:26:48.647|AK-12|nach Schließen/Öffnen|layout=grid|umschalter=Fokus|Raster gewählt=1 aktiv=false
+17:26:50.057|=== -[B08OberflaecheTests testAK14_AK15_FokuswechselVLCHauptbildSchwarzHLSKorrekt] · mock 127.0.0.1:50562
+17:26:54.153|SHOT|AK-15-vlc-vor-fokuswechsel|1280x720
+17:26:54.961|AK-14|VLC|Mausklick auf kleine Kachel wirkt=false (App aktiv=false)|[0] VLC Eins VLC playing muted=true inner=1 ; [1*] VLC Zwei VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:26:55.998|SHOT|AK-15-vlc-nach-fokuswechsel-1s|1280x720
+17:27:00.045|SHOT|AK-15-vlc-nach-fokuswechsel-5s|1280x720
+17:27:05.086|SHOT|AK-15-vlc-nach-fokuswechsel-10s|1280x720
+17:27:10.131|SHOT|AK-15-vlc-nach-fokuswechsel-15s|1280x720
+17:27:12.180|SHOT|AK-15-vlc-nach-groessenaenderung|1100x640
+17:27:16.254|SHOT|AK-15-vlc-nach-raster-und-zurueck|1280x720
+17:27:16.267|AK-15|VLC|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "1.00", "1.00", "1.00", "1.00", "1.00", "0.00"]|etiketten=["Volume High", "VLC Zwei", "Mute", "VLC Eins"]
+17:27:19.964|SHOT|AK-15-hls-vor-fokuswechsel|1280x720
+17:27:20.770|AK-14|HLS|Mausklick auf kleine Kachel wirkt=false (App aktiv=false)|[0] HLS Eins AVKit playing muted=true inner=1 ; [1*] HLS Zwei AVKit playing muted=false inner=0 | fokus=1 layout=focus
+17:27:21.830|SHOT|AK-15-hls-nach-fokuswechsel-1s|1280x720
+17:27:25.962|SHOT|AK-15-hls-nach-fokuswechsel-5s|1280x720
+17:27:31.026|SHOT|AK-15-hls-nach-fokuswechsel-10s|1280x720
+17:27:36.129|SHOT|AK-15-hls-nach-fokuswechsel-15s|1280x720
+17:27:38.173|SHOT|AK-15-hls-nach-groessenaenderung|1100x640
+17:27:42.298|SHOT|AK-15-hls-nach-raster-und-zurueck|1280x720
+17:27:42.308|AK-15|HLS|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "0.00", "0.00", "0.00", "0.00", "0.00", "0.00"]|etiketten=["Volume High", "HLS Zwei", "Mute", "HLS Eins"]
+17:27:43.752|=== -[B08OberflaecheTests testAK16_XDesGrossenStreamsVerdeckt] · mock 127.0.0.1:50563
+17:27:47.209|AK-16|großes X=(1562.0, 795.0, 30.0, 30.0)|erste kleine Kachel=(1344.0, 682.0, 240.0, 135.0)|X-Mitte liegt in der Kachel=true
+17:27:52.028|SHOT|AK-16-grosses-x-verdeckt|1280x720
+17:27:52.029|AK-16|6 Klicks auf das große X|fokus=[0, 0, 0, 0, 0, 0, 0]|slots=["Groß", "Klein"]
+17:27:52.031|AK-16|Hinweis: Fokus-Umschalten durch den Klick nicht beobachtbar – Tipp-Gesten reagieren nur bei aktiver App (aktiv=false)|hit=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>>
+17:27:52.857|AK-16|Accessibility-Druck auf großes X|ausgeführt=true|slots=["Klein"]
+17:27:54.336|=== -[B08OberflaecheTests testAK18_PlayerUndMultiviewHabenBeideTon] · mock 127.0.0.1:50565
+17:27:56.894|AK-18|player isMuted=Optional(false) volume=Optional(0.0)|multiview [0*] Multiview TS VLC playing muted=false inner=0 | fokus=0 layout=focus|titel=Player HLS
+17:27:56.909|SHOT|AK-18-player-neben-multiview|640x432
+17:27:58.474|=== -[B08OberflaecheTests testAK20_AK21_SchliessenLeertFuerAlleFenster] · mock 127.0.0.1:50566
+17:28:03.964|AK-20|roter Knopf|slots=0|engines frei=4/4|verbindungen zu nach 0.2 s|tooltips A=["Zu Multiview hinzufügen"] B=["Zu Multiview hinzufügen"]
+17:28:04.618|AK-20|nächster ⊞|fenster offen=true|slots=["S5"]
+17:28:06.204|=== -[B08OberflaecheTests testAK22_EC07_MinimiertUndOhneListenfensterLaeuftWeiter] · mock 127.0.0.1:50568
+17:28:12.801|AK-22|minimiert=true|slots=2|[0*] M1 VLC playing muted=false inner=0 ; [1] M2 VLC playing muted=true inner=1 | fokus=0 layout=focus|bytes +421120 in 3 s
+17:28:15.501|EC-07|⊞ bei minimiertem Fenster|slots=3|minimiert=false|sichtbar=true
+17:28:19.019|AK-22|ohne Listenfenster|slots=3|offen=3|bytes +631680 in 3 s
+17:28:20.465|=== -[B08OberflaecheTests testAK25_AK26_AK32_FehlerKachelnZeigenKeineAdresse] · mock 127.0.0.1:50571
+17:28:28.941|SHOT|AK-25-26-fehler-je-kachel|1280x720
+17:28:28.943|AK-32|labels=["Volume High", "404 HLS", "Close", "Wiedergabe fehlgeschlagen", "The requested URL was not found on this server.", "Mute", "Port zu HLS", "Close", "Wiedergabe fehlgeschlagen", "Could not connect to the server.", "Mute", "404 TS", "Close", "0", "Mute", "QA Kanal 1", "Close"]|ladeanzeigen=1|lecks=[]|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] 404 TS VLC idle muted=true inner=1 ; [3] QA Kanal 1 VLC playing muted=true inner=1 | fokus=0 layout=grid
+17:28:39.708|SHOT|AK-31-anbieterlimit-eine-verbindung|1280x720
+17:28:39.709|AK-31|UI|ladeanzeigen=3|fehlermeldungen=0|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=grid
+17:28:41.230|=== -[B08OberflaecheTests testAK29_KeineTastatursteuerungWarntonAbgefangen] · mock 127.0.0.1:50576
+17:28:42.155|=== -[B08OberflaecheTests testEC10_EC11_KleinesFensterUndLangerName] · mock 127.0.0.1:50577
+17:28:45.107|EC-10|minSize=(105.0, 106.0)|contentMinSize=(105.0, 106.0)
+17:28:45.118|SHOT|EC-10-kleinstes-fenster|105x106
+17:28:45.127|EC-10|angefordert 300x200 → fenster 105x106 inhalt 105x54|unterste kleine Kachel endet -383 pt über dem Fensterboden|EC-11 etiketten=["Volume High", "Sehr langer Sendername Sehr la…(460 Zeichen)", "Mute", "Kachel 2", "Close", "Close", "Mute", "Kachel 3", "Close", "Mute", "Kachel 4", "Close"]
+17:28:46.629|=== -[B08SessionTests testAK03_EC01_EC03_ErsterMitTonWeitereStummGemischt] · mock 127.0.0.1:50579
+17:28:46.738|AK-03|nach 1|[0*] A HLS AVKit loading muted=false inner=0 | fokus=0 layout=focus
+17:28:46.744|EC-03|VLC direkt nach add (vor Wiedergabe)|audio.muted=Optional(Optional(true))|state=loading
+17:28:46.802|AK-03|nach Start|[0*] A HLS AVKit playing muted=false inner=0 ; [1] B TS VLC playing muted=true inner=1 ; [2] C HLS AVKit playing muted=true inner=1 ; [3] D TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:28:48.275|=== -[B08SessionTests testAK04_FuenfterSenderKommtNichtHinzuKeineVerbindung] · mock 127.0.0.1:50580
+17:28:51.418|AK-04|slots=4|ids gleich=true|anfragen fuenfter=0|verbindungen=4 offen=4 offeneStreams=4 #1/tslive/ak04-1.ts #2/tslive/ak04-2.ts #3/tslive/ak04-3.ts #4/tslive/ak04-4.ts
+17:28:52.203|=== -[B08SessionTests testAK06_GleicherSenderZweimalZweiKachelnZweiVerbindungen] · mock 127.0.0.1:50581
+17:28:55.332|AK-06|slots=["Doppelt", "Doppelt"]|ids verschieden=true|gleiche Engine=false|verbindungen=2 offen=2 offeneStreams=2 #1/tslive/ak06.ts #2/tslive/ak06.ts
+17:28:56.131|=== -[B08SessionTests testAK07_OhneZugangsdatenKeineKachelKeineAnfrage] · mock 127.0.0.1:50583
+17:28:57.806|AK-07|slots=0|liveAnfragen vorher/nachher=0/0|resolver=nil
+17:28:58.620|=== -[B08SessionTests testAK14_AK17_EC02_FokusWandertUndEntfernenFuehrtNach] · mock 127.0.0.1:50584
+17:28:58.803|AK-14|setFocus(2)|[0] R1 AVKit playing muted=true inner=1 ; [1] R2 VLC playing muted=true inner=1 ; [2*] R3 AVKit playing muted=false inner=0 ; [3] R4 VLC playing muted=true inner=1 | fokus=2 layout=focus
+17:28:58.804|AK-17|remove vor Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R3 AVKit playing muted=false inner=0 ; [2] R4 VLC playing muted=true inner=1 | fokus=1 layout=focus
+17:28:58.804|AK-17|remove Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R4 VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:29:00.633|EC-02|[0*] R7 VLC playing muted=false inner=0 ; [1] R8 AVKit playing muted=true inner=1 | fokus=0 layout=focus|Medien ohne Tonspur, Lautstärke [0.0, 0.0]
+17:29:02.091|=== -[B08SessionTests testAK19_EC05_EntfernenGibtFreiUndSchliesstVerbindung] · mock 127.0.0.1:50585
+17:29:07.257|AK-19|vorher|[0*] VLC spielt VLC playing muted=false inner=0 ; [1] AVKit spielt AVKit playing muted=true inner=1 ; [2] VLC lädt VLC playing muted=true inner=1 ; [3] AVKit lädt AVKit loading muted=true inner=1 | fokus=0 layout=focus|verbindungen=5 offen=5 offeneStreams=3 #1/tslive/ak19-vlc.ts #2/hang/ak19-vlc-hang.ts #3/livehls/ak19-av/seg00007.ts #4/hang/ak19-av-hang/index.m3u8 #5/livehls/ak19-av/seg00003.ts
+17:29:07.470|AK-19|direkt nach remove|lebt=[]
+17:29:12.480|AK-19|Stream-Verbindungen zu nach s|["VLC spielt=0.0", "AVKit spielt=0.0", "VLC lädt=0.0", "AVKit lädt=0.0"]|HLS-Abrufe nach >1 s=0|leere Keep-alive-Verbindungen 5 s danach=2 ["#3/livehls/ak19-av/seg00007.ts", "#5/livehls/ak19-av/seg00003.ts"]
+17:29:52.913|AK-19|leere Keep-alive-Verbindung zu nach > 46 s ab Entfernen
+17:29:53.831|=== -[B08SessionTests testAK20_ClearGibtAlleEnginesUndVerbindungenFrei] · mock 127.0.0.1:50593
+17:30:02.274|AK-20|clear|Stream-Verbindungen zu nach=0.0 s|HLS-Abrufe nach >1 s=0|verbindungen=5 offen=2 offeneStreams=0 #4/livehls/ak20b/seg00007.ts #5/livehls/ak20b/seg00003.ts
+17:30:03.086|=== -[B08SessionTests testAK24_AK34_NichtsInDatenbankEinstellungenSchluesselbund] · mock 127.0.0.1:50594
+17:30:06.259|AK-34|hasChanges=false|store gleich=true|wal gleich=true|neue Einstellungen=[]
+17:30:07.096|=== -[B08SessionTests testAK25_AK26_FehlerJeKachel] · mock 127.0.0.1:50595
+17:30:07.262|AK-25|AVKit|nach 0.1 s|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] OK TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:30:10.281|AK-26|VLC|t=3s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:30:15.301|AK-26|VLC|t=8s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:30:23.360|AK-26|VLC|t=16s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:30:32.434|AK-26|VLC|t=25s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:30:52.438|AK-26|AVKit Segmente 404 ab 6 s|[0*] Segmente 404 HLS AVKit playing muted=false inner=0 | fokus=0 layout=focus|seg404=7
+17:30:53.367|=== -[B08SessionTests testAK27_EC14_Angriff8_LoeschenLaesstKachelnMitZugangsdatenLaufen] · mock 127.0.0.1:50598
+17:30:59.639|AK-27|nach Löschen|sqlite ZPLAYLIST=0 ZCHANNEL=0|schlüsselbund=leer|offen vorher/nachher=2/2|bytes +289520 in 2 s|[0] QA Kanal 1 VLC playing muted=true inner=1 ; [1*] QA Kanal 2 VLC playing muted=false inner=0 | fokus=1 layout=focus|namen=["QA Kanal 1", "QA Kanal 2"]|ohneKontext=[true, true]|isDeleted=[false, false]
+17:31:00.452|=== -[B08SessionTests testAK28_AktualisierenAlteAdresseUndZweiteKachel] · mock 127.0.0.1:50599
+17:31:04.688|AK-28|nach Aktualisieren|slots=["QA Kanal 1", "QA Kanal 1"]|offen=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/201.ts"]|alteAdresse=101.ts neu=201.ts
+17:31:05.495|=== -[B08SessionTests testAK30_NKachelnNVerbindungenMitZugangsdaten] · mock 127.0.0.1:50600
+17:31:15.689|AK-30|offene Verbindungen nach 1…4 Kacheln=[1, 2, 3, 4]|pfade=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/102.ts", "/live/qa-user/<pass>/103.ts", "/live/qa-user/<pass>/104.ts"]|user-agent=["VLC/3.0.21 LibVLC/3.0.21"]
+17:31:16.448|=== -[B08SessionTests testAK31_AnbieterlimitEinsDreiKachelnLadenEndlos] · mock 127.0.0.1:50601
+17:31:31.650|AK-31|limit 1|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=focus|status je Stream=[(key: "101.ts", value: [200]), (key: "102.ts", value: [403, 403, 403, 403]), (key: "103.ts", value: [403, 403, 403, 403]), (key: "104.ts", value: [403, 403, 403, 403])]|403-Versuche=[(key: "102.ts", value: "4× in 3 ms"), (key: "103.ts", value: "4× in 2 ms"), (key: "104.ts", value: "4× in 2 ms")]|verbindungen=13 offen=1 offeneStreams=1 #2/live/qa-user/<pass>/101.ts
+17:31:32.415|=== -[B08SessionTests testAngriff1_FremdeIDsUndFremdeZuordnung] · mock 127.0.0.1:50603
+17:31:33.565|Angriff1|fremde IDs ohne Wirkung|a=1 b=1|manipulierte Zuordnung: slots=1 liveAnfragen +0
+17:31:34.399|=== -[B08SessionTests testAngriff3_ZehnMalHinzufuegenUndFuenfZyklen] · mock 127.0.0.1:50604
+17:31:42.955|Angriff3|10× add → slots=4 offen=4|offen nach je clear=[0, 0, 0, 0, 0]|am Ende offen=0|verbindungen gesamt=24
+17:31:43.661|=== -[B08SessionTests testAngriff5_PayloadDerKachelnAmAnbieter] · mock 127.0.0.1:50605
+17:31:48.867|Angriff5|GET /live/qa-user/<pass>/101.ts|accept: */* · accept-language: en_US · host: 127.0.0.1:<port> · range: bytes=0- · user-agent: VLC/3.0.21 LibVLC/3.0.21
+17:31:48.869|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 167F9E3C-D04E-41C6-AFCE-4595E0D2F77C
+17:31:48.870|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 167F9E3C-D04E-41C6-AFCE-4595E0D2F77C
+17:31:48.872|Angriff5|GET /live/qa-user/<pass>/seg00003.ts|accept: */* · accept-encoding: identity · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 167F9E3C-D04E-41C6-AFCE-4595E0D2F77C
+17:31:49.716|=== -[B08SessionTests testAngriff7_EingabenSendernamenUndAdressen] · mock 127.0.0.1:50606
+17:31:50.932|SHOT|angriff7-namen-raster|900x644
+17:31:55.602|SHOT|angriff7-sonderzeichen-dateiadresse|900x644
+17:31:55.613|Angriff7|[0*] '; drop table ZCHANNEL; -- VLC playing muted=false inner=0 ; [1] <script>alert(1)</script> VLC playing muted=true inner=1 ; [2] ../../etc/passwd VLC playing muted=true inner=1 ; [3] Datei AVKit failed(Cannot Open) muted=true inner=1 | fokus=0 layout=focus|labels=["Volume High", "\'; drop table ZCHANNEL; --", "Mute", "<script>alert(1)</script>", "Close", "Close", "Mute", "../../etc/passwd", "Close", "Mute", "Datei", "Close", "Wiedergabe fehlgeschlagen", "Cannot Open"]
+17:31:56.372|=== -[B08SessionTests testEC04_PauseOhneFreigabeHaeltVerbindung] · mock 127.0.0.1:50607
+17:32:04.438|EC-04|8 s pausiert, Engine gehalten|VLC offen=1|HLS-Playlistabrufe=4|verbindungen=3 offen=3 offeneStreams=1 #1/tslive/ec04-vlc.ts #2/livehls/ec04-av/seg00009.ts #3/livehls/ec04-av/seg00003.ts
+17:35:37.160|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:35:37.165|=== -[B08NachtragTests testCR_AK11_AK19_RasterVorneEntfernenVLCBilder] · mock 127.0.0.1:50618
+17:35:40.833|SHOT|CR-raster-vier-vlc-vorher|1280x720
+17:35:44.669|SHOT|CR-raster-nach-x-vorne-vlc|1280x720
+17:35:44.684|CR|Raster VLC|Schwarzanteil Zellen oben links, oben rechts, unten links, unten rechts vorher=["0.00", "0.00", "0.00", "0.00"] nach X auf V1=["1.00", "0.00", "0.00", "1.00"]|slots=["V2", "V3", "V4"]|etiketten=["V2", "V3", "V4"]|[0*] V2 VLC playing muted=false inner=0 ; [1] V3 VLC playing muted=true inner=1 ; [2] V4 VLC playing muted=true inner=1 | fokus=0 layout=grid
+17:36:11.625|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:36:11.627|=== -[B08AbsturzTests testAK23_Gegenprobe_FokusMitVierFensterSchliessen] · mock 127.0.0.1:50619
+17:36:12.376|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonVierAufDrei] · mock 127.0.0.1:50620
+17:36:13.393|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonZweiAufEins] · mock 127.0.0.1:50621
+17:36:14.309|=== -[B08AbsturzTests testAK23_RasterMitEinemFensterSchliessen] · mock 127.0.0.1:50622
+17:36:15.225|=== -[B08AbsturzTests testAK23_RasterMitVierFensterSchliessen] · mock 127.0.0.1:50623
+17:36:16.140|=== -[B08AbsturzTests testAK23_RasterXVonDreiAufZwei] · mock 127.0.0.1:50624
+17:36:17.057|=== -[B08AbsturzTests testAK23_RasterXVonEinsAufNull] · mock 127.0.0.1:50625
+17:36:17.973|=== -[B08AbsturzTests testEC15_BeendenBeiOffenemRaster] · mock 127.0.0.1:50626
+17:36:18.892|=== -[B08HauptfensterTests testAK01_AK21_EchteHauptfensterTeilenEinMultiview] · mock 127.0.0.1:50627
+17:36:24.104|AK-01|echtes Hauptfenster|titel=QA Echt|karten=["Echt 1, QA | 0", "Echt 2, QA | 0", "Echt 3, QA | 0", "Echt 4, QA | 0", "Echt 5, QA | 0"]
+17:36:24.141|SHOT|AK-01-echtes-hauptfenster-senderliste|880x820
+17:36:24.855|AK-01|echtes Hauptfenster|nach ⊞|slots=["Echt 1"]|titel=QA Echt|multiview=Multiview
+17:36:25.836|AK-21|zweites Hauptfenster|titel=QA Echt|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:36:28.711|AK-21|nach 3 × ⊞ im zweiten Fenster|slots=["Echt 1", "Echt 2", "Echt 3", "Echt 4"]|tooltips erstes=["Multiview voll (max. 4)"] zweites=["Multiview voll (max. 4)"]
+17:36:28.748|SHOT|AK-21-erstes-hauptfenster-voll|880x820
+17:36:28.776|SHOT|AK-21-zweites-hauptfenster-voll|880x820
+17:36:29.803|AK-21|nach Schließen|slots=0|tooltips erstes=["Zu Multiview hinzufügen"] zweites=["Zu Multiview hinzufügen"]
+17:36:31.684|=== -[B08NachtragTests testAK06_AK07_PlusOhneZugangsdatenUndDoppelterSender] · mock 127.0.0.1:50628
+17:36:36.271|SHOT|AK-07-plus-ohne-zugangsdaten-leeres-fenster|1280x720
+17:36:36.273|AK-07|⊞ ohne Zugangsdaten|klick=true|slots=0|multiview offen=true|neue Fenster=["Multiview"]|sheets=0|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]|liveAnfragen +0|listentitel=QA Ohne Zugang
+17:36:41.334|SHOT|AK-06-derselbe-sender-zweimal|1280x720
+17:36:41.342|AK-06|⊞ zweimal auf denselben Sender|slots=["Doppel TS", "Doppel TS"]|ids verschieden=true|verbindungen=2|tooltip danach=Zu Multiview hinzufügen|labels=["Doppel TS", "Doppel TS"]
+17:36:42.845|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50629
+17:36:53.245|AK-14|aktive App|isActive=false|key=false
+17:36:54.582|=== -[B08NachtragTests testBF101_VierVLCKachelnAbbauenUndSofortNeu] · mock 127.0.0.1:50630
+17:36:55.497|=== -[B08NachtragTests testCR_AK11_AK19_RasterVorneEntfernenVLCBilder] · mock 127.0.0.1:50631
+17:36:59.049|SHOT|CR-raster-vier-vlc-vorher|1280x720
+17:37:02.895|SHOT|CR-raster-nach-x-vorne-vlc|1280x720
+17:37:02.909|CR|Raster VLC|Schwarzanteil Zellen oben links, oben rechts, unten links, unten rechts vorher=["0.00", "0.00", "0.00", "0.00"] nach X auf V1=["1.00", "0.00", "0.00", "1.00"]|slots=["V2", "V3", "V4"]|etiketten=["V2", "V3", "V4"]|[0*] V2 VLC playing muted=false inner=0 ; [1] V3 VLC playing muted=true inner=1 ; [2] V4 VLC playing muted=true inner=1 | fokus=0 layout=grid
+17:37:05.051|=== -[B08NeustartTests testAK02_AK24_EC09_NeustartGroesseBleibtBelegungNicht] · mock 127.0.0.1:50632
+17:37:06.082|=== -[B08OberflaecheTests testAK01_AK02_AK09_PlusFuegtHinzuUndOeffnetFensterMenueintrag] · mock 127.0.0.1:50633
+17:37:08.667|AK-01|karten=["Alpha HLS, QA | 0", "Beta TS, QA | 0", "Gamma, QA | 0"]|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:37:08.684|SHOT|AK-01-senderliste-plus|520x684
+17:37:09.321|AK-01|nach ⊞|slots=["Alpha HLS"]|fenster=Multiview 1280x720|listentitel vorher/nachher=QA Liste/QA Liste
+17:37:10.746|AK-01|zweiter ⊞|slots=2|vorderstes Fenster=Multiview
+17:37:12.057|AK-01|favoriten|karten=["Favorit TS, QA | 0"]|tooltips=["Zu Multiview hinzufügen"]
+17:37:14.215|SHOT|AK-01-multiview-drei|1280x720
+17:37:14.228|SHOT|AK-01-favoriten-plus|520x632
+17:37:14.229|AK-09|menue=["Minimize", "Zoom", "—", "Multiview", "—", "Bring All to Front", "—", "Favoriten", "QA Echt", "QA Liste"]|kürzel='' modifier=0
+17:37:16.371|AK-09|nach 2× Menü|fenster=1|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:37:17.884|=== -[B08OberflaecheTests testAK04_AK05_AK21_EC06_VollInAllenFensternKlickAufGrauOeffnetPlayer] · mock 127.0.0.1:50634
+17:37:20.498|EC-06|nach 1|fenster B tooltip=Zu Multiview hinzufügen
+17:37:21.135|EC-06|nach 2|fenster B tooltip=Zu Multiview hinzufügen
+17:37:21.784|EC-06|nach 3|fenster B tooltip=Zu Multiview hinzufügen
+17:37:22.434|EC-06|nach 4|fenster B tooltip=Multiview voll (max. 4)
+17:37:23.950|AK-04|tooltips A=["Multiview voll (max. 4)"] B=["Multiview voll (max. 4)"]|⊞-Kontrast aktiv/abgeblendet=25.06/3.85 (Verhältnis 0.15)
+17:37:23.963|SHOT|AK-04-liste-voll|520x684
+17:37:23.970|SHOT|AK-04-favoriten-voll|520x632
+17:37:23.989|SHOT|AK-04-multiview-vier|1280x720
+17:37:27.620|AK-05|klick auf grauen ⊞|fenstertitel QA Voll → Kanal 5 HLS|slots=4|neue AVPlayer=1 isMuted=[false] volume=[0.0]|anfragen Kanal 5=7|TS-Verbindungen=4|multiview fokussiert muted=false
+17:37:27.629|SHOT|AK-05-klick-auf-grauen-plus-oeffnet-player|520x684
+17:37:29.639|=== -[B08OberflaecheTests testAK08_AK19_LeerzustandUndLetztesXLaesstFensterOffen] · mock 127.0.0.1:50635
+17:37:29.971|SHOT|AK-08-leerzustand|1280x720
+17:37:29.971|AK-08|leer|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:37:31.990|AK-19|X|help=Stream entfernen|label=Close
+17:37:32.813|AK-08|nach X|slots=0|engine frei=true nach 0.8 s ab Klickbeginn|verbindung zu=true nach 0.8 s|fenster sichtbar=true|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:37:34.299|=== -[B08OberflaecheTests testAK10_FokusLayoutGeometrieUndEtiketten] · mock 127.0.0.1:50636
+17:37:36.246|SHOT|AK-10-fokus-vier|1280x720
+17:37:39.488|EC-12|Bild-in-Bild-Controller je Kachel=["AVKit:angelegt", "VLC:-", "AVKit:angelegt", "VLC:-"]|EC-13|CPU% und RSS(KB) des Test-Hosts mit 4 Streams (3 Proben)=["13.5 315120", "11.2 311504", "10.6 311520"]|[0*] Eins HLS AVKit playing muted=false inner=0 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2] Drei HLS AVKit playing muted=true inner=1 ; [3] Vier TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:37:39.492|AK-10|inhalt=(320.0, 165.0, 1280.0, 668.0)|großes X=(1562.0, 795.0, 30.0, 30.0)|kleine Kacheln=[(1344.0, 682.0, 240.0, 135.0), (1344.0, 539.0, 240.0, 135.0), (1344.0, 396.0, 240.0, 135.0)]
+17:37:39.500|AK-10|etiketten oben→unten=["Eins HLS", "Zwei TS", "Drei HLS", "Vier TS"]|symbole=["Volume High", "Mute", "Mute", "Mute"]
+17:37:39.513|AK-10|akzentrahmen links (Rotanteil am Rand)=0.93
+17:37:40.856|=== -[B08OberflaecheTests testAK11_AK12_AK13_RasterUmschalterUndEinzelnerStreamImRaster] · mock 127.0.0.1:50637
+17:37:43.355|AK-12|Klick auf „Raster“ wirkt=true|layout=grid
+17:37:46.138|SHOT|AK-11-raster-vier|1280x720
+17:37:46.141|AK-11|geometrie=["2: X=[\"(630,8)\", \"(1272,8)\"]", "3: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\"]", "4: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\", \"(1272,344)\"]"]|kachel=638x332|oben=2 unten=2
+17:37:46.935|AK-14|Raster|Mausklick auf Kachel unten links (App aktiv=false) → focusedIndex=0
+17:37:47.987|SHOT|AK-14-raster-fokus-unten-links|1280x720
+17:37:47.993|AK-14|Raster|setFocus(2)|[0] R1 TS VLC playing muted=true inner=1 ; [1] R2 HLS AVKit playing muted=true inner=1 ; [2*] R3 TS VLC playing muted=false inner=0 ; [3] R4 HLS AVKit playing muted=true inner=1 | fokus=2 layout=grid|Lautsprecher-Symbol bei=[(337.5, 474.0, 12.0, 9.0)]
+17:37:53.283|SHOT|AK-13-raster-ein-stream-umschalter-gesperrt|1280x720
+17:37:53.283|AK-12|umschalter=["0: Fokus|Raster gewählt=0 aktiv=false", "1: Fokus|Raster gewählt=0 aktiv=false", "2: Fokus|Raster gewählt=0 aktiv=true", "3: Fokus|Raster gewählt=1 aktiv=true", "4: Fokus|Raster gewählt=1 aktiv=true", "Raster mit 1: Fokus|Raster gewählt=1 aktiv=false"]|AK-13|slots=1 layout=grid
+17:37:54.757|=== -[B08OberflaecheTests testAK12_LayoutBleibtUeberSchliessenUndOeffnen] · mock 127.0.0.1:50638
+17:37:56.769|AK-12|nach Schließen/Öffnen|layout=grid|umschalter=Fokus|Raster gewählt=1 aktiv=false
+17:37:58.235|=== -[B08OberflaecheTests testAK14_AK15_FokuswechselVLCHauptbildSchwarzHLSKorrekt] · mock 127.0.0.1:50639
+17:38:02.287|SHOT|AK-15-vlc-vor-fokuswechsel|1280x720
+17:38:03.100|AK-14|VLC|Mausklick auf kleine Kachel wirkt=true (App aktiv=true)|[0] VLC Eins VLC playing muted=true inner=1 ; [1*] VLC Zwei VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:38:04.124|SHOT|AK-15-vlc-nach-fokuswechsel-1s|1280x720
+17:38:08.164|SHOT|AK-15-vlc-nach-fokuswechsel-5s|1280x720
+17:38:13.204|SHOT|AK-15-vlc-nach-fokuswechsel-10s|1280x720
+17:38:18.266|SHOT|AK-15-vlc-nach-fokuswechsel-15s|1280x720
+17:38:20.313|SHOT|AK-15-vlc-nach-groessenaenderung|1100x640
+17:38:24.351|SHOT|AK-15-vlc-nach-raster-und-zurueck|1280x720
+17:38:24.356|AK-15|VLC|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "1.00", "1.00", "1.00", "1.00", "1.00", "0.00"]|etiketten=["Volume High", "VLC Zwei", "Mute", "VLC Eins"]
+17:38:27.950|SHOT|AK-15-hls-vor-fokuswechsel|1280x720
+17:38:28.784|AK-14|HLS|Mausklick auf kleine Kachel wirkt=true (App aktiv=true)|[0] HLS Eins AVKit playing muted=true inner=1 ; [1*] HLS Zwei AVKit playing muted=false inner=0 | fokus=1 layout=focus
+17:38:29.864|SHOT|AK-15-hls-nach-fokuswechsel-1s|1280x720
+17:38:33.931|SHOT|AK-15-hls-nach-fokuswechsel-5s|1280x720
+17:38:39.051|SHOT|AK-15-hls-nach-fokuswechsel-10s|1280x720
+17:38:44.097|SHOT|AK-15-hls-nach-fokuswechsel-15s|1280x720
+17:38:46.160|SHOT|AK-15-hls-nach-groessenaenderung|1100x640
+17:38:50.199|SHOT|AK-15-hls-nach-raster-und-zurueck|1280x720
+17:38:50.205|AK-15|HLS|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "0.00", "0.00", "0.00", "0.00", "0.00", "0.00"]|etiketten=["Volume High", "HLS Zwei", "Mute", "HLS Eins"]
+17:38:51.573|=== -[B08OberflaecheTests testAK16_XDesGrossenStreamsVerdeckt] · mock 127.0.0.1:50640
+17:38:55.021|AK-16|großes X=(1562.0, 795.0, 30.0, 30.0)|erste kleine Kachel=(1344.0, 682.0, 240.0, 135.0)|X-Mitte liegt in der Kachel=true
+17:38:59.834|SHOT|AK-16-grosses-x-verdeckt|1280x720
+17:38:59.835|AK-16|6 Klicks auf das große X|fokus=[0, 1, 0, 1, 0, 1, 0]|slots=["Groß", "Klein"]
+17:38:59.836|AK-16|Hinweis: Fokus-Umschalten durch den Klick nicht beobachtbar – Tipp-Gesten reagieren nur bei aktiver App (aktiv=true)|hit=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>>
+17:39:00.650|AK-16|Accessibility-Druck auf großes X|ausgeführt=true|slots=["Klein"]
+17:39:02.126|=== -[B08OberflaecheTests testAK18_PlayerUndMultiviewHabenBeideTon] · mock 127.0.0.1:50641
+17:39:04.579|AK-18|player isMuted=Optional(false) volume=Optional(0.0)|multiview [0*] Multiview TS VLC playing muted=false inner=0 | fokus=0 layout=focus|titel=Player HLS
+17:39:04.587|SHOT|AK-18-player-neben-multiview|640x432
+17:39:06.076|=== -[B08OberflaecheTests testAK20_AK21_SchliessenLeertFuerAlleFenster] · mock 127.0.0.1:50642
+17:39:11.588|AK-20|roter Knopf|slots=0|engines frei=4/4|verbindungen zu nach 0.2 s|tooltips A=["Zu Multiview hinzufügen"] B=["Zu Multiview hinzufügen"]
+17:39:12.254|AK-20|nächster ⊞|fenster offen=true|slots=["S5"]
+17:39:13.757|=== -[B08OberflaecheTests testAK22_EC07_MinimiertUndOhneListenfensterLaeuftWeiter] · mock 127.0.0.1:50643
+17:39:20.323|AK-22|minimiert=true|slots=2|[0*] M1 VLC playing muted=false inner=0 ; [1] M2 VLC playing muted=true inner=1 | fokus=0 layout=focus|bytes +434280 in 3 s
+17:39:23.027|EC-07|⊞ bei minimiertem Fenster|slots=3|minimiert=false|sichtbar=true
+17:39:26.541|AK-22|ohne Listenfenster|slots=3|offen=3|bytes +644840 in 3 s
+17:39:27.904|=== -[B08OberflaecheTests testAK25_AK26_AK32_FehlerKachelnZeigenKeineAdresse] · mock 127.0.0.1:50644
+17:39:36.419|SHOT|AK-25-26-fehler-je-kachel|1280x720
+17:39:36.420|AK-32|labels=["Volume High", "404 HLS", "Close", "Wiedergabe fehlgeschlagen", "The requested URL was not found on this server.", "Mute", "Port zu HLS", "Close", "Wiedergabe fehlgeschlagen", "Could not connect to the server.", "Mute", "404 TS", "Close", "0", "Mute", "QA Kanal 1", "Close"]|ladeanzeigen=1|lecks=[]|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] 404 TS VLC idle muted=true inner=1 ; [3] QA Kanal 1 VLC playing muted=true inner=1 | fokus=0 layout=grid
+17:39:47.179|SHOT|AK-31-anbieterlimit-eine-verbindung|1280x720
+17:39:47.180|AK-31|UI|ladeanzeigen=3|fehlermeldungen=0|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=grid
+17:39:48.668|=== -[B08OberflaecheTests testAK29_KeineTastatursteuerungWarntonAbgefangen] · mock 127.0.0.1:50645
+17:39:49.603|=== -[B08OberflaecheTests testEC10_EC11_KleinesFensterUndLangerName] · mock 127.0.0.1:50647
+17:39:52.649|EC-10|minSize=(105.0, 106.0)|contentMinSize=(105.0, 106.0)
+17:39:52.658|SHOT|EC-10-kleinstes-fenster|105x106
+17:39:52.666|EC-10|angefordert 300x200 → fenster 105x106 inhalt 105x54|unterste kleine Kachel endet -383 pt über dem Fensterboden|EC-11 etiketten=["Volume High", "Sehr langer Sendername Sehr la…(460 Zeichen)", "Mute", "Kachel 2", "Close", "Close", "Mute", "Kachel 3", "Close", "Mute", "Kachel 4", "Close"]
+17:39:54.178|=== -[B08SessionTests testAK03_EC01_EC03_ErsterMitTonWeitereStummGemischt] · mock 127.0.0.1:50648
+17:39:54.283|AK-03|nach 1|[0*] A HLS AVKit loading muted=false inner=0 | fokus=0 layout=focus
+17:39:54.295|EC-03|VLC direkt nach add (vor Wiedergabe)|audio.muted=Optional(Optional(true))|state=loading
+17:39:54.361|AK-03|nach Start|[0*] A HLS AVKit playing muted=false inner=0 ; [1] B TS VLC playing muted=true inner=1 ; [2] C HLS AVKit playing muted=true inner=1 ; [3] D TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:39:55.714|=== -[B08SessionTests testAK04_FuenfterSenderKommtNichtHinzuKeineVerbindung] · mock 127.0.0.1:50649
+17:39:58.853|AK-04|slots=4|ids gleich=true|anfragen fuenfter=0|verbindungen=4 offen=4 offeneStreams=4 #1/tslive/ak04-1.ts #2/tslive/ak04-2.ts #3/tslive/ak04-3.ts #4/tslive/ak04-4.ts
+17:39:59.624|=== -[B08SessionTests testAK06_GleicherSenderZweimalZweiKachelnZweiVerbindungen] · mock 127.0.0.1:50650
+17:40:02.748|AK-06|slots=["Doppelt", "Doppelt"]|ids verschieden=true|gleiche Engine=false|verbindungen=2 offen=2 offeneStreams=2 #1/tslive/ak06.ts #2/tslive/ak06.ts
+17:40:03.642|=== -[B08SessionTests testAK07_OhneZugangsdatenKeineKachelKeineAnfrage] · mock 127.0.0.1:50652
+17:40:05.301|AK-07|slots=0|liveAnfragen vorher/nachher=0/0|resolver=nil
+17:40:06.027|=== -[B08SessionTests testAK14_AK17_EC02_FokusWandertUndEntfernenFuehrtNach] · mock 127.0.0.1:50653
+17:40:06.206|AK-14|setFocus(2)|[0] R1 AVKit playing muted=true inner=1 ; [1] R2 VLC playing muted=true inner=1 ; [2*] R3 AVKit playing muted=false inner=0 ; [3] R4 VLC playing muted=true inner=1 | fokus=2 layout=focus
+17:40:06.206|AK-17|remove vor Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R3 AVKit playing muted=false inner=0 ; [2] R4 VLC playing muted=true inner=1 | fokus=1 layout=focus
+17:40:06.207|AK-17|remove Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R4 VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:40:08.034|EC-02|[0*] R7 VLC playing muted=false inner=0 ; [1] R8 AVKit playing muted=true inner=1 | fokus=0 layout=focus|Medien ohne Tonspur, Lautstärke [0.0, 0.0]
+17:40:08.767|=== -[B08SessionTests testAK19_EC05_EntfernenGibtFreiUndSchliesstVerbindung] · mock 127.0.0.1:50654
+17:40:13.928|AK-19|vorher|[0*] VLC spielt VLC playing muted=false inner=0 ; [1] AVKit spielt AVKit playing muted=true inner=1 ; [2] VLC lädt VLC playing muted=true inner=1 ; [3] AVKit lädt AVKit loading muted=true inner=1 | fokus=0 layout=focus|verbindungen=5 offen=5 offeneStreams=3 #1/tslive/ak19-vlc.ts #2/hang/ak19-vlc-hang.ts #3/livehls/ak19-av/seg00007.ts #4/hang/ak19-av-hang/index.m3u8 #5/livehls/ak19-av/seg00003.ts
+17:40:14.146|AK-19|direkt nach remove|lebt=[]
+17:40:19.193|AK-19|Stream-Verbindungen zu nach s|["VLC spielt=0.0", "AVKit spielt=0.0", "VLC lädt=0.0", "AVKit lädt=0.0"]|HLS-Abrufe nach >1 s=0|leere Keep-alive-Verbindungen 5 s danach=2 ["#3/livehls/ak19-av/seg00007.ts", "#5/livehls/ak19-av/seg00003.ts"]
+17:40:59.524|AK-19|leere Keep-alive-Verbindung zu nach > 46 s ab Entfernen
+17:41:00.443|=== -[B08SessionTests testAK20_ClearGibtAlleEnginesUndVerbindungenFrei] · mock 127.0.0.1:50658
+17:41:08.844|AK-20|clear|Stream-Verbindungen zu nach=0.0 s|HLS-Abrufe nach >1 s=0|verbindungen=5 offen=2 offeneStreams=0 #4/livehls/ak20b/index.m3u8 #5/livehls/ak20b/seg00003.ts
+17:41:09.653|=== -[B08SessionTests testAK24_AK34_NichtsInDatenbankEinstellungenSchluesselbund] · mock 127.0.0.1:50659
+17:41:12.733|AK-34|hasChanges=false|store gleich=true|wal gleich=true|neue Einstellungen=[]
+17:41:13.552|=== -[B08SessionTests testAK25_AK26_FehlerJeKachel] · mock 127.0.0.1:50660
+17:41:13.721|AK-25|AVKit|nach 0.1 s|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] OK TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:41:16.742|AK-26|VLC|t=3s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:41:21.760|AK-26|VLC|t=8s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:41:29.836|AK-26|VLC|t=16s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:41:38.921|AK-26|VLC|t=25s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:41:59.012|AK-26|AVKit Segmente 404 ab 6 s|[0*] Segmente 404 HLS AVKit playing muted=false inner=0 | fokus=0 layout=focus|seg404=7
+17:41:59.745|=== -[B08SessionTests testAK27_EC14_Angriff8_LoeschenLaesstKachelnMitZugangsdatenLaufen] · mock 127.0.0.1:50663
+17:42:06.020|AK-27|nach Löschen|sqlite ZPLAYLIST=0 ZCHANNEL=0|schlüsselbund=leer|offen vorher/nachher=2/2|bytes +289520 in 2 s|[0] QA Kanal 1 VLC playing muted=true inner=1 ; [1*] QA Kanal 2 VLC playing muted=false inner=0 | fokus=1 layout=focus|namen=["QA Kanal 1", "QA Kanal 2"]|ohneKontext=[true, true]|isDeleted=[false, false]
+17:42:06.896|=== -[B08SessionTests testAK28_AktualisierenAlteAdresseUndZweiteKachel] · mock 127.0.0.1:50666
+17:42:11.156|AK-28|nach Aktualisieren|slots=["QA Kanal 1", "QA Kanal 1"]|offen=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/201.ts"]|alteAdresse=101.ts neu=201.ts
+17:42:11.943|=== -[B08SessionTests testAK30_NKachelnNVerbindungenMitZugangsdaten] · mock 127.0.0.1:50667
+17:42:22.056|AK-30|offene Verbindungen nach 1…4 Kacheln=[1, 2, 3, 4]|pfade=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/102.ts", "/live/qa-user/<pass>/103.ts", "/live/qa-user/<pass>/104.ts"]|user-agent=["VLC/3.0.21 LibVLC/3.0.21"]
+17:42:22.828|=== -[B08SessionTests testAK31_AnbieterlimitEinsDreiKachelnLadenEndlos] · mock 127.0.0.1:50669
+17:42:38.024|AK-31|limit 1|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=focus|status je Stream=[(key: "101.ts", value: [200]), (key: "102.ts", value: [403, 403, 403, 403]), (key: "103.ts", value: [403, 403, 403, 403]), (key: "104.ts", value: [403, 403, 403, 403])]|403-Versuche=[(key: "102.ts", value: "4× in 6 ms"), (key: "103.ts", value: "4× in 4 ms"), (key: "104.ts", value: "4× in 3 ms")]|verbindungen=13 offen=1 offeneStreams=1 #2/live/qa-user/<pass>/101.ts
+17:42:38.932|=== -[B08SessionTests testAngriff1_FremdeIDsUndFremdeZuordnung] · mock 127.0.0.1:50674
+17:42:40.088|Angriff1|fremde IDs ohne Wirkung|a=1 b=1|manipulierte Zuordnung: slots=1 liveAnfragen +0
+17:42:41.022|=== -[B08SessionTests testAngriff3_ZehnMalHinzufuegenUndFuenfZyklen] · mock 127.0.0.1:50675
+17:42:49.943|Angriff3|10× add → slots=4 offen=4|offen nach je clear=[0, 0, 0, 0, 0]|am Ende offen=0|verbindungen gesamt=24
+17:42:50.653|=== -[B08SessionTests testAngriff5_PayloadDerKachelnAmAnbieter] · mock 127.0.0.1:50677
+17:42:55.744|Angriff5|GET /live/qa-user/<pass>/101.ts|accept: */* · accept-language: en_US · host: 127.0.0.1:<port> · range: bytes=0- · user-agent: VLC/3.0.21 LibVLC/3.0.21
+17:42:55.745|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 473D6AC7-D3E7-41E0-8035-6DF0EB6823BB
+17:42:55.747|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 473D6AC7-D3E7-41E0-8035-6DF0EB6823BB
+17:42:55.748|Angriff5|GET /live/qa-user/<pass>/seg00003.ts|accept: */* · accept-encoding: identity · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 473D6AC7-D3E7-41E0-8035-6DF0EB6823BB
+17:42:56.712|=== -[B08SessionTests testAngriff7_EingabenSendernamenUndAdressen] · mock 127.0.0.1:50679
+17:42:57.920|SHOT|angriff7-namen-raster|900x644
+17:43:02.662|SHOT|angriff7-sonderzeichen-dateiadresse|900x644
+17:43:02.672|Angriff7|[0*] '; drop table ZCHANNEL; -- VLC playing muted=false inner=0 ; [1] <script>alert(1)</script> VLC playing muted=true inner=1 ; [2] ../../etc/passwd VLC playing muted=true inner=1 ; [3] Datei AVKit failed(Cannot Open) muted=true inner=1 | fokus=0 layout=focus|labels=["Volume High", "\'; drop table ZCHANNEL; --", "Mute", "<script>alert(1)</script>", "Close", "Close", "Mute", "../../etc/passwd", "Close", "Mute", "Datei", "Close", "Wiedergabe fehlgeschlagen", "Cannot Open"]
+17:43:03.443|=== -[B08SessionTests testEC04_PauseOhneFreigabeHaeltVerbindung] · mock 127.0.0.1:50681
+17:43:11.551|EC-04|8 s pausiert, Engine gehalten|VLC offen=1|HLS-Playlistabrufe=4|verbindungen=3 offen=3 offeneStreams=1 #1/tslive/ec04-vlc.ts #2/livehls/ec04-av/seg00009.ts #3/livehls/ec04-av/seg00003.ts
+17:43:42.652|MEDIEN|ohne Tonspur geprüft (ffprobe, 0 Audiostreams): 11 Dateien src.ts,seg000.ts,seg001.ts…
+17:43:42.656|=== -[B08AbsturzTests testAK23_Gegenprobe_FokusMitVierFensterSchliessen] · mock 127.0.0.1:50687
+17:43:43.399|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonVierAufDrei] · mock 127.0.0.1:50688
+17:43:44.415|=== -[B08AbsturzTests testAK23_Gegenprobe_RasterXVonZweiAufEins] · mock 127.0.0.1:50689
+17:43:45.127|=== -[B08AbsturzTests testAK23_RasterMitEinemFensterSchliessen] · mock 127.0.0.1:50690
+17:43:46.044|=== -[B08AbsturzTests testAK23_RasterMitVierFensterSchliessen] · mock 127.0.0.1:50691
+17:43:46.960|=== -[B08AbsturzTests testAK23_RasterXVonDreiAufZwei] · mock 127.0.0.1:50692
+17:43:47.879|=== -[B08AbsturzTests testAK23_RasterXVonEinsAufNull] · mock 127.0.0.1:50693
+17:43:48.696|=== -[B08AbsturzTests testEC15_BeendenBeiOffenemRaster] · mock 127.0.0.1:50694
+17:43:49.614|=== -[B08HauptfensterTests testAK01_AK21_EchteHauptfensterTeilenEinMultiview] · mock 127.0.0.1:50695
+17:43:55.002|AK-01|echtes Hauptfenster|titel=QA Echt|karten=["Echt 1, QA | 0", "Echt 2, QA | 0", "Echt 3, QA | 0", "Echt 4, QA | 0", "Echt 5, QA | 0"]
+17:43:55.038|SHOT|AK-01-echtes-hauptfenster-senderliste|880x820
+17:43:55.789|AK-01|echtes Hauptfenster|nach ⊞|slots=["Echt 1"]|titel=QA Echt|multiview=Multiview
+17:43:56.767|AK-21|zweites Hauptfenster|titel=QA Echt|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:43:59.647|AK-21|nach 3 × ⊞ im zweiten Fenster|slots=["Echt 1", "Echt 2", "Echt 3", "Echt 4"]|tooltips erstes=["Multiview voll (max. 4)"] zweites=["Multiview voll (max. 4)"]
+17:43:59.669|SHOT|AK-21-erstes-hauptfenster-voll|880x820
+17:43:59.688|SHOT|AK-21-zweites-hauptfenster-voll|880x820
+17:44:00.738|AK-21|nach Schließen|slots=0|tooltips erstes=["Zu Multiview hinzufügen"] zweites=["Zu Multiview hinzufügen"]
+17:44:02.669|=== -[B08NachtragTests testAK06_AK07_PlusOhneZugangsdatenUndDoppelterSender] · mock 127.0.0.1:50696
+17:44:07.279|SHOT|AK-07-plus-ohne-zugangsdaten-leeres-fenster|1280x720
+17:44:07.280|AK-07|⊞ ohne Zugangsdaten|klick=true|slots=0|multiview offen=true|neue Fenster=["Multiview"]|sheets=0|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]|liveAnfragen +0|listentitel=QA Ohne Zugang
+17:44:14.795|SHOT|AK-06-derselbe-sender-zweimal|1280x720
+17:44:14.798|AK-06|⊞ zweimal auf denselben Sender|slots=["Doppel TS", "Doppel TS"]|ids verschieden=true|verbindungen=2|tooltip danach=Zu Multiview hinzufügen|labels=["Doppel TS", "Doppel TS"]
+17:44:16.285|=== -[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp] · mock 127.0.0.1:50698
+17:44:16.639|AK-14|aktive App|isActive=true|key=true
+17:44:18.847|KLICK|App erneut aktiviert=true
+17:44:19.676|SHOT|AK-14-fokus-klick-kleine-kachel|1280x720
+17:44:19.680|AK-14|Fokus|Mausklick auf 2. kleine Kachel|[0] Eins HLS AVKit playing muted=true inner=1 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2*] Drei HLS AVKit playing muted=false inner=0 | fokus=2 layout=focus|etiketten oben→unten=["Volume High", "Drei HLS", "Mute", "Eins HLS", "Mute", "Zwei TS"]
+17:44:20.490|AK-14|Klick auf das große Bild|fokus=2
+17:44:25.428|SHOT|AK-16-klicks-aufs-grosse-x-aktive-app|1280x720
+17:44:25.429|AK-16|aktive App|6 Klicks auf das große X bei (1562.0, 795.0, 30.0, 30.0)|fokus=[2, 0, 1, 0, 1, 0, 1]|slots=["Eins HLS", "Zwei TS", "Drei HLS"]
+17:44:28.930|SHOT|AK-14-raster-klick-unten-links-aktive-app|1280x720
+17:44:28.931|AK-14|Raster|Mausklick unten links|[0] R1 VLC playing muted=true inner=1 ; [1] R2 AVKit playing muted=true inner=1 ; [2*] R3 VLC playing muted=false inner=0 ; [3] R4 AVKit playing muted=true inner=1 | fokus=2 layout=grid
+17:44:36.211|SHOT|AK-15-vlc-echter-klick-2s|1280x720
+17:44:44.265|SHOT|AK-15-vlc-echter-klick-10s|1280x720
+17:44:44.270|AK-15|VLC|echter Klick wirkt=true|Schwarzanteil Hauptbild vorher/2 s/10 s=0.00/1.00/1.00|[0] VLC A VLC playing muted=true inner=1 ; [1*] VLC B VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:44:45.646|=== -[B08NachtragTests testBF101_VierVLCKachelnAbbauenUndSofortNeu] · mock 127.0.0.1:50700
+17:44:46.538|=== -[B08NachtragTests testCR_AK11_AK19_RasterVorneEntfernenVLCBilder] · mock 127.0.0.1:50701
+17:44:49.978|SHOT|CR-raster-vier-vlc-vorher|1280x720
+17:44:53.819|SHOT|CR-raster-nach-x-vorne-vlc|1280x720
+17:44:53.825|CR|Raster VLC|Schwarzanteil Zellen oben links, oben rechts, unten links, unten rechts vorher=["0.00", "0.00", "0.00", "0.00"] nach X auf V1=["1.00", "0.00", "0.00", "1.00"]|slots=["V2", "V3", "V4"]|etiketten=["V2", "V3", "V4"]|[0*] V2 VLC playing muted=false inner=0 ; [1] V3 VLC playing muted=true inner=1 ; [2] V4 VLC playing muted=true inner=1 | fokus=0 layout=grid
+17:44:56.107|=== -[B08NeustartTests testAK02_AK24_EC09_NeustartGroesseBleibtBelegungNicht] · mock 127.0.0.1:50702
+17:44:57.077|=== -[B08OberflaecheTests testAK01_AK02_AK09_PlusFuegtHinzuUndOeffnetFensterMenueintrag] · mock 127.0.0.1:50703
+17:44:59.701|AK-01|karten=["Alpha HLS, QA | 0", "Beta TS, QA | 0", "Gamma, QA | 0"]|tooltips=["Zu Multiview hinzufügen", "Zu Multiview hinzufügen", "Zu Multiview hinzufügen"]
+17:44:59.713|SHOT|AK-01-senderliste-plus|520x684
+17:45:00.384|AK-01|nach ⊞|slots=["Alpha HLS"]|fenster=Multiview 1280x720|listentitel vorher/nachher=QA Liste/QA Liste
+17:45:01.859|AK-01|zweiter ⊞|slots=2|vorderstes Fenster=Multiview
+17:45:03.111|AK-01|favoriten|karten=["Favorit TS, QA | 0"]|tooltips=["Zu Multiview hinzufügen"]
+17:45:05.278|SHOT|AK-01-multiview-drei|1280x720
+17:45:05.287|SHOT|AK-01-favoriten-plus|520x632
+17:45:05.287|AK-09|menue=["Minimize", "Zoom", "—", "Multiview", "—", "Bring All to Front", "—", "Favoriten", "QA Echt", "QA Liste"]|kürzel='' modifier=0
+17:45:07.400|AK-09|nach 2× Menü|fenster=1|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:45:08.892|=== -[B08OberflaecheTests testAK04_AK05_AK21_EC06_VollInAllenFensternKlickAufGrauOeffnetPlayer] · mock 127.0.0.1:50704
+17:45:11.601|EC-06|nach 1|fenster B tooltip=Zu Multiview hinzufügen
+17:45:12.257|EC-06|nach 2|fenster B tooltip=Zu Multiview hinzufügen
+17:45:12.907|EC-06|nach 3|fenster B tooltip=Zu Multiview hinzufügen
+17:45:13.557|EC-06|nach 4|fenster B tooltip=Multiview voll (max. 4)
+17:45:15.078|AK-04|tooltips A=["Multiview voll (max. 4)"] B=["Multiview voll (max. 4)"]|⊞-Kontrast aktiv/abgeblendet=25.06/3.85 (Verhältnis 0.15)
+17:45:15.087|SHOT|AK-04-liste-voll|520x684
+17:45:15.099|SHOT|AK-04-favoriten-voll|520x632
+17:45:15.133|SHOT|AK-04-multiview-vier|1280x720
+17:45:18.757|AK-05|klick auf grauen ⊞|fenstertitel QA Voll → Kanal 5 HLS|slots=4|neue AVPlayer=1 isMuted=[false] volume=[0.0]|anfragen Kanal 5=7|TS-Verbindungen=4|multiview fokussiert muted=false
+17:45:18.768|SHOT|AK-05-klick-auf-grauen-plus-oeffnet-player|520x684
+17:45:20.793|=== -[B08OberflaecheTests testAK08_AK19_LeerzustandUndLetztesXLaesstFensterOffen] · mock 127.0.0.1:50706
+17:45:21.159|SHOT|AK-08-leerzustand|1280x720
+17:45:21.160|AK-08|leer|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:45:23.183|AK-19|X|help=Stream entfernen|label=Close
+17:45:24.017|AK-08|nach X|slots=0|engine frei=true nach 0.8 s ab Klickbeginn|verbindung zu=true nach 0.8 s|fenster sichtbar=true|labels=["Kein Stream im Multiview", "Füge in der Senderliste mit dem ⊞-Button Sender hinzu, um sie hier gleichzeitig zu sehen."]
+17:45:25.514|=== -[B08OberflaecheTests testAK10_FokusLayoutGeometrieUndEtiketten] · mock 127.0.0.1:50707
+17:45:27.649|SHOT|AK-10-fokus-vier|1280x720
+17:45:30.849|EC-12|Bild-in-Bild-Controller je Kachel=["AVKit:angelegt", "VLC:-", "AVKit:angelegt", "VLC:-"]|EC-13|CPU% und RSS(KB) des Test-Hosts mit 4 Streams (3 Proben)=["9.8 254144", "11.5 250240", "10.4 250256"]|[0*] Eins HLS AVKit playing muted=false inner=0 ; [1] Zwei TS VLC playing muted=true inner=1 ; [2] Drei HLS AVKit playing muted=true inner=1 ; [3] Vier TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:45:30.853|AK-10|inhalt=(320.0, 165.0, 1280.0, 668.0)|großes X=(1562.0, 795.0, 30.0, 30.0)|kleine Kacheln=[(1344.0, 682.0, 240.0, 135.0), (1344.0, 539.0, 240.0, 135.0), (1344.0, 396.0, 240.0, 135.0)]
+17:45:30.861|AK-10|etiketten oben→unten=["Eins HLS", "Zwei TS", "Drei HLS", "Vier TS"]|symbole=["Volume High", "Mute", "Mute", "Mute"]
+17:45:30.869|AK-10|akzentrahmen links (Rotanteil am Rand)=0.93
+17:45:32.320|=== -[B08OberflaecheTests testAK11_AK12_AK13_RasterUmschalterUndEinzelnerStreamImRaster] · mock 127.0.0.1:50708
+17:45:34.851|AK-12|Klick auf „Raster“ wirkt=true|layout=grid
+17:45:37.629|SHOT|AK-11-raster-vier|1280x720
+17:45:37.631|AK-11|geometrie=["2: X=[\"(630,8)\", \"(1272,8)\"]", "3: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\"]", "4: X=[\"(630,8)\", \"(1272,8)\", \"(630,344)\", \"(1272,344)\"]"]|kachel=638x332|oben=2 unten=2
+17:45:38.432|AK-14|Raster|Mausklick auf Kachel unten links (App aktiv=true) → focusedIndex=2
+17:45:39.469|SHOT|AK-14-raster-fokus-unten-links|1280x720
+17:45:39.473|AK-14|Raster|setFocus(2)|[0] R1 TS VLC playing muted=true inner=1 ; [1] R2 HLS AVKit playing muted=true inner=1 ; [2*] R3 TS VLC playing muted=false inner=0 ; [3] R4 HLS AVKit playing muted=true inner=1 | fokus=2 layout=grid|Lautsprecher-Symbol bei=[(337.5, 474.0, 12.0, 9.0)]
+17:45:44.798|SHOT|AK-13-raster-ein-stream-umschalter-gesperrt|1280x720
+17:45:44.798|AK-12|umschalter=["0: Fokus|Raster gewählt=0 aktiv=false", "1: Fokus|Raster gewählt=0 aktiv=false", "2: Fokus|Raster gewählt=0 aktiv=true", "3: Fokus|Raster gewählt=1 aktiv=true", "4: Fokus|Raster gewählt=1 aktiv=true", "Raster mit 1: Fokus|Raster gewählt=1 aktiv=false"]|AK-13|slots=1 layout=grid
+17:45:46.306|=== -[B08OberflaecheTests testAK12_LayoutBleibtUeberSchliessenUndOeffnen] · mock 127.0.0.1:50709
+17:45:48.361|AK-12|nach Schließen/Öffnen|layout=grid|umschalter=Fokus|Raster gewählt=1 aktiv=false
+17:45:49.799|=== -[B08OberflaecheTests testAK14_AK15_FokuswechselVLCHauptbildSchwarzHLSKorrekt] · mock 127.0.0.1:50710
+17:45:53.917|SHOT|AK-15-vlc-vor-fokuswechsel|1280x720
+17:45:54.741|AK-14|VLC|Mausklick auf kleine Kachel wirkt=true (App aktiv=true)|[0] VLC Eins VLC playing muted=true inner=1 ; [1*] VLC Zwei VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:45:55.765|SHOT|AK-15-vlc-nach-fokuswechsel-1s|1280x720
+17:45:59.816|SHOT|AK-15-vlc-nach-fokuswechsel-5s|1280x720
+17:46:04.864|SHOT|AK-15-vlc-nach-fokuswechsel-10s|1280x720
+17:46:09.913|SHOT|AK-15-vlc-nach-fokuswechsel-15s|1280x720
+17:46:11.958|SHOT|AK-15-vlc-nach-groessenaenderung|1100x640
+17:46:16.029|SHOT|AK-15-vlc-nach-raster-und-zurueck|1280x720
+17:46:16.042|AK-15|VLC|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "1.00", "1.00", "1.00", "1.00", "1.00", "0.00"]|etiketten=["Volume High", "VLC Zwei", "Mute", "VLC Eins"]
+17:46:19.729|SHOT|AK-15-hls-vor-fokuswechsel|1280x720
+17:46:20.558|AK-14|HLS|Mausklick auf kleine Kachel wirkt=false (App aktiv=false)|[0] HLS Eins AVKit playing muted=true inner=1 ; [1*] HLS Zwei AVKit playing muted=false inner=0 | fokus=1 layout=focus
+17:46:21.626|SHOT|AK-15-hls-nach-fokuswechsel-1s|1280x720
+17:46:25.761|SHOT|AK-15-hls-nach-fokuswechsel-5s|1280x720
+17:46:30.816|SHOT|AK-15-hls-nach-fokuswechsel-10s|1280x720
+17:46:35.904|SHOT|AK-15-hls-nach-fokuswechsel-15s|1280x720
+17:46:37.965|SHOT|AK-15-hls-nach-groessenaenderung|1100x640
+17:46:42.090|SHOT|AK-15-hls-nach-raster-und-zurueck|1280x720
+17:46:42.102|AK-15|HLS|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=["0.00", "0.00", "0.00", "0.00", "0.00", "0.00", "0.00"]|etiketten=["Volume High", "HLS Zwei", "Mute", "HLS Eins"]
+17:46:43.555|=== -[B08OberflaecheTests testAK16_XDesGrossenStreamsVerdeckt] · mock 127.0.0.1:50712
+17:46:47.015|AK-16|großes X=(1562.0, 795.0, 30.0, 30.0)|erste kleine Kachel=(1344.0, 682.0, 240.0, 135.0)|X-Mitte liegt in der Kachel=true
+17:46:51.848|SHOT|AK-16-grosses-x-verdeckt|1280x720
+17:46:51.850|AK-16|6 Klicks auf das große X|fokus=[0, 0, 0, 0, 0, 0, 0]|slots=["Groß", "Klein"]
+17:46:51.852|AK-16|Hinweis: Fokus-Umschalten durch den Klick nicht beobachtbar – Tipp-Gesten reagieren nur bei aktiver App (aktiv=false)|hit=AppKitWindowHostingView<ModifiedContent<ModifiedContent<MultiviewScreen, _EnvironmentKeyWritingModifier<Optional<MultiviewSession>>>, RootModifier>>
+17:46:52.662|AK-16|Accessibility-Druck auf großes X|ausgeführt=true|slots=["Klein"]
+17:46:54.007|=== -[B08OberflaecheTests testAK18_PlayerUndMultiviewHabenBeideTon] · mock 127.0.0.1:50715
+17:46:56.568|AK-18|player isMuted=Optional(false) volume=Optional(0.0)|multiview [0*] Multiview TS VLC playing muted=false inner=0 | fokus=0 layout=focus|titel=Player HLS
+17:46:56.581|SHOT|AK-18-player-neben-multiview|640x432
+17:46:58.171|=== -[B08OberflaecheTests testAK20_AK21_SchliessenLeertFuerAlleFenster] · mock 127.0.0.1:50717
+17:47:03.648|AK-20|roter Knopf|slots=0|engines frei=4/4|verbindungen zu nach 0.2 s|tooltips A=["Zu Multiview hinzufügen"] B=["Zu Multiview hinzufügen"]
+17:47:04.300|AK-20|nächster ⊞|fenster offen=true|slots=["S5"]
+17:47:05.920|=== -[B08OberflaecheTests testAK22_EC07_MinimiertUndOhneListenfensterLaeuftWeiter] · mock 127.0.0.1:50719
+17:47:12.466|AK-22|minimiert=true|slots=2|[0*] M1 VLC playing muted=false inner=0 ; [1] M2 VLC playing muted=true inner=1 | fokus=0 layout=focus|bytes +434280 in 3 s
+17:47:15.138|EC-07|⊞ bei minimiertem Fenster|slots=3|minimiert=false|sichtbar=true
+17:47:18.651|AK-22|ohne Listenfenster|slots=3|offen=3|bytes +644840 in 3 s
+17:47:20.009|=== -[B08OberflaecheTests testAK25_AK26_AK32_FehlerKachelnZeigenKeineAdresse] · mock 127.0.0.1:50721
+17:47:28.504|SHOT|AK-25-26-fehler-je-kachel|1280x720
+17:47:28.505|AK-32|labels=["Volume High", "404 HLS", "Close", "Wiedergabe fehlgeschlagen", "The requested URL was not found on this server.", "Mute", "Port zu HLS", "Close", "Wiedergabe fehlgeschlagen", "Could not connect to the server.", "Mute", "404 TS", "Close", "0", "Mute", "QA Kanal 1", "Close"]|ladeanzeigen=1|lecks=[]|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] 404 TS VLC idle muted=true inner=1 ; [3] QA Kanal 1 VLC playing muted=true inner=1 | fokus=0 layout=grid
+17:47:39.261|SHOT|AK-31-anbieterlimit-eine-verbindung|1280x720
+17:47:39.263|AK-31|UI|ladeanzeigen=3|fehlermeldungen=0|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=grid
+17:47:40.764|=== -[B08OberflaecheTests testAK29_KeineTastatursteuerungWarntonAbgefangen] · mock 127.0.0.1:50722
+17:47:41.681|=== -[B08OberflaecheTests testEC10_EC11_KleinesFensterUndLangerName] · mock 127.0.0.1:50723
+17:47:44.719|EC-10|minSize=(105.0, 106.0)|contentMinSize=(105.0, 106.0)
+17:47:44.730|SHOT|EC-10-kleinstes-fenster|105x106
+17:47:44.738|EC-10|angefordert 300x200 → fenster 105x106 inhalt 105x54|unterste kleine Kachel endet -383 pt über dem Fensterboden|EC-11 etiketten=["Volume High", "Sehr langer Sendername Sehr la…(460 Zeichen)", "Mute", "Kachel 2", "Close", "Close", "Mute", "Kachel 3", "Close", "Mute", "Kachel 4", "Close"]
+17:47:46.261|=== -[B08SessionTests testAK03_EC01_EC03_ErsterMitTonWeitereStummGemischt] · mock 127.0.0.1:50724
+17:47:46.367|AK-03|nach 1|[0*] A HLS AVKit loading muted=false inner=0 | fokus=0 layout=focus
+17:47:46.379|EC-03|VLC direkt nach add (vor Wiedergabe)|audio.muted=Optional(Optional(true))|state=loading
+17:47:46.445|AK-03|nach Start|[0*] A HLS AVKit playing muted=false inner=0 ; [1] B TS VLC playing muted=true inner=1 ; [2] C HLS AVKit playing muted=true inner=1 ; [3] D TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:47:47.816|=== -[B08SessionTests testAK04_FuenfterSenderKommtNichtHinzuKeineVerbindung] · mock 127.0.0.1:50725
+17:47:50.958|AK-04|slots=4|ids gleich=true|anfragen fuenfter=0|verbindungen=4 offen=4 offeneStreams=4 #1/tslive/ak04-1.ts #2/tslive/ak04-2.ts #3/tslive/ak04-3.ts #4/tslive/ak04-4.ts
+17:47:51.744|=== -[B08SessionTests testAK06_GleicherSenderZweimalZweiKachelnZweiVerbindungen] · mock 127.0.0.1:50726
+17:47:54.873|AK-06|slots=["Doppelt", "Doppelt"]|ids verschieden=true|gleiche Engine=false|verbindungen=2 offen=2 offeneStreams=2 #1/tslive/ak06.ts #2/tslive/ak06.ts
+17:47:55.673|=== -[B08SessionTests testAK07_OhneZugangsdatenKeineKachelKeineAnfrage] · mock 127.0.0.1:50727
+17:47:57.339|AK-07|slots=0|liveAnfragen vorher/nachher=0/0|resolver=nil
+17:47:58.255|=== -[B08SessionTests testAK14_AK17_EC02_FokusWandertUndEntfernenFuehrtNach] · mock 127.0.0.1:50728
+17:47:58.337|AK-14|setFocus(2)|[0] R1 AVKit playing muted=true inner=1 ; [1] R2 VLC playing muted=true inner=1 ; [2*] R3 AVKit playing muted=false inner=0 ; [3] R4 VLC playing muted=true inner=1 | fokus=2 layout=focus
+17:47:58.338|AK-17|remove vor Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R3 AVKit playing muted=false inner=0 ; [2] R4 VLC playing muted=true inner=1 | fokus=1 layout=focus
+17:47:58.338|AK-17|remove Fokus|[0] R2 VLC playing muted=true inner=1 ; [1*] R4 VLC playing muted=false inner=0 | fokus=1 layout=focus
+17:47:58.944|EC-02|[0*] R7 VLC playing muted=false inner=0 ; [1] R8 AVKit playing muted=true inner=1 | fokus=0 layout=focus|Medien ohne Tonspur, Lautstärke [0.0, 0.0]
+17:47:59.656|=== -[B08SessionTests testAK19_EC05_EntfernenGibtFreiUndSchliesstVerbindung] · mock 127.0.0.1:50729
+17:48:04.820|AK-19|vorher|[0*] VLC spielt VLC playing muted=false inner=0 ; [1] AVKit spielt AVKit playing muted=true inner=1 ; [2] VLC lädt VLC playing muted=true inner=1 ; [3] AVKit lädt AVKit loading muted=true inner=1 | fokus=0 layout=focus|verbindungen=5 offen=5 offeneStreams=3 #1/tslive/ak19-vlc.ts #2/hang/ak19-vlc-hang.ts #3/hang/ak19-av-hang/index.m3u8 #4/livehls/ak19-av/seg00007.ts #5/livehls/ak19-av/seg00003.ts
+17:48:05.026|AK-19|direkt nach remove|lebt=[]
+17:48:10.064|AK-19|Stream-Verbindungen zu nach s|["VLC spielt=0.0", "AVKit spielt=0.0", "VLC lädt=0.0", "AVKit lädt=0.0"]|HLS-Abrufe nach >1 s=0|leere Keep-alive-Verbindungen 5 s danach=2 ["#4/livehls/ak19-av/seg00007.ts", "#5/livehls/ak19-av/seg00003.ts"]
+17:48:50.507|AK-19|leere Keep-alive-Verbindung zu nach > 46 s ab Entfernen
+17:48:51.426|=== -[B08SessionTests testAK20_ClearGibtAlleEnginesUndVerbindungenFrei] · mock 127.0.0.1:50731
+17:48:59.881|AK-20|clear|Stream-Verbindungen zu nach=0.0 s|HLS-Abrufe nach >1 s=0|verbindungen=5 offen=2 offeneStreams=0 #4/livehls/ak20b/seg00007.ts #5/livehls/ak20b/seg00003.ts
+17:49:00.690|=== -[B08SessionTests testAK24_AK34_NichtsInDatenbankEinstellungenSchluesselbund] · mock 127.0.0.1:50732
+17:49:03.883|AK-34|hasChanges=false|store gleich=true|wal gleich=true|neue Einstellungen=[]
+17:49:04.605|=== -[B08SessionTests testAK25_AK26_FehlerJeKachel] · mock 127.0.0.1:50733
+17:49:04.677|AK-25|AVKit|nach 0.1 s|[0*] 404 HLS AVKit failed(The requested URL was not found on this server.) muted=false inner=0 ; [1] Port zu HLS AVKit failed(Could not connect to the server.) muted=true inner=1 ; [2] OK TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:49:07.701|AK-26|VLC|t=3s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:49:12.722|AK-26|VLC|t=8s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:49:20.800|AK-26|VLC|t=16s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:49:29.887|AK-26|VLC|t=25s|[0*] 404 TS VLC idle muted=false inner=0 ; [1] Port zu TS VLC idle muted=true inner=1 ; [2] Abbruch TS VLC playing muted=true inner=1 ; [3] Hängt TS VLC playing muted=true inner=1 | fokus=0 layout=focus
+17:49:49.952|AK-26|AVKit Segmente 404 ab 6 s|[0*] Segmente 404 HLS AVKit playing muted=false inner=0 | fokus=0 layout=focus|seg404=7
+17:49:50.795|=== -[B08SessionTests testAK27_EC14_Angriff8_LoeschenLaesstKachelnMitZugangsdatenLaufen] · mock 127.0.0.1:50737
+17:49:57.080|AK-27|nach Löschen|sqlite ZPLAYLIST=0 ZCHANNEL=0|schlüsselbund=leer|offen vorher/nachher=2/2|bytes +289520 in 2 s|[0] QA Kanal 1 VLC playing muted=true inner=1 ; [1*] QA Kanal 2 VLC playing muted=false inner=0 | fokus=1 layout=focus|namen=["QA Kanal 1", "QA Kanal 2"]|ohneKontext=[true, true]|isDeleted=[false, false]
+17:49:57.964|=== -[B08SessionTests testAK28_AktualisierenAlteAdresseUndZweiteKachel] · mock 127.0.0.1:50738
+17:50:02.194|AK-28|nach Aktualisieren|slots=["QA Kanal 1", "QA Kanal 1"]|offen=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/201.ts"]|alteAdresse=101.ts neu=201.ts
+17:50:03.071|=== -[B08SessionTests testAK30_NKachelnNVerbindungenMitZugangsdaten] · mock 127.0.0.1:50739
+17:50:13.275|AK-30|offene Verbindungen nach 1…4 Kacheln=[1, 2, 3, 4]|pfade=["/live/qa-user/<pass>/101.ts", "/live/qa-user/<pass>/102.ts", "/live/qa-user/<pass>/103.ts", "/live/qa-user/<pass>/104.ts"]|user-agent=["VLC/3.0.21 LibVLC/3.0.21"]
+17:50:14.045|=== -[B08SessionTests testAK31_AnbieterlimitEinsDreiKachelnLadenEndlos] · mock 127.0.0.1:50740
+17:50:29.266|AK-31|limit 1|[0*] QA Kanal 1 VLC playing muted=false inner=0 ; [1] QA Kanal 2 VLC idle muted=true inner=1 ; [2] QA Kanal 3 VLC idle muted=true inner=1 ; [3] QA Kanal 4 VLC idle muted=true inner=1 | fokus=0 layout=focus|status je Stream=[(key: "101.ts", value: [200]), (key: "102.ts", value: [403, 403, 403, 403]), (key: "103.ts", value: [403, 403, 403, 403]), (key: "104.ts", value: [403, 403, 403, 403])]|403-Versuche=[(key: "102.ts", value: "4× in 6 ms"), (key: "103.ts", value: "4× in 2 ms"), (key: "104.ts", value: "4× in 3 ms")]|verbindungen=13 offen=1 offeneStreams=1 #2/live/qa-user/<pass>/101.ts
+17:50:30.142|=== -[B08SessionTests testAngriff1_FremdeIDsUndFremdeZuordnung] · mock 127.0.0.1:50741
+17:50:31.297|Angriff1|fremde IDs ohne Wirkung|a=1 b=1|manipulierte Zuordnung: slots=1 liveAnfragen +0
+17:50:32.133|=== -[B08SessionTests testAngriff3_ZehnMalHinzufuegenUndFuenfZyklen] · mock 127.0.0.1:50742
+17:50:40.697|Angriff3|10× add → slots=4 offen=4|offen nach je clear=[0, 0, 0, 0, 0]|am Ende offen=0|verbindungen gesamt=24
+17:50:41.510|=== -[B08SessionTests testAngriff5_PayloadDerKachelnAmAnbieter] · mock 127.0.0.1:50743
+17:50:46.702|Angriff5|GET /live/qa-user/<pass>/101.ts|accept: */* · accept-language: en_US · host: 127.0.0.1:<port> · range: bytes=0- · user-agent: VLC/3.0.21 LibVLC/3.0.21
+17:50:46.704|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 6328A0D1-BAD4-4889-A708-206901C63F98
+17:50:46.705|Angriff5|GET /live/qa-user/<pass>/102.m3u8|accept: */* · accept-encoding: gzip · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 6328A0D1-BAD4-4889-A708-206901C63F98
+17:50:46.706|Angriff5|GET /live/qa-user/<pass>/seg00003.ts|accept: */* · accept-encoding: identity · accept-language: de-DE,de;q=0.9 · connection: keep-alive · host: 127.0.0.1:<port> · user-agent: AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de) · x-playback-session-id: 6328A0D1-BAD4-4889-A708-206901C63F98
+17:50:47.562|=== -[B08SessionTests testAngriff7_EingabenSendernamenUndAdressen] · mock 127.0.0.1:50744
+17:50:48.788|SHOT|angriff7-namen-raster|900x644
+17:50:53.513|SHOT|angriff7-sonderzeichen-dateiadresse|900x644
+17:50:53.519|Angriff7|[0*] '; drop table ZCHANNEL; -- VLC playing muted=false inner=0 ; [1] <script>alert(1)</script> VLC playing muted=true inner=1 ; [2] ../../etc/passwd VLC playing muted=true inner=1 ; [3] Datei AVKit failed(Cannot Open) muted=true inner=1 | fokus=0 layout=focus|labels=["Volume High", "\'; drop table ZCHANNEL; --", "Mute", "<script>alert(1)</script>", "Close", "Close", "Mute", "../../etc/passwd", "Close", "Mute", "Datei", "Close", "Wiedergabe fehlgeschlagen", "Cannot Open"]
+17:50:54.289|=== -[B08SessionTests testEC04_PauseOhneFreigabeHaeltVerbindung] · mock 127.0.0.1:50745
+17:51:02.346|EC-04|8 s pausiert, Engine gehalten|VLC offen=1|HLS-Playlistabrufe=4|verbindungen=3 offen=3 offeneStreams=1 #1/tslive/ec04-vlc.ts #2/livehls/ec04-av/seg00009.ts #3/livehls/ec04-av/seg00003.ts

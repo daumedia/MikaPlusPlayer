@@ -7,7 +7,7 @@ export const FAQ: readonly FaqItem[] = [
   {
     question: "macOS says the app cannot be opened. What now?",
     answer:
-      "The build is ad-hoc signed rather than notarised, so Gatekeeper stops the first launch. Right-click the app in Applications, choose Open, then confirm. macOS remembers the decision and every later launch works normally.",
+      "The build is ad-hoc signed rather than notarised, so Gatekeeper stops the first launch. Try to open the app once, then go to System Settings → Privacy & Security and click Open Anyway; the button stays there for about an hour after the blocked attempt. Since macOS 15 Sequoia that is the only way — on macOS 14 Sonoma, Control-clicking the app and choosing Open works as well. macOS remembers the decision and every later launch works normally. The first-launch steps above also show how to check the download against its SHA-256 checksum.",
   },
   {
     question: "Does Mika+Player come with channels?",

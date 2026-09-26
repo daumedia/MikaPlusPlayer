@@ -106,6 +106,11 @@ Komponenten (`.playerCard()`, `PlayerHeader`, `PlayerBadge`). Akzentfarbe `Color
 - **iOS**: Automatic mit `DEVELOPMENT_TEAM` in `project.yml` (aktuell `CWJM4J4HFN`); Gerät & Simulator signieren automatisch.
 - Bundle-ID-Prefix `lu.daumedia`. ATS erlaubt HTTP (`NSAllowsArbitraryLoads`) für HTTP-Streams.
 
+## SDD-Artefakte
+Artefaktpfad: `docs/` · Features: `features/` (Statustabelle `features/index.md`).
+Bestandsprojekt, rückwirkend erfasst mit `sdd-erfassen` — Feature-IDs mit `B`-Präfix. Das Repo ist
+**öffentlich**; alles unter `docs/` und `features/` (inkl. Befunde) ist auf GitHub lesbar.
+
 ## Nützlicher Kontext
 Persistente Notizen unter `~/.claude/projects/-Users-michaelferreira-ShiftProjects-MikaPlusPlayer/memory/`
 (Anbieter-Setup Telecasty, Mika+ Design-Sprache, Sparkle/DMG-Details). Bei Verweisen auf Dateien/Flags vorher

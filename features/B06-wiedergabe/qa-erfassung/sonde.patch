@@ -1,0 +1,1725 @@
+diff --git a/Sources/App/B06Probe.swift b/Sources/App/B06Probe.swift
+new file mode 100644
+index 0000000..b6e48a8
+--- /dev/null
++++ b/Sources/App/B06Probe.swift
+@@ -0,0 +1,720 @@
++import SwiftUI
++import SwiftData
++import AVFoundation
++#if os(macOS)
++import AppKit
++#else
++import UIKit
++#endif
++
++/// B06-Sonde (nur Scratchpad-Kopie): Protokoll, schwache Engine-Registratur, zeitgesteuerte Abläufe.
++enum B06Probe {
++    static var enabled: Bool { ProcessInfo.processInfo.environment["B06_SCRIPT"] != nil }
++
++    static func log(_ s: String) {
++        guard enabled else { return }
++        NSLog("B06 %@", s)
++    }
++
++    final class WeakBox { weak var engine: AnyObject?; let label: String; let created = Date()
++        init(_ e: AnyObject, _ l: String) { engine = e; label = l } }
++    @MainActor static var engines: [WeakBox] = []
++
++    @MainActor static func register(_ e: any PlaybackEngine, _ label: String) {
++        engines.append(WeakBox(e, label))
++        log("engine erzeugt #\(engines.count) \(type(of: e)) für \(label)")
++    }
++
++    @MainActor static func engineReport() -> String {
++        engines.enumerated().map { i, b in
++            guard let e = b.engine else { return "#\(i + 1) \(b.label)=freigegeben" }
++            var d = ""
++            if let p = Mirror(reflecting: e).children.first(where: { $0.label == "player" })?.value as? AVPlayer {
++                d = "rate=\(p.rate)"
++            }
++            if let v = Mirror(reflecting: e).children.first(where: { $0.label == "mediaPlayer" })?.value as? NSObject {
++                d = "vlcState=\((v.value(forKey: "state") as? NSNumber)?.intValue ?? -1) playing=\((v.value(forKey: "playing") as? NSNumber)?.boolValue ?? false)"
++            }
++            let pe = e as? any PlaybackEngine
++            return "#\(i + 1) \(b.label)=lebt state=\(pe.map { "\($0.state)" } ?? "?") paused=\(pe?.isPaused ?? false) \(d)"
++        }.joined(separator: " ; ")
++    }
++
++    #if os(macOS)
++    /// Ersetzt `noResponderFor:` (Weg des Systembeeps bei unbehandeltem keyDown) durch ein Protokoll ohne Ton.
++    @MainActor static var beepIMPs: [IMP] = []
++    @MainActor static func installBeepGuard() {
++        let sel = NSSelectorFromString("noResponderFor:")
++        for cls in [NSResponder.self, NSWindow.self, NSApplication.self, NSView.self] as [AnyClass] {
++            var count: UInt32 = 0
++            guard let list = class_copyMethodList(cls, &count) else { continue }
++            var has = false
++            for i in 0..<Int(count) where method_getName(list[i]) == sel { has = true }
++            free(list)
++            guard has, let m = class_getInstanceMethod(cls, sel) else { continue }
++            typealias Fn = @convention(c) (AnyObject, Selector, Selector) -> Void
++            let origFn = unsafeBitCast(method_getImplementation(m), to: Fn.self)
++            let block: @convention(block) (AnyObject, Selector) -> Void = { obj, eventSel in
++                if eventSel == #selector(NSResponder.keyDown(with:)) {
++                    NSLog("B06 SYSTEMBEEP-WUERDE-ERTOENEN noResponderFor:keyDown: in %@ (unterdrueckt)", String(describing: type(of: obj)))
++                } else {
++                    origFn(obj, sel, eventSel)
++                }
++            }
++            let imp = imp_implementationWithBlock(block)
++            method_setImplementation(m, imp)
++            beepIMPs.append(imp)
++            log("Beep-Wächter installiert auf \(cls)")
++        }
++    }
++    @MainActor static func beepGuardActive(for window: NSWindow) -> Bool {
++        let sel = NSSelectorFromString("noResponderFor:")
++        let imp = class_getMethodImplementation(type(of: window), sel)
++        return beepIMPs.contains { $0 == imp }
++    }
++    #endif
++
++    static let toggleFullscreen = Notification.Name("b06.toggleFullscreen")
++    static let retry = Notification.Name("b06.retry")
++    static let tap = Notification.Name("b06.tap")
++}
++
++// MARK: - Harness-Wurzel
++
++struct B06ProbeRoot: View {
++    @Environment(\.modelContext) private var context
++    @State private var path: [Channel] = []
++    @State private var tab = 0
++    @State private var channels: [String: Channel] = [:]
++    @MainActor static var started = false
++
++    var body: some View {
++        TabView(selection: $tab) {
++            NavigationStack(path: $path) {
++                List(Array(channels.keys).sorted(), id: \.self) { k in
++                    if let c = channels[k] { NavigationLink(c.name, value: c) }
++                }
++                .navigationTitle("B06-Sonde")
++                .navigationDestination(for: Channel.self) { PlayerView(channel: $0) }
++            }
++            .tabItem { Label("Playlists", systemImage: "list.and.film") }
++            .tag(0)
++            NavigationStack { Text("Favoriten (Sonde)") }
++                .tabItem { Label("Favoriten", systemImage: "star.fill") }
++                .tag(1)
++        }
++        .tint(.playerAccent)
++        .task {
++            guard !Self.started else { B06Probe.log("zweites Fenster: keine Sonde"); return }
++            Self.started = true
++            await runScript()
++        }
++    }
++
++    // MARK: Aufbau
++
++    private func makeChannel(_ key: String, _ name: String, _ url: String, xtream: XtreamSecret? = nil, xtreamMissing: Bool = false) -> Channel {
++        let c = Channel(name: name, streamURL: URL(string: url)!)
++        if xtream != nil || xtreamMissing {
++            let p = Playlist(name: "Xtream-Sonde", sourceURL: URL(string: "http://127.0.0.1:18906/player_api.php"), isXtream: true, xtreamOutput: "mpegts")
++            context.insert(p)
++            if let xtream { try? XtreamCredentialStore.standard.save(xtream, for: p.id) }
++            c.playlist = p; c.playlistID = p.id
++        }
++        context.insert(c)
++        try? context.save()
++        channels[key] = c
++        return c
++    }
++
++    private func sleep(_ s: Double) async { try? await Task.sleep(nanoseconds: UInt64(s * 1_000_000_000)) }
++
++    #if os(macOS)
++    private var win: NSWindow? { NSApp.windows.first { $0.title.contains("B06") || $0.isKeyWindow } }
++
++    private func windowInfo() -> String {
++        NSApp.windows.filter { $0.isVisible }.map {
++            "[\($0.windowNumber) '\($0.title)' key=\($0.isKeyWindow) main=\($0.isMainWindow) fullscreen=\($0.styleMask.contains(.fullScreen)) frame=\(Int($0.frame.width))x\(Int($0.frame.height)) firstResponder=\($0.firstResponder.map { String(describing: type(of: $0)) } ?? "nil")]"
++        }.joined(separator: " ")
++    }
++
++    private func shot(_ name: String, _ w: NSWindow? = nil) {
++        guard let dir = ProcessInfo.processInfo.environment["B06_SHOTDIR"], let w = w ?? Self.mainWin ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
++        let req = URL(fileURLWithPath: dir).appendingPathComponent("\(name).req")
++        try? "\(w.windowNumber)".write(to: req, atomically: true, encoding: .utf8)
++        B06Probe.log("screenshot angefordert \(name) fenster=\(w.windowNumber)")
++    }
++
++    /// Tastendruck wie vom System: über NSApp.sendEvent an das Schlüsselfenster.
++    @MainActor static var mainWin: NSWindow?
++
++    private func key(_ chars: String, code: UInt16, mods: NSEvent.ModifierFlags = [], label: String? = nil) async {
++        guard let w = Self.mainWin ?? NSApp.keyWindow else { B06Probe.log("taste \(label ?? chars): kein Fenster"); return }
++        if !w.isKeyWindow {
++            B06Probe.log("fenster \(w.windowNumber) nicht Schlüsselfenster (keyWindow=\(NSApp.keyWindow?.windowNumber ?? -1), App aktiv=\(NSApp.isActive)) – aktiviere")
++            NSApp.activate(ignoringOtherApps: true)
++            w.makeKeyAndOrderFront(nil)
++            await sleep(0.4)
++        }
++        let direct = !w.isKeyWindow
++        let ign = chars
++        for type in [NSEvent.EventType.keyDown, .keyUp] {
++            if let ev = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: mods, timestamp: ProcessInfo.processInfo.systemUptime,
++                                         windowNumber: w.windowNumber, context: nil, characters: chars,
++                                         charactersIgnoringModifiers: ign, isARepeat: false, keyCode: code) {
++                if type == .keyDown { B06Probe.log("sende taste \(label ?? chars) an fenster \(w.windowNumber)\(direct ? " (direkt, Fenster nicht Schlüsselfenster)" : "")") }
++                if direct { w.sendEvent(ev) } else { NSApp.sendEvent(ev) }
++            }
++        }
++        await sleep(0.05)
++    }
++
++    private func click(_ w: NSWindow, at p: CGPoint) async {
++        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
++            if let ev = NSEvent.mouseEvent(with: type, location: p, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
++                                           windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) {
++                NSApp.sendEvent(ev)
++            }
++        }
++        B06Probe.log("klick an \(p) in fenster \(w.windowNumber)")
++        await sleep(0.05)
++    }
++
++    private func pressButton(titled title: String) -> Bool {
++        func walk(_ e: NSObject, _ depth: Int) -> Bool {
++            guard depth < 60 else { return false }
++            let label = (e.accessibilityAttributeValue(.title) as? String) ?? ""
++            let desc = (e.accessibilityAttributeValue(.description) as? String) ?? ""
++            let role = (e.accessibilityAttributeValue(.role) as? String) ?? ""
++            if role == "AXButton" && (label == title || desc == title) {
++                e.accessibilityPerformAction(.press)
++                return true
++            }
++            for c in (e.accessibilityAttributeValue(.children) as? [Any] ?? []).compactMap({ $0 as? NSObject }) {
++                if walk(c, depth + 1) { return true }
++            }
++            return false
++        }
++        for w in NSApp.windows where w.isVisible { if walk(w, 0) { return true } }
++        return false
++    }
++
++    private func axTexts() -> [String] {
++        var out: [String] = []
++        func walk(_ e: NSObject, _ depth: Int) {
++            guard depth < 60 else { return }
++            for a in [NSAccessibility.Attribute.title, .description, .value] {
++                if let s = e.accessibilityAttributeValue(a) as? String, !s.isEmpty { out.append(s) }
++            }
++            for c in (e.accessibilityAttributeValue(.children) as? [Any] ?? []).compactMap({ $0 as? NSObject }) { walk(c, depth + 1) }
++        }
++        if let w = NSApp.keyWindow ?? NSApp.mainWindow { walk(w, 0) }
++        return out
++    }
++    #endif
++
++    // MARK: Abläufe
++
++    @MainActor
++    private func runScript() async {
++        let script = ProcessInfo.processInfo.environment["B06_SCRIPT"] ?? ""
++        B06Probe.log("start skript=\(script)")
++        #if os(macOS)
++        B06Probe.installBeepGuard()
++        NSApp.activate(ignoringOtherApps: true)
++        await sleep(1.0)
++        if let w = NSApp.keyWindow ?? NSApp.windows.first {
++            B06Probe.log("Beep-Wächter aktiv für \(type(of: w)): \(B06Probe.beepGuardActive(for: w))")
++        }
++        Self.mainWin = NSApp.keyWindow ?? NSApp.windows.first { $0.isVisible }
++        B06Probe.log("fenster: \(windowInfo())")
++        switch script {
++        case "leak": await scriptLeak()
++        case "retry": await scriptRetry()
++        case "auth": await scriptAuth()
++        case "keys": await scriptKeys()
++        case "vlc": await scriptVLC()
++        case "errors": await scriptErrors()
++        case "windows": await scriptWindows()
++        default: B06Probe.log("unbekanntes skript")
++        }
++        B06Probe.log("ENDE engines: \(B06Probe.engineReport())")
++        try? XtreamCredentialStore.standard.deleteAll()
++        await sleep(1.0)
++        NSApp.terminate(nil)
++        #else
++        switch script {
++        case "ios-orientation": await scriptIOSOrientation()
++        default: B06Probe.log("unbekanntes skript")
++        }
++        B06Probe.log("ENDE engines: \(B06Probe.engineReport())")
++        try? XtreamCredentialStore.standard.deleteAll()
++        #endif
++    }
++
++    #if os(macOS)
++    private func push(_ c: Channel) { B06Probe.log("push \(c.name)"); path = [c] }
++    private func pop() { B06Probe.log("pop (Zurück)"); path = [] }
++
++    private func scriptKeys() async {
++        let c = makeChannel("a", "Sonde HLS live", "http://127.0.0.1:18906/livehls/keys/index.m3u8")
++        push(c)
++        for _ in 0..<12 { await sleep(0.5); B06Probe.log("tick fenster=\(windowInfo())") }
++        shot("mac-k01-nach-6s-steuerung-aus")
++        await sleep(1.0)
++        await key(" ", code: 49, label: "Leertaste")
++        await sleep(0.3); shot("mac-k02-hud-pause")
++        await sleep(2.0)
++        await key(" ", code: 49, label: "Leertaste")
++        await sleep(2.0)
++        let up = String(Character(UnicodeScalar(NSUpArrowFunctionKey)!))
++        let down = String(Character(UnicodeScalar(NSDownArrowFunctionKey)!))
++        for _ in 0..<3 { await key(up, code: 126, label: "Pfeil hoch") }
++        await sleep(0.2); shot("mac-k03-hud-lautstaerke-100")
++        await sleep(1.5)
++        for _ in 0..<3 { await key(down, code: 125, label: "Pfeil runter") }
++        await sleep(1.2)
++        await key("-", code: 27, label: "-")
++        await key("+", code: 24, mods: [.shift], label: "+")
++        await key("=", code: 24, label: "=")
++        await sleep(1.2)
++        await key("m", code: 46, label: "m")
++        await sleep(0.2); shot("mac-k04-hud-stumm")
++        await sleep(1.5)
++        await key("M", code: 46, mods: [.shift], label: "M (Umschalt)")
++        await sleep(1.2)
++        B06Probe.log("--- unbehandelte Tasten ---")
++        if let kw = Self.mainWin, B06Probe.beepGuardActive(for: kw) {
++            let left = String(Character(UnicodeScalar(NSLeftArrowFunctionKey)!))
++            let right = String(Character(UnicodeScalar(NSRightArrowFunctionKey)!))
++            await key("x", code: 7, label: "x"); await sleep(0.4)
++            await key("k", code: 40, label: "k"); await sleep(0.4)
++            await key("1", code: 18, label: "1"); await sleep(0.4)
++            await key(left, code: 123, label: "Pfeil links"); await sleep(0.4)
++            await key(right, code: 124, label: "Pfeil rechts"); await sleep(0.4)
++            await key("\r", code: 36, label: "Return"); await sleep(0.4)
++            await key("\t", code: 48, label: "Tab"); await sleep(0.4)
++            await key("\u{1b}", code: 53, label: "Esc (kein Vollbild)"); await sleep(0.4)
++            await key("f", code: 3, mods: [.command], label: "Cmd-F"); await sleep(2.5)
++        } else {
++            B06Probe.log("Beep-Wächter nicht aktiv – unbehandelte Tasten übersprungen")
++        }
++        B06Probe.log("nach Cmd-F fenster=\(windowInfo())")
++        await key("\u{1b}", code: 53, label: "Esc"); await sleep(2.5)
++        B06Probe.log("--- Vollbild ---")
++        await key("f", code: 3, label: "f")
++        await sleep(2.5)
++        B06Probe.log("nach f fenster=\(windowInfo())")
++        shot("mac-k05-vollbild")
++        await key(" ", code: 49, label: "Leertaste im Vollbild")
++        await sleep(1.5)
++        await key(" ", code: 49, label: "Leertaste im Vollbild")
++        await sleep(1.5)
++        await key("\u{1b}", code: 53, label: "Esc im Vollbild")
++        await sleep(2.5)
++        B06Probe.log("nach Esc fenster=\(windowInfo())")
++        await key(" ", code: 49, label: "Leertaste nach Vollbild")
++        await sleep(1.2)
++        await key(" ", code: 49, label: "Leertaste nach Vollbild")
++        await sleep(1.0)
++        B06Probe.log("--- Klick auf das Bild, danach Taste ---")
++        if let w = Self.mainWin { await click(w, at: CGPoint(x: w.frame.width / 2, y: w.frame.height / 2)) }
++        await sleep(0.5); shot("mac-k06-nach-klick")
++        await key("m", code: 46, label: "m nach Klick")
++        await sleep(1.2)
++        await key("m", code: 46, label: "m nach Klick")
++        await sleep(1.0)
++        B06Probe.log("--- Vollbild von außen (grüner Knopf/Menü) ---")
++        Self.mainWin?.toggleFullScreen(nil)
++        await sleep(2.5)
++        B06Probe.log("nach toggleFullScreen von außen fenster=\(windowInfo())")
++        shot("mac-k07-natives-vollbild-von-aussen")
++        await key("f", code: 3, label: "f nach Vollbild von außen")
++        await sleep(2.5)
++        B06Probe.log("nach f fenster=\(windowInfo())")
++        shot("mac-k08-f-nach-vollbild-von-aussen")
++        await key("f", code: 3, label: "f erneut")
++        await sleep(2.5)
++        B06Probe.log("nach f erneut fenster=\(windowInfo())")
++        B06Probe.log("--- Zurück im Vollbild ---")
++        if !(Self.mainWin?.styleMask.contains(.fullScreen) ?? false) {
++            await key("f", code: 3, label: "f"); await sleep(2.5)
++        }
++        B06Probe.log("vor pop fenster=\(windowInfo())")
++        pop()
++        await sleep(3.0)
++        B06Probe.log("nach pop fenster=\(windowInfo()) engines: \(B06Probe.engineReport())")
++        shot("mac-k09-nach-zurueck-aus-vollbild")
++        for i in 0..<6 { await sleep(2.0); B06Probe.log("nach pop +\(3 + (i + 1) * 2)s engines: \(B06Probe.engineReport())") }
++        B06Probe.log("--- erneut öffnen, Tabwechsel ---")
++        push(c)
++        await sleep(6.0)
++        B06Probe.log("engines: \(B06Probe.engineReport())")
++        B06Probe.log("tab -> Favoriten"); tab = 1
++        await sleep(6.0)
++        B06Probe.log("im anderen Tab engines: \(B06Probe.engineReport())")
++        B06Probe.log("tab -> Playlists"); tab = 0
++        await sleep(4.0)
++        B06Probe.log("zurück im Tab engines: \(B06Probe.engineReport())")
++        pop()
++        for i in 0..<8 { await sleep(2.0); B06Probe.log("nach pop +\((i + 1) * 2)s engines: \(B06Probe.engineReport())") }
++    }
++
++    private func report(_ tag: String) { B06Probe.log("\(tag) engines: \(B06Probe.engineReport())") }
++
++    private func scriptAuth() async {
++        for (k, name, url) in [("a1", "VLC 401", "http://127.0.0.1:18906/auth/a1.ts"), ("a2", "AVKit 401", "http://127.0.0.1:18906/auth/a2.m3u8"),
++                               ("a3", "VLC 403", "http://127.0.0.1:18906/403/a3.ts"), ("a4", "AVKit 403", "http://127.0.0.1:18906/403/a4.m3u8")] {
++            let c = makeChannel(k, name, url)
++            push(c); await sleep(5)
++            B06Probe.log("\(k) \(name): fenster=\(windowInfo()) engines: \(B06Probe.engineReport())")
++            shot("mac-\(k)-\(name.replacingOccurrences(of: " ", with: "-"))")
++            for w in NSApp.windows where w.isVisible && w !== Self.mainWin { shot("mac-\(k)-zusatzfenster-\(w.windowNumber)", w) }
++            await sleep(1); pop(); await sleep(1)
++        }
++    }
++
++    private func scriptRetry() async {
++        let a = makeChannel("r1", "AVKit 404 retry", "http://127.0.0.1:18906/404/retry-av.m3u8")
++        push(a); await sleep(3)
++        shot("mac-r1-vor-erneut")
++        B06Probe.log("Erneut versuchen (Aktion des Knopfs) #1"); NotificationCenter.default.post(name: B06Probe.retry, object: nil)
++        await sleep(3)
++        B06Probe.log("Erneut versuchen (Aktion des Knopfs) #2"); NotificationCenter.default.post(name: B06Probe.retry, object: nil)
++        await sleep(3); report("r1"); pop(); await sleep(1)
++        let m = makeChannel("r2", "Xtream fehlt retry", "http://127.0.0.1:18906/live/777.ts", xtreamMissing: true)
++        push(m); await sleep(2)
++        B06Probe.log("Erneut versuchen (Aktion des Knopfs) bei fehlenden Zugangsdaten"); NotificationCenter.default.post(name: B06Probe.retry, object: nil)
++        await sleep(2); report("r2"); pop(); await sleep(1)
++        let v = makeChannel("r3", "VLC 404 retry", "http://127.0.0.1:18906/404/retry-vlc.ts")
++        push(v); await sleep(3)
++        B06Probe.log("Erneut versuchen (Aktion) bei VLC-idle – Knopf ist nicht sichtbar, nur zum Vergleich"); NotificationCenter.default.post(name: B06Probe.retry, object: nil)
++        await sleep(3); report("r3"); pop(); await sleep(1)
++        // Ende einer VOD-Datei: HLS-VOD 120 s ist zu lang; MP4-Clip 20 s mit Byte-Range
++        let e = makeChannel("r4", "MP4 20 s bis zum Ende", "http://127.0.0.1:18906/clip.mp4")
++        push(e); await sleep(25); report("r4 nach Ende"); shot("mac-r4-mp4-nach-ende"); pop(); await sleep(1)
++        let t = makeChannel("r5", "TS-Datei VLC bis zum Ende", "http://127.0.0.1:18906/static/src.ts")
++        push(t); await sleep(6)
++        B06Probe.log("r5 läuft; Datei ist 120 s lang – Ende nicht abgewartet"); report("r5"); pop(); await sleep(1)
++    }
++
++    private func scriptLeak() async {
++        let steps: [(String, String, String)] = [
++            ("A1", "HLS A1 ohne Bedienung", "http://127.0.0.1:18906/livehls/leak-a1/index.m3u8"),
++            ("B1", "HLS B1 ohne Bedienung", "http://127.0.0.1:18906/livehls/leak-b1/index.m3u8"),
++            ("A2", "HLS A2 mit Leertaste", "http://127.0.0.1:18906/livehls/leak-a2/index.m3u8"),
++            ("B2", "HLS B2 mit Vollbild", "http://127.0.0.1:18906/livehls/leak-b2/index.m3u8"),
++            ("C1", "TS C1 ohne Bedienung", "http://127.0.0.1:18906/tslive/leak-c1.ts"),
++            ("D1", "HLS D1 ohne Bedienung", "http://127.0.0.1:18906/livehls/leak-d1/index.m3u8"),
++        ]
++        for (k, name, url) in steps {
++            let c = makeChannel(k, name, url)
++            push(c)
++            await sleep(5.0)
++            if k == "A2" { await key(" ", code: 49, label: "Leertaste"); await sleep(1); await key(" ", code: 49, label: "Leertaste"); await sleep(1) }
++            if k == "B2" { await key("f", code: 3, label: "f"); await sleep(3); await key("\u{1b}", code: 53, label: "Esc"); await sleep(3) }
++            report("\(k) vor pop")
++            pop()
++            for t in [2.0, 4.0, 4.0] { await sleep(t); report("\(k) nach pop") }
++        }
++        await sleep(4.0)
++        report("ENDE leak")
++    }
++
++    private func scriptVLC() async {
++        let ts = makeChannel("a", "Sonde TS live", "http://127.0.0.1:18906/tslive/vlc-a.ts")
++        push(ts)
++        await sleep(6.0)
++        shot("mac-v01-vlc-spielt")
++        B06Probe.log("engines: \(B06Probe.engineReport())")
++        await key("p", code: 35, label: "p (VLC, kein PiP)")
++        await sleep(0.5)
++        await key(" ", code: 49, label: "Leertaste"); await sleep(3.0)
++        B06Probe.log("pausiert engines: \(B06Probe.engineReport())")
++        await key(" ", code: 49, label: "Leertaste"); await sleep(3.0)
++        B06Probe.log("läuft engines: \(B06Probe.engineReport())")
++        pop()
++        for i in 0..<10 { await sleep(2.0); B06Probe.log("nach pop +\((i + 1) * 2)s engines: \(B06Probe.engineReport())") }
++        B06Probe.log("--- Zurück während des Ladens (Start verzögert 8 s) ---")
++        let slow = makeChannel("b", "Sonde TS langsam", "http://127.0.0.1:18906/delay/8/tslive/vlc-b.ts")
++        push(slow)
++        await sleep(2.0)
++        B06Probe.log("lädt engines: \(B06Probe.engineReport())")
++        pop()
++        for i in 0..<15 { await sleep(2.0); B06Probe.log("nach pop (laden) +\((i + 1) * 2)s engines: \(B06Probe.engineReport())") }
++        B06Probe.log("--- zweimal hintereinander öffnen ---")
++        push(ts); await sleep(4.0); pop(); await sleep(0.5); push(ts); await sleep(6.0)
++        B06Probe.log("engines: \(B06Probe.engineReport())")
++        pop()
++        for i in 0..<6 { await sleep(2.0); B06Probe.log("nach pop +\((i + 1) * 2)s engines: \(B06Probe.engineReport())") }
++    }
++
++    private func scriptErrors() async {
++        let secret = XtreamSecret(host: "http://127.0.0.1:18906", username: "qa-user", password: "qa-pass-123")
++        let list: [(String, String, String, XtreamSecret?, Bool, Double)] = [
++            ("e1", "AVKit 404", "http://127.0.0.1:18906/404/x.m3u8", nil, false, 4),
++            ("e2", "VLC 404", "http://127.0.0.1:18906/404/x.ts", nil, false, 6),
++            ("e3", "AVKit HTML", "http://127.0.0.1:18906/html/x.m3u8", nil, false, 4),
++            ("e4", "VLC HTML", "http://127.0.0.1:18906/html/x.ts", nil, false, 8),
++            ("e5", "Xtream ohne Zugangsdaten", "http://127.0.0.1:18906/live/101.ts", nil, true, 3),
++            ("e6", "Xtream 404 HLS", "http://127.0.0.1:18906/live/404/101.m3u8", secret, false, 4),
++            ("e7", "VLC Abbruch nach 6 s", "http://127.0.0.1:18906/abort/6/tslive/err-e7.ts", nil, false, 16),
++            ("e8", "AVKit Verbindung abgelehnt", "http://127.0.0.1:1/x.m3u8", nil, false, 4),
++            ("e9", "roher TS ohne Endung (AVKit)", "http://127.0.0.1:18906/tslive/err-e9", nil, false, 8),
++            ("e10", "Xtream HLS localhost", "http://localhost:18906/live/102.m3u8", XtreamSecret(host: "http://localhost:18906", username: "qa-user", password: "qa-pass-123"), false, 6),
++            ("e11", "Xtream TS VLC", "http://127.0.0.1:18906/live/101.ts", secret, false, 6),
++            ("e12", "Xtream TS VLC 404", "http://127.0.0.1:18906/live/404/101.ts", secret, false, 5),
++        ]
++        for (k, name, url, sec, missing, wait) in list {
++            let c = makeChannel(k, name, url, xtream: sec, xtreamMissing: missing)
++            push(c)
++            await sleep(wait)
++            let texts = axTexts().filter { !$0.isEmpty }
++            B06Probe.log("\(k) \(name): sichtbare Texte=\(texts) engines: \(B06Probe.engineReport())")
++            B06Probe.log("\(k) enthältPass=\(texts.contains { $0.contains("qa-pass-123") }) enthältUser=\(texts.contains { $0.contains("qa-user") }) enthältHost=\(texts.contains { $0.contains("127.0.0.1") })")
++            shot("mac-\(k)-\(name.replacingOccurrences(of: " ", with: "-"))")
++            await sleep(0.8)
++            if k == "e2" || k == "e1" || k == "e5" {
++                let pressed = pressButton(titled: "Erneut versuchen")
++                B06Probe.log("\(k) Erneut versuchen gedrückt=\(pressed)")
++                await sleep(wait)
++                B06Probe.log("\(k) nach Erneut versuchen: \(axTexts()) engines: \(B06Probe.engineReport())")
++            }
++            pop()
++            await sleep(1.0)
++        }
++    }
++
++    private func scriptWindows() async {
++        let c = makeChannel("a", "Sonde HLS live", "http://127.0.0.1:18906/livehls/win/index.m3u8")
++        push(c)
++        await sleep(4.0)
++        guard let a = NSApp.keyWindow else { B06Probe.log("kein Fenster A"); return }
++        B06Probe.log("Fenster A=\(a.windowNumber) \(windowInfo())")
++        // Neues Hauptfenster über das Menü (Ablage > Neues Fenster)
++        var opened = false
++        func find(_ menu: NSMenu) -> NSMenuItem? {
++            for item in menu.items {
++                if item.keyEquivalent == "n" && item.keyEquivalentModifierMask == [.command] { return item }
++                if let sub = item.submenu, let f = find(sub) { return f }
++            }
++            return nil
++        }
++        if let main = NSApp.mainMenu, let item = find(main) {
++            B06Probe.log("Menüeintrag '\(item.title)'")
++            let idx = item.menu?.index(of: item) ?? -1
++            if idx >= 0 { item.menu?.performActionForItem(at: idx); opened = true }
++        }
++        await sleep(2.0)
++        B06Probe.log("neues Fenster geöffnet=\(opened) \(windowInfo())")
++        guard let b = NSApp.windows.first(where: { $0.isVisible && $0 !== a && $0.styleMask.contains(.titled) && $0.windowNumber != a.windowNumber && $0.contentView != nil }) else {
++            B06Probe.log("kein Fenster B"); return
++        }
++        b.makeKeyAndOrderFront(nil)
++        await sleep(1.0)
++        B06Probe.log("B ist Schlüsselfenster: \(windowInfo())")
++        B06Probe.log("Vollbild-Aktion des Players in A (wie Knopf) auslösen")
++        NotificationCenter.default.post(name: B06Probe.toggleFullscreen, object: nil)
++        await sleep(3.0)
++        B06Probe.log("nach Vollbild-Aktion: A.fullscreen=\(a.styleMask.contains(.fullScreen)) B.fullscreen=\(b.styleMask.contains(.fullScreen)) \(windowInfo())")
++        shot("mac-w01-vollbild-falsches-fenster-B", b)
++        shot("mac-w02-player-fenster-A", a)
++        await sleep(1.0)
++        NotificationCenter.default.post(name: B06Probe.toggleFullscreen, object: nil)
++        await sleep(3.0)
++        B06Probe.log("nach zweiter Vollbild-Aktion: A.fullscreen=\(a.styleMask.contains(.fullScreen)) B.fullscreen=\(b.styleMask.contains(.fullScreen)) \(windowInfo())")
++        b.close()
++        await sleep(1.5)
++        a.makeKeyAndOrderFront(nil)
++        pop()
++        await sleep(2.0)
++    }
++    #endif
++
++    #if os(iOS)
++    private var scene: UIWindowScene? {
++        UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
++    }
++    private func orientationName(_ o: UIInterfaceOrientation?) -> String {
++        switch o {
++        case .portrait: return "portrait"
++        case .portraitUpsideDown: return "portraitUpsideDown"
++        case .landscapeLeft: return "landscapeLeft"
++        case .landscapeRight: return "landscapeRight"
++        default: return "unknown"
++        }
++    }
++    private func report(_ tag: String) {
++        let s = scene
++        let win = s?.windows.first
++        B06Probe.log("\(tag): orientation=\(orientationName(s?.effectiveGeometry.interfaceOrientation)) size=\(Int(win?.bounds.width ?? 0))x\(Int(win?.bounds.height ?? 0)) idiom=\(UIDevice.current.userInterfaceIdiom == .phone ? "phone" : "pad") activation=\(s?.activationState.rawValue ?? -1) statusBarHidden=\(s?.statusBarManager?.isStatusBarHidden ?? false) engines: \(B06Probe.engineReport())")
++    }
++    private func request(_ mask: UIInterfaceOrientationMask, _ tag: String) {
++        scene?.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { error in
++            B06Probe.log("requestGeometryUpdate \(tag) Fehler: \(error.localizedDescription)")
++        }
++    }
++    private func scriptIOSOrientation() async {
++        let env = ProcessInfo.processInfo.environment
++        let c = makeChannel("a", "Sonde iOS", env["B06_URL"] ?? "http://127.0.0.1:18906/tslive/ios.ts")
++        await sleep(1.0)
++        report("start")
++        path = [c]
++        B06Probe.log("push")
++        await sleep(6.0); report("player hochformat")          // Bild 1 ~ t=7
++        NotificationCenter.default.post(name: B06Probe.toggleFullscreen, object: nil)
++        B06Probe.log("vollbild an")
++        await sleep(5.0); report("vollbild an")                 // Bild 2 ~ t=12
++        NotificationCenter.default.post(name: B06Probe.toggleFullscreen, object: nil)
++        B06Probe.log("vollbild aus")
++        await sleep(5.0); report("vollbild aus")                // Bild 3 ~ t=17
++        B06Probe.log("gerät vorher auf Querformat links")
++        request(.landscapeLeft, "querformat-links")
++        await sleep(5.0); report("vorher querformat links")     // Bild 4 ~ t=22
++        NotificationCenter.default.post(name: B06Probe.toggleFullscreen, object: nil)
++        B06Probe.log("vollbild an (aus Querformat links)")
++        await sleep(5.0); report("vollbild an aus links")       // Bild 5 ~ t=27
++        NotificationCenter.default.post(name: B06Probe.toggleFullscreen, object: nil)
++        B06Probe.log("vollbild aus (vorher links)")
++        await sleep(5.0); report("vollbild aus nach links")     // Bild 6 ~ t=32
++        NotificationCenter.default.post(name: B06Probe.toggleFullscreen, object: nil)
++        B06Probe.log("vollbild an, dann zurück")
++        await sleep(4.0); report("vollbild an vor zurück")      // ~ t=36
++        path = []
++        B06Probe.log("pop im vollbild")
++        await sleep(5.0); report("nach zurück")                 // Bild 7 ~ t=41
++        await sleep(6.0); report("nach zurück +6s")
++    }
++    #endif
++}
++
++#if os(macOS)
++/// Realer Navigationsweg (ContentView → PlaylistsView → ChannelListView → PlayerView), bedient über Bedienungshilfen.
++@MainActor
++enum B06RealNav {
++    static func sleep(_ s: Double) async { try? await Task.sleep(nanoseconds: UInt64(s * 1_000_000_000)) }
++
++    static func elements(_ root: NSObject, depth: Int = 0, into out: inout [(NSObject, String, String)]) {
++        guard depth < 60 else { return }
++        let role = (root.accessibilityAttributeValue(.role) as? String) ?? ""
++        let texts = [NSAccessibility.Attribute.title, .description, .value, .help].compactMap { root.accessibilityAttributeValue($0) as? String }.filter { !$0.isEmpty }
++        out.append((root, role, texts.joined(separator: " | ")))
++        for c in (root.accessibilityAttributeValue(.children) as? [Any] ?? []).compactMap({ $0 as? NSObject }) {
++            elements(c, depth: depth + 1, into: &out)
++        }
++    }
++
++    static func all() -> [(NSObject, String, String)] {
++        var out: [(NSObject, String, String)] = []
++        for w in NSApp.windows where w.isVisible { elements(w, into: &out) }
++        return out
++    }
++
++    /// Drückt das erste Element, das den Text enthält (Buttons bevorzugt; sonst nächster Vorfahr mit Press-Aktion).
++    static func press(containing text: String, roles: [String] = ["AXButton", "AXLink", "AXCell", "AXGroup"]) -> Bool {
++        let list = all()
++        for role in roles {
++            if let hit = list.first(where: { $0.1 == role && $0.2.contains(text) }) {
++                let actions = (hit.0.accessibilityActionNames() as [NSAccessibility.Action]).map(\.rawValue)
++                B06Probe.log("realnav drücke \(role) '\(hit.2)' aktionen=\(actions)")
++                if actions.contains("AXPress") { hit.0.accessibilityPerformAction(.press); return true }
++            }
++        }
++        // Text-Element finden und Vorfahren mit AXPress drücken
++        if let textEl = list.first(where: { $0.2.contains(text) }) {
++            var cur: NSObject? = textEl.0
++            while let c = cur {
++                let actions = (c.accessibilityActionNames() as [NSAccessibility.Action]).map(\.rawValue)
++                if actions.contains("AXPress") {
++                    B06Probe.log("realnav drücke Vorfahr \((c.accessibilityAttributeValue(.role) as? String) ?? "?") von '\(textEl.2)'")
++                    c.accessibilityPerformAction(.press); return true
++                }
++                cur = c.accessibilityAttributeValue(.parent) as? NSObject
++            }
++        }
++        B06Probe.log("realnav nicht gefunden: '\(text)'")
++        return false
++    }
++
++    static func clickFallback() {
++        guard let w = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
++        B06Probe.log("realnav contentView=\(type(of: w.contentView!)) ax-children=\((w.contentView?.accessibilityChildren() ?? []).count)")
++    }
++
++    static func dump(_ tag: String) {
++        let list = all().filter { !$0.2.isEmpty || $0.1 == "AXButton" }.prefix(80)
++        B06Probe.log("realnav AX \(tag): " + list.map { "\($0.1)[\($0.2)]" }.joined(separator: " ; "))
++    }
++
++    static func shot(_ name: String) {
++        guard let dir = ProcessInfo.processInfo.environment["B06_SHOTDIR"], let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
++        try? "\(w.windowNumber)".write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).req"), atomically: true, encoding: .utf8)
++    }
++
++    /// Klick an Punkt (x, y von oben links im Inhaltsbereich des Fensters).
++    static func click(topLeft p: CGPoint) async {
++        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
++        if !w.isKeyWindow { NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil); await sleep(0.4) }
++        let h = w.contentView?.frame.height ?? w.frame.height
++        let loc = CGPoint(x: p.x, y: h - p.y)
++        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
++            if let ev = NSEvent.mouseEvent(with: type, location: loc, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
++                                           windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) {
++                if w.isKeyWindow { NSApp.sendEvent(ev) } else { w.sendEvent(ev) }
++            }
++            await sleep(0.05)
++        }
++        B06Probe.log("realnav klick oben-links \(p) fenster=\(w.windowNumber) key=\(w.isKeyWindow) inhaltshöhe=\(h)")
++    }
++
++    static func run(context: ModelContext) async {
++        B06Probe.installBeepGuard()
++        let env = ProcessInfo.processInfo.environment
++        let p = Playlist(name: "Sonde-Liste")
++        context.insert(p)
++        let defs = [("Kanal HLS eins", "http://127.0.0.1:18906/livehls/real-1/index.m3u8"),
++                    ("Kanal HLS zwei", "http://127.0.0.1:18906/livehls/real-2/index.m3u8"),
++                    ("Kanal TS drei", "http://127.0.0.1:18906/tslive/real-3.ts")]
++        for (n, u) in defs {
++            let c = Channel(name: n, streamURL: URL(string: u)!, playlist: p, playlistID: p.id)
++            context.insert(c)
++        }
++        p.channelCount = defs.count
++        try? context.save()
++        await sleep(2)
++        NSApp.activate(ignoringOtherApps: true)
++        await sleep(1)
++        if let w = NSApp.windows.first(where: { $0.isVisible }) {
++            B06Probe.log("realnav fenster \(w.windowNumber) frame=\(w.frame) content=\(w.contentView?.frame ?? .zero)")
++        }
++        shot("real-00-playlists")
++        await sleep(1.5)
++        guard let px = Double(env["B06_PL_X"] ?? ""), let py = Double(env["B06_PL_Y"] ?? "") else {
++            B06Probe.log("realnav nur Bild (keine Koordinaten)"); await sleep(1); NSApp.terminate(nil); return
++        }
++        await click(topLeft: CGPoint(x: px, y: py))
++        await sleep(2.5)
++        shot("real-01-senderliste")
++        await sleep(1.5)
++        guard let cy0 = Double(env["B06_CH_Y0"] ?? ""), let dy = Double(env["B06_CH_DY"] ?? ""), let cx = Double(env["B06_CH_X"] ?? ""),
++              let bx = Double(env["B06_BACK_X"] ?? ""), let by = Double(env["B06_BACK_Y"] ?? "") else {
++            B06Probe.log("realnav nur bis Senderliste"); await sleep(1); NSApp.terminate(nil); return
++        }
++        let order = [(0, "Kanal HLS eins"), (1, "Kanal HLS zwei"), (0, "Kanal HLS eins"), (2, "Kanal TS drei"), (1, "Kanal HLS zwei")]
++        for (i, (idx, name)) in order.enumerated() {
++            B06Probe.log("realnav öffne \(name)")
++            let before = B06Probe.engines.count
++            await click(topLeft: CGPoint(x: cx, y: cy0 + Double(idx) * dy))
++            await sleep(6)
++            B06Probe.log("realnav im player (neue engine=\(B06Probe.engines.count > before)) engines: \(B06Probe.engineReport())")
++            if i == 0 { shot("real-02-player") }
++            await click(topLeft: CGPoint(x: bx, y: by))
++            for t in [2.0, 4.0, 6.0] { await sleep(t); B06Probe.log("realnav nach zurück (\(name)) engines: \(B06Probe.engineReport())") }
++            if i == 0 { shot("real-03-nach-zurueck") }
++        }
++        await sleep(2)
++        B06Probe.log("ENDE engines: \(B06Probe.engineReport())")
++        NSApp.terminate(nil)
++    }
++}
++#endif
+diff --git a/Sources/App/ContentView.swift b/Sources/App/ContentView.swift
+index 47c5a57..15bf832 100644
+--- a/Sources/App/ContentView.swift
++++ b/Sources/App/ContentView.swift
+@@ -3,7 +3,23 @@ import SwiftData
+ 
+ /// Wurzel-Ansicht: TabView mit zwei Tabs, jeder mit eigenem NavigationStack.
+ struct ContentView: View {
++    @Environment(\.modelContext) private var probeContext // B06-PROBE
++    private static var realNavStarted = false
++
+     var body: some View {
++        if B06Probe.enabled && ProcessInfo.processInfo.environment["B06_SCRIPT"] != "realnav" { B06ProbeRoot() } else { // B06-PROBE
++            original
++            #if os(macOS)
++                .task {
++                    guard ProcessInfo.processInfo.environment["B06_SCRIPT"] == "realnav", !Self.realNavStarted else { return }
++                    Self.realNavStarted = true
++                    await B06RealNav.run(context: probeContext)
++                }
++            #endif
++        }
++    }
++
++    private var original: some View {
+         TabView {
+             NavigationStack {
+                 PlaylistsView()
+diff --git a/Sources/App/MikaPlusPlayerApp.swift b/Sources/App/MikaPlusPlayerApp.swift
+index 7661aec..973abba 100644
+--- a/Sources/App/MikaPlusPlayerApp.swift
++++ b/Sources/App/MikaPlusPlayerApp.swift
+@@ -6,13 +6,14 @@ struct MikaPlusPlayerApp: App {
+     /// Gemeinsamer SwiftData-Container für beide Plattformen.
+     let modelContainer: ModelContainer = {
+         let schema = Schema([Playlist.self, Channel.self])
+-        // B01 · BUG-04: app-eigener Speicherort, Übernahme der alten default.store; Test-Host im Speicher.
+-        let config = AppPersistence.configuration(schema: schema)
++        // B06-PROBE: Datenbank nur auf Temp-URL (bzw. im Speicher als Test-Host), keine Umstellung, kein Cache-Leeren.
++        let probeStore = ProcessInfo.processInfo.environment["B06_STORE"]
++            ?? (NSTemporaryDirectory() + "b06probe-\(ProcessInfo.processInfo.processIdentifier).store")
++        let config = AppEnvironment.isRunningTests
++            ? ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
++            : ModelConfiguration(schema: schema, url: URL(fileURLWithPath: probeStore))
+         do {
+-            let container = try ModelContainer(for: schema, configurations: [config])
+-            // B01 · BUG-01/BUG-03: Zugangsdaten aus Altbeständen in den Schlüsselbund, alten HTTP-Cache leeren.
+-            AppPersistence.finishLaunch(container: container, storeURL: config.url)
+-            return container
++            return try ModelContainer(for: schema, configurations: [config])
+         } catch {
+             fatalError("ModelContainer konnte nicht erstellt werden: \(error)")
+         }
+diff --git a/Sources/Resources/Info.plist b/Sources/Resources/Info.plist
+index cd59f1f..621743e 100644
+--- a/Sources/Resources/Info.plist
++++ b/Sources/Resources/Info.plist
+@@ -25,11 +25,11 @@
+ 	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
+ 	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
+ 	<key>SUFeedURL</key>
+-	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
++	<string>http://127.0.0.1:9/appcast.xml</string>
+ 	<key>SUPublicEDKey</key>
+ 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
+ 	<key>SUEnableAutomaticChecks</key>
+-	<true/>
++	<false/>
+ 
+ 	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
+ 	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den
+diff --git a/Sources/Services/XtreamCredentialStore.swift b/Sources/Services/XtreamCredentialStore.swift
+index 24a44d6..235677a 100644
+--- a/Sources/Services/XtreamCredentialStore.swift
++++ b/Sources/Services/XtreamCredentialStore.swift
+@@ -26,7 +26,7 @@ struct XtreamCredentialStore: Sendable {
+     static let standard = XtreamCredentialStore(
+         service: AppEnvironment.isRunningTests
+             ? "lu.daumedia.MikaPlusPlayer.xtream.tests.\(UUID().uuidString)"
+-            : "lu.daumedia.MikaPlusPlayer.xtream"
++            : "lu.daumedia.MikaPlusPlayer.b06probe.xtream" // B06-PROBE: nie der Dienst der echten App
+     )
+ 
+     enum KeychainError: LocalizedError {
+diff --git a/Sources/Views/PlayerView.swift b/Sources/Views/PlayerView.swift
+index 08076cf..59c91fc 100644
+--- a/Sources/Views/PlayerView.swift
++++ b/Sources/Views/PlayerView.swift
+@@ -75,12 +75,24 @@ struct PlayerView: View {
+         // wieder, sobald der Mauszeiger nahe den oberen Rand kommt.
+         .toolbar(macToolbarVisibility, for: .windowToolbar)
+         #endif
++        // B06-PROBE: Zustandsprotokoll und Auslöser (nur Sonde)
++        .onChange(of: showControls) { _, v in B06Probe.log("player showControls=\(v)") }
++        .onChange(of: hud) { _, v in B06Probe.log("player hud=\(v.map { "\($0)" } ?? "nil")") }
++        .onChange(of: isFullscreen) { _, v in B06Probe.log("player isFullscreen=\(v)") }
++        .onChange(of: keyboardFocused) { _, v in B06Probe.log("player keyboardFocused=\(v)") }
++        .onChange(of: topHover) { _, v in B06Probe.log("player topHover=\(v)") }
++        .onChange(of: engine?.state) { _, v in B06Probe.log("player engine.state=\(v.map { "\($0)" } ?? "nil") controlsVisible=\(controlsVisible)") }
++        .onChange(of: resolveError) { _, v in B06Probe.log("player resolveError=\(v ?? "nil")") }
++        .onReceive(NotificationCenter.default.publisher(for: B06Probe.toggleFullscreen)) { _ in B06Probe.log("player b06.toggleFullscreen"); toggleFullscreen() }
++        .onReceive(NotificationCenter.default.publisher(for: B06Probe.retry)) { _ in B06Probe.log("player b06.retry"); retry() }
+         .onAppear {
++            B06Probe.log("player onAppear engine=\(engine != nil) channel=\(channel.name)")
+             startIfNeeded()
+             scheduleAutoHide()
+             keyboardFocused = true
+         }
+         .onDisappear {
++            B06Probe.log("player onDisappear isFullscreen=\(isFullscreen) pipActive=\(engine?.isPictureInPictureActive == true)")
+             autoHideTask?.cancel()
+             hudTask?.cancel()
+             resetOrientation()
+@@ -316,6 +328,12 @@ struct PlayerView: View {
+ 
+     /// Wertet einen Tastendruck aus. `.handled` unterdrückt u. a. den macOS-Systembeep.
+     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
++        let r = handleKeyOriginal(press)
++        B06Probe.log("player onKeyPress key=\(press.key) chars=\(press.characters.debugDescription) mods=\(press.modifiers.rawValue) phase=\(press.phase) -> \(r == .handled ? "handled" : "ignored") vol=\(engine?.volume ?? -1) muted=\(engine?.isMuted ?? false) paused=\(engine?.isPaused ?? false)")
++        return r
++    }
++
++    private func handleKeyOriginal(_ press: KeyPress) -> KeyPress.Result {
+         switch press.key {
+         case .space:
+             togglePlay(); return .handled
+@@ -390,6 +408,11 @@ struct PlayerView: View {
+     // MARK: - Plattform-spezifisches Vollbild
+ 
+     private func applyFullscreenSideEffects(_ fullscreen: Bool) {
++        #if os(macOS)
++        B06Probe.log("player applyFullscreenSideEffects(\(fullscreen)) keyWindow=\(NSApp.keyWindow?.windowNumber ?? -1) mainWindow=\(NSApp.mainWindow?.windowNumber ?? -1)")
++        #else
++        B06Probe.log("player applyFullscreenSideEffects(\(fullscreen)) idiom=\(UIDevice.current.userInterfaceIdiom.rawValue)")
++        #endif
+         #if os(iOS)
+         // Auf dem iPhone Querformat anfordern (iPad/Info.plist erlauben Rotation ohnehin).
+         guard UIDevice.current.userInterfaceIdiom == .phone,
+@@ -424,11 +447,13 @@ struct PlayerView: View {
+         if engine == nil {
+             guard let url = playableURL() else { return }
+             let newEngine = PlaybackEngineFactory.engine(for: url)
++            B06Probe.register(newEngine, channel.name) // B06-PROBE
+             engine = newEngine
+             newEngine.load(url)
+             // Nur der Einzel-Player startet automatisch PiP beim App-Wechsel (iOS).
+             newEngine.setAutomaticPictureInPicture(true)
+         } else {
++            B06Probe.log("player startIfNeeded: vorhandene Engine -> play()")
+             engine?.play()
+         }
+     }
+diff --git a/Tests/B06/B06EngineProbeTests.swift b/Tests/B06/B06EngineProbeTests.swift
+new file mode 100644
+index 0000000..2cbbf0b
+--- /dev/null
++++ b/Tests/B06/B06EngineProbeTests.swift
+@@ -0,0 +1,447 @@
++import XCTest
++import SwiftUI
++import SwiftData
++import AVFoundation
++import AppKit
++@testable import MikaPlusPlayer
++
++/// B06-Sonde (nur Scratchpad-Kopie): Engine-Wahl, Zustände, Steuerung, Freigabe, Fehlertexte.
++/// Alle Streams sind stumme Testmedien von 127.0.0.1:18906 (mock_b06.py). Zugangsdaten erfunden.
++@MainActor
++final class B06EngineProbeTests: XCTestCase {
++    static let base = "http://127.0.0.1:18906"
++    static let t0 = Date()
++
++    // MARK: Hilfen
++
++    func out(_ line: String) {
++        let f = DateFormatter()
++        f.dateFormat = "HH:mm:ss.SSS"
++        print("B06T|\(f.string(from: Date()))|\(line)")
++        fflush(stdout)
++    }
++
++    func name(_ s: PlaybackState) -> String {
++        switch s {
++        case .idle: return "idle"
++        case .loading: return "loading"
++        case .playing: return "playing"
++        case .failed(let m): return "failed(\(m))"
++        }
++    }
++
++    func child(_ obj: Any, _ label: String) -> Any? {
++        var m: Mirror? = Mirror(reflecting: obj)
++        while let cur = m {
++            if let c = cur.children.first(where: { $0.label == label }) { return c.value }
++            m = cur.superclassMirror
++        }
++        return nil
++    }
++
++    func avPlayer(_ e: any PlaybackEngine) -> AVPlayer? { child(e, "player") as? AVPlayer }
++    func vlcPlayer(_ e: any PlaybackEngine) -> NSObject? { child(e, "mediaPlayer") as? NSObject }
++
++    static let vlcStates = ["stopped", "opening", "buffering", "ended", "error", "playing", "paused", "esAdded"]
++
++    func detail(_ e: any PlaybackEngine) -> String {
++        if let p = avPlayer(e) {
++            let item = p.currentItem
++            let tcs: String
++            switch p.timeControlStatus {
++            case .paused: tcs = "paused"
++            case .playing: tcs = "playing"
++            case .waitingToPlayAtSpecifiedRate: tcs = "waiting(\(p.reasonForWaitingToPlay?.rawValue ?? "-"))"
++            @unknown default: tcs = "?"
++            }
++            let st: String
++            switch item?.status {
++            case .readyToPlay: st = "ready"
++            case .failed: st = "failed"
++            case .unknown: st = "unknown"
++            default: st = "nil"
++            }
++            let err = item?.error as NSError?
++            return "av rate=\(p.rate) tcs=\(tcs) item=\(st) vol=\(p.volume) muted=\(p.isMuted)"
++                + (err.map { " err=\($0.domain)#\($0.code)" } ?? "")
++        }
++        if let v = vlcPlayer(e) {
++            let raw = (v.value(forKey: "state") as? NSNumber)?.intValue ?? -1
++            let st = raw >= 0 && raw < Self.vlcStates.count ? Self.vlcStates[raw] : "\(raw)"
++            let playing = (v.value(forKey: "playing") as? NSNumber)?.boolValue ?? false
++            let audio = v.value(forKey: "audio") as? NSObject
++            let vol = (audio?.value(forKey: "volume") as? NSNumber)?.intValue
++            let muted = (audio?.value(forKey: "muted") as? NSNumber)?.boolValue
++            return "vlc state=\(st) isPlaying=\(playing) audio=\(audio == nil ? "nil" : "da") audio.volume=\(vol.map(String.init) ?? "-") audio.muted=\(muted.map { $0 ? "1" : "0" } ?? "-")"
++        }
++        return "?"
++    }
++
++    func engineName(_ e: any PlaybackEngine) -> String { String(describing: type(of: e)) }
++
++    /// Beobachtet mehrere Engines parallel und protokolliert jede Zustandsänderung mit Zeit seit Start.
++    func watch(_ items: [(String, any PlaybackEngine)], seconds: Double, step: Double = 0.1,
++               detailEvery: Double = 5) async -> [String: [(Double, String)]] {
++        var last: [String: String] = [:]
++        var log: [String: [(Double, String)]] = [:]
++        let start = Date()
++        var nextDetail = 0.0
++        while true {
++            let t = Date().timeIntervalSince(start)
++            for (label, e) in items {
++                let s = name(e.state)
++                if last[label] != s {
++                    last[label] = s
++                    log[label, default: []].append((t, s))
++                    out("\(label)|t=\(String(format: "%.1f", t))s|state=\(s)|\(detail(e))")
++                }
++            }
++            if t >= nextDetail {
++                for (label, e) in items { out("\(label)|t=\(String(format: "%.1f", t))s|tick|state=\(name(e.state))|\(detail(e))") }
++                nextDetail += detailEvery
++            }
++            if t >= seconds { break }
++            try? await Task.sleep(nanoseconds: UInt64(step * 1_000_000_000))
++        }
++        return log
++    }
++
++    /// Hängt die Videofläche der Engine in ein kleines Fenster (wie in der App eingebettet).
++    var windows: [NSWindow] = []
++    func host(_ e: any PlaybackEngine, index: Int) {
++        let size = CGSize(width: 240, height: 135)
++        let col = index % 6, row = index / 6
++        let w = NSWindow(contentRect: NSRect(x: 40 + CGFloat(col) * 250, y: 80 + CGFloat(row) * 170, width: size.width, height: size.height),
++                         styleMask: [.titled], backing: .buffered, defer: false)
++        w.isReleasedWhenClosed = false
++        w.title = "B06-Sonde \(index)"
++        w.contentView = NSHostingView(rootView: e.makePlayerView())
++        w.orderFront(nil)
++        windows.append(w)
++    }
++
++    override func tearDown() async throws {
++        for w in windows { w.contentView = nil; w.orderOut(nil) }
++        windows.removeAll()
++        try? await Task.sleep(nanoseconds: 300_000_000)
++    }
++
++    // MARK: 01 · Engine-Wahl
++
++    func test01_EngineWahlJeAdresse() {
++        let b = Self.base
++        let cases = [
++            "\(b)/a.m3u8", "\(b)/a.M3U8", "\(b)/a.m3u", "\(b)/a.ts", "\(b)/a.TS", "\(b)/a.mpegts", "\(b)/a.mts",
++            "\(b)/a.m2ts", "\(b)/a.mp4", "\(b)/a.mkv", "\(b)/live/u/p/101", "\(b)/a.ts?token=abc",
++            "\(b)/a.m3u8?token=abc", "\(b)/play.php?file=a.ts", "\(b)/get?type=m3u8", "\(b)/a.ts#frag",
++            "\(b)/stream.ts/", "\(b)/a.m3u8.ts", "\(b)/a.ts.m3u8", "\(b)/a.ts%20", "rtmp://127.0.0.1/live/a",
++            "rtsp://127.0.0.1/a", "udp://@239.0.0.1:1234", "file:///tmp/a.ts", "\(b)/a."
++        ]
++        for c in cases {
++            guard let url = URL(string: c) else { out("01|\(c)|URL(string:) = nil"); continue }
++            let type = StreamType(url: url)
++            let e = PlaybackEngineFactory.engine(for: url)
++            out("01|\(c)|pathExtension=\(url.pathExtension)|StreamType=\(type)|engine=\(engineName(e))|PiP=\(e.supportsPictureInPicture)")
++        }
++    }
++
++    // MARK: 02 · Adresse über den Resolver (Xtream, M3U, fehlende Zugangsdaten)
++
++    func test02_ResolverUndEngineFuerXtream() throws {
++        let container = try ModelContainer(for: Schema([Playlist.self, Channel.self]),
++                                           configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
++        let ctx = container.mainContext
++        let store = XtreamCredentialStore(service: "lu.daumedia.MikaPlusPlayer.b06probe.tests.\(UUID().uuidString)")
++        defer { try? store.deleteAll() }
++
++        let xtream = Playlist(name: "X", sourceURL: URL(string: "\(Self.base)/player_api.php"), isXtream: true, xtreamOutput: "mpegts")
++        ctx.insert(xtream)
++        let secret = XtreamSecret(host: Self.base, username: "qa-user", password: "qa-pass-123")
++        try store.save(secret, for: xtream.id)
++        let tsCh = Channel(name: "TS", streamURL: URL(string: "\(Self.base)/live/101.ts")!)
++        let hlsCh = Channel(name: "HLS", streamURL: URL(string: "\(Self.base)/live/102.m3u8")!)
++        let badCh = Channel(name: "Bad", streamURL: URL(string: "\(Self.base)/stream/103.ts")!)
++        for c in [tsCh, hlsCh, badCh] { c.playlist = xtream; c.playlistID = xtream.id; ctx.insert(c) }
++
++        let missing = Playlist(name: "Y", sourceURL: URL(string: "\(Self.base)/player_api.php"), isXtream: true, xtreamOutput: "mpegts")
++        ctx.insert(missing)
++        let missCh = Channel(name: "Miss", streamURL: URL(string: "\(Self.base)/live/104.ts")!)
++        missCh.playlist = missing; missCh.playlistID = missing.id; ctx.insert(missCh)
++
++        let legacy = Playlist(name: "L", sourceURL: URL(string: "\(Self.base)/player_api.php?username=qa-user&password=qa-pass-123"), isXtream: true, xtreamOutput: "mpegts")
++        ctx.insert(legacy)
++        let legCh = Channel(name: "Leg", streamURL: URL(string: "\(Self.base)/live/qa-user/qa-pass-123/105.ts")!)
++        legCh.playlist = legacy; legCh.playlistID = legacy.id; ctx.insert(legCh)
++
++        let m3u = Playlist(name: "M", sourceURL: URL(string: "\(Self.base)/list.m3u"))
++        ctx.insert(m3u)
++        let m3uCh = Channel(name: "M3U", streamURL: URL(string: "\(Self.base)/u:pw@x/a.ts?token=geheim")!)
++        m3uCh.playlist = m3u; m3uCh.playlistID = m3u.id; ctx.insert(m3uCh)
++
++        let special = Playlist(name: "S", sourceURL: URL(string: "\(Self.base)/player_api.php"), isXtream: true, xtreamOutput: "hls")
++        ctx.insert(special)
++        try store.save(XtreamSecret(host: Self.base, username: "qa user", password: "a/b#c?d.m3u8"), for: special.id)
++        let spCh = Channel(name: "Sp", streamURL: URL(string: "\(Self.base)/live/106.ts")!)
++        spCh.playlist = special; spCh.playlistID = special.id; ctx.insert(spCh)
++
++        for c in [tsCh, hlsCh, badCh, missCh, legCh, m3uCh, spCh] {
++            do {
++                let url = try StreamURLResolver.playableURL(for: c, store: store)
++                let e = PlaybackEngineFactory.engine(for: url)
++                out("02|\(c.name)|stored=\(c.streamURL.absoluteString)|playable=\(url.absoluteString)|engine=\(engineName(e))|hinweisTS=\(StreamType(url: c.streamURL) == .transportStream)")
++            } catch {
++                let msg = error.localizedDescription
++                out("02|\(c.name)|stored=\(c.streamURL.absoluteString)|FEHLER=\(msg)|enthältPass=\(msg.contains("qa-pass"))|enthältUser=\(msg.contains("qa-user"))")
++            }
++        }
++    }
++
++    // MARK: 03 · AVKit-Zustände
++
++    func test03_AVKitZustaende() async {
++        let b = Self.base
++        let cases: [(String, String, Bool)] = [ // label, url, forceAVKit
++            ("03a-hls-vod", "\(b)/hls/vod.m3u8", false),
++            ("03b-hls-live", "\(b)/livehls/t03b/index.m3u8", false),
++            ("03c-mp4", "\(b)/clip.mp4", false),
++            ("03d-404-m3u8", "\(b)/404/x.m3u8", false),
++            ("03e-404-mp4", "\(b)/404/x.mp4", false),
++            ("03f-html-m3u8", "\(b)/html/x.m3u8", false),
++            ("03g-html-mp4", "\(b)/html/x.mp4", false),
++            ("03h-refused-m3u8", "http://127.0.0.1:1/x.m3u8", false),
++            ("03i-dns-m3u8", "http://b06-sonde.invalid/x.m3u8", false),
++            ("03j-rawts-ohne-endung", "\(b)/tslive/t03j", false),
++            ("03k-rawts-.ts-ueber-AVKit", "\(b)/tslive/t03k.ts", true),
++            ("03l-hls-als-.m3u", "\(b)/livehls/t03l/index.m3u", false),
++            ("03m-m3u-senderliste", "\(b)/m3uplaylist/list.m3u", false),
++            ("03n-xtream-404-m3u8", "\(b)/live/qa-user/qa-pass-123/404/101.m3u8", false),
++            ("03o-xtream-hls", "\(b)/live/qa-user/qa-pass-123/102.m3u8", false),
++        ]
++        var items: [(String, any PlaybackEngine)] = []
++        for (i, c) in cases.enumerated() {
++            let url = URL(string: c.1)!
++            let e: any PlaybackEngine = c.2 ? AVKitPlaybackEngine() : PlaybackEngineFactory.engine(for: url)
++            host(e, index: i)
++            out("\(c.0)|load|\(engineName(e))|\(c.1)")
++            e.load(url)
++            items.append((c.0, e))
++        }
++        _ = await watch(items, seconds: 70)
++        for (label, e) in items {
++            var extra = ""
++            if let item = avPlayer(e)?.currentItem, let err = item.error as NSError? {
++                extra = "|domain=\(err.domain)|code=\(err.code)|reason=\(err.localizedFailureReason ?? "-")|userInfoKeys=\(err.userInfo.keys.sorted())"
++                let dump = "\(err)"
++                extra += "|errorDumpEnthältPass=\(dump.contains("qa-pass-123"))"
++            }
++            if case .failed(let m) = e.state {
++                extra += "|anzeigeEnthältPass=\(m.contains("qa-pass-123"))|anzeigeEnthältHost=\(m.contains("127.0.0.1"))"
++            }
++            out("\(label)|ENDE|state=\(name(e.state))|\(detail(e))\(extra)")
++            e.pause()
++        }
++    }
++
++    // MARK: 04 · VLC-Zustände
++
++    func test04_VLCZustaende() async {
++        let b = Self.base
++        let cases: [(String, String)] = [
++            ("04a-ts-live", "\(b)/tslive/t04a.ts"),
++            ("04b-mpegts", "\(b)/tslive/t04b.mpegts"),
++            ("04c-mts", "\(b)/tslive/t04c.mts"),
++            ("04d-m2ts", "\(b)/tslive/t04d.m2ts"),
++            ("04e-TS-gross", "\(b)/tslive/t04e.TS"),
++            ("04f-404-ts", "\(b)/404/x.ts"),
++            ("04g-html-ts", "\(b)/html/x.ts"),
++            ("04h-refused-ts", "http://127.0.0.1:1/x.ts"),
++            ("04i-dns-ts", "http://b06-sonde.invalid/x.ts"),
++            ("04j-abbruch-nach-10s", "\(b)/abort/10/tslive/t04j.ts"),
++            ("04k-xtream-ts", "\(b)/live/qa-user/qa-pass-123/101.ts"),
++            ("04l-xtream-404-ts", "\(b)/live/qa-user/qa-pass-123/404/101.ts"),
++        ]
++        var items: [(String, any PlaybackEngine)] = []
++        for (i, c) in cases.enumerated() {
++            let url = URL(string: c.1)!
++            let e = PlaybackEngineFactory.engine(for: url)
++            host(e, index: i)
++            out("\(c.0)|load|\(engineName(e))|\(c.1)")
++            e.load(url)
++            items.append((c.0, e))
++        }
++        _ = await watch(items, seconds: 60)
++        for (label, e) in items {
++            out("\(label)|ENDE|state=\(name(e.state))|\(detail(e))")
++            e.pause()
++        }
++    }
++
++    // MARK: 05 · Hänger, langsamer Start, Abbruch bei Live-HLS (lange Beobachtung)
++
++    func test05_HaengerUndLangsamerStart() async {
++        let b = Self.base
++        let cases: [(String, String)] = [
++            ("05a-av-hang", "\(b)/hang/t05a.m3u8"),
++            ("05b-av-delay25", "\(b)/delay/25/livehls/t05b/index.m3u8"),
++            ("05c-vlc-hang", "\(b)/hang/t05c.ts"),
++            ("05d-vlc-delay25", "\(b)/delay/25/tslive/t05d.ts"),
++            ("05e-av-livehls-abbruch-nach-15s", "\(b)/abort/15/livehls/t05e/index.m3u8"),
++            ("05f-av-mp4-hang", "\(b)/hang/t05f.mp4"),
++        ]
++        var items: [(String, any PlaybackEngine)] = []
++        for (i, c) in cases.enumerated() {
++            let url = URL(string: c.1)!
++            let e = PlaybackEngineFactory.engine(for: url)
++            host(e, index: i)
++            out("\(c.0)|load|\(engineName(e))|\(c.1)")
++            e.load(url)
++            items.append((c.0, e))
++        }
++        _ = await watch(items, seconds: 200, detailEvery: 10)
++        for (label, e) in items {
++            out("\(label)|ENDE|state=\(name(e.state))|\(detail(e))")
++            e.pause()
++        }
++    }
++
++    // MARK: 06 · Steuerung: Lautstärke, Stumm, Play/Pause an beiden Engines
++
++    func test06_Steuerung() async {
++        let b = Self.base
++        let av = AVKitPlaybackEngine()
++        let vlc = PlaybackEngineFactory.engine(for: URL(string: "\(b)/tslive/t06.ts")!)
++        host(av, index: 0); host(vlc, index: 1)
++        av.load(URL(string: "\(b)/livehls/t06/index.m3u8")!)
++        vlc.load(URL(string: "\(b)/tslive/t06.ts")!)
++        _ = await watch([("06-av", av), ("06-vlc", vlc)], seconds: 6)
++
++        for (label, e) in [("06-av", av), ("06-vlc", vlc)] as [(String, any PlaybackEngine)] {
++            out("\(label)|start|vol=\(e.volume)|muted=\(e.isMuted)|paused=\(e.isPaused)|\(detail(e))")
++            // ↑ an der Obergrenze
++            for _ in 0..<3 { e.setVolume(e.volume + 0.05) }
++            out("\(label)|3x hoch bei 1.0|vol=\(e.volume)|\(detail(e))")
++            // ↓ in 5-%-Schritten bis unter 0
++            var seq: [String] = []
++            for i in 1...22 {
++                e.setVolume(e.volume - 0.05)
++                seq.append("\(i):\(e.volume)|\(Int((e.volume * 100).rounded()))%")
++            }
++            out("\(label)|22x runter|\(seq.joined(separator: " "))")
++            out("\(label)|nach runter|vol=\(e.volume)|muted=\(e.isMuted)|\(detail(e))")
++            // Stumm, dann ↓ bzw. ↑
++            e.setVolume(0.5)
++            e.toggleMute()
++            out("\(label)|0.5 + stumm|vol=\(e.volume)|muted=\(e.isMuted)|\(detail(e))")
++            e.setVolume(e.volume - 0.05)
++            out("\(label)|stumm, dann runter|vol=\(e.volume)|muted=\(e.isMuted)|\(detail(e))")
++            e.toggleMute()
++            e.setVolume(0.0)
++            out("\(label)|lautstärke 0|vol=\(e.volume)|muted=\(e.isMuted)|\(detail(e))")
++            e.setVolume(0.05)
++            out("\(label)|0 -> 0.05|vol=\(e.volume)|muted=\(e.isMuted)|\(detail(e))")
++            e.setMuted(true); e.setMuted(true)
++            out("\(label)|setMuted(true) x2|muted=\(e.isMuted)|\(detail(e))")
++            e.setMuted(false)
++            e.setVolume(1.0)
++            // Play/Pause
++            e.togglePlayPause()
++            try? await Task.sleep(nanoseconds: 2_000_000_000)
++            out("\(label)|nach Pause 2s|paused=\(e.isPaused)|state=\(name(e.state))|\(detail(e))")
++            e.togglePlayPause()
++            try? await Task.sleep(nanoseconds: 2_000_000_000)
++            out("\(label)|nach Play 2s|paused=\(e.isPaused)|state=\(name(e.state))|\(detail(e))")
++        }
++        av.pause(); vlc.pause()
++    }
++
++    // MARK: 07 · Verlassen: Pause, Freigabe, Verbindungen
++
++    func test07_VerlassenUndFreigabe() async {
++        let b = Self.base
++        // a) AVKit Live-HLS: spielt, pause() wie onDisappear, 20 s halten, dann Referenz fallen lassen
++        // b) VLC Live-TS: dasselbe
++        // c) VLC: pause() noch während des Ladens, 15 s beobachten
++        // d) AVKit Live-HLS: Referenz fallen lassen ohne Pause
++        // e) VLC Live-TS: Referenz fallen lassen ohne Pause
++        var a: (any PlaybackEngine)? = PlaybackEngineFactory.engine(for: URL(string: "\(b)/livehls/t07a/index.m3u8")!)
++        var bb: (any PlaybackEngine)? = PlaybackEngineFactory.engine(for: URL(string: "\(b)/tslive/t07b.ts")!)
++        var c: (any PlaybackEngine)? = PlaybackEngineFactory.engine(for: URL(string: "\(b)/delay/4/tslive/t07c.ts")!)
++        var d: (any PlaybackEngine)? = PlaybackEngineFactory.engine(for: URL(string: "\(b)/livehls/t07d/index.m3u8")!)
++        var e: (any PlaybackEngine)? = PlaybackEngineFactory.engine(for: URL(string: "\(b)/tslive/t07e.ts")!)
++        weak var wa = a as AnyObject?, wb = bb as AnyObject?, wc = c as AnyObject?, wd = d as AnyObject?, we = e as AnyObject?
++        weak var pa = a.flatMap { avPlayer($0) }, pd = d.flatMap { avPlayer($0) }
++        weak var vb = bb.flatMap { vlcPlayer($0) }, vc = c.flatMap { vlcPlayer($0) }, ve = e.flatMap { vlcPlayer($0) }
++        for (i, x) in [a!, bb!, c!, d!, e!].enumerated() { host(x, index: i) }
++        a!.load(URL(string: "\(b)/livehls/t07a/index.m3u8")!)
++        bb!.load(URL(string: "\(b)/tslive/t07b.ts")!)
++        c!.load(URL(string: "\(b)/delay/4/tslive/t07c.ts")!)
++        d!.load(URL(string: "\(b)/livehls/t07d/index.m3u8")!)
++        e!.load(URL(string: "\(b)/tslive/t07e.ts")!)
++        try? await Task.sleep(nanoseconds: 500_000_000)
++        out("07c|pause() während des Ladens|state=\(name(c!.state))|\(detail(c!))")
++        c!.pause()
++        out("07c|nach pause()|isPaused=\(c!.isPaused)|\(detail(c!))")
++        _ = await watch([("07a", a!), ("07b", bb!), ("07c", c!), ("07d", d!), ("07e", e!)], seconds: 8)
++        out("07a|pause() wie onDisappear"); a!.pause()
++        out("07b|pause() wie onDisappear"); bb!.pause()
++        _ = await watch([("07a", a!), ("07b", bb!), ("07c", c!), ("07d", d!), ("07e", e!)], seconds: 20, detailEvery: 5)
++
++        // Referenzen fallen lassen: Fenster schließen (Ansicht weg), dann Engine-Variable nil
++        out("07|Fenster schließen + Referenzen fallen lassen: a, b, d, e (c bleibt)")
++        for w in windows { w.contentView = nil; w.orderOut(nil) }
++        windows.removeAll()
++        a = nil; bb = nil; d = nil; e = nil
++        for t in [0.5, 2.0, 5.0, 15.0] {
++            try? await Task.sleep(nanoseconds: UInt64((t == 0.5 ? 0.5 : t == 2.0 ? 1.5 : t == 5.0 ? 3.0 : 10.0) * 1_000_000_000))
++            out("07|+\(t)s|engineA=\(wa != nil) avPlayerA=\(pa != nil) rateA=\(pa?.rate ?? -1) | engineB=\(wb != nil) vlcB=\(vb != nil) | engineD=\(wd != nil) avPlayerD=\(pd != nil) rateD=\(pd?.rate ?? -1) | engineE=\(we != nil) vlcE=\(ve != nil)")
++            if let vb { out("07b|+\(t)s|vlc lebt: state=\(((vb.value(forKey: "state") as? NSNumber)?.intValue).map { Self.vlcStates[$0] } ?? "-") playing=\(vb.value(forKey: "playing") ?? "-")") }
++            if let ve { out("07e|+\(t)s|vlc lebt: state=\(((ve.value(forKey: "state") as? NSNumber)?.intValue).map { Self.vlcStates[$0] } ?? "-") playing=\(ve.value(forKey: "playing") ?? "-")") }
++        }
++        out("07c|am Ende|isPaused=\(c!.isPaused)|state=\(name(c!.state))|\(detail(c!))")
++        c = nil
++        try? await Task.sleep(nanoseconds: 3_000_000_000)
++        out("07c|nach Freigabe +3s|engineC=\(wc != nil) vlcC=\(vc != nil)")
++    }
++
++    // MARK: 08 · Roh-Zustände von VLC (Benachrichtigungen) und AVKit mit Byte-Range
++
++    func test08_VLCRohzustaendeUndAVKitMitRange() async {
++        let b = Self.base
++        let cases: [(String, String)] = [
++            ("08a-vlc-live", "\(b)/tslive/t08a.ts"),
++            ("08b-vlc-404", "\(b)/404/t08b.ts"),
++            ("08c-vlc-refused", "http://127.0.0.1:1/t08c.ts"),
++            ("08d-vlc-html", "\(b)/html/t08d.ts"),
++            ("08e-vlc-abbruch-8s", "\(b)/abort/8/tslive/t08e.ts"),
++            ("08f-vlc-datei-ende-120s-nicht-abgewartet", "\(b)/static/src.ts"),
++            ("08g-av-mp4-range", "\(b)/clip.mp4"),
++            ("08h-av-ts-datei-range", "\(b)/static/src.mp4"),
++        ]
++        var items: [(String, any PlaybackEngine)] = []
++        var tokens: [NSObjectProtocol] = []
++        for (i, c) in cases.enumerated() {
++            let url = URL(string: c.1)!
++            var e: any PlaybackEngine = PlaybackEngineFactory.engine(for: url)
++            if c.0 == "08h-av-ts-datei-range" { e = AVKitPlaybackEngine() }
++            host(e, index: i)
++            if let v = vlcPlayer(e) {
++                let label = c.0
++                tokens.append(NotificationCenter.default.addObserver(forName: Notification.Name("VLCMediaPlayerStateChanged"), object: v, queue: nil) { [weak self] note in
++                    let raw = ((note.object as? NSObject)?.value(forKey: "state") as? NSNumber)?.intValue ?? -1
++                    let name = raw >= 0 && raw < Self.vlcStates.count ? Self.vlcStates[raw] : "\(raw)"
++                    let thread = Thread.isMainThread ? "main" : "bg"
++                    MainActor.assumeIsolated { self?.out("\(label)|VLC-Benachrichtigung state=\(name) thread=\(thread)") }
++                })
++            }
++            out("\(c.0)|load|\(engineName(e))|\(c.1)")
++            e.load(url)
++            items.append((c.0, e))
++        }
++        _ = await watch(items, seconds: 30)
++        for t in tokens { NotificationCenter.default.removeObserver(t) }
++        for (label, e) in items {
++            out("\(label)|ENDE|state=\(name(e.state))|\(detail(e))")
++            e.pause()
++        }
++    }
++}
+diff --git a/probe/mock_b06.py b/probe/mock_b06.py
+new file mode 100644
+index 0000000..7f0bd3f
+--- /dev/null
++++ b/probe/mock_b06.py
+@@ -0,0 +1,297 @@
++#!/usr/bin/env python3
++"""B06-Sonde: lokaler Stream-Mock (nur 127.0.0.1, nur stumme Testmedien).
++
++Routen (alles unter http://127.0.0.1:PORT):
++  /hls/vod.m3u8, /hls/segNNN.ts        HLS-VOD (statisch)
++  /clip.mp4                           MP4
++  /livehls/<beliebig>/index.m3u8       Live-HLS mit gleitendem Fenster (6 Segmente, 2 s)
++  /livehls/<beliebig>/segNNNNN.ts      Segmente dazu
++  /tslive/<beliebig>                  roher TS in Echtzeit, endlos (jede Endung / ohne Endung)
++  /404/<beliebig>                      HTTP 404
++  /html/<beliebig>                     HTTP 200 text/html
++  /hang/<beliebig>                     Verbindung annehmen, nie antworten (max. 900 s)
++  /delay/<sek>/<rest>                  <sek> warten, dann wie /<rest>
++  /abort/<sek>/tslive/<x>              TS in Echtzeit, nach <sek> Verbindung schließen
++  /abort/<sek>/livehls/<x>/...         Live-HLS, nach <sek> ab Serverstart jede Anfrage -> Verbindungsabbruch
++  /m3uplaylist/<x>.m3u                 M3U-Senderliste (kein HLS) mit zwei Einträgen
++  /live/<user>/<pass>/<id>.ts          Xtream-Form: roher TS in Echtzeit
++  /live/<user>/<pass>/<id>.m3u8        Xtream-Form: Live-HLS
++  /live/<user>/<pass>/404/<id>.ts      Xtream-Form: 404
++Protokoll: eine Zeile je Ereignis, Zeitstempel HH:MM:SS.mmm, Verbindungs-ID.
++"""
++import http.server, socketserver, socket, sys, os, time, threading, itertools, re
++
++PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 18906
++LOG = sys.argv[2] if len(sys.argv) > 2 else "mock.log"
++ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media")
++START = time.time()
++TS = open(os.path.join(ROOT, "src.ts"), "rb").read()
++TS_DURATION = 120.0
++TS_RATE = len(TS) / TS_DURATION  # Bytes je Sekunde
++SEGS = sorted(f for f in os.listdir(os.path.join(ROOT, "hls")) if f.endswith(".ts"))
++ids = itertools.count(1)
++FIRST_SEEN = {}
++lock = threading.Lock()
++logf = open(LOG, "a", buffering=1)
++
++
++def log(msg):
++    now = time.time()
++    line = time.strftime("%H:%M:%S", time.localtime(now)) + ".%03d " % int((now % 1) * 1000) + msg
++    with lock:
++        logf.write(line + "\n")
++
++
++class Handler(http.server.BaseHTTPRequestHandler):
++    protocol_version = "HTTP/1.1"
++    server_version = "B06Mock/1.0"
++
++    def log_message(self, *a):
++        pass
++
++    def setup(self):
++        super().setup()
++        self.cid = next(ids)
++
++    def handle(self):
++        log("conn=%d open peer=%s:%d" % (self.cid, *self.client_address))
++        try:
++            super().handle()
++        finally:
++            log("conn=%d close" % self.cid)
++
++    # ---- Hilfen
++    def head(self, code, ctype, length=None, extra=None):
++        self.send_response(code)
++        self.send_header("Content-Type", ctype)
++        if length is not None:
++            self.send_header("Content-Length", str(length))
++        for k, v in (extra or {}).items():
++            self.send_header(k, v)
++        self.end_headers()
++
++    def body(self, data):
++        try:
++            self.wfile.write(data)
++            self.wfile.flush()
++            return True
++        except (BrokenPipeError, ConnectionResetError) as e:
++            log("conn=%d write-error %s" % (self.cid, type(e).__name__))
++            return False
++
++    def realtime_ts(self, limit=None):
++        """Sendet src.ts in Echtzeit endlos. Protokolliert alle 5 s Menge und Stauzeit."""
++        self.head(200, "video/mp2t", extra={"Connection": "close"})
++        self.close_connection = True
++        sock = self.connection
++        sock.settimeout(1.0)
++        t0 = time.time()
++        sent = 0
++        stall = 0.0
++        last_report = t0
++        last_sent = 0
++        chunk = 1316 * 10
++        pos = 0
++        while True:
++            now = time.time()
++            if limit is not None and now - t0 >= limit:
++                log("conn=%d abort-after=%.1fs bytes=%d" % (self.cid, now - t0, sent))
++                try:
++                    sock.shutdown(socket.SHUT_RDWR)
++                except OSError:
++                    pass
++                return
++            if now - last_report >= 5.0:
++                log("conn=%d ts-progress t=%.0fs bytes=%d last5s=%d stall5s=%.1fs" %
++                    (self.cid, now - t0, sent, sent - last_sent, stall))
++                last_report = now
++                last_sent = sent
++                stall = 0.0
++            if now - t0 > 900:
++                log("conn=%d max-duration" % self.cid)
++                return
++            target = (now - t0) * TS_RATE + TS_RATE * 1.0  # 1 s Vorlauf
++            if sent >= target:
++                time.sleep(0.05)
++                continue
++            data = TS[pos:pos + chunk]
++            if len(data) < chunk:
++                data += TS[:chunk - len(data)]
++            view = memoryview(data)
++            while view:
++                try:
++                    n = sock.send(view)
++                    view = view[n:]
++                    sent += n
++                except socket.timeout:
++                    stall += 1.0
++                    if time.time() - last_report >= 5.0:
++                        log("conn=%d ts-progress t=%.0fs bytes=%d last5s=%d stall5s=%.1fs (blockiert)" %
++                            (self.cid, time.time() - t0, sent, sent - last_sent, stall))
++                        last_report = time.time()
++                        last_sent = sent
++                        stall = 0.0
++                    if time.time() - t0 > 900:
++                        return
++                except (BrokenPipeError, ConnectionResetError, OSError) as e:
++                    log("conn=%d client-closed after=%.1fs bytes=%d (%s)" % (self.cid, time.time() - t0, sent, type(e).__name__))
++                    return
++            pos = (pos + chunk) % len(TS)
++
++    def live_playlist(self, base_path):
++        seq = int((time.time() - START) / 2.0)
++        lines = ["#EXTM3U", "#EXT-X-VERSION:3", "#EXT-X-TARGETDURATION:2", "#EXT-X-MEDIA-SEQUENCE:%d" % seq]
++        for i in range(seq, seq + 6):
++            lines += ["#EXTINF:2.000000,", "seg%05d.ts" % i]
++        data = ("\n".join(lines) + "\n").encode()
++        self.head(200, "application/vnd.apple.mpegurl", len(data), {"Cache-Control": "no-cache"})
++        self.body(data)
++
++    def live_segment(self, name):
++        m = re.match(r"seg(\d+)\.ts$", name)
++        if not m:
++            return self.not_found()
++        idx = int(m.group(1)) % len(SEGS)
++        data = open(os.path.join(ROOT, "hls", SEGS[idx]), "rb").read()
++        self.head(200, "video/mp2t", len(data))
++        self.body(data)
++
++    def not_found(self):
++        data = b"<html><body><h1>404 Not Found</h1></body></html>"
++        self.head(404, "text/html", len(data))
++        self.body(data)
++
++    def static(self, rel, ctype):
++        path = os.path.join(ROOT, rel)
++        if not os.path.isfile(path):
++            return self.not_found()
++        data = open(path, "rb").read()
++        rng = self.headers.get("Range", "")
++        m = re.match(r"bytes=(\d*)-(\d*)$", rng.strip())
++        if m and (m.group(1) or m.group(2)):
++            start = int(m.group(1)) if m.group(1) else len(data) - int(m.group(2))
++            end = int(m.group(2)) if (m.group(1) and m.group(2)) else len(data) - 1
++            end = min(end, len(data) - 1)
++            part = data[start:end + 1]
++            self.head(206, ctype, len(part), {"Content-Range": "bytes %d-%d/%d" % (start, end, len(data)), "Accept-Ranges": "bytes"})
++            return self.body(part)
++        self.head(200, ctype, len(data), {"Accept-Ranges": "bytes"})
++        self.body(data)
++
++    # ---- Routing
++    def do_GET(self):
++        ua = self.headers.get("User-Agent", "")
++        rng = self.headers.get("Range", "")
++        log("conn=%d GET %s ua=%r range=%r" % (self.cid, self.path, ua, rng))
++        self.route(self.path.split("?")[0])
++
++    def route(self, path):
++        parts = [p for p in path.split("/") if p]
++        if not parts:
++            return self.not_found()
++        head = parts[0]
++        if head == "delay" and len(parts) >= 3:
++            secs = float(parts[1])
++            key = "/".join(parts[:-1])
++            with lock:
++                seen = key in FIRST_SEEN
++                FIRST_SEEN.setdefault(key, time.time())
++            if not seen:  # nur die erste Anfrage je Pfad verzögern (Segmente danach normal)
++                log("conn=%d delay %.0fs" % (self.cid, secs))
++                time.sleep(secs)
++            return self.route("/" + "/".join(parts[2:]))
++        if head == "abort" and len(parts) >= 3:
++            secs = float(parts[1])
++            rest = parts[2:]
++            if rest[0] == "tslive":
++                return self.realtime_ts(limit=secs)
++            if rest[0] == "livehls":
++                key = "/".join(parts[:4])
++                with lock:
++                    first = FIRST_SEEN.setdefault(key, time.time())
++                if time.time() - first >= secs:
++                    log("conn=%d abort-livehls (seit erster Anfrage %.0fs)" % (self.cid, time.time() - first))
++                    self.close_connection = True
++                    try:
++                        self.connection.shutdown(socket.SHUT_RDWR)
++                    except OSError:
++                        pass
++                    return
++                return self.route("/" + "/".join(rest))
++        if head == "hls":
++            ctype = "application/vnd.apple.mpegurl" if parts[-1].endswith(".m3u8") else "video/mp2t"
++            return self.static(os.path.join("hls", parts[-1]), ctype)
++        if head == "clip.mp4":
++            return self.static("clip.mp4", "video/mp4")
++        if head == "static" and len(parts) >= 2:
++            name = parts[-1]
++            if name.startswith("src."):
++                return self.static("src.ts", "video/mp2t")
++            return self.static(name, "application/octet-stream")
++        if head == "livehls":
++            if parts[-1].endswith(".m3u8") or parts[-1].endswith(".m3u"):
++                return self.live_playlist(path)
++            return self.live_segment(parts[-1])
++        if head == "tslive":
++            return self.realtime_ts()
++        if head == "404":
++            return self.not_found()
++        if head == "auth":
++            log("conn=%d auth-header=%r" % (self.cid, self.headers.get("Authorization", "")))
++            data = b"<html><body>401</body></html>"
++            self.head(401, "text/html", len(data), {"WWW-Authenticate": 'Basic realm="IPTV-Sonde"'})
++            return self.body(data)
++        if head == "403":
++            data = b"<html><body>403</body></html>"
++            self.head(403, "text/html", len(data))
++            return self.body(data)
++        if head == "html":
++            data = b"<!doctype html><html><head><title>Portal</title></head><body><p>Bitte anmelden</p></body></html>" * 20
++            self.head(200, "text/html; charset=utf-8", len(data))
++            return self.body(data)
++        if head == "hang":
++            log("conn=%d hang" % self.cid)
++            self.connection.settimeout(1.0)
++            t0 = time.time()
++            while time.time() - t0 < 900:
++                try:
++                    d = self.connection.recv(1)
++                    if d == b"":
++                        log("conn=%d hang-client-closed after=%.1fs" % (self.cid, time.time() - t0))
++                        self.close_connection = True
++                        return
++                except socket.timeout:
++                    continue
++                except OSError as e:
++                    log("conn=%d hang-client-closed after=%.1fs (%s)" % (self.cid, time.time() - t0, type(e).__name__))
++                    self.close_connection = True
++                    return
++            self.close_connection = True
++            return
++        if head == "m3uplaylist":
++            data = ("#EXTM3U\n#EXTINF:-1 tvg-id=\"a\",Sender A\nhttp://127.0.0.1:%d/hls/vod.m3u8\n"
++                    "#EXTINF:-1 tvg-id=\"b\",Sender B\nhttp://127.0.0.1:%d/clip.mp4\n" % (PORT, PORT)).encode()
++            self.head(200, "audio/x-mpegurl", len(data))
++            return self.body(data)
++        if head == "live" and len(parts) >= 4:
++            # Xtream-Form /live/<user>/<pass>/<id>.<ext>
++            if parts[3] == "404":
++                return self.not_found()
++            last = parts[-1]
++            if last.endswith(".m3u8"):
++                return self.live_playlist(path)
++            if re.match(r"seg\d+\.ts$", last):
++                return self.live_segment(last)
++            return self.realtime_ts()
++        return self.not_found()
++
++
++class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
++    daemon_threads = True
++    allow_reuse_address = True
++
++
++if __name__ == "__main__":
++    srv = Server(("127.0.0.1", PORT), Handler)
++    log("server start port=%d ts_rate=%.0f B/s segs=%d" % (PORT, TS_RATE, len(SEGS)))
++    srv.serve_forever()
+diff --git a/probe/run_app.sh b/probe/run_app.sh
+new file mode 100755
+index 0000000..614c7db
+--- /dev/null
++++ b/probe/run_app.sh
+@@ -0,0 +1,29 @@
++#!/bin/bash
++# B06-Sonde: startet die Mac-App der Kopie mit einem Ablauf, fängt Unified Log und stdout/stderr ab,
++# erstellt angeforderte Fensterbilder (screencapture -x: ohne Ton).
++set -u
++P=/private<sonde>
++S=$1
++OUT=$P/probe/run/app-$S
++rm -rf "$OUT"; mkdir -p "$OUT/shots"
++APP=$P/dd/Build/Products/Debug/MikaPlusPlayer.app/Contents/MacOS/MikaPlusPlayer
++export B06_SCRIPT=$S B06_SHOTDIR=$OUT/shots B06_STORE=$OUT/probe.store
++echo "=== APP $S $(date +%T)" >> $P/probe/run/mock.log
++log stream --style compact --level debug --predicate 'process == "MikaPlusPlayer"' > "$OUT/unified.log" 2>&1 &
++LS=$!
++sleep 1
++"$APP" > "$OUT/stdout.log" 2>&1 &
++AP=$!
++shopt -s nullglob
++while kill -0 $AP 2>/dev/null; do
++  for f in "$OUT"/shots/*.req; do
++    id=$(cat "$f"); n=$(basename "$f" .req)
++    screencapture -x -o -l "$id" "$OUT/shots/$n.png" 2>>"$OUT/shots/errors.txt"
++    rm -f "$f"
++  done
++  sleep 0.05
++done
++wait $AP; echo "exit=$?" >> "$OUT/stdout.log"
++sleep 1
++kill $LS 2>/dev/null
++echo "=== APP $S ENDE $(date +%T)" >> $P/probe/run/mock.log
+diff --git a/probe/run_ios.sh b/probe/run_ios.sh
+new file mode 100755
+index 0000000..ba0dcb7
+--- /dev/null
++++ b/probe/run_ios.sh
+@@ -0,0 +1,28 @@
++#!/bin/bash
++# B06-Sonde iOS: startet die App im Simulator mit Ablauf ios-orientation, Bilder bei Protokollmarken.
++set -u
++P=/private<sonde>
++U=$1; NAME=$2; URL=$3
++O=$P/probe/run/ios-$NAME
++rm -rf "$O"; mkdir -p "$O"
++echo "=== IOS $NAME $(date +%T)" >> $P/probe/run/mock.log
++SIMCTL_CHILD_B06_SCRIPT=ios-orientation SIMCTL_CHILD_B06_URL="$URL" \
++  xcrun simctl launch --terminate-running-process --console-pty "$U" lu.daumedia.MikaPlusPlayer.b06probe > "$O/console.log" 2>&1 &
++LP=$!
++declare -a TAGS=("player hochformat:" "vollbild an:" "vollbild aus:" "vorher querformat links:" "vollbild an aus links:" "vollbild aus nach links:" "vollbild an vor zurück:" "nach zurück:")
++declare -a DONE=(0 0 0 0 0 0 0 0)
++start=$(date +%s)
++while [ $(( $(date +%s) - start )) -lt 90 ]; do
++  for i in "${!TAGS[@]}"; do
++    if [ "${DONE[$i]}" = 0 ] && grep -q "B06 ${TAGS[$i]}" "$O/console.log" 2>/dev/null; then
++      xcrun simctl io "$U" screenshot "$O/$(printf '%02d' $i)-$(echo "${TAGS[$i]}" | tr ' :' '-_' | tr -d 'üä').png" > /dev/null 2>&1
++      DONE[$i]=1
++    fi
++  done
++  grep -q "B06 nach zurück +6s" "$O/console.log" 2>/dev/null && break
++  sleep 0.3
++done
++sleep 1
++xcrun simctl terminate "$U" lu.daumedia.MikaPlusPlayer.b06probe > /dev/null 2>&1
++kill $LP 2>/dev/null
++echo "=== IOS $NAME ENDE $(date +%T)" >> $P/probe/run/mock.log
+diff --git a/project.yml b/project.yml
+index d028a36..436d588 100644
+--- a/project.yml
++++ b/project.yml
+@@ -30,7 +30,7 @@ targetTemplates:
+     settings:
+       base:
+         PRODUCT_NAME: MikaPlusPlayer
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b06probe
+         MARKETING_VERSION: "1.1"
+         CURRENT_PROJECT_VERSION: "2"
+         GENERATE_INFOPLIST_FILE: NO
+@@ -90,7 +90,7 @@ targets:
+     settings:
+       base:
+         GENERATE_INFOPLIST_FILE: YES
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayerTests
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b06probetests
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+         DEVELOPMENT_TEAM: "CWJM4J4HFN"

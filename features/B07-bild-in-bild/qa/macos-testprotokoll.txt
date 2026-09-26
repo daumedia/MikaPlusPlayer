@@ -1,0 +1,246 @@
+B07 QA Durchlauf 1 · macOS-Test-Host · Gesamtlauf 2026-09-26 17:39–17:49 (41 Tests) · Protokollzeilen der Tests (ohne Bedienungshilfen-Auszüge)
+Medien ohne Tonspur, Streams nur 127.0.0.1, Zugangsdaten erfunden (qa-user / qa-pass-123)
+
+B07QA|17:39:51.364|BRIDGE|front 80555|ok front
+B07QA|17:39:53.721|Angriff3|nach 5× P: aktiv=true fenster=1
+B07QA|17:39:55.328|Angriff3|nach 10× P: aktiv=true fenster=1
+B07QA|17:39:56.933|Angriff3|nach 15× P: aktiv=false fenster=0
+B07QA|17:39:58.552|Angriff3|nach 20× P: aktiv=true fenster=1
+B07QA|17:40:02.567|Angriff3|20× P in ~6.0 s: max. gleichzeitige Fenster=1 · danach aktiv=false fenster=0 type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true · Verbindungen vorher=1 nachher=1 offen=1
+B07QA|17:40:12.533|Angriff5|Anfragen während PiP an/aus=6 Pfade=["/live/qa-user/qa-pass-123/501.m3u8", "/live/qa-user/qa-pass-123/segN.ts"] Kopfzeilen=["accept", "accept-encoding", "accept-language", "connection", "host", "user-agent", "x-playback-session-id"] UA=["AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)"]
+B07QA|17:40:12.533|Angriff5|entfernte TCP-Endpunkte des Prozesses während PiP=["127.0.0.1:50651", "127.0.0.1:64748"]
+B07QA|17:40:13.575|Angriff7|name(10000 Zeichen, 'ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ')|pip=true fenster=["Bild-in-Bild \'\' 524x276"]|fenstertitel(10000)|app-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:40:15.105|Angriff7|name(11 Zeichen, '📺🇱🇺 Sender 😀')|pip=true fenster=["Bild-in-Bild \'\' 526x278"]|fenstertitel(11)|app-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:40:15.116|SHOT|Angriff7-emoji-name-platzhalter|640x432
+B07QA|17:40:16.613|Angriff7|name(26 Zeichen, ''; drop table ZCHANNEL; ')|pip=true fenster=["Bild-in-Bild \'\' 526x278"]|fenstertitel(26)|app-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:40:18.213|Angriff7|name(25 Zeichen, '<script>alert(1)</script')|pip=true fenster=["Bild-in-Bild \'\' 526x278"]|fenstertitel(25)|app-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:40:19.754|Angriff7|name(16 Zeichen, '../../etc/passwd')|pip=true fenster=["Bild-in-Bild \'\' 524x276"]|fenstertitel(16)|app-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:40:21.273|Angriff7|name(0 Zeichen, '')|pip=true fenster=["Bild-in-Bild \'\' 524x276"]|fenstertitel(0)|app-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:40:33.536|Angriff8|Playlist gelöscht (Sender in DB: 0)|10 s danach: pip=true fenster=1 rate=1.0 segmente=5|fenster='QA Löschen'
+B07QA|17:40:36.427|AK-15c|Playlist: AXPress|Sender A: AXPress|Titel='QA Sender A'
+B07QA|17:40:36.546|AK-15c|PiP aktiv|[Bild-in-Bild[pid 81397] id=4627 layer=19 name='' 934x508@(100,425) sharing=0 alpha=1.0]
+B07QA|ohne-Empfaenger NSWindow mouseEntered:
+B07QA|17:40:38.149|SHOT|AK-15c-nach-zurueck-senderliste|900x684
+B07QA|17:40:38.155|AK-15c|Zurück-Knopf (AXPress)|Titel='QA M3U'|engineA=true|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true|pipfenster=1
+B07QA|17:40:48.230|AK-15c|10 s nach Zurück: pipfenster=1 engineA=true rateA=1.0 segmente A=5
+B07QA|17:40:48.259|AK-15c|Sender B: AXPress|11.6 s nach Zurück
+B07QA|17:40:51.393|AK-15c|B offen t=3.1s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=1|B=playing
+B07QA|17:40:54.397|AK-15c|B offen t=6.1s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=1 B=2|B=playing
+B07QA|17:40:57.420|AK-15c|B offen t=9.2s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=1|B=playing
+B07QA|17:41:00.445|AK-15c|B offen t=12.2s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=1 B=2|B=playing
+B07QA|17:41:03.459|AK-15c|B offen t=15.2s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=1|B=playing
+B07QA|17:41:06.463|AK-15c|B offen t=18.2s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=1 B=2|B=playing
+B07QA|17:41:09.558|AK-15c|B offen t=21.3s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=1|B=playing
+B07QA|17:41:12.560|AK-15c|B offen t=24.3s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=1 B=2|B=playing
+B07QA|17:41:15.571|AK-15c|B offen t=27.3s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=1|B=playing
+B07QA|17:41:18.610|AK-15c|B offen t=30.4s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=1 B=2|B=playing
+B07QA|17:41:21.630|AK-15c|B offen t=33.4s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=1|B=playing
+B07QA|17:41:24.656|AK-15c|B offen t=36.4s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=2|B=playing
+B07QA|17:41:27.731|AK-15c|B offen t=39.5s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=1 B=1|B=playing
+B07QA|17:41:30.779|AK-15c|B offen t=42.5s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=2 B=2|B=playing
+B07QA|17:41:33.798|AK-15c|B offen t=45.5s|pipfenster=1 engineA=true rateA=1.0|segmente(3s) A=1 B=1|B=playing
+B07QA|17:41:41.963|AK-15c|zurück zur Übersicht: Zurück-Knopf (AXPress) / Zurück-Knopf (AXPress)|Titel='Playlists'|8 s danach: pipfenster=1 engineA=true rateA=1.0 segmente A=4 B=4
+B07QA|17:41:41.963|AK-15c|Ergebnis: parallel≈45 s, altes Fenster weg=nein (45 s), engineA nach B=true
+B07QA|17:41:46.016|AK-12|spielt=true|knöpfe=["Close | xmark.circle.fill", "Close | xmark.circle.fill", "Close | xmark.circle.fill"]|AVKit-Kacheln=2|PiP-Controller=2 aktiv=[false, false] auto(iOS)=[]
+B07QA|17:41:46.035|SHOT|AK-12-multiview-ohne-pip-knopf|900x604
+B07QA|SYSTEMBEEP-UNTERDRUECKT NSWindow keyDown:
+B07QA|17:41:48.364|AK-12|P im Multiview → unbehandelt=["SYSTEMBEEP-UNTERDRUECKT NSWindow keyDown:"]|pipfenster=0
+B07QA|17:41:51.860|AK-18a|failedToStart gemeldet|aktiv=false|knopf vorher='Minimise Video | pip.enter' nachher='Minimise Video | pip.enter'|texte=["Minimise Video | pip.enter", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]|sheets/panels=[]
+B07QA|17:41:59.928|AK-18b|Fenster im Dock: possible=true|nach Umschalten aktiv=true|pipfenster=1|panels=1
+B07QA|17:42:04.270|AK-19|pipfenster=[Bild-in-Bild[pid 81397] id=4637 layer=19 name='' 514x270@(1410,47) sharing=0 alpha=1.0]|eigene=[Mika+Player[pid 80555] id=4635 layer=0 name='QA Geheimsender' 640x432@(80,528) sharing=1 alpha=1.0, Mika+Player[pid 80555] id=4571 layer=0 name='Playlists' 900x450@(510,330) sharing=1 alpha=1.0]
+B07QA|17:42:04.270|AK-19|AVPlayerItem.externalMetadata=n/a(macOS) asset.metadata=0|nowPlayingInfo=nil|playbackState=0|app-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:42:04.894|BRIDGE|shot 4637 <kopie>/features/B07-bild-in-bild/qa/AK-19-20-pip-fenster-ohne-metadaten.png|ok 1028x540x
+B07QA|17:42:04.894|AK-20|Aufnahme des Systemfensters per screencapture: true
+B07QA|17:42:04.901|SHOT|AK-19-platzhalter-app|640x432
+B07QA|17:42:06.075|AK-23|pid=80555|start=2026-09-26T15:42:06Z
+B07QA|17:42:16.272|AK-23|OSLogStore Einträge seit Start=20725|Treffer=8|PiP-/AVKit-Zeilen=2889
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C3 590559F3-13DF-461C-A3E3-57FF06F9A4EF 127.0.0.1:50651 tcp, url: http://127.0.0.1:50651/live/qa-user/qa-pass-123/501.m3u8, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C3 590559F3-13DF-461C-A3E3-57FF06F9A4EF 127.0.0.1:50651 tcp, traffic class: 500, url: http://127.0.0.1:50651/live/qa-user/qa-pass-123/501.m3u8, definite, attribution: developer] cancel
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C3 590559F3-13DF-461C-A3E3-57FF06F9A4EF 127.0.0.1:50651 tcp, traffic class: 500, url: http://127.0.0.1:50651/live/qa-user/qa-pass-123/501.m3u8, definite, attribution: developer] cancelled
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C18 03852876-122C-4719-B6AB-3B11914A7029 127.0.0.1:50664 tcp, url: http://127.0.0.1:50664/live/qa-user/qa-pass-123/201.m3u8, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSessio
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C18 03852876-122C-4719-B6AB-3B11914A7029 127.0.0.1:50664 tcp, traffic class: 500, url: http://127.0.0.1:50664/live/qa-user/qa-pass-123/201.m3u8, definite, attribution: developer] cancel
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C18 03852876-122C-4719-B6AB-3B11914A7029 127.0.0.1:50664 tcp, traffic class: 500, url: http://127.0.0.1:50664/live/qa-user/qa-pass-123/201.m3u8, definite, attribution: developer] cancelled
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C18 127.0.0.1:50664 tcp, traffic class: 500, url: http://127.0.0.1:50664/live/qa-user/qa-pass-123/201.m3u8, definite, attribution: developer] dealloc
+B07QA|17:42:16.272|AK-23|TREFFER|com.apple.network|connection|[C20 123205F9-45F0-46E6-BBF9-7C9EC169F2FA 127.0.0.1:50665 tcp, url: http://127.0.0.1:50665/live/qa-user/qa-pass-123/301.m3u8, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSessio
+B07QA|17:42:16.272|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPictureInPictureController _logContentSourceType:] AVPictureInPictureContentSourceTypePlayerLayer
+B07QA|17:42:16.272|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPictureInPictureViewController initWithPictureInPicturePlayerLayerView:] 35 0x7893c79180
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPictureInPicturePlatformAdapter(Common) _updateStatusUsingProposedStatus:] current status: 0 -> proposed status: 0
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPictureInPicturePlatformAdapter(Common) _updateStatusUsingProposedStatus:] isPictureInPictureProhibited: YES {
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPictureInPicturePlatformAdapter(Common) _updateStatusUsingProposedStatus:] self.status != AVPictureInPictureControllerStatusProhibited NO
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPlayerController initWithPlayer:] player: 0x7892f21ec0
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|PlayerItemDidChange
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|New playerItem: <AVPlayerItem: 0x7892f23390>
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|Time control status = 1, waiting reason = AVPlayerWaitingWhileEvaluatingBufferingRateReason
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPlayerController setActivePlayer:] Updated player to: <AVPlayer: 0x7892f21ec0> player
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|SeekableTimeRanges changed {nan, nan} -> {nan, nan}.
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|Rate changed to: 1.000000
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPlayerController(AVPlayerControllerExternalPlaybackSupportInternal) setHandlesAudioSessionInterruptions:] handlesAudioSessionInterruptions YES
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPictureInPicturePlatformAdapter(Common) _updateStatusUsingProposedStatus:] current status: 0 -> proposed status: 0
+B07QA|17:42:16.273|AK-23|pip-zeile|com.apple.avkit|AVKit|-[AVPictureInPicturePlatformAdapter(Common) _updateStatusUsingProposedStatus:] isPictureInPictureProhibited: YES {
+B07QA|17:42:16.274|AK-23|ende=2026-09-26T15:42:16Z
+B07QA|17:42:16.274|AK-23|app=0 pip/avkit=0 netzwerk=8 sonstige=0
+B07QA|17:42:20.766|AK-24|domain=lu.daumedia.qa1b07.MikaPlusPlayer|neue Einstellungen=[]|geänderte/neue Dateien=[]|db.hasChanges=false|kanäle=["QA Speichern fav=false"]
+B07QA|17:42:21.915|AK-24|neue Engine: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:42:24.105|AK-09|Import-Sheet Texte=["Quelle", "Xtream | 1", "URL | 0", "Datei | 0", "Name (optional)", "z. B. Mein IPTV-Anbieter", "Xtream-Codes-Zugang", "Host (z. B. http://dein-anbieter.tld)", "http://dein-anbieter.tld | http://dein-anbieter.tld", "Benutzername", "Passwort", "Ohne „https://“ gehen Benutzername und Passwort unverschlüsselt über das Netz.", "Stream-Format", "Format", "HLS (.m3u8) | 0", "MPEG-TS (.ts) | 1", "Originalformat des Anbieters – benötigt VLCKit.", "Anmelden & importieren"]
+B07QA|17:42:24.114|SHOT|AK-09-import-standard-mpegts|520x412
+B07QA|17:42:24.116|AK-09|Hinweise: mpegts='Originalformat des Anbieters – benötigt VLCKit.' hls='Spielt direkt mit AVKit – kein VLCKit nötig.'
+B07QA|17:42:24.237|AK-01|spielt|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|steuerung=true
+B07QA|17:42:24.241|AK-01|pip='Minimise Video | pip.enter' help='Bild-in-Bild' frame=(608.0, 465.0, 43.0, 43.0)|vollbild='Enter Full Screen | arrow.up.left.and.arrow.down.right' frame=(666.0, 465.5, 41.5, 41.5)|fenster=(80.0, 120.0, 640.0, 432.0)
+B07QA|17:42:24.241|AK-01|supports=true systemSupported=true
+B07QA|17:42:24.253|SHOT|AK-01-knopf-mac|634x428
+B07QA|17:42:26.410|AK-02a|lädt|engine=type=AVKitPlaybackEngine state=loading isPaused=false pipActive=false supports=true rate=1.0 tcs=1 muted=false ctrl.active=false ctrl.possible=false|knöpfe=[]|ladekreis=true
+B07QA|17:42:26.417|SHOT|AK-02-laedt-kein-knopf|640x432
+B07QA|17:42:26.500|AK-02b|fehler nach 0.1s|knöpfe=["Erneut versuchen"]
+B07QA|17:42:26.513|SHOT|AK-02-fehler-kein-knopf|630x426
+B07QA|17:42:26.602|AK-02c|spielt|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|steuerung=true
+B07QA|17:42:30.083|AK-02c|ausgeblendet nach 3.5s (ab sichtbar)|knöpfe=[]
+B07QA|17:42:30.138|AK-02c|nach Klick aufs Bild sichtbar nach 0.1s
+B07QA|17:42:30.771|AK-03|spielt|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|steuerung=true
+B07QA|17:42:30.844|AK-03|weg=Klick|aktiv nach 0.0s|vorher=[]|fenster=[Bild-in-Bild[pid 81397] id=4660 layer=19 name='' 670x358@(200,519) sharing=0 alpha=1.0]
+B07QA|17:42:32.857|AK-03|nach 2 s|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true|knopf vorher='Minimise Video | pip.enter' nachher='Maximise Video | pip.exit'
+B07QA|17:42:33.072|BRIDGE|shot 4660 <kopie>/features/B07-bild-in-bild/qa/AK-03-pip-fenster-mac.png|ok 1028x540x
+B07QA|17:42:33.086|SHOT|AK-03-platzhalter-app-mac|640x432
+B07QA|17:42:33.087|AK-03|knopf jetzt='Maximise Video | pip.exit'|ax-texte=["Maximise Video | pip.exit", "Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]
+B07QA|17:42:35.752|AK-04|weg=Klick|beendet nach 0.0s|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|pipfenster=[]
+B07QA|17:42:35.757|AK-04|knopf wieder='Minimise Video | pip.enter'
+B07QA|17:42:35.770|SHOT|AK-04-nach-schliessen-app-mac|640x432
+B07QA|17:42:36.401|AK-05|spielt|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|steuerung=true
+B07QA|17:42:40.246|AK-05|p klein → aktiv nach 0.0s|steuerung=true|bilder vorher=0 nachher=[]|pipfenster=1
+B07QA|17:42:43.469|AK-05|steuerung wieder weg nach 3.2s (gone=true)
+B07QA|17:42:45.649|AK-05|P groß → beendet nach 0.3s|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|pipfenster=0|beep=[]
+B07QA|17:42:47.363|AK-06|P bei state=loading|possible=false
+B07QA|17:42:55.368|AK-06|spielt nach 3.9s, +4 s: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|pipfenster=[]|texte=[]|fenster=["Playlists", "QA lädt"]
+B07QA|17:42:59.317|AK-07|nach P: type=AVKitPlaybackEngine state=failed(The requested URL was not found on this server.) isPaused=false pipActive=false supports=true rate=0.0 tcs=0 muted=false ctrl.active=false ctrl.possible=false|pipfenster=[]|fehleransicht=true
+B07QA|17:42:59.330|SHOT|AK-07-fehler-nach-p|640x432
+B07QA|17:43:00.005|AK-09|steuerung sichtbar=true|knöpfe=["Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]|pip-delegates=0
+B07QA|17:43:00.026|SHOT|AK-09-ts-vlc-ohne-knopf-mac|636x430
+B07QA|17:43:05.813|AK-09|P: vorher ausgeblendet=true → eingeblendet=true|pipfenster=[]|texte=["Enter Full Screen | arrow.up.left.and.arrow.down.right", "Pause | pause.fill", "Volume High | speaker.wave.2.fill"]|beep=[]
+B07QA|17:43:06.502|AK-09|Xtream-Import mit Format .mpegts (Standard des Import-Sheets, siehe B07ImportHinweisTests)|["Kanal ohne Kategorie|gespeichert=103.ts|typ=VLCPlaybackEngine|supportsPiP=false", "Kanal unbekannte Kategorie|gespeichert=104.ts|typ=VLCPlaybackEngine|supportsPiP=false", "Kanal Int|gespeichert=101.ts|typ=VLCPlaybackEngine|supportsPiP=false", "Kanal String|gespeichert=102.ts|typ=VLCPlaybackEngine|supportsPiP=false"]
+B07QA|17:43:08.224|EC-01|nach 0.1s: type=AVKitPlaybackEngine state=failed(Operation Stopped) isPaused=false pipActive=false supports=true rate=0.0 tcs=1 muted=false ctrl.active=false ctrl.possible=false|knöpfe=["Erneut versuchen"]
+B07QA|17:43:08.236|SHOT|EC-01-ohne-endung|640x432
+B07QA|17:43:08.857|EC-02|spielt|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|steuerung=true
+B07QA|17:43:08.933|EC-02|weg=Klick|aktiv nach 0.0s|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true
+B07QA|17:43:10.136|EC-04|spielt|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|steuerung=true
+B07QA|17:43:55.404|EC-04|fehler nach 44.1s|type=AVKitPlaybackEngine state=failed(The network connection was lost.) isPaused=false pipActive=true supports=true rate=0.0 tcs=0 muted=false ctrl.active=true ctrl.possible=true|pipfenster=[Bild-in-Bild[pid 81397] id=4682 layer=19 name='' 514x270@(1410,47) sharing=0 alpha=1.0]|knöpfe=["Erneut versuchen"]
+B07QA|17:43:55.413|SHOT|EC-04-abbruch-waehrend-pip-app|640x432
+B07QA|17:44:05.470|BRIDGE|shot 4682 <kopie>/features/B07-bild-in-bild/qa/EC-04-abbruch-waehrend-pip-fenster.png|Zeitablauf
+B07QA|17:44:05.472|EC-05|warte bis Störungsende (5.6 s)
+B07QA|17:44:11.273|EC-05|pip vor Erneut=true|spielt wieder nach 0.1s|engines vorher=1 nachher=1|gleiche Engine=true|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true|pipfenster=1
+B07QA|17:44:11.957|EC-04|P beendet nach 0.3s
+B07QA|17:44:17.719|AK-10m|possible=true|ausgeblendet=true isActive=false|5 s danach: pip aktiv=false pipfenster=0 rate=1.0 segmente(5s)=2
+B07QA|17:44:22.588|AK-15d|nach Zurück: engine=true rate=1.0 pipfenster=1 segmente(3s)=2
+B07QA|17:44:25.909|BRIDGE|pipax 4712 press close|gedrückt: AXButton desc='' title='' help='' id='close' value='' actions=AXPress
+B07QA|17:44:35.971|AK-15d|close: gedrückt: AXButton desc='' title='' help='' id='close' value='' actions=AXPress|2 s danach pipfenster=0|10 s danach: engine=true aktiv=false rate=0.0 segmente(8s)=4 offeneVerbindungen=1 keyWindow='-' pfad=0|t=10.1
+B07QA|17:44:35.978|SHOT|AK-15d-nach-close-app|55x48
+B07QA|17:44:41.004|AK-15d|+15 s nach close: engine=true rate=0.0 segmente(5s)=3 pipfenster=0
+B07QA|17:44:46.072|AK-15d|+20 s nach close: engine=true rate=0.0 segmente(5s)=2 pipfenster=0
+B07QA|17:44:51.145|AK-15d|+25 s nach close: engine=true rate=0.0 segmente(5s)=3 pipfenster=0
+B07QA|17:44:56.220|AK-15d|+30 s nach close: engine=true rate=0.0 segmente(5s)=2 pipfenster=0
+B07QA|17:45:02.399|AK-15d|anderer Sender offen 6 s: alt engine=true rate=0.0 segmente alt=3 neu=3
+B07QA|17:45:08.425|AK-15d|wieder in der Liste 6 s: alt engine=true rate=0.0 segmente alt=3 neu=4
+B07QA|17:45:08.426|AK-15d|Ergebnis: nach close 30 s ohne Fenster, rate zuletzt=0.0, Segmente in 20 s=10
+B07QA|17:45:13.458|AK-15e|nach Zurück: engine=true rate=1.0 pipfenster=1 segmente(3s)=2
+B07QA|17:45:16.770|BRIDGE|pipax 4722 press restore|gedrückt: AXButton desc='' title='' help='' id='restore' value='' actions=AXPress
+B07QA|17:45:26.784|AK-15e|restore: gedrückt: AXButton desc='' title='' help='' id='restore' value='' actions=AXPres|2 s danach pipfenster=0|10 s danach: engine=true aktiv=false rate=1.0 segmente(8s)=4 offeneVerbindungen=1 keyWindow='-' pfad=0|t=10.0
+B07QA|17:45:26.793|SHOT|AK-15e-nach-restore-app|55x48
+B07QA|17:45:31.827|AK-15e|+15 s nach restore: engine=true rate=1.0 segmente(5s)=3 pipfenster=0
+B07QA|17:45:36.857|AK-15e|+20 s nach restore: engine=true rate=1.0 segmente(5s)=2 pipfenster=0
+B07QA|17:45:41.925|AK-15e|+25 s nach restore: engine=true rate=1.0 segmente(5s)=3 pipfenster=0
+B07QA|17:45:46.960|AK-15e|+30 s nach restore: engine=true rate=1.0 segmente(5s)=2 pipfenster=0
+B07QA|17:45:52.026|AK-15e|+35 s nach restore: engine=true rate=1.0 segmente(5s)=3 pipfenster=0
+B07QA|17:45:57.078|AK-15e|+40 s nach restore: engine=true rate=1.0 segmente(5s)=2 pipfenster=0
+B07QA|17:46:02.128|AK-15e|+45 s nach restore: engine=true rate=1.0 segmente(5s)=3 pipfenster=0
+B07QA|17:46:07.175|AK-15e|+50 s nach restore: engine=true rate=1.0 segmente(5s)=2 pipfenster=0
+B07QA|17:46:13.355|AK-15e|anderer Sender offen 6 s: alt engine=true rate=1.0 segmente alt=3 neu=3
+B07QA|17:46:19.393|AK-15e|wieder in der Liste 6 s: alt engine=true rate=1.0 segmente alt=3 neu=3
+B07QA|17:46:19.393|AK-15e|Ergebnis: nach restore 50 s ohne Fenster, rate zuletzt=1.0, Segmente in 40 s=20
+B07QA|17:46:23.316|BRIDGE|pipax 4739 list |Prozess: PIPAgent Fenster=1
+B07QA|17:46:23.316|AK-16e|Systemfenster Bild-in-Bild[pid 49757] id=4739 layer=19 name='' 514x270@(1410,47) sharing=0 alpha=1.0|Bedienungshilfen:
+B07QA|17:46:24.983|BRIDGE|shot 4739 <kopie>/features/B07-bild-in-bild/qa/AK-16-systemfenster-vor-pause.png|ok 1028x540x
+B07QA|17:46:26.828|BRIDGE|pipax 4739 press pause|gedrückt: AXButton desc='' title='' help='' id='play' value='' actions=AXPress
+B07QA|17:46:30.005|BRIDGE|pipax 4739 list |Prozess: PIPAgent Fenster=1
+B07QA|17:46:30.006|AK-16e|gedrückt: AXButton desc='' title='' help='' id='play' value='' actions=AXPress|rate=0.0 nach 0.0s|isPaused(App)=false|knopf App='Pause | pause.fill'|pip aktiv=true|Fensterknöpfe danach: Prozess: PIPAgent Fenster=1 / 0 AXWindow desc='Bild-in-Bild' title='' help='' id='picture-in-picture' value='' actions=AXRaise / 1 AXButton desc='' title='' help='' id='close' value='' actions=AXPress / 2 AXButton desc='' title='' help='' id='restore' value='' actions=AXPress / 3 AXButton desc='' title='' help='' id='play' value='' actions=AXPress
+B07QA|17:46:40.139|BRIDGE|shot 4739 <kopie>/features/B07-bild-in-bild/qa/AK-16-systemfenster-nach-pause.png|Zeitablauf
+B07QA|17:46:40.153|SHOT|AK-16-app-nach-pause-im-systemfenster|640x432
+B07QA|17:46:43.574|AK-16e|Leertaste 1 → rate=0.0 knopf='Play | play.fill' | Leertaste 2 → rate=1.0 knopf='Pause | pause.fill'|beep=[]
+B07QA|17:46:47.399|BRIDGE|pipax 4752 press close|gedrückt: AXButton desc='' title='' help='' id='close' value='' actions=AXPress
+B07QA|17:46:49.568|EC-07|gedrückt: AXButton desc='' title='' help='' id='close' value='' actions=AXPress|beendet nach 0.1s|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=0.0 tcs=0 muted=false ctrl.active=false ctrl.possible=true|knopf vorher='Maximise Video | pip.exit' nachher='Minimise Video | pip.enter' play/pause='Pause | pause.fill'|pipfenster=0
+B07QA|17:46:49.577|SHOT|EC-07-nach-schliessen-im-systemfenster|640x432
+B07QA|17:46:52.952|BRIDGE|pipax 4755 press restore|gedrückt: AXButton desc='' title='' help='' id='restore' value='' actions=AXPress
+B07QA|17:46:55.213|EC-08|gedrückt: AXButton desc='' title='' help='' id='restore' value='' actions=AXPress|beendet nach 0.1s|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true|knopf='Minimise Video | pip.enter'|pipfenster=0|keyWindow=true
+B07QA|17:46:55.221|SHOT|EC-08-mac-zurueck-zur-app|640x432
+B07QA|17:47:00.099|EC-09|vollbild=true|pip aktiv=true|fenster weiter im Vollbild=true 1920x1080 von 1920x1080|pipfenster=[Bild-in-Bild[pid 49757] id=4767 layer=19 name='' 514x270@(1410,47) sharing=0 alpha=1.0]|beep=[]
+B07QA|17:47:00.132|SHOT|EC-09-pip-im-vollbild-platzhalter|1920x1080
+B07QA|17:47:02.214|EC-09|P beendet=true|danach weiter Vollbild=true|nach F: Vollbild=false rate=1.0
+B07QA|17:47:03.997|AK-13|zurück via Zurück-Knopf (AXPress 'Back | chevron.backward', false)|type=AVKitPlaybackEngine state=playing isPaused=true pipActive=false supports=true rate=0.0 tcs=0 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:05.625|AK-13|Tabwechsel|type=AVKitPlaybackEngine state=playing isPaused=true pipActive=false supports=true rate=0.0 tcs=0 muted=false ctrl.active=false ctrl.possible=true|gleiche Engine=false
+B07QA|17:47:07.179|AK-13|zurück im Tab|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:07.980|AK-15a|PiP gestartet=true|fenster=[Bild-in-Bild[pid 49757] id=4778 layer=19 name='' 670x358@(200,551) sharing=0 alpha=1.0]
+B07QA|17:47:09.535|AK-15a|zurück via Zurück-Knopf (AXPress 'Back | chevron.backward', false)|engineA lebt=true|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true
+B07QA|17:47:09.542|SHOT|AK-15a-nach-zurueck-app-mac|55x48
+B07QA|17:47:12.882|BRIDGE|shot 4778 <kopie>/features/B07-bild-in-bild/qa/AK-15a-nach-zurueck-pip-fenster-mac.png|ok 1028x540x
+B07QA|17:47:13.198|AK-15a|P in der Liste → unbehandelt=[]|pipfenster=1
+B07QA|17:47:18.207|AK-15a|t=10.2s pipfenster=1 engineA=true aktiv=true rate=1.0 segmente(5s)=3 pipKnopfInApp=false
+B07QA|17:47:23.266|AK-15a|t=15.3s pipfenster=1 engineA=true aktiv=true rate=1.0 segmente(5s)=2 pipKnopfInApp=false
+B07QA|17:47:23.266|AK-15a|stopPictureInPicture() an der verwaisten Engine (engine lebt=true)
+B07QA|17:47:28.352|AK-15a|t=20.4s pipfenster=1 engineA=true aktiv=true rate=1.0 segmente(5s)=3 pipKnopfInApp=false
+B07QA|17:47:31.532|AK-15a|nach Öffnen t=3.2s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:34.536|AK-15a|nach Öffnen t=6.2s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=4|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:37.574|AK-15a|nach Öffnen t=9.2s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:40.649|AK-15a|nach Öffnen t=12.3s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=4|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:43.672|AK-15a|nach Öffnen t=15.3s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:46.684|AK-15a|nach Öffnen t=18.3s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=4|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:49.703|AK-15a|nach Öffnen t=21.3s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:52.740|AK-15a|nach Öffnen t=24.4s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=4|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:55.815|AK-15a|nach Öffnen t=27.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:47:58.842|AK-15a|nach Öffnen t=30.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=4|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:01.870|AK-15a|nach Öffnen t=33.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:04.907|AK-15a|nach Öffnen t=36.6s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=4|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:07.988|AK-15a|nach Öffnen t=39.6s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:11.005|AK-15a|nach Öffnen t=42.7s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=-1 B=4|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:11.013|SHOT|AK-15a-neuer-sender-app-mac|156x191
+B07QA|17:48:11.013|AK-15a|Ergebnis: weiterlaufend nach Zurück=true pipKnopfInApp=false fensterNachStopp=1 gleichzeitig≈42s altesFensterWeg=nein (bis 40 s) engineA frei=false letzteParalleleWiedergabe=42.7s
+B07QA|17:48:12.093|AK-15b|PiP gestartet=true|fenster=[Bild-in-Bild[pid 49757] id=4791 layer=19 name='' 654x350@(328,497) sharing=0 alpha=1.0]
+B07QA|17:48:13.649|AK-15b|zurück via Zurück-Knopf (AXPress 'Back | chevron.backward', false)|engineA lebt=true|type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true
+B07QA|17:48:13.654|SHOT|AK-15b-nach-zurueck-app-mac|55x48
+B07QA|17:48:14.083|BRIDGE|shot 4791 <kopie>/features/B07-bild-in-bild/qa/AK-15b-nach-zurueck-pip-fenster-mac.png|ok 1028x540x
+B07QA|17:48:14.454|AK-15b|P in der Liste → unbehandelt=[]|pipfenster=1
+B07QA|17:48:19.490|AK-15b|t=7.4s pipfenster=1 engineA=true aktiv=true rate=1.0 segmente(5s)=2 pipKnopfInApp=false
+B07QA|17:48:24.589|AK-15b|t=12.5s pipfenster=1 engineA=true aktiv=true rate=1.0 segmente(5s)=3 pipKnopfInApp=false
+B07QA|17:48:24.590|AK-15b|stopPictureInPicture() an der verwaisten Engine (engine lebt=true)
+B07QA|17:48:29.657|AK-15b|t=17.6s pipfenster=1 engineA=true aktiv=true rate=1.0 segmente(5s)=2 pipKnopfInApp=false
+B07QA|17:48:32.796|AK-15b|nach Öffnen t=3.1s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:35.810|AK-15b|nach Öffnen t=6.2s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:38.823|AK-15b|nach Öffnen t=9.2s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:41.838|AK-15b|nach Öffnen t=12.2s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:44.870|AK-15b|nach Öffnen t=15.2s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:47.970|AK-15b|nach Öffnen t=18.3s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:50.989|AK-15b|nach Öffnen t=21.3s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:54.026|AK-15b|nach Öffnen t=24.4s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:48:57.037|AK-15b|nach Öffnen t=27.4s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:00.065|AK-15b|nach Öffnen t=30.4s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:03.141|AK-15b|nach Öffnen t=33.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:06.144|AK-15b|nach Öffnen t=36.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:09.162|AK-15b|nach Öffnen t=39.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:12.166|AK-15b|nach Öffnen t=42.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:15.204|AK-15b|nach Öffnen t=45.5s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:18.224|AK-15b|nach Öffnen t=48.6s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:21.308|AK-15b|nach Öffnen t=51.6s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:24.312|AK-15b|nach Öffnen t=54.7s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:27.327|AK-15b|nach Öffnen t=57.7s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=1 B=1|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:30.343|AK-15b|nach Öffnen t=60.7s|pipfenster=1 engineA=true rateA=1.0 playerA=true|segmente(3s) A=2 B=2|B: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=1.0 tcs=2 muted=false ctrl.active=false ctrl.possible=true
+B07QA|17:49:30.352|SHOT|AK-15b-neuer-sender-app-mac|156x191
+B07QA|17:49:30.352|AK-15b|Ergebnis: weiterlaufend nach Zurück=true pipKnopfInApp=false fensterNachStopp=1 gleichzeitig≈60s altesFensterWeg=nein (bis 60 s) engineA frei=false letzteParalleleWiedergabe=60.7s
+B07QA|17:49:31.461|AK-16|PiP gestartet=true|fenster=[Bild-in-Bild[pid 49757] id=4797 layer=19 name='' 670x358@(200,519) sharing=0 alpha=1.0]
+B07QA|17:49:32.509|AK-16|nach Pause im Fenster: rate=0.0 isPaused(App)=false knopf='Pause | pause.fill'
+B07QA|17:49:32.520|SHOT|AK-16-pause-im-fenster-app-zeigt-pause-knopf|640x432
+B07QA|17:49:35.687|AK-16|Leertaste 1 → rate=0.0 knopf='Play | play.fill' | Leertaste 2 → rate=1.0 knopf='Pause | pause.fill'|beep=[]
+B07QA|17:49:35.688|AK-16|Befund: knopf='Pause | pause.fill' ersterDruckRate=0.0 zweiterDruckRate=1.0
+B07QA|17:49:37.142|AK-17-1|PiP gestartet=true|fenster=[Bild-in-Bild[pid 49757] id=4805 layer=19 name='' 606x322@(80,600) sharing=0 alpha=1.0]
+B07QA|17:49:37.224|AK-17-2|PiP gestartet=true|fenster=[Bild-in-Bild[pid 49757] id=4807 layer=19 name='' 598x318@(719,557) sharing=0 alpha=1.0, Bild-in-Bild[pid 49757] id=4805 layer=19 name='' 520x276@(612,402) sharing=0 alpha=0.84375]
+B07QA|17:49:40.259|AK-17|fenster vorher=[4805] nachher=[4807]|1: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=false supports=true rate=0.0 tcs=0 muted=false ctrl.active=false ctrl.possible=true knopf='Pause | pause.fill'|2: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true
+B07QA|17:49:40.266|SHOT|AK-17-erster-player-zeigt-pause-knopf|560x392
+B07QA|17:49:40.266|AK-17|Befund: erster isPaused(App)=false rate=0.0 knopf='Pause | pause.fill'
+B07QA|17:49:41.660|EC-03|PiP gestartet=true|fenster=[Bild-in-Bild[pid 49757] id=4810 layer=19 name='' 670x358@(200,551) sharing=0 alpha=1.0]
+B07QA|17:49:45.718|EC-03|Favoriten-Tab 4 s: engine=true type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true pipfenster=1
+B07QA|17:49:47.831|EC-03|zurück im Tab: type=AVKitPlaybackEngine state=playing isPaused=false pipActive=true supports=true rate=1.0 tcs=2 muted=false ctrl.active=true ctrl.possible=true|pipfenster=1|gleiche Engine=true

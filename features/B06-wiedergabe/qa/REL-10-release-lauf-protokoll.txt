@@ -1,0 +1,427 @@
+B06-QA Durchlauf 1 · Release-Lauf rel3 · 2026-09-26 16:07–16:11
+Build: Release aus der Scratchpad-Kopie (Hardened Runtime, ad-hoc, Bundle-ID lu.daumedia.MikaPlusPlayer.qa1b06r),
+gestartet als normale App (kein Test-Host) mit CFFIXED_USER_HOME/HOME im Scratchpad und eigener, gesäter Datenbank.
+Bedienung: in-process-Sonde (nur in der Kopie, ändert keine bestehende Datei) klickt auf dem echten Weg Playlists → Senderliste → Player → Zurück.
+Streams: lokaler Mock 127.0.0.1:18966, Medien ohne Tonspur (ffprobe: 0 Audiospuren). Zugangsdaten erfunden, Passwort unten als <pass>.
+
+== Signatur
+CodeDirectory v=20500 size=4483 flags=0x10002(adhoc,runtime) hashes=129+7 location=embedded
+Signature=adhoc
+TeamIdentifier=not set
+{
+  "com.apple.security.app-sandbox" => false
+  "com.apple.security.cs.disable-library-validation" => true
+}
+
+== Sonde (Zustände; Texte gekürzt)
+16:07:36.681 boot pid=60453 bid=lu.daumedia.MikaPlusPlayer.qa1b06r appSupport=/tmp/claude-501/-Users-michaelferreira-DEV-macOS-MikaPlusPlayer/e8de96ed-475a-403d-9036-c48bfda6e19b/scratchpad/qa1-b06/home-rel3/Library/Application Support
+16:07:36.957 Ablauf rel startet
+16:07:40.145 Start | titel='Playlists' | vollbild=false | ladekreis=false | AV[] VLC[] 
+16:07:40.149 KLICK 'QA B06' bei 530,755 im Fenster=true
+16:07:42.246 Senderliste | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[] VLC[] 
+16:07:42.246 ÖFFNE TS (QA 1 TS stumm)
+16:07:42.249 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:07:43.303 TS +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[] VLC[TS:lebt(buffering,playing=true)] 
+16:07:50.613 TS +8s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[] VLC[TS:lebt(buffering,playing=true)] 
+16:07:50.646 SHOT REL-06-ts-vlc-release 900x860
+16:07:50.646 ZURÜCK TS
+16:07:51.694 TS nach Zurück +1s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[] VLC[TS:lebt(buffering,playing=false)] 
+16:07:53.785 TS nach Zurück +3s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[] VLC[TS:lebt(buffering,playing=false)] 
+16:07:56.839 TS nach Zurück +6s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[] VLC[TS:lebt(buffering,playing=false)] 
+16:08:02.691 TS nach Zurück +12s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[] VLC[TS:lebt(buffering,playing=false)] 
+16:08:10.990 TS nach Zurück +20s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[] VLC[TS:lebt(buffering,playing=false)] 
+16:08:10.990 ÖFFNE HLS (QA 2 HLS stumm)
+16:08:10.993 KLICK 'QA 2 HLS stumm' bei 530,628 im Fenster=true
+16:08:12.009 HLS +1s | titel='QA 2 HLS stumm' | vollbild=false | ladekreis=false | AV[HLS:lebt(rate=1.0,item=da)] VLC[TS:lebt(buffering,playing=false)] 
+16:08:19.034 HLS +8s | titel='QA 2 HLS stumm' | vollbild=false | ladekreis=false | AV[HLS:lebt(rate=1.0,item=da)] VLC[TS:lebt(buffering,playing=false)] 
+16:08:19.046 SHOT REL-07-hls-avkit-release 900x860
+16:08:19.047 ZURÜCK HLS
+16:08:20.121 HLS nach Zurück +1s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false)] 
+16:08:22.100 HLS nach Zurück +3s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false)] 
+16:08:25.078 HLS nach Zurück +6s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false)] 
+16:08:31.112 HLS nach Zurück +12s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false)] 
+16:08:39.058 HLS nach Zurück +20s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false)] 
+16:08:39.059 ÖFFNE XTS (QA 4 Xtream-Form TS)
+16:08:39.063 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:08:40.087 XTS +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei] VLC[TS:lebt(buffering,playing=false) XTS:lebt(buffering,playing=true)] 
+16:08:45.095 XTS +6s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei] VLC[TS:lebt(buffering,playing=false) XTS:lebt(buffering,playing=true)] 
+16:08:45.095 ZURÜCK XTS
+16:08:46.158 XTS nach Zurück +1s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei] VLC[TS:lebt(buffering,playing=false) XTS:lebt(paused,playing=false)] 
+16:08:51.425 XTS nach Zurück +6s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei] VLC[TS:lebt(buffering,playing=false) XTS:lebt(paused,playing=false)] 
+16:08:51.425 ÖFFNE TS404 (QA 3 TS 404)
+16:08:51.431 KLICK 'QA 3 TS 404' bei 530,542 im Fenster=true
+16:08:52.479 TS404 +1s | titel='QA 3 TS 404' | vollbild=false | ladekreis=true | AV[HLS:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:lebt(stopped,playing=false)] 
+16:09:06.755 TS404 +15s | titel='QA 3 TS 404' | vollbild=false | ladekreis=true | AV[HLS:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:lebt(stopped,playing=false)] 
+16:09:06.770 SHOT REL-08-ts-404-ladekreis-15s 900x860
+16:09:06.771 ZURÜCK TS404
+16:09:07.833 TS404 nach Zurück +1s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:lebt(stopped,playing=false)] 
+16:09:07.833 ÖFFNE XHLS404 (QA 5 Xtream-Form HLS 404)
+16:09:07.839 KLICK 'QA 5 Xtream-Form HLS 404' bei 530,370 im Fenster=true
+16:09:08.852 XHLS404 +1s | titel='QA 5 Xtream-Form HLS 404' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei] 
+16:09:12.050 XHLS404 +4s | titel='QA 5 Xtream-Form HLS 404' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei] 
+16:09:12.060 SHOT REL-09-xtream-hls-404-fehleransicht 900x860
+16:09:12.060 ZURÜCK XHLS404
+16:09:13.094 XHLS404 nach Zurück +1s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei] 
+16:09:18.223 XHLS404 nach Zurück +6s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:lebt(rate=0.0,item=da)] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei] 
+16:09:18.224 ÖFFNE TSLADEN (QA 6 TS verzögert)
+16:09:18.228 KLICK 'QA 6 TS verzögert' bei 530,284 im Fenster=true
+16:09:19.267 TSLADEN +1s | titel='QA 6 TS verzögert' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:lebt(buffering,playing=false)] 
+16:09:19.270 TSLADEN +0s | titel='QA 6 TS verzögert' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:lebt(buffering,playing=false)] 
+16:09:19.270 ZURÜCK TSLADEN
+16:09:20.298 TSLADEN nach Zurück +1s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:lebt(buffering,playing=false)] 
+16:09:23.316 TSLADEN nach Zurück +4s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:lebt(buffering,playing=true)] 
+16:09:27.394 TSLADEN nach Zurück +8s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:lebt(buffering,playing=true)] 
+16:09:31.511 TSLADEN nach Zurück +12s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:lebt(buffering,playing=true)] 
+16:09:31.512 SENDERWECHSEL 30 Runden (TS ↔ TS, je 2 s)
+16:09:31.512 ÖFFNE W1 (QA 4 Xtream-Form TS)
+16:09:31.549 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:09:32.611 W1 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:lebt(buffering,playing=true)] 
+16:09:33.642 W1 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:lebt(buffering,playing=true)] 
+16:09:34.067 ÖFFNE W2 (QA 1 TS stumm)
+16:09:34.077 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:09:35.141 W2 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:lebt(buffering,playing=true)] 
+16:09:36.207 W2 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:lebt(buffering,playing=true)] 
+16:09:36.635 ÖFFNE W3 (QA 4 Xtream-Form TS)
+16:09:36.644 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:09:37.674 W3 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:lebt(buffering,playing=true)] 
+16:09:38.742 W3 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:lebt(buffering,playing=true)] 
+16:09:39.170 ÖFFNE W4 (QA 1 TS stumm)
+16:09:39.183 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:09:40.241 W4 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:lebt(buffering,playing=true)] 
+16:09:41.314 W4 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:lebt(buffering,playing=true)] 
+16:09:41.747 ÖFFNE W5 (QA 4 Xtream-Form TS)
+16:09:41.759 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:09:42.790 W5 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:lebt(buffering,playing=true)] 
+16:09:43.859 W5 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:lebt(buffering,playing=true)] 
+16:09:44.288 ÖFFNE W6 (QA 1 TS stumm)
+16:09:44.298 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:09:45.316 W6 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:lebt(buffering,playing=true)] 
+16:09:46.364 W6 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:lebt(buffering,playing=true)] 
+16:09:46.788 ÖFFNE W7 (QA 4 Xtream-Form TS)
+16:09:46.799 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:09:47.864 W7 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:lebt(buffering,playing=true)] 
+16:09:48.930 W7 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:lebt(buffering,playing=true)] 
+16:09:49.358 ÖFFNE W8 (QA 1 TS stumm)
+16:09:49.367 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:09:50.430 W8 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:lebt(buffering,playing=true)] 
+16:09:51.469 W8 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:lebt(buffering,playing=true)] 
+16:09:51.895 ÖFFNE W9 (QA 4 Xtream-Form TS)
+16:09:51.904 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:09:52.949 W9 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:lebt(buffering,playing=true)] 
+16:09:54.016 W9 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:lebt(buffering,playing=true)] 
+16:09:54.444 ÖFFNE W10 (QA 1 TS stumm)
+16:09:54.456 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:09:55.526 W10 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:lebt(buffering,playing=true)] 
+16:09:56.556 W10 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:lebt(buffering,playing=true)] 
+16:09:56.981 ÖFFNE W11 (QA 4 Xtream-Form TS)
+16:09:56.991 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:09:58.060 W11 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:lebt(buffering,playing=true)] 
+16:09:59.130 W11 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:lebt(buffering,playing=true)] 
+16:09:59.559 ÖFFNE W12 (QA 1 TS stumm)
+16:09:59.569 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:00.625 W12 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:lebt(buffering,playing=true)] 
+16:10:01.643 W12 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:lebt(buffering,playing=true)] 
+16:10:02.069 ÖFFNE W13 (QA 4 Xtream-Form TS)
+16:10:02.078 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:03.103 W13 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:lebt(buffering,playing=true)] 
+16:10:04.126 W13 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:lebt(buffering,playing=true)] 
+16:10:04.557 ÖFFNE W14 (QA 1 TS stumm)
+16:10:04.567 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:05.595 W14 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:lebt(buffering,playing=true)] 
+16:10:06.643 W14 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:lebt(buffering,playing=true)] 
+16:10:07.049 ÖFFNE W15 (QA 4 Xtream-Form TS)
+16:10:07.060 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:08.071 W15 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:lebt(buffering,playing=true)] 
+16:10:09.101 W15 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:lebt(buffering,playing=true)] 
+16:10:09.511 ÖFFNE W16 (QA 1 TS stumm)
+16:10:09.521 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:10.550 W16 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:lebt(buffering,playing=true)] 
+16:10:11.620 W16 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:lebt(buffering,playing=true)] 
+16:10:12.046 ÖFFNE W17 (QA 4 Xtream-Form TS)
+16:10:12.058 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:13.095 W17 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:lebt(buffering,playing=true)] 
+16:10:14.162 W17 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:lebt(buffering,playing=true)] 
+16:10:14.594 ÖFFNE W18 (QA 1 TS stumm)
+16:10:14.605 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:15.644 W18 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:lebt(buffering,playing=true)] 
+16:10:16.684 W18 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:lebt(buffering,playing=true)] 
+16:10:17.100 ÖFFNE W19 (QA 4 Xtream-Form TS)
+16:10:17.122 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:18.167 W19 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:lebt(buffering,playing=true)] 
+16:10:19.188 W19 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:lebt(buffering,playing=true)] 
+16:10:19.616 ÖFFNE W20 (QA 1 TS stumm)
+16:10:19.627 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:20.677 W20 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:lebt(buffering,playing=true)] 
+16:10:21.741 W20 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:lebt(buffering,playing=true)] 
+16:10:22.148 ÖFFNE W21 (QA 4 Xtream-Form TS)
+16:10:22.161 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:23.174 W21 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:lebt(buffering,playing=true)] 
+16:10:24.184 W21 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:lebt(buffering,playing=true)] 
+16:10:24.614 ÖFFNE W22 (QA 1 TS stumm)
+16:10:24.624 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:25.657 W22 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:lebt(buffering,playing=true)] 
+16:10:26.724 W22 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:lebt(buffering,playing=true)] 
+16:10:27.134 ÖFFNE W23 (QA 4 Xtream-Form TS)
+16:10:27.144 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:28.209 W23 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:lebt(buffering,playing=true)] 
+16:10:29.257 W23 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:lebt(buffering,playing=true)] 
+16:10:29.688 ÖFFNE W24 (QA 1 TS stumm)
+16:10:29.703 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:30.746 W24 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:lebt(buffering,playing=true)] 
+16:10:31.763 W24 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:lebt(buffering,playing=true)] 
+16:10:32.181 ÖFFNE W25 (QA 4 Xtream-Form TS)
+16:10:32.195 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:33.249 W25 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:lebt(buffering,playing=true)] 
+16:10:34.278 W25 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:lebt(buffering,playing=true)] 
+16:10:34.693 ÖFFNE W26 (QA 1 TS stumm)
+16:10:34.703 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:35.760 W26 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:lebt(buffering,playing=true)] 
+16:10:36.830 W26 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:lebt(buffering,playing=true)] 
+16:10:37.257 ÖFFNE W27 (QA 4 Xtream-Form TS)
+16:10:37.269 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:38.277 W27 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:lebt(buffering,playing=true)] 
+16:10:39.342 W27 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:lebt(buffering,playing=true)] 
+16:10:39.756 ÖFFNE W28 (QA 1 TS stumm)
+16:10:39.769 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:40.789 W28 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:lebt(buffering,playing=true)] 
+16:10:41.799 W28 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:lebt(buffering,playing=true)] 
+16:10:42.226 ÖFFNE W29 (QA 4 Xtream-Form TS)
+16:10:42.243 KLICK 'QA 4 Xtream-Form TS' bei 530,456 im Fenster=true
+16:10:43.274 W29 +1s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:frei W29:lebt(buffering,playing=true)] 
+16:10:44.339 W29 +2s | titel='QA 4 Xtream-Form TS' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:frei W29:lebt(buffering,playing=true)] 
+16:10:44.756 ÖFFNE W30 (QA 1 TS stumm)
+16:10:44.770 KLICK 'QA 1 TS stumm' bei 530,714 im Fenster=true
+16:10:45.841 W30 +1s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:frei W29:frei W30:lebt(buffering,playing=true)] 
+16:10:46.862 W30 +2s | titel='QA 1 TS stumm' | vollbild=false | ladekreis=false | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:frei W29:frei W30:lebt(buffering,playing=true)] 
+16:10:47.292 nach Senderwechsel | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:frei W29:frei W30:lebt(paused,playing=false)] 
+16:10:50.473 nach Senderwechsel +3s | titel='QA B06 Release (stumm)' | vollbild=false | ladekreis=true | AV[HLS:frei XHLS404:frei] VLC[TS:lebt(buffering,playing=false) XTS:frei TS404:frei TSLADEN:frei W1:frei W2:frei W3:frei W4:frei W5:frei W6:frei W7:frei W8:frei W9:frei W10:frei W11:frei W12:frei W13:frei W14:frei W15:frei W16:frei W17:frei W18:frei W19:frei W20:frei W21:frei W22:frei W23:frei W24:frei W25:frei W26:frei W27:frei W28:frei W29:frei W30:lebt(paused,playing=false)] 
+16:10:50.473 FERTIG
+
+== Mock (ohne Live-HLS-Einzelabrufe)
+16:07:35.188 server start port=18966 ts_rate=28886 B/s segs=10
+16:07:42.382 conn=1 open peer=127.0.0.1:52653
+16:07:42.382 conn=1 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:07:47.432 conn=1 ts-progress t=5s bytes=184240 last5s=184240 stall5s=0.0s
+16:07:52.432 conn=1 ts-progress t=10s bytes=329000 last5s=144760 stall5s=0.0s
+16:07:57.466 conn=1 ts-progress t=15s bytes=473760 last5s=144760 stall5s=0.0s
+16:08:02.489 conn=1 ts-progress t=20s bytes=618520 last5s=144760 stall5s=0.0s
+16:08:07.531 conn=1 ts-progress t=25s bytes=763280 last5s=144760 stall5s=0.0s
+16:08:11.013 conn=2 open peer=127.0.0.1:52764
+16:08:12.557 conn=1 ts-progress t=30s bytes=908040 last5s=144760 stall5s=0.0s
+16:08:17.591 conn=1 ts-progress t=35s bytes=1052800 last5s=144760 stall5s=0.0s
+16:08:22.607 conn=1 ts-progress t=40s bytes=1197560 last5s=144760 stall5s=0.0s
+16:08:27.648 conn=1 ts-progress t=45s bytes=1342320 last5s=144760 stall5s=0.0s
+16:08:32.651 conn=1 ts-progress t=50s bytes=1487080 last5s=144760 stall5s=0.0s
+16:08:37.695 conn=1 ts-progress t=55s bytes=1631840 last5s=144760 stall5s=0.0s
+16:08:39.073 conn=3 open peer=127.0.0.1:52861
+16:08:39.073 conn=3 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:08:42.719 conn=1 ts-progress t=60s bytes=1776600 last5s=144760 stall5s=0.0s
+16:08:44.109 conn=3 ts-progress t=5s bytes=184240 last5s=184240 stall5s=0.0s
+16:08:47.756 conn=1 ts-progress t=65s bytes=1921360 last5s=144760 stall5s=0.0s
+16:08:49.110 conn=3 ts-progress t=10s bytes=329000 last5s=144760 stall5s=0.0s
+16:08:51.440 conn=4 open peer=127.0.0.1:52888
+16:08:51.440 conn=4 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:08:51.440 conn=4 close
+16:08:51.441 conn=5 open peer=127.0.0.1:52889
+16:08:51.441 conn=5 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:08:51.441 conn=5 close
+16:08:51.442 conn=6 open peer=127.0.0.1:52890
+16:08:51.442 conn=6 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+16:08:51.442 conn=6 close
+16:08:51.442 conn=7 open peer=127.0.0.1:52891
+16:08:51.442 conn=7 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+16:08:51.442 conn=7 close
+16:08:52.217 conn=3 client-closed after=13.1s bytes=407960 (BrokenPipeError)
+16:08:52.217 conn=3 close
+16:08:52.800 conn=1 ts-progress t=70s bytes=2066120 last5s=144760 stall5s=0.0s
+16:08:57.814 conn=1 ts-progress t=75s bytes=2210880 last5s=144760 stall5s=0.0s
+16:09:02.854 conn=1 ts-progress t=80s bytes=2355640 last5s=144760 stall5s=0.0s
+16:09:07.845 conn=2 close
+16:09:07.846 conn=8 open peer=127.0.0.1:52917
+16:09:07.846 conn=8 GET /live/qa-user/<pass>/404/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+16:09:07.873 conn=8 GET /live/qa-user/<pass>/404/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+16:09:07.873 conn=1 ts-progress t=85s bytes=2500400 last5s=144760 stall5s=0.0s
+16:09:12.884 conn=1 ts-progress t=91s bytes=2645160 last5s=144760 stall5s=0.0s
+16:09:17.908 conn=1 ts-progress t=96s bytes=2789920 last5s=144760 stall5s=0.0s
+16:09:18.239 conn=9 open peer=127.0.0.1:52929
+16:09:18.239 conn=9 GET /delay/3/tslive/laden.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:18.239 conn=9 delay 3s
+16:09:22.924 conn=1 ts-progress t=101s bytes=2934680 last5s=144760 stall5s=0.0s
+16:09:26.263 conn=9 ts-progress t=5s bytes=184240 last5s=184240 stall5s=0.0s
+16:09:27.938 conn=1 ts-progress t=106s bytes=3079440 last5s=144760 stall5s=0.0s
+16:09:31.293 conn=9 ts-progress t=10s bytes=329000 last5s=144760 stall5s=0.0s
+16:09:31.585 conn=10 open peer=127.0.0.1:52951
+16:09:31.585 conn=10 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:32.094 conn=9 client-closed after=10.9s bytes=342160 (BrokenPipeError)
+16:09:32.094 conn=9 close
+16:09:32.988 conn=1 ts-progress t=111s bytes=3224200 last5s=144760 stall5s=0.0s
+16:09:34.086 conn=11 open peer=127.0.0.1:52958
+16:09:34.086 conn=11 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:34.705 conn=10 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:34.705 conn=10 close
+16:09:36.652 conn=12 open peer=127.0.0.1:52972
+16:09:36.652 conn=12 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:37.207 conn=11 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:37.207 conn=11 close
+16:09:38.033 conn=1 ts-progress t=116s bytes=3368960 last5s=144760 stall5s=0.0s
+16:09:39.191 conn=13 open peer=127.0.0.1:52978
+16:09:39.191 conn=13 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:39.774 conn=12 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:39.774 conn=12 close
+16:09:41.644 conn=8 close
+16:09:41.770 conn=14 open peer=127.0.0.1:52979
+16:09:41.770 conn=14 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:42.321 conn=13 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:42.321 conn=13 close
+16:09:43.072 conn=1 ts-progress t=121s bytes=3513720 last5s=144760 stall5s=0.0s
+16:09:44.306 conn=15 open peer=127.0.0.1:52983
+16:09:44.306 conn=15 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:44.874 conn=14 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:44.874 conn=14 close
+16:09:46.807 conn=16 open peer=127.0.0.1:52988
+16:09:46.807 conn=16 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:47.442 conn=15 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:47.442 conn=15 close
+16:09:48.116 conn=1 ts-progress t=126s bytes=3671640 last5s=157920 stall5s=0.0s
+16:09:49.375 conn=17 open peer=127.0.0.1:52993
+16:09:49.375 conn=17 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:49.940 conn=16 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:49.940 conn=16 close
+16:09:51.911 conn=18 open peer=127.0.0.1:52995
+16:09:51.911 conn=18 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:52.504 conn=17 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:52.504 conn=17 close
+16:09:53.153 conn=1 ts-progress t=131s bytes=3816400 last5s=144760 stall5s=0.0s
+16:09:54.466 conn=19 open peer=127.0.0.1:52997
+16:09:54.466 conn=19 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:55.017 conn=18 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:55.017 conn=18 close
+16:09:56.998 conn=20 open peer=127.0.0.1:53002
+16:09:56.999 conn=20 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:09:57.595 conn=19 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:09:57.595 conn=19 close
+16:09:58.200 conn=1 ts-progress t=136s bytes=3961160 last5s=144760 stall5s=0.0s
+16:09:59.578 conn=21 open peer=127.0.0.1:53006
+16:09:59.578 conn=21 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:00.146 conn=20 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:00.146 conn=20 close
+16:10:02.100 conn=22 open peer=127.0.0.1:53024
+16:10:02.101 conn=22 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:02.722 conn=21 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:02.722 conn=21 close
+16:10:03.220 conn=1 ts-progress t=141s bytes=4105920 last5s=144760 stall5s=0.0s
+16:10:04.579 conn=23 open peer=127.0.0.1:53064
+16:10:04.579 conn=23 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:05.208 conn=22 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:05.208 conn=22 close
+16:10:07.076 conn=24 open peer=127.0.0.1:53099
+16:10:07.077 conn=24 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:07.730 conn=23 client-closed after=3.2s bytes=118440 (BrokenPipeError)
+16:10:07.730 conn=23 close
+16:10:08.237 conn=1 ts-progress t=146s bytes=4250680 last5s=144760 stall5s=0.0s
+16:10:09.532 conn=25 open peer=127.0.0.1:53112
+16:10:09.532 conn=25 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:10.197 conn=24 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:10.197 conn=24 close
+16:10:12.067 conn=26 open peer=127.0.0.1:53118
+16:10:12.067 conn=26 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:12.647 conn=25 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:12.647 conn=25 close
+16:10:13.264 conn=1 ts-progress t=151s bytes=4395440 last5s=144760 stall5s=0.0s
+16:10:14.616 conn=27 open peer=127.0.0.1:53137
+16:10:14.616 conn=27 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:15.175 conn=26 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:15.175 conn=26 close
+16:10:17.138 conn=28 open peer=127.0.0.1:53168
+16:10:17.140 conn=28 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:17.765 conn=27 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:17.765 conn=27 close
+16:10:18.266 conn=1 ts-progress t=156s bytes=4540200 last5s=144760 stall5s=0.0s
+16:10:19.641 conn=29 open peer=127.0.0.1:53176
+16:10:19.641 conn=29 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:20.269 conn=28 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:20.269 conn=28 close
+16:10:22.173 conn=30 open peer=127.0.0.1:53200
+16:10:22.173 conn=30 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:22.765 conn=29 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:22.765 conn=29 close
+16:10:23.280 conn=1 ts-progress t=161s bytes=4684960 last5s=144760 stall5s=0.0s
+16:10:24.634 conn=31 open peer=127.0.0.1:53211
+16:10:24.634 conn=31 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:25.298 conn=30 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:25.298 conn=30 close
+16:10:27.156 conn=32 open peer=127.0.0.1:53227
+16:10:27.156 conn=32 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:27.752 conn=31 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:27.752 conn=31 close
+16:10:28.338 conn=1 ts-progress t=166s bytes=4829720 last5s=144760 stall5s=0.0s
+16:10:29.737 conn=33 open peer=127.0.0.1:53237
+16:10:29.737 conn=33 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:30.303 conn=32 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:30.303 conn=32 close
+16:10:32.205 conn=34 open peer=127.0.0.1:53322
+16:10:32.205 conn=34 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:32.841 conn=33 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:32.841 conn=33 close
+16:10:33.374 conn=1 ts-progress t=171s bytes=4974480 last5s=144760 stall5s=0.0s
+16:10:34.714 conn=35 open peer=127.0.0.1:53328
+16:10:34.715 conn=35 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:35.331 conn=34 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:35.331 conn=34 close
+16:10:37.282 conn=36 open peer=127.0.0.1:53352
+16:10:37.282 conn=36 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:37.835 conn=35 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:37.835 conn=35 close
+16:10:38.389 conn=1 ts-progress t=176s bytes=5119240 last5s=144760 stall5s=0.0s
+16:10:39.780 conn=37 open peer=127.0.0.1:53357
+16:10:39.780 conn=37 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:40.423 conn=36 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:40.423 conn=36 close
+16:10:42.254 conn=38 open peer=127.0.0.1:53365
+16:10:42.255 conn=38 GET /live/qa-user/<pass>/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:42.885 conn=37 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:42.885 conn=37 close
+16:10:43.429 conn=1 ts-progress t=181s bytes=5264000 last5s=144760 stall5s=0.0s
+16:10:44.782 conn=39 open peer=127.0.0.1:53369
+16:10:44.782 conn=39 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:10:45.355 conn=38 client-closed after=3.1s bytes=118440 (BrokenPipeError)
+16:10:45.355 conn=38 close
+16:10:48.445 conn=1 ts-progress t=186s bytes=5408760 last5s=144760 stall5s=0.0s
+16:10:49.805 conn=39 ts-progress t=5s bytes=184240 last5s=184240 stall5s=0.0s
+16:10:51.994 conn=39 client-closed after=7.2s bytes=236880 (BrokenPipeError)
+16:10:51.994 conn=39 close
+16:10:52.326 conn=1 client-closed after=189.9s bytes=5514040 (BrokenPipeError)
+16:10:52.326 conn=1 close
+
+== Live-HLS-Abrufe je Sekunde
+16:08:11 5 16:08:13 2 16:08:15 2 16:08:17 2 16:08:19 2 16:08:21 2 16:08:23 2 16:08:25 2 16:08:27 2 16:08:29 2 16:08:31 2 16:08:33 2 16:08:35 2 16:08:37 2 
+
+== lsof: offene TCP-Verbindungen der App zum Mock je Sekunde
+16:07:40 0 16:07:41 0 16:07:42 0 16:07:43 1 16:07:44 1 16:07:45 1 16:07:46 1 16:07:47 1 16:07:48 1 16:07:49 1 16:07:50 1 16:07:51 1 16:07:52 1 16:07:53 1 16:07:55 1 16:07:56 1 16:07:57 1 16:07:58 1 16:07:59 1 16:08:00 1 16:08:01 1 16:08:02 1 16:08:03 1 16:08:04 1 16:08:05 1 16:08:06 1 16:08:07 1 16:08:08 1 16:08:09 1 16:08:10 1 16:08:12 2 16:08:13 2 16:08:14 2 16:08:15 2 16:08:16 2 16:08:17 2 16:08:18 2 16:08:19 2 16:08:20 2 16:08:21 2 16:08:22 2 16:08:23 2 16:08:24 2 16:08:25 2 16:08:26 2 16:08:27 2 16:08:29 2 16:08:30 2 16:08:31 2 16:08:32 2 16:08:33 2 16:08:34 2 16:08:35 2 16:08:36 2 16:08:37 2 16:08:38 2 16:08:39 3 16:08:40 3 16:08:41 3 16:08:42 3 16:08:43 3 16:08:44 3 16:08:46 3 16:08:47 3 16:08:48 3 16:08:49 3 16:08:50 3 16:08:51 3 16:08:52 2 16:08:53 2 16:08:54 2 16:08:55 2 16:08:56 2 16:08:57 2 16:08:58 2 16:08:59 2 16:09:00 2 16:09:01 2 16:09:03 2 16:09:04 2 16:09:05 2 16:09:06 2 16:09:07 2 16:09:08 2 16:09:09 2 16:09:10 2 16:09:11 2 16:09:12 2 16:09:13 2 16:09:14 2 16:09:15 2 16:09:16 2 16:09:17 2 16:09:18 3 16:09:19 3 16:09:21 3 16:09:22 3 16:09:23 3 16:09:24 3 16:09:25 3 16:09:26 3 16:09:27 3 16:09:28 3 16:09:29 3 16:09:30 3 16:09:31 3 16:09:32 3 16:09:33 3 16:09:34 3 16:09:36 3 16:09:37 3 16:09:38 3 16:09:39 3 16:09:40 3 16:09:41 3 16:09:42 2 16:09:43 2 16:09:44 2 16:09:45 2 16:09:46 2 16:09:47 2 16:09:48 2 16:09:49 2 16:09:50 2 16:09:51 2 16:09:53 2 16:09:54 2 16:09:55 2 16:09:56 2 16:09:57 2 16:09:58 2 16:09:59 2 16:10:00 2 16:10:01 2 16:10:03 2 16:10:04 2 16:10:05 2 16:10:06 2 16:10:07 2 16:10:08 2 16:10:10 2 16:10:11 2 16:10:12 2 16:10:13 2 16:10:14 2 16:10:15 2 16:10:16 2 16:10:18 2 16:10:19 1 16:10:20 2 16:10:21 2 16:10:22 2 16:10:23 2 16:10:25 2 16:10:26 2 16:10:27 2 16:10:28 2 16:10:29 2 16:10:30 2 16:10:31 2 16:10:33 2 16:10:34 2 16:10:35 2 16:10:36 2 16:10:37 2 16:10:38 2 16:10:39 2 16:10:40 2 16:10:41 2 16:10:42 2 16:10:43 2 16:10:44 2 16:10:46 2 16:10:47 2 16:10:48 2 16:10:49 2 16:10:51 0 
+
+== Ablauf/AK-33/AK-34
+angelegt: /private/tmp/claude-501/-Users-michaelferreira-DEV-macOS-MikaPlusPlayer/e8de96ed-475a-403d-9036-c48bfda6e19b/scratchpad/qa1-b06/home-rel3/Library/Application Support/lu.daumedia.MikaPlusPlayer.qa1b06r/MikaPlusPlayer.store (6 Sender)
+16:07:35 DB vorher: 7 Zeilen
+16:07:36 Mock pid=59475: 16:07:35.188 server start port=18966 ts_rate=28886 B/s segs=10
+16:07:36 App pid=60453 gestartet (2026-09-26 16:07:36)
+16:07:40 Vordergrund: trusted=true set=0 frontmostPID=60453 ok=true 
+16:10:52 App beendet (exit=0)
+16:10:52 AK-34 DB: Inhalt unverändert
+16:10:53 AK-34 Dateien im QA-Home: ./Library/Preferences/lu.daumedia.MikaPlusPlayer.qa1b06r/vlcrc ./Library/HTTPStorages/lu.daumedia.MikaPlusPlayer.qa1b06r/httpstorages.sqlite-wal ./Library/HTTPStorages/lu.daumedia.MikaPlusPlayer.qa1b06r/httpstorages.sqlite ./Library/HTTPStorages/lu.daumedia.MikaPlusPlayer.qa1b06r/httpstorages.sqlite-shm 
+16:10:53 AK-34 Cache im QA-Home: 0 Dateien
+16:10:53 AK-34 Passwort in Dateien des QA-Homes (ohne Datenbank): 
+16:10:53 AK-34 Einstellungen (lu.daumedia.MikaPlusPlayer.qa1b06r): { "B01.legacyHTTPCachePurged" = 1; "NSWindow Frame SwiftUI.WindowGroup<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<MikaPlusPlayer.ContentView, MikaPlusPlayer.(unknown context at $102efd658).StoreRecoveryAlert>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<MikaPlusPlayer.MultiviewSession>>>>-1-AppWindow-1" = "80 60 900 860 0 0 1920 1050 "; SUHasLaunchedBefore = 1; VLCParams = ( "--play-and-pause", "--no-color", "--no-video-title-show", "--verbose=4", "--no-sout-keep", "--vout=macosx", "--text-renderer=freetype", "--extraintf=macosx_dialog_provider", "--audio-resampler=soxr" );}
+16:10:53 AK-34 vlcrc: echt= home=/private/tmp/claude-501/-Users-michaelferreira-DEV-macOS-MikaPlusPlayer/e8de96ed-475a-403d-9036-c48bfda6e19b/scratchpad/qa1-b06/home-rel3/Library/Preferences/lu.daumedia.MikaPlusPlayer.qa1b06r/vlcrc
+16:10:54 AK-33 Zeilen im Systemprotokoll der App: 4531
+16:10:54 AK-33 Treffer '<pass>': 0
+16:10:54 AK-33 Treffer 'qa-user': 0
+16:10:55 AK-33 Treffer 'tslive': 0
+16:10:55 AK-33 Treffer 'livehls': 0
+16:10:55 AK-33 Treffer '127.0.0.1:18966': 0
+16:10:55 AK-33 Treffer '/live/': 0
+16:10:55 AK-33 Treffer 'QA 1 TS': 0
+16:10:55 AK-33 Treffer '<private>': 764
+16:10:55 AK-33 stdout/stderr der App (35 Zeilen), Treffer Passwort/Benutzer: 0
+16:10:56 Mock beendet: ja
+16:10:56 Einstellungsdomäne lu.daumedia.MikaPlusPlayer.qa1b06r gelöscht
+16:10:56 Aufgeräumt: (leer = nichts übrig)

@@ -13,5 +13,5 @@ export const NOTE_OVERRIDES: Record<string, string> = {
 
 Automatic updates ship through Sparkle and are signed with EdDSA.
 
-Installation: open the DMG and drag the app to Applications. The build is ad-hoc signed, so the first launch needs a right-click → Open.`,
+Installation: open the DMG and drag the app to Applications. The build is ad-hoc signed and not notarised, so macOS blocks the first launch; the support page on this site shows how to allow it and how to check the download's SHA-256 checksum.`,
 };

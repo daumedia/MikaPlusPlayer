@@ -1,0 +1,2 @@
+2026-09-26T13:49:55Z [Debug] Nach dem Löschen: ["ZPLAYLIST": 0, "ZCHANNEL": 0], Sendername 1× in der Datenbankdatei, 2 Logo-Einträge im Plattencache.
+2026-09-26T14:06:18Z [Debug] Nach dem Löschen: ["ZCHANNEL": 0, "ZPLAYLIST": 0], Sendername 1× in der Datenbankdatei, 2 Logo-Einträge im Plattencache.

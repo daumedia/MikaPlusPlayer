@@ -1,0 +1,856 @@
+B06-QA Durchlauf 1 · iOS-Simulator · 2026-09-26 15:56–16:22
+Eigene Simulatoren (neu angelegt, am Ende gelöscht): 'QA-B06 iPhone 17' A43D7353-…, 'QA-B06 iPad Air 11' 3B7543BB-…, iOS 27.0.
+App: Debug-Build der Kopie, Bundle-ID lu.daumedia.MikaPlusPlayer.qa1b06, Datenbank im App-Container gesät (6 Sender, Mock 127.0.0.1:18967).
+Bedienung: AXe (xcodebuildmcp/bundled/axe) – Tippen über Accessibility bzw. Koordinaten, Tasten als HID-Ereignisse einer Hardware-Tastatur
+(44 Leertaste, 9 f, 41 Esc, 16 m). Medien ohne Tonspur. Bilder als JPG (verkleinert) im selben Ordner.
+
+== Ablauf (Tippen, Tasten, Accessibility-Auszüge)
+15:58:19.3N TAP QA 2 HLS stumm, QA -> ✓ Tap at resolved tap point at (201.0, 369.0) completed successfully
+15:58:24 SHOT IOS-01-hls-spielt-hochformat 1206x2622x
+15:58:24 UI hls-offen:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+15:58:52 TAPXY 201,437 -> ✓ Tap at (201.0, 437.0) completed successfully
+15:58:53 UI controls-an:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXButton | Enter Full Screen | {{343, 128}, {46.333343505859375, 46.333328247070312}}
+AXButton | Pause | {{12, 735.83331298828125}, {41.666667938232422, 41.66668701171875}}
+AXButton | Volume High | {{77.833333333333314, 734}, {45, 45}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+15:59:00.3N TAP Enter Full Screen -> Error: No accessibility element matched --label 'Enter Full Screen'. Make sure the app is on the expected screen, then run `axe describe-ui --udid <SIMULATOR_UDID>` and prefer --id when available.
+15:59:04 SHOT IOS-02-vollbild-querformat 1206x2622x
+15:59:04 UI vollbild:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+15:59:10 TAPXY 201,437 -> ✓ Tap at (201.0, 437.0) completed successfully
+15:59:11 TAPXY 366,151 -> ✓ Tap at (366.0, 151.0) completed successfully
+15:59:15 SHOT IOS-02-vollbild 2622x1206x
+15:59:15 UI vollbild:
+AXApplication | Mika+Player | {{0, 0}, {874, 402}}
+AXButton | Exit Full Screen | {{803, 24}, {46.33331298828125, 46.333335876464844}}
+AXButton | Pause | {{24, 334.83334350585938}, {41.666664123535156, 41.666656494140625}}
+AXButton | Volume High | {{89.833333333333314, 333}, {45, 45}}
+AXGroup | Toolbar | {{0, 0}, {874, 402}}
+15:59:35 TAPXY 437,201 -> ✓ Tap at (437.0, 201.0) completed successfully
+15:59:36 TAPXY 826,47 -> ✓ Tap at (826.0, 47.0) completed successfully
+15:59:39 SHOT IOS-03-vollbild-aus-hochformat 1206x2622x
+15:59:39 UI vollbild-aus:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+15:59:47 KEY 44 -> 
+15:59:47 SHOT IOS-04-hardware-leertaste 1206x2622x
+15:59:47 UI nach-leertaste:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXButton | Enter Full Screen | {{343, 128}, {46.333343505859375, 46.333328247070312}}
+AXButton | Play | {{12, 735.33331298828125}, {42.333332061767578, 42.3333740234375}}
+AXButton | Volume High | {{78.5, 734}, {45, 45}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+15:59:49 KEY 44 -> 
+16:00:00 KEY 9 -> 
+16:00:03 SHOT IOS-05-taste-f-vollbild 2622x1206x
+16:00:03 UI taste-f:
+AXApplication | Mika+Player | {{0, 0}, {874, 402}}
+AXGroup | Toolbar | {{0, 0}, {874, 402}}
+16:00:04 SWIPE 2 200 500 200 -> 
+16:00:09 SHOT IOS-06-verlassen-im-vollbild 2622x1206x
+16:00:09 UI nach-wischen:
+AXApplication | Mika+Player | {{0, 0}, {874, 402}}
+AXGroup | Toolbar | {{0, 0}, {874, 402}}
+16:00:20 KEY 41 -> 
+16:00:23 SHOT IOS-07-esc-zurueck-hochformat 1206x2622x
+16:00:23 UI nach-esc:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+16:00:24 KEY 16 -> 
+16:00:24 UI nach-m:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXButton | Enter Full Screen | {{343, 128}, {46.333343505859375, 46.333328247070312}}
+AXButton | Pause | {{12, 733.5}, {41.666667938232422, 41.66668701171875}}
+AXButton | Mute | {{73.666664123535156, 732}, {44.666671752929688, 44.66668701171875}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+16:00:35 KEY 16 -> 
+16:00:35 BUTTON home -> 
+16:00:56 SHOT IOS-08-hintergrund 1206x2622x
+16:01:07 UI vordergrund:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{133.66666666666669, 73.666666666666657}, {134.66666666666669, 20.666666666666671}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+16:01:08.3N TAP QA B06 Release (stumm) -> ✓ Tap at resolved tap point at (38.0, 84.0) completed successfully
+16:01:22.3N TAP QA 1 TS stumm, QA -> ✓ Tap at resolved tap point at (201.0, 283.0) completed successfully
+16:01:29 SHOT IOS-09-ts-vlc-spielt 1206x2622x
+16:01:29 UI ts:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 1 TS stumm | {{140.33333333333331, 73.666666666666657}, {121, 20.666666666666671}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+16:01:38 BUTTON home -> 
+16:02:15.3N TAP QA B06 Release (stumm) -> ✓ Tap at resolved tap point at (38.0, 84.0) completed successfully
+16:02:27.3N TAP QA 3 TS 404, QA -> ✓ Tap at resolved tap point at (201.0, 455.0) completed successfully
+16:02:44 SHOT IOS-10-ts-404-dunkel-titel-sichtbar-ladekreis-15s 1206x2622x
+16:02:44 UI ts404:
+AXApplication | Mika+Player | {{0, 0}, {402, 874}}
+AXButton | QA B06 Release (stumm) | {{16, 62}, {44, 44}}
+AXHeading | QA 3 TS 404 | {{150.33333333333334, 73.666666666666657}, {101.33333333333334, 20.666666666666671}}
+AXGroup | Toolbar | {{0, 0}, {402, 874}}
+AXGroup | Tab Bar | {{0, 791}, {402, 83}}
+AXRadioButton | Playlists = 1 | {{111, 795}, {94, 54}}
+AXRadioButton | Favoriten | {{197, 795}, {94, 54}}
+16:04:01.3N TAP QA B06 Release (stumm), 6 Sender -> ✓ Tap at resolved tap point at (410.0, 222.0) completed successfully
+16:04:04.3N TAP QA 2 HLS stumm, QA -> ✓ Tap at resolved tap point at (410.0, 352.5) completed successfully
+16:04:09 SHOT IPAD-01-hls-hochformat 1640x2360x
+16:04:09 KEY 9 -> 
+16:04:12 SHOT IPAD-02-taste-f-vollbild 1640x2360x
+16:04:12 UI ipad-vollbild:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | QA B06 Release (stumm) | {{10, 32}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{342.5, 97.5}, {135, 21}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:04:13 KEY 41 -> 
+16:04:16 SHOT IPAD-03-esc 1640x2360x
+16:04:16 UI ipad-nach-esc:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | QA B06 Release (stumm) | {{10, 32}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{342.5, 97.5}, {135, 21}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:04:30 TAPXY 410,590 -> ✓ Tap at (410.0, 590.0) completed successfully
+16:04:33 UI ipad-steuerung:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | QA B06 Release (stumm) | {{10, 32}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{342.5, 97.5}, {135, 21}}
+AXButton | Minimise Video | {{696, 152}, {48.5, 48.5}}
+AXButton | Enter Full Screen | {{761, 153.5}, {46, 46}}
+AXButton | Pause | {{12, 1104.75}, {42, 42}}
+AXButton | Volume High | {{78.25, 1103}, {45, 45}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:04:40 TAPXY 410,590 -> ✓ Tap at (410.0, 590.0) completed successfully
+16:04:41 TAPXY 784,176 -> ✓ Tap at (784.0, 176.0) completed successfully
+16:04:46 SHOT IPAD-04-knopf-vollbild 1640x2360x
+16:04:46 UI ipad-vollbild-knopf:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | Minimise Video | {{684, 24}, {48.5, 48.5}}
+AXButton | Exit Full Screen | {{749, 25.5}, {46, 46}}
+AXButton | Pause | {{24, 1112.75}, {42, 42}}
+AXButton | Volume High | {{90.25, 1111}, {45, 45}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+16:04:46 KEY 44 -> 
+16:04:47 UI ipad-leertaste:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+16:04:48 KEY 44 -> 
+16:04:58 TAPXY 410,590 -> ✓ Tap at (410.0, 590.0) completed successfully
+16:04:59 TAPXY 772,48 -> ✓ Tap at (772.0, 48.0) completed successfully
+16:05:03 UI ipad-zurueck:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | QA B06 Release (stumm) | {{10, 32}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{342.5, 97.5}, {135, 21}}
+AXButton | Minimise Video | {{696, 152}, {48.5, 48.5}}
+AXButton | Enter Full Screen | {{761, 153.5}, {46, 46}}
+AXButton | Pause | {{12, 1104.75}, {42, 42}}
+AXButton | Volume High | {{78.25, 1103}, {45, 45}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:05:03 KEY 44 -> 
+16:05:04 SHOT IPAD-05-leertaste-ohne-wirkung 1640x2360x
+16:05:08 KEY 16 -> 
+16:05:08 UI ipad-m:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | QA B06 Release (stumm) | {{10, 32}, {44, 44}}
+AXHeading | QA 2 HLS stumm | {{342.5, 97.5}, {135, 21}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:05:25.3N TAP QA B06 Release (stumm) -> ✓ Tap at resolved tap point at (32.0, 54.0) completed successfully
+16:05:28.3N TAP QA 1 TS stumm, QA -> ✓ Tap at resolved tap point at (410.0, 266.5) completed successfully
+16:05:35 KEY 44 -> 
+16:05:36 SHOT IPAD-06-ts-leertaste-frisch-geoeffnet 1640x2360x
+16:05:36 UI ipad-ts-space:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | QA B06 Release (stumm) | {{10, 32}, {44, 44}}
+AXHeading | QA 1 TS stumm | {{349.5, 97.5}, {121, 21}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:05:41 TAPXY 410,700 -> ✓ Tap at (410.0, 700.0) completed successfully
+16:05:46 KEY 9 -> 
+16:05:50 SHOT IPAD-07-nach-tipp-taste-f 1640x2360x
+16:05:50 UI ipad-f:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | QA B06 Release (stumm) | {{10, 32}, {44, 44}}
+AXHeading | QA 1 TS stumm | {{349.5, 97.5}, {121, 21}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:08:23.3N TAP QA B06 Release (stumm) -> ✓ Tap at resolved tap point at (32.0, 54.0) completed successfully
+16:08:26.3N TAP Playlists -> Error: Multiple (3) accessibility elements matched --label 'Playlists'. Use --id when labels are not unique. Make sure the app is on the expected screen, then run `axe describe-ui --udid <SIMULATOR_UDID>` and prefer --id when available.
+16:08:28.3N TAP Add -> Error: No accessibility element matched --label 'Add'. Make sure the app is on the expected screen, then run `axe describe-ui --udid <SIMULATOR_UDID>` and prefer --id when available.
+16:08:31 UI import:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXButton | Playlists | {{10, 32}, {44, 44}}
+AXTextField | None = Sender suchen | {{570, 32}, {240, 44}}
+AXHeading | QA B06 Release (stumm) | {{310, 97.5}, {200, 21}}
+AXStaticText | MIKA+PLAYER · 6 SENDER | {{20, 148}, {175, 13.5}}
+AXStaticText | QA B06 Release (stumm) | {{20, 165.5}, {399.5, 41}}
+AXButton | QA 1 TS stumm, QA = 1 | {{20, 228.5}, {780, 76}}
+AXStaticText | QA 1 TS stumm | {{94, 243}, {121, 20.5}}
+AXButton | Favourite | {{762, 256}, {22, 21}}
+AXStaticText | QA | {{102, 271.5}, {18, 14.5}}
+AXButton | QA 2 HLS stumm, QA = 1 | {{20, 314.5}, {780, 76}}
+AXStaticText | QA 2 HLS stumm | {{94, 329}, {135, 20.5}}
+AXButton | Favourite | {{762, 342}, {22, 21}}
+AXStaticText | QA | {{102, 357.5}, {18, 14.5}}
+AXButton | QA 3 TS 404, QA = 1 | {{20, 400.5}, {780, 76}}
+AXStaticText | QA 3 TS 404 | {{94, 415}, {101.5, 20.5}}
+AXButton | Favourite | {{762, 428}, {22, 21}}
+AXStaticText | QA | {{102, 443.5}, {18, 14.5}}
+AXButton | QA 4 Xtream-Form TS, QA = 1 | {{20, 486.5}, {780, 76}}
+AXStaticText | QA 4 Xtream-Form TS | {{94, 501}, {175.5, 20.5}}
+AXButton | Favourite | {{762, 514}, {22, 21}}
+AXStaticText | QA | {{102, 529.5}, {18, 14.5}}
+AXButton | QA 5 Xtream-Form HLS 404, QA = 1 | {{20, 572.5}, {780, 76}}
+AXStaticText | QA 5 Xtream-Form HLS 404 | {{94, 587}, {223.5, 20.5}}
+AXButton | Favourite | {{762, 600}, {22, 21}}
+AXStaticText | QA | {{102, 615.5}, {18, 14.5}}
+AXButton | QA 6 TS verzögert, QA = 1 | {{20, 658.5}, {780, 76}}
+AXStaticText | QA 6 TS verzögert | {{94, 673}, {145.5, 20.5}}
+AXButton | Favourite | {{762, 686}, {22, 21}}
+AXStaticText | QA | {{102, 701.5}, {18, 14.5}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Playlists = 1 | {{309.75, 36}, {96.5, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+AXRadioButton | Favoriten | {{406.25, 36}, {104, 36}}
+16:08:39 TAPXY 690,54 -> ✓ Tap at (690.0, 54.0) completed successfully
+16:08:41 KEY 20 -> 
+16:08:41 KEY 4 -> 
+16:08:42 UI suche:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXTextField | None = Qa | {{530, 32}, {280, 44}}
+AXButton | Clear text | {{775.5, 43.5}, {20.5, 20.5}}
+AXHeading | QA B06 Release (stumm) | {{310, 97.5}, {200, 21}}
+AXStaticText | MIKA+PLAYER · 6 SENDER | {{20, 148}, {175, 13.5}}
+AXStaticText | QA B06 Release (stumm) | {{20, 165.5}, {399.5, 41}}
+AXButton | QA 1 TS stumm, QA = 1 | {{20, 228.5}, {780, 76}}
+AXStaticText | QA 1 TS stumm | {{94, 243}, {121, 20.5}}
+AXButton | Favourite | {{762, 256}, {22, 21}}
+AXStaticText | QA | {{102, 271.5}, {18, 14.5}}
+AXButton | QA 2 HLS stumm, QA = 1 | {{20, 314.5}, {780, 76}}
+AXStaticText | QA 2 HLS stumm | {{94, 329}, {135, 20.5}}
+AXButton | Favourite | {{762, 342}, {22, 21}}
+AXStaticText | QA | {{102, 357.5}, {18, 14.5}}
+AXButton | QA 3 TS 404, QA = 1 | {{20, 400.5}, {780, 76}}
+AXStaticText | QA 3 TS 404 | {{94, 415}, {101.5, 20.5}}
+AXButton | Favourite | {{762, 428}, {22, 21}}
+AXStaticText | QA | {{102, 443.5}, {18, 14.5}}
+AXButton | QA 4 Xtream-Form TS, QA = 1 | {{20, 486.5}, {780, 76}}
+AXStaticText | QA 4 Xtream-Form TS | {{94, 501}, {175.5, 20.5}}
+AXButton | Favourite | {{762, 514}, {22, 21}}
+AXStaticText | QA | {{102, 529.5}, {18, 14.5}}
+AXButton | QA 5 Xtream-Form HLS 404, QA = 1 | {{20, 572.5}, {780, 76}}
+AXStaticText | QA 5 Xtream-Form HLS 404 | {{94, 587}, {223.5, 20.5}}
+AXButton | Favourite | {{762, 600}, {22, 21}}
+AXStaticText | QA | {{102, 615.5}, {18, 14.5}}
+AXButton | QA 6 TS verzögert, QA = 1 | {{20, 658.5}, {780, 76}}
+AXStaticText | QA 6 TS verzögert | {{94, 673}, {145.5, 20.5}}
+AXButton | Favourite | {{762, 686}, {22, 21}}
+AXStaticText | QA | {{102, 701.5}, {18, 14.5}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXButton | Tab | {{6, 1187}, {60, 64}}
+AXButton | q | {{66, 1187}, {60.5, 64}}
+AXButton | w | {{126.5, 1187}, {60, 64}}
+AXButton | e | {{186.5, 1187}, {60, 64}}
+AXButton | r | {{246.5, 1187}, {60, 64}}
+AXButton | t | {{306.5, 1187}, {60.5, 64}}
+AXButton | z | {{367, 1187}, {60, 64}}
+AXButton | u | {{427, 1187}, {60, 64}}
+AXButton | i | {{487, 1187}, {60.5, 64}}
+AXButton | o | {{547.5, 1187}, {60, 64}}
+AXButton | p | {{607.5, 1187}, {60, 64}}
+AXButton | ü | {{667.5, 1187}, {60.5, 64}}
+AXButton | Löschen | {{728, 1187}, {90, 64}}
+AXButton | Caps Lock | {{6, 1251}, {75, 63.5}}
+AXButton | a | {{81, 1251}, {60.5, 63.5}}
+AXButton | s | {{141.5, 1251}, {60, 63.5}}
+AXButton | d | {{201.5, 1251}, {60, 63.5}}
+AXButton | f | {{261.5, 1251}, {60.5, 63.5}}
+AXButton | g | {{322, 1251}, {60, 63.5}}
+AXButton | h | {{382, 1251}, {60, 63.5}}
+AXButton | j | {{442, 1251}, {60, 63.5}}
+AXButton | k | {{502, 1251}, {60.5, 63.5}}
+AXButton | l | {{562.5, 1251}, {60, 63.5}}
+AXButton | ö | {{622.5, 1251}, {60, 63.5}}
+AXButton | ä | {{682.5, 1251}, {60.5, 63.5}}
+AXButton | Suchen | {{743, 1251}, {75, 63.5}}
+AXButton | Umschalt | {{6, 1314.5}, {120.5, 64}}
+AXButton | y | {{126.5, 1314.5}, {60, 64}}
+AXButton | x | {{186.5, 1314.5}, {60, 64}}
+AXButton | c | {{246.5, 1314.5}, {60, 64}}
+AXButton | v | {{306.5, 1314.5}, {60.5, 64}}
+AXButton | b | {{367, 1314.5}, {60, 64}}
+AXButton | n | {{427, 1314.5}, {60, 64}}
+AXButton | m | {{487, 1314.5}, {60.5, 64}}
+AXButton | , | {{547.5, 1314.5}, {60, 64}}
+AXButton | . | {{607.5, 1314.5}, {60, 64}}
+AXButton | Umschalt | {{667.5, 1314.5}, {150.5, 64}}
+AXButton | Next keyboard = Lëtzebuergesch | {{6, 1378.5}, {69, 63.5}}
+AXButton | Zahlen | {{75, 1378.5}, {68.5, 63.5}}
+AXButton | Diktieren | {{143.5, 1378.5}, {69, 63.5}}
+AXButton | space | {{212.5, 1378.5}, {410, 63.5}}
+AXButton | Zahlen | {{622.5, 1378.5}, {97.5, 63.5}}
+AXButton | Hide keyboard | {{720, 1378.5}, {98, 63.5}}
+16:08:43 SHOT IPAD-08-hid-tasten-kommen-an 1640x2360x
+16:08:51 KEY 42 -> 
+16:08:51 KEY 42 -> 
+16:21:24 UI ipad-jetzt:
+AXApplication | Mika+Player | {{0, 0}, {820, 1180}}
+AXTextField | None = Sender suchen | {{530, 32}, {280, 44}}
+AXHeading | QA B06 Release (stumm) | {{310, 97.5}, {200, 21}}
+AXStaticText | MIKA+PLAYER · 6 SENDER | {{20, 148}, {175, 13.5}}
+AXStaticText | QA B06 Release (stumm) | {{20, 165.5}, {399.5, 41}}
+AXButton | QA 1 TS stumm, QA = 1 | {{20, 228.5}, {780, 76}}
+AXStaticText | QA 1 TS stumm | {{94, 243}, {121, 20.5}}
+AXButton | Favourite | {{762, 256}, {22, 21}}
+AXStaticText | QA | {{102, 271.5}, {18, 14.5}}
+AXButton | QA 2 HLS stumm, QA = 1 | {{20, 314.5}, {780, 76}}
+AXStaticText | QA 2 HLS stumm | {{94, 329}, {135, 20.5}}
+AXButton | Favourite | {{762, 342}, {22, 21}}
+AXStaticText | QA | {{102, 357.5}, {18, 14.5}}
+AXButton | QA 3 TS 404, QA = 1 | {{20, 400.5}, {780, 76}}
+AXStaticText | QA 3 TS 404 | {{94, 415}, {101.5, 20.5}}
+AXButton | Favourite | {{762, 428}, {22, 21}}
+AXStaticText | QA | {{102, 443.5}, {18, 14.5}}
+AXButton | QA 4 Xtream-Form TS, QA = 1 | {{20, 486.5}, {780, 76}}
+AXStaticText | QA 4 Xtream-Form TS | {{94, 501}, {175.5, 20.5}}
+AXButton | Favourite | {{762, 514}, {22, 21}}
+AXStaticText | QA | {{102, 529.5}, {18, 14.5}}
+AXButton | QA 5 Xtream-Form HLS 404, QA = 1 | {{20, 572.5}, {780, 76}}
+AXStaticText | QA 5 Xtream-Form HLS 404 | {{94, 587}, {223.5, 20.5}}
+AXButton | Favourite | {{762, 600}, {22, 21}}
+AXStaticText | QA | {{102, 615.5}, {18, 14.5}}
+AXButton | QA 6 TS verzögert, QA = 1 | {{20, 658.5}, {780, 76}}
+AXStaticText | QA 6 TS verzögert | {{94, 673}, {145.5, 20.5}}
+AXButton | Favourite | {{762, 686}, {22, 21}}
+AXStaticText | QA | {{102, 701.5}, {18, 14.5}}
+AXGroup | Toolbar | {{0, 0}, {820, 1180}}
+AXButton | Tab | {{6, 1187}, {60, 64}}
+AXButton | Q | {{66, 1187}, {60.5, 64}}
+AXButton | W | {{126.5, 1187}, {60, 64}}
+AXButton | E | {{186.5, 1187}, {60, 64}}
+AXButton | R | {{246.5, 1187}, {60, 64}}
+AXButton | T | {{306.5, 1187}, {60.5, 64}}
+AXButton | Z | {{367, 1187}, {60, 64}}
+AXButton | U | {{427, 1187}, {60, 64}}
+AXButton | I | {{487, 1187}, {60.5, 64}}
+AXButton | O | {{547.5, 1187}, {60, 64}}
+AXButton | P | {{607.5, 1187}, {60, 64}}
+AXButton | Ü | {{667.5, 1187}, {60.5, 64}}
+AXButton | Löschen | {{728, 1187}, {90, 64}}
+AXButton | Caps Lock | {{6, 1251}, {75, 63.5}}
+AXButton | A | {{81, 1251}, {60.5, 63.5}}
+AXButton | S | {{141.5, 1251}, {60, 63.5}}
+AXButton | D | {{201.5, 1251}, {60, 63.5}}
+AXButton | F | {{261.5, 1251}, {60.5, 63.5}}
+AXButton | G | {{322, 1251}, {60, 63.5}}
+AXButton | H | {{382, 1251}, {60, 63.5}}
+AXButton | J | {{442, 1251}, {60, 63.5}}
+AXButton | K | {{502, 1251}, {60.5, 63.5}}
+AXButton | L | {{562.5, 1251}, {60, 63.5}}
+AXButton | Ö | {{622.5, 1251}, {60, 63.5}}
+AXButton | Ä | {{682.5, 1251}, {60.5, 63.5}}
+AXButton | Suchen | {{743, 1251}, {75, 63.5}}
+AXButton | Umschalt | {{6, 1314.5}, {120.5, 64}}
+AXButton | Y | {{126.5, 1314.5}, {60, 64}}
+AXButton | X | {{186.5, 1314.5}, {60, 64}}
+AXButton | C | {{246.5, 1314.5}, {60, 64}}
+AXButton | V | {{306.5, 1314.5}, {60.5, 64}}
+AXButton | B | {{367, 1314.5}, {60, 64}}
+AXButton | N | {{427, 1314.5}, {60, 64}}
+AXButton | M | {{487, 1314.5}, {60.5, 64}}
+AXButton | , | {{547.5, 1314.5}, {60, 64}}
+AXButton | . | {{607.5, 1314.5}, {60, 64}}
+AXButton | Umschalt | {{667.5, 1314.5}, {150.5, 64}}
+AXButton | Next keyboard = Lëtzebuergesch | {{6, 1378.5}, {69, 63.5}}
+AXButton | Zahlen | {{75, 1378.5}, {68.5, 63.5}}
+AXButton | Diktieren | {{143.5, 1378.5}, {69, 63.5}}
+AXButton | space | {{212.5, 1378.5}, {410, 63.5}}
+AXButton | Zahlen | {{622.5, 1378.5}, {97.5, 63.5}}
+AXButton | Hide keyboard | {{720, 1378.5}, {98, 63.5}}
+16:21:25.3N TAP QA 1 TS stumm, QA -> ✓ Tap at resolved tap point at (410.0, 266.5) completed successfully
+16:21:33 SHOT IPAD-09-ts-schnell-geliefert 1640x2360x
+16:21:33.3N TAP QA B06 Release (stumm) -> ✓ Tap at resolved tap point at (32.0, 54.0) completed successfully
+
+== Mock (Echtzeit-Takt, iPhone, dann iPad) – Verbindungen und TS-Fortschritt
+15:56:40.001 server start port=18967 ts_rate=28886 B/s segs=10
+15:58:21.420 conn=1 open peer=127.0.0.1:51093
+16:00:42.061 conn=1 close
+16:00:42.073 conn=2 open peer=127.0.0.1:51371
+16:00:48.182 conn=2 close
+16:00:50.259 conn=3 open peer=127.0.0.1:51381
+16:01:23.662 conn=4 open peer=127.0.0.1:51430
+16:01:23.662 conn=4 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:01:28.714 conn=4 ts-progress t=5s bytes=184240 last5s=184240 stall5s=0.0s
+16:01:33.752 conn=4 ts-progress t=10s bytes=329000 last5s=144760 stall5s=0.0s
+16:01:38.761 conn=4 ts-progress t=15s bytes=473760 last5s=144760 stall5s=0.0s
+16:01:39.166 conn=3 close
+16:01:43.799 conn=4 ts-progress t=20s bytes=618520 last5s=144760 stall5s=0.0s
+16:01:48.848 conn=4 ts-progress t=25s bytes=763280 last5s=144760 stall5s=0.0s
+16:01:53.886 conn=4 ts-progress t=30s bytes=908040 last5s=144760 stall5s=0.0s
+16:01:58.919 conn=4 ts-progress t=35s bytes=1052800 last5s=144760 stall5s=0.0s
+16:02:03.956 conn=4 ts-progress t=40s bytes=1197560 last5s=144760 stall5s=0.0s
+16:02:08.969 conn=4 ts-progress t=45s bytes=1342320 last5s=144760 stall5s=0.0s
+16:02:14.010 conn=4 ts-progress t=50s bytes=1487080 last5s=144760 stall5s=0.0s
+16:02:19.021 conn=4 ts-progress t=55s bytes=1631840 last5s=144760 stall5s=0.0s
+16:02:24.064 conn=4 ts-progress t=60s bytes=1776600 last5s=144760 stall5s=0.0s
+16:02:28.736 conn=5 open peer=127.0.0.1:51595
+16:02:28.736 conn=5 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:02:28.736 conn=5 close
+16:02:28.737 conn=6 open peer=127.0.0.1:51596
+16:02:28.737 conn=6 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:02:28.737 conn=6 close
+16:02:28.737 conn=7 open peer=127.0.0.1:51597
+16:02:28.737 conn=7 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:02:28.737 conn=7 close
+16:02:28.738 conn=8 open peer=127.0.0.1:51598
+16:02:28.738 conn=8 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+16:02:28.738 conn=8 close
+16:02:28.738 conn=9 open peer=127.0.0.1:51599
+16:02:28.738 conn=9 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+16:02:28.738 conn=9 close
+16:02:28.738 conn=10 open peer=127.0.0.1:51600
+16:02:28.738 conn=10 GET /404/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+16:02:28.738 conn=10 close
+16:02:29.110 conn=4 ts-progress t=65s bytes=1921360 last5s=144760 stall5s=0.0s
+16:02:34.133 conn=4 ts-progress t=70s bytes=2066120 last5s=144760 stall5s=0.0s
+16:02:39.182 conn=4 ts-progress t=76s bytes=2210880 last5s=144760 stall5s=0.0s
+16:02:44.200 conn=4 ts-progress t=81s bytes=2355640 last5s=144760 stall5s=0.0s
+16:02:49.200 conn=4 ts-progress t=86s bytes=2500400 last5s=144760 stall5s=0.0s
+16:02:54.236 conn=4 ts-progress t=91s bytes=2645160 last5s=144760 stall5s=0.0s
+16:02:59.248 conn=4 ts-progress t=96s bytes=2789920 last5s=144760 stall5s=0.0s
+16:03:04.251 conn=4 ts-progress t=101s bytes=2934680 last5s=144760 stall5s=0.0s
+16:03:09.282 conn=4 ts-progress t=106s bytes=3079440 last5s=144760 stall5s=0.0s
+16:03:14.291 conn=4 ts-progress t=111s bytes=3224200 last5s=144760 stall5s=0.0s
+16:03:19.331 conn=4 ts-progress t=116s bytes=3368960 last5s=144760 stall5s=0.0s
+16:03:24.353 conn=4 ts-progress t=121s bytes=3513720 last5s=144760 stall5s=0.0s
+16:03:29.391 conn=4 ts-progress t=126s bytes=3671640 last5s=157920 stall5s=0.0s
+16:03:34.400 conn=4 ts-progress t=131s bytes=3816400 last5s=144760 stall5s=0.0s
+16:03:39.449 conn=4 ts-progress t=136s bytes=3961160 last5s=144760 stall5s=0.0s
+16:03:44.473 conn=4 ts-progress t=141s bytes=4105920 last5s=144760 stall5s=0.0s
+16:03:49.489 conn=4 ts-progress t=146s bytes=4250680 last5s=144760 stall5s=0.0s
+16:03:54.520 conn=4 ts-progress t=151s bytes=4395440 last5s=144760 stall5s=0.0s
+16:03:59.527 conn=4 ts-progress t=156s bytes=4540200 last5s=144760 stall5s=0.0s
+16:04:04.545 conn=4 ts-progress t=161s bytes=4684960 last5s=144760 stall5s=0.0s
+16:04:06.377 conn=11 open peer=127.0.0.1:52005
+16:04:09.593 conn=4 ts-progress t=166s bytes=4829720 last5s=144760 stall5s=0.0s
+16:04:14.595 conn=4 ts-progress t=171s bytes=4974480 last5s=144760 stall5s=0.0s
+16:04:19.613 conn=4 ts-progress t=176s bytes=5119240 last5s=144760 stall5s=0.0s
+16:04:24.633 conn=4 ts-progress t=181s bytes=5264000 last5s=144760 stall5s=0.0s
+16:04:29.678 conn=4 ts-progress t=186s bytes=5408760 last5s=144760 stall5s=0.0s
+16:04:34.699 conn=4 ts-progress t=191s bytes=5553520 last5s=144760 stall5s=0.0s
+16:04:39.752 conn=4 ts-progress t=196s bytes=5698280 last5s=144760 stall5s=0.0s
+16:04:44.772 conn=4 ts-progress t=201s bytes=5843040 last5s=144760 stall5s=0.0s
+16:04:49.811 conn=4 ts-progress t=206s bytes=5987800 last5s=144760 stall5s=0.0s
+16:04:54.813 conn=4 ts-progress t=211s bytes=6132560 last5s=144760 stall5s=0.0s
+16:04:59.827 conn=4 ts-progress t=216s bytes=6277320 last5s=144760 stall5s=0.0s
+16:05:04.841 conn=4 ts-progress t=221s bytes=6422080 last5s=144760 stall5s=0.0s
+16:05:09.848 conn=4 ts-progress t=226s bytes=6566840 last5s=144760 stall5s=0.0s
+16:05:14.881 conn=4 ts-progress t=231s bytes=6711600 last5s=144760 stall5s=0.0s
+16:05:19.888 conn=4 ts-progress t=236s bytes=6856360 last5s=144760 stall5s=0.0s
+16:05:24.940 conn=4 ts-progress t=241s bytes=7001120 last5s=144760 stall5s=0.0s
+16:05:29.976 conn=4 ts-progress t=246s bytes=7145880 last5s=144760 stall5s=0.0s
+16:05:30.380 conn=12 open peer=127.0.0.1:52375
+16:05:30.380 conn=12 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:05:35.008 conn=4 ts-progress t=251s bytes=7290640 last5s=144760 stall5s=0.0s
+16:05:35.395 conn=12 ts-progress t=5s bytes=184240 last5s=184240 stall5s=0.0s
+16:05:40.015 conn=4 ts-progress t=256s bytes=7435400 last5s=144760 stall5s=0.0s
+16:05:40.423 conn=12 ts-progress t=10s bytes=329000 last5s=144760 stall5s=0.0s
+16:05:45.046 conn=4 ts-progress t=261s bytes=7580160 last5s=144760 stall5s=0.0s
+16:05:45.461 conn=12 ts-progress t=15s bytes=473760 last5s=144760 stall5s=0.0s
+16:05:50.076 conn=4 ts-progress t=266s bytes=7724920 last5s=144760 stall5s=0.0s
+16:05:50.468 conn=12 ts-progress t=20s bytes=618520 last5s=144760 stall5s=0.0s
+16:05:55.085 conn=4 ts-progress t=271s bytes=7869680 last5s=144760 stall5s=0.0s
+16:05:55.478 conn=12 ts-progress t=25s bytes=763280 last5s=144760 stall5s=0.0s
+16:05:57.363 conn=11 close
+16:06:00.089 conn=4 ts-progress t=276s bytes=8014440 last5s=144760 stall5s=0.0s
+16:06:00.511 conn=12 ts-progress t=30s bytes=908040 last5s=144760 stall5s=0.0s
+16:06:05.103 conn=4 ts-progress t=281s bytes=8159200 last5s=144760 stall5s=0.0s
+16:06:05.535 conn=12 ts-progress t=35s bytes=1052800 last5s=144760 stall5s=0.0s
+16:06:10.119 conn=4 ts-progress t=286s bytes=8303960 last5s=144760 stall5s=0.0s
+16:06:10.573 conn=12 ts-progress t=40s bytes=1197560 last5s=144760 stall5s=0.0s
+16:06:15.170 conn=4 ts-progress t=292s bytes=8448720 last5s=144760 stall5s=0.0s
+16:06:15.593 conn=12 ts-progress t=45s bytes=1342320 last5s=144760 stall5s=0.0s
+16:06:20.224 conn=4 ts-progress t=297s bytes=8606640 last5s=157920 stall5s=0.0s
+16:06:20.596 conn=12 ts-progress t=50s bytes=1487080 last5s=144760 stall5s=0.0s
+16:06:25.231 conn=4 ts-progress t=302s bytes=8751400 last5s=144760 stall5s=0.0s
+16:06:25.607 conn=12 ts-progress t=55s bytes=1631840 last5s=144760 stall5s=0.0s
+16:06:30.264 conn=4 ts-progress t=307s bytes=8896160 last5s=144760 stall5s=0.0s
+16:06:30.608 conn=12 ts-progress t=60s bytes=1776600 last5s=144760 stall5s=0.0s
+16:06:35.299 conn=4 ts-progress t=312s bytes=9040920 last5s=144760 stall5s=0.0s
+16:06:35.622 conn=12 ts-progress t=65s bytes=1921360 last5s=144760 stall5s=0.0s
+16:06:40.306 conn=4 ts-progress t=317s bytes=9185680 last5s=144760 stall5s=0.0s
+16:06:40.673 conn=12 ts-progress t=70s bytes=2066120 last5s=144760 stall5s=0.0s
+16:06:45.331 conn=4 ts-progress t=322s bytes=9330440 last5s=144760 stall5s=0.0s
+16:06:45.686 conn=12 ts-progress t=75s bytes=2210880 last5s=144760 stall5s=0.0s
+16:06:50.379 conn=4 ts-progress t=327s bytes=9475200 last5s=144760 stall5s=0.0s
+16:06:50.692 conn=12 ts-progress t=80s bytes=2355640 last5s=144760 stall5s=0.0s
+16:06:55.405 conn=4 ts-progress t=332s bytes=9619960 last5s=144760 stall5s=0.0s
+16:06:55.713 conn=12 ts-progress t=85s bytes=2500400 last5s=144760 stall5s=0.0s
+16:07:00.431 conn=4 ts-progress t=337s bytes=9764720 last5s=144760 stall5s=0.0s
+16:07:00.731 conn=12 ts-progress t=90s bytes=2645160 last5s=144760 stall5s=0.0s
+16:07:05.476 conn=4 ts-progress t=342s bytes=9909480 last5s=144760 stall5s=0.0s
+16:07:05.770 conn=12 ts-progress t=95s bytes=2789920 last5s=144760 stall5s=0.0s
+16:07:10.524 conn=4 ts-progress t=347s bytes=10054240 last5s=144760 stall5s=0.0s
+16:07:10.799 conn=12 ts-progress t=100s bytes=2934680 last5s=144760 stall5s=0.0s
+16:07:15.554 conn=4 ts-progress t=352s bytes=10199000 last5s=144760 stall5s=0.0s
+16:07:15.840 conn=12 ts-progress t=105s bytes=3079440 last5s=144760 stall5s=0.0s
+16:07:20.595 conn=4 ts-progress t=357s bytes=10343760 last5s=144760 stall5s=0.0s
+16:07:20.864 conn=12 ts-progress t=110s bytes=3224200 last5s=144760 stall5s=0.0s
+16:07:25.616 conn=4 ts-progress t=362s bytes=10488520 last5s=144760 stall5s=0.0s
+16:07:25.901 conn=12 ts-progress t=116s bytes=3368960 last5s=144760 stall5s=0.0s
+16:07:30.633 conn=4 ts-progress t=367s bytes=10633280 last5s=144760 stall5s=0.0s
+16:07:30.924 conn=12 ts-progress t=121s bytes=3513720 last5s=144760 stall5s=0.0s
+16:07:35.672 conn=4 ts-progress t=372s bytes=10778040 last5s=144760 stall5s=0.0s
+16:07:35.962 conn=12 ts-progress t=126s bytes=3658480 last5s=144760 stall5s=0.0s
+16:07:40.694 conn=4 ts-progress t=377s bytes=10922800 last5s=144760 stall5s=0.0s
+16:07:40.993 conn=12 ts-progress t=131s bytes=3803240 last5s=144760 stall5s=0.0s
+16:07:45.722 conn=4 ts-progress t=382s bytes=11067560 last5s=144760 stall5s=0.0s
+16:07:46.021 conn=12 ts-progress t=136s bytes=3948000 last5s=144760 stall5s=0.0s
+16:07:50.767 conn=4 ts-progress t=387s bytes=11212320 last5s=144760 stall5s=0.0s
+16:07:51.056 conn=12 ts-progress t=141s bytes=4092760 last5s=144760 stall5s=0.0s
+16:07:55.807 conn=4 ts-progress t=392s bytes=11357080 last5s=144760 stall5s=0.0s
+16:07:56.063 conn=12 ts-progress t=146s bytes=4237520 last5s=144760 stall5s=0.0s
+16:08:00.857 conn=4 ts-progress t=397s bytes=11501840 last5s=144760 stall5s=0.0s
+16:08:01.097 conn=12 ts-progress t=151s bytes=4382280 last5s=144760 stall5s=0.0s
+16:08:05.873 conn=4 ts-progress t=402s bytes=11646600 last5s=144760 stall5s=0.0s
+16:08:06.150 conn=12 ts-progress t=156s bytes=4527040 last5s=144760 stall5s=0.0s
+16:08:10.919 conn=4 ts-progress t=407s bytes=11804520 last5s=157920 stall5s=0.0s
+16:08:11.169 conn=12 ts-progress t=161s bytes=4684960 last5s=157920 stall5s=0.0s
+16:08:15.946 conn=4 ts-progress t=412s bytes=11949280 last5s=144760 stall5s=0.0s
+16:08:16.215 conn=12 ts-progress t=166s bytes=4829720 last5s=144760 stall5s=0.0s
+16:08:20.949 conn=4 ts-progress t=417s bytes=12094040 last5s=144760 stall5s=0.0s
+16:08:21.233 conn=12 ts-progress t=171s bytes=4974480 last5s=144760 stall5s=0.0s
+16:08:25.971 conn=4 ts-progress t=422s bytes=12238800 last5s=144760 stall5s=0.0s
+16:08:26.248 conn=12 ts-progress t=176s bytes=5119240 last5s=144760 stall5s=0.0s
+16:08:31.020 conn=4 ts-progress t=427s bytes=12383560 last5s=144760 stall5s=0.0s
+16:08:31.285 conn=12 ts-progress t=181s bytes=5264000 last5s=144760 stall5s=0.0s
+16:08:36.050 conn=4 ts-progress t=432s bytes=12528320 last5s=144760 stall5s=0.0s
+16:08:36.311 conn=12 ts-progress t=186s bytes=5408760 last5s=144760 stall5s=0.0s
+16:08:41.058 conn=4 ts-progress t=437s bytes=12673080 last5s=144760 stall5s=0.0s
+16:08:41.335 conn=12 ts-progress t=191s bytes=5553520 last5s=144760 stall5s=0.0s
+16:08:46.061 conn=4 ts-progress t=442s bytes=12817840 last5s=144760 stall5s=0.0s
+16:08:46.385 conn=12 ts-progress t=196s bytes=5698280 last5s=144760 stall5s=0.0s
+16:08:51.102 conn=4 ts-progress t=447s bytes=12962600 last5s=144760 stall5s=0.0s
+16:08:51.429 conn=12 ts-progress t=201s bytes=5843040 last5s=144760 stall5s=0.0s
+16:08:56.108 conn=4 ts-progress t=452s bytes=13107360 last5s=144760 stall5s=0.0s
+16:08:56.433 conn=12 ts-progress t=206s bytes=5987800 last5s=144760 stall5s=0.0s
+16:09:01.130 conn=4 ts-progress t=457s bytes=13252120 last5s=144760 stall5s=0.0s
+16:09:01.460 conn=12 ts-progress t=211s bytes=6132560 last5s=144760 stall5s=0.0s
+16:09:06.137 conn=4 ts-progress t=462s bytes=13396880 last5s=144760 stall5s=0.0s
+16:09:06.480 conn=12 ts-progress t=216s bytes=6277320 last5s=144760 stall5s=0.0s
+16:09:11.157 conn=4 ts-progress t=467s bytes=13541640 last5s=144760 stall5s=0.0s
+16:09:11.522 conn=12 ts-progress t=221s bytes=6422080 last5s=144760 stall5s=0.0s
+16:09:16.182 conn=4 ts-progress t=473s bytes=13686400 last5s=144760 stall5s=0.0s
+16:09:16.558 conn=12 ts-progress t=226s bytes=6566840 last5s=144760 stall5s=0.0s
+16:09:21.223 conn=4 ts-progress t=478s bytes=13831160 last5s=144760 stall5s=0.0s
+16:09:21.585 conn=12 ts-progress t=231s bytes=6711600 last5s=144760 stall5s=0.0s
+16:09:26.263 conn=4 ts-progress t=483s bytes=13975920 last5s=144760 stall5s=0.0s
+16:09:26.623 conn=12 ts-progress t=236s bytes=6856360 last5s=144760 stall5s=0.0s
+16:09:31.293 conn=4 ts-progress t=488s bytes=14120680 last5s=144760 stall5s=0.0s
+16:09:31.630 conn=12 ts-progress t=241s bytes=7001120 last5s=144760 stall5s=0.0s
+16:09:36.312 conn=4 ts-progress t=493s bytes=14265440 last5s=144760 stall5s=0.0s
+16:09:36.674 conn=12 ts-progress t=246s bytes=7145880 last5s=144760 stall5s=0.0s
+16:09:41.343 conn=4 ts-progress t=498s bytes=14410200 last5s=144760 stall5s=0.0s
+16:09:41.708 conn=12 ts-progress t=251s bytes=7290640 last5s=144760 stall5s=0.0s
+16:09:46.360 conn=4 ts-progress t=503s bytes=14554960 last5s=144760 stall5s=0.0s
+16:09:46.716 conn=12 ts-progress t=256s bytes=7435400 last5s=144760 stall5s=0.0s
+16:09:51.404 conn=4 ts-progress t=508s bytes=14699720 last5s=144760 stall5s=0.0s
+16:09:51.770 conn=12 ts-progress t=261s bytes=7580160 last5s=144760 stall5s=0.0s
+16:09:56.444 conn=4 ts-progress t=513s bytes=14844480 last5s=144760 stall5s=0.0s
+16:09:56.814 conn=12 ts-progress t=266s bytes=7724920 last5s=144760 stall5s=0.0s
+16:10:01.494 conn=4 ts-progress t=518s bytes=14989240 last5s=144760 stall5s=0.0s
+16:10:01.832 conn=12 ts-progress t=271s bytes=7869680 last5s=144760 stall5s=0.0s
+16:10:06.503 conn=4 ts-progress t=523s bytes=15134000 last5s=144760 stall5s=0.0s
+16:10:06.854 conn=12 ts-progress t=276s bytes=8014440 last5s=144760 stall5s=0.0s
+16:10:11.522 conn=4 ts-progress t=528s bytes=15278760 last5s=144760 stall5s=0.0s
+16:10:11.880 conn=12 ts-progress t=281s bytes=8159200 last5s=144760 stall5s=0.0s
+16:10:16.558 conn=4 ts-progress t=533s bytes=15423520 last5s=144760 stall5s=0.0s
+16:10:16.885 conn=12 ts-progress t=287s bytes=8303960 last5s=144760 stall5s=0.0s
+16:10:21.584 conn=4 ts-progress t=538s bytes=15568280 last5s=144760 stall5s=0.0s
+16:10:21.932 conn=12 ts-progress t=292s bytes=8461880 last5s=157920 stall5s=0.0s
+16:10:26.632 conn=4 ts-progress t=543s bytes=15713040 last5s=144760 stall5s=0.0s
+16:10:26.979 conn=12 ts-progress t=297s bytes=8606640 last5s=144760 stall5s=0.0s
+16:10:31.646 conn=4 ts-progress t=548s bytes=15857800 last5s=144760 stall5s=0.0s
+16:10:32.019 conn=12 ts-progress t=302s bytes=8751400 last5s=144760 stall5s=0.0s
+16:10:36.693 conn=4 ts-progress t=553s bytes=16002560 last5s=144760 stall5s=0.0s
+16:10:37.070 conn=12 ts-progress t=307s bytes=8896160 last5s=144760 stall5s=0.0s
+16:10:41.694 conn=4 ts-progress t=558s bytes=16147320 last5s=144760 stall5s=0.0s
+16:10:42.119 conn=12 ts-progress t=312s bytes=9040920 last5s=144760 stall5s=0.0s
+16:10:46.724 conn=4 ts-progress t=563s bytes=16292080 last5s=144760 stall5s=0.0s
+16:10:47.139 conn=12 ts-progress t=317s bytes=9185680 last5s=144760 stall5s=0.0s
+16:10:51.730 conn=4 ts-progress t=568s bytes=16436840 last5s=144760 stall5s=0.0s
+16:10:52.151 conn=12 ts-progress t=322s bytes=9330440 last5s=144760 stall5s=0.0s
+16:10:56.742 conn=4 ts-progress t=573s bytes=16581600 last5s=144760 stall5s=0.0s
+16:10:57.174 conn=12 ts-progress t=327s bytes=9475200 last5s=144760 stall5s=0.0s
+16:11:01.751 conn=4 ts-progress t=578s bytes=16726360 last5s=144760 stall5s=0.0s
+16:11:02.201 conn=12 ts-progress t=332s bytes=9619960 last5s=144760 stall5s=0.0s
+16:11:06.761 conn=4 ts-progress t=583s bytes=16871120 last5s=144760 stall5s=0.0s
+16:11:07.243 conn=12 ts-progress t=337s bytes=9764720 last5s=144760 stall5s=0.0s
+16:11:11.796 conn=4 ts-progress t=588s bytes=17029040 last5s=157920 stall5s=0.0s
+16:11:12.273 conn=12 ts-progress t=342s bytes=9909480 last5s=144760 stall5s=0.0s
+16:11:16.799 conn=4 ts-progress t=593s bytes=17173800 last5s=144760 stall5s=0.0s
+16:11:17.294 conn=12 ts-progress t=347s bytes=10054240 last5s=144760 stall5s=0.0s
+16:11:21.850 conn=4 ts-progress t=598s bytes=17318560 last5s=144760 stall5s=0.0s
+16:11:22.337 conn=12 ts-progress t=352s bytes=10199000 last5s=144760 stall5s=0.0s
+16:11:26.855 conn=4 ts-progress t=603s bytes=17463320 last5s=144760 stall5s=0.0s
+16:11:27.346 conn=12 ts-progress t=357s bytes=10343760 last5s=144760 stall5s=0.0s
+16:11:31.908 conn=4 ts-progress t=608s bytes=17608080 last5s=144760 stall5s=0.0s
+16:11:32.393 conn=12 ts-progress t=362s bytes=10488520 last5s=144760 stall5s=0.0s
+16:11:36.909 conn=4 ts-progress t=613s bytes=17752840 last5s=144760 stall5s=0.0s
+16:11:37.440 conn=12 ts-progress t=367s bytes=10633280 last5s=144760 stall5s=0.0s
+16:11:41.931 conn=4 ts-progress t=618s bytes=17897600 last5s=144760 stall5s=0.0s
+16:11:42.458 conn=12 ts-progress t=372s bytes=10778040 last5s=144760 stall5s=0.0s
+16:11:46.963 conn=4 ts-progress t=623s bytes=18042360 last5s=144760 stall5s=0.0s
+16:11:47.501 conn=12 ts-progress t=377s bytes=10922800 last5s=144760 stall5s=0.0s
+16:11:51.982 conn=4 ts-progress t=628s bytes=18187120 last5s=144760 stall5s=0.0s
+16:11:52.525 conn=12 ts-progress t=382s bytes=11067560 last5s=144760 stall5s=0.0s
+16:11:57.018 conn=4 ts-progress t=633s bytes=18331880 last5s=144760 stall5s=0.0s
+16:11:57.527 conn=12 ts-progress t=387s bytes=11212320 last5s=144760 stall5s=0.0s
+16:12:02.040 conn=4 ts-progress t=638s bytes=18476640 last5s=144760 stall5s=0.0s
+16:12:02.561 conn=12 ts-progress t=392s bytes=11357080 last5s=144760 stall5s=0.0s
+16:12:07.043 conn=4 ts-progress t=643s bytes=18621400 last5s=144760 stall5s=0.0s
+16:12:07.571 conn=12 ts-progress t=397s bytes=11501840 last5s=144760 stall5s=0.0s
+16:12:12.095 conn=4 ts-progress t=648s bytes=18766160 last5s=144760 stall5s=0.0s
+16:12:12.574 conn=12 ts-progress t=402s bytes=11646600 last5s=144760 stall5s=0.0s
+16:12:17.131 conn=4 ts-progress t=653s bytes=18910920 last5s=144760 stall5s=0.0s
+16:12:17.623 conn=12 ts-progress t=407s bytes=11791360 last5s=144760 stall5s=0.0s
+16:12:22.175 conn=4 ts-progress t=659s bytes=19055680 last5s=144760 stall5s=0.0s
+16:12:22.631 conn=12 ts-progress t=412s bytes=11936120 last5s=144760 stall5s=0.0s
+16:12:27.632 conn=12 ts-progress t=417s bytes=12080880 last5s=144760 stall5s=0.0s
+16:12:28.007 conn=4 ts-progress t=664s bytes=19160960 last5s=105280 stall5s=2.0s (blockiert)
+16:12:32.644 conn=12 ts-progress t=422s bytes=12225640 last5s=144760 stall5s=0.0s
+16:12:33.012 conn=4 ts-progress t=669s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:12:37.688 conn=12 ts-progress t=427s bytes=12383560 last5s=157920 stall5s=0.0s
+16:12:38.017 conn=4 ts-progress t=674s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:12:42.725 conn=12 ts-progress t=432s bytes=12528320 last5s=144760 stall5s=0.0s
+16:12:43.022 conn=4 ts-progress t=679s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:12:47.742 conn=12 ts-progress t=437s bytes=12673080 last5s=144760 stall5s=0.0s
+16:12:48.028 conn=4 ts-progress t=684s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:12:52.752 conn=12 ts-progress t=442s bytes=12817840 last5s=144760 stall5s=0.0s
+16:12:53.033 conn=4 ts-progress t=689s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:12:57.764 conn=12 ts-progress t=447s bytes=12962600 last5s=144760 stall5s=0.0s
+16:12:58.039 conn=4 ts-progress t=694s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:02.805 conn=12 ts-progress t=452s bytes=13107360 last5s=144760 stall5s=0.0s
+16:13:03.043 conn=4 ts-progress t=699s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:07.853 conn=12 ts-progress t=457s bytes=13252120 last5s=144760 stall5s=0.0s
+16:13:08.049 conn=4 ts-progress t=704s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:12.899 conn=12 ts-progress t=463s bytes=13396880 last5s=144760 stall5s=0.0s
+16:13:13.054 conn=4 ts-progress t=709s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:17.916 conn=12 ts-progress t=468s bytes=13541640 last5s=144760 stall5s=0.0s
+16:13:18.058 conn=4 ts-progress t=714s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:22.962 conn=12 ts-progress t=473s bytes=13686400 last5s=144760 stall5s=0.0s
+16:13:23.066 conn=4 ts-progress t=719s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:27.971 conn=12 ts-progress t=478s bytes=13831160 last5s=144760 stall5s=0.0s
+16:13:28.072 conn=4 ts-progress t=724s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:32.984 conn=12 ts-progress t=483s bytes=13975920 last5s=144760 stall5s=0.0s
+16:13:33.078 conn=4 ts-progress t=729s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:37.995 conn=12 ts-progress t=488s bytes=14120680 last5s=144760 stall5s=0.0s
+16:13:38.083 conn=4 ts-progress t=734s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:43.004 conn=12 ts-progress t=493s bytes=14265440 last5s=144760 stall5s=0.0s
+16:13:43.088 conn=4 ts-progress t=739s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:48.041 conn=12 ts-progress t=498s bytes=14410200 last5s=144760 stall5s=0.0s
+16:13:48.093 conn=4 ts-progress t=744s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:53.083 conn=12 ts-progress t=503s bytes=14554960 last5s=144760 stall5s=0.0s
+16:13:53.099 conn=4 ts-progress t=749s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:58.104 conn=4 ts-progress t=754s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:13:58.106 conn=12 ts-progress t=508s bytes=14699720 last5s=144760 stall5s=0.0s
+16:14:03.109 conn=4 ts-progress t=759s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:03.116 conn=12 ts-progress t=513s bytes=14844480 last5s=144760 stall5s=0.0s
+16:14:08.114 conn=4 ts-progress t=764s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:08.168 conn=12 ts-progress t=518s bytes=14989240 last5s=144760 stall5s=0.0s
+16:14:13.119 conn=4 ts-progress t=769s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:13.217 conn=12 ts-progress t=523s bytes=15134000 last5s=144760 stall5s=0.0s
+16:14:18.123 conn=4 ts-progress t=774s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:18.221 conn=12 ts-progress t=528s bytes=15278760 last5s=144760 stall5s=0.0s
+16:14:23.129 conn=4 ts-progress t=779s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:23.237 conn=12 ts-progress t=533s bytes=15423520 last5s=144760 stall5s=0.0s
+16:14:28.134 conn=4 ts-progress t=784s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:28.282 conn=12 ts-progress t=538s bytes=15568280 last5s=144760 stall5s=0.0s
+16:14:33.138 conn=4 ts-progress t=789s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:33.326 conn=12 ts-progress t=543s bytes=15713040 last5s=144760 stall5s=0.0s
+16:14:38.144 conn=4 ts-progress t=794s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:38.380 conn=12 ts-progress t=548s bytes=15857800 last5s=144760 stall5s=0.0s
+16:14:43.149 conn=4 ts-progress t=799s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:43.389 conn=12 ts-progress t=553s bytes=16002560 last5s=144760 stall5s=0.0s
+16:14:48.153 conn=4 ts-progress t=804s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:48.414 conn=12 ts-progress t=558s bytes=16147320 last5s=144760 stall5s=0.0s
+16:14:53.160 conn=4 ts-progress t=809s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:53.464 conn=12 ts-progress t=563s bytes=16305240 last5s=157920 stall5s=0.0s
+16:14:58.165 conn=4 ts-progress t=815s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:14:58.485 conn=12 ts-progress t=568s bytes=16450000 last5s=144760 stall5s=0.0s
+16:15:03.169 conn=4 ts-progress t=820s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:03.491 conn=12 ts-progress t=573s bytes=16594760 last5s=144760 stall5s=0.0s
+16:15:08.175 conn=4 ts-progress t=825s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:08.523 conn=12 ts-progress t=578s bytes=16739520 last5s=144760 stall5s=0.0s
+16:15:13.180 conn=4 ts-progress t=830s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:13.548 conn=12 ts-progress t=583s bytes=16884280 last5s=144760 stall5s=0.0s
+16:15:18.185 conn=4 ts-progress t=835s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:18.564 conn=12 ts-progress t=588s bytes=17029040 last5s=144760 stall5s=0.0s
+16:15:23.190 conn=4 ts-progress t=840s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:23.617 conn=12 ts-progress t=593s bytes=17173800 last5s=144760 stall5s=0.0s
+16:15:28.194 conn=4 ts-progress t=845s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:28.649 conn=12 ts-progress t=598s bytes=17318560 last5s=144760 stall5s=0.0s
+16:15:33.199 conn=4 ts-progress t=850s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:33.655 conn=12 ts-progress t=603s bytes=17463320 last5s=144760 stall5s=0.0s
+16:15:38.205 conn=4 ts-progress t=855s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:38.681 conn=12 ts-progress t=608s bytes=17608080 last5s=144760 stall5s=0.0s
+16:15:43.210 conn=4 ts-progress t=860s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:43.723 conn=12 ts-progress t=613s bytes=17752840 last5s=144760 stall5s=0.0s
+16:15:48.215 conn=4 ts-progress t=865s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:48.755 conn=12 ts-progress t=618s bytes=17897600 last5s=144760 stall5s=0.0s
+16:15:53.231 conn=4 ts-progress t=870s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:53.765 conn=12 ts-progress t=623s bytes=18042360 last5s=144760 stall5s=0.0s
+16:15:58.235 conn=4 ts-progress t=875s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:15:58.793 conn=12 ts-progress t=628s bytes=18187120 last5s=144760 stall5s=0.0s
+16:16:03.240 conn=4 ts-progress t=880s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:16:03.813 conn=12 ts-progress t=633s bytes=18331880 last5s=144760 stall5s=0.0s
+16:16:08.246 conn=4 ts-progress t=885s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:16:08.860 conn=12 ts-progress t=638s bytes=18476640 last5s=144760 stall5s=0.0s
+16:16:13.251 conn=4 ts-progress t=890s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:16:13.888 conn=12 ts-progress t=644s bytes=18621400 last5s=144760 stall5s=0.0s
+16:16:18.256 conn=4 ts-progress t=895s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:16:18.913 conn=12 ts-progress t=649s bytes=18766160 last5s=144760 stall5s=0.0s
+16:16:23.260 conn=4 ts-progress t=900s bytes=19160960 last5s=0 stall5s=5.0s (blockiert)
+16:16:23.955 conn=12 ts-progress t=654s bytes=18910920 last5s=144760 stall5s=0.0s
+16:16:24.262 conn=4 close
+16:16:28.994 conn=12 ts-progress t=659s bytes=19055680 last5s=144760 stall5s=0.0s
+16:16:34.009 conn=12 ts-progress t=664s bytes=19200440 last5s=144760 stall5s=0.0s
+16:16:39.017 conn=12 ts-progress t=669s bytes=19345200 last5s=144760 stall5s=0.0s
+16:16:44.018 conn=12 ts-progress t=674s bytes=19489960 last5s=144760 stall5s=0.0s
+16:16:49.024 conn=12 ts-progress t=679s bytes=19634720 last5s=144760 stall5s=0.0s
+16:16:54.026 conn=12 ts-progress t=684s bytes=19779480 last5s=144760 stall5s=0.0s
+16:16:59.033 conn=12 ts-progress t=689s bytes=19924240 last5s=144760 stall5s=0.0s
+16:17:04.077 conn=12 ts-progress t=694s bytes=20069000 last5s=144760 stall5s=0.0s
+16:17:09.089 conn=12 ts-progress t=699s bytes=20213760 last5s=144760 stall5s=0.0s
+16:17:14.137 conn=12 ts-progress t=704s bytes=20358520 last5s=144760 stall5s=0.0s
+16:17:19.180 conn=12 ts-progress t=709s bytes=20503280 last5s=144760 stall5s=0.0s
+16:17:24.210 conn=12 ts-progress t=714s bytes=20648040 last5s=144760 stall5s=0.0s
+16:17:29.224 conn=12 ts-progress t=719s bytes=20792800 last5s=144760 stall5s=0.0s
+16:17:34.273 conn=12 ts-progress t=724s bytes=20950720 last5s=157920 stall5s=0.0s
+16:17:39.324 conn=12 ts-progress t=729s bytes=21095480 last5s=144760 stall5s=0.0s
+16:17:44.358 conn=12 ts-progress t=734s bytes=21240240 last5s=144760 stall5s=0.0s
+16:17:49.380 conn=12 ts-progress t=739s bytes=21385000 last5s=144760 stall5s=0.0s
+16:17:54.425 conn=12 ts-progress t=744s bytes=21529760 last5s=144760 stall5s=0.0s
+16:17:59.474 conn=12 ts-progress t=749s bytes=21674520 last5s=144760 stall5s=0.0s
+16:18:04.516 conn=12 ts-progress t=754s bytes=21819280 last5s=144760 stall5s=0.0s
+16:18:09.552 conn=12 ts-progress t=759s bytes=21964040 last5s=144760 stall5s=0.0s
+16:18:14.593 conn=12 ts-progress t=764s bytes=22108800 last5s=144760 stall5s=0.0s
+16:18:19.602 conn=12 ts-progress t=769s bytes=22253560 last5s=144760 stall5s=0.0s
+16:18:24.614 conn=12 ts-progress t=774s bytes=22398320 last5s=144760 stall5s=0.0s
+16:18:29.641 conn=12 ts-progress t=779s bytes=22543080 last5s=144760 stall5s=0.0s
+16:18:34.653 conn=12 ts-progress t=784s bytes=22687840 last5s=144760 stall5s=0.0s
+16:18:39.700 conn=12 ts-progress t=789s bytes=22832600 last5s=144760 stall5s=0.0s
+16:18:44.711 conn=12 ts-progress t=794s bytes=22977360 last5s=144760 stall5s=0.0s
+16:18:49.732 conn=12 ts-progress t=799s bytes=23122120 last5s=144760 stall5s=0.0s
+16:18:54.742 conn=12 ts-progress t=804s bytes=23266880 last5s=144760 stall5s=0.0s
+16:18:59.758 conn=12 ts-progress t=809s bytes=23411640 last5s=144760 stall5s=0.0s
+16:19:04.782 conn=12 ts-progress t=814s bytes=23556400 last5s=144760 stall5s=0.0s
+16:19:09.808 conn=12 ts-progress t=819s bytes=23701160 last5s=144760 stall5s=0.0s
+16:19:14.840 conn=12 ts-progress t=824s bytes=23845920 last5s=144760 stall5s=0.0s
+16:19:19.849 conn=12 ts-progress t=829s bytes=23990680 last5s=144760 stall5s=0.0s
+16:19:24.881 conn=12 ts-progress t=835s bytes=24135440 last5s=144760 stall5s=0.0s
+16:19:29.899 conn=12 ts-progress t=840s bytes=24280200 last5s=144760 stall5s=0.0s
+16:19:34.926 conn=12 ts-progress t=845s bytes=24424960 last5s=144760 stall5s=0.0s
+16:19:39.957 conn=12 ts-progress t=850s bytes=24569720 last5s=144760 stall5s=0.0s
+16:19:45.008 conn=12 ts-progress t=855s bytes=24714480 last5s=144760 stall5s=0.0s
+16:19:50.053 conn=12 ts-progress t=860s bytes=24872400 last5s=157920 stall5s=0.0s
+16:19:55.066 conn=12 ts-progress t=865s bytes=25017160 last5s=144760 stall5s=0.0s
+16:20:00.075 conn=12 ts-progress t=870s bytes=25161920 last5s=144760 stall5s=0.0s
+16:20:05.082 conn=12 ts-progress t=875s bytes=25306680 last5s=144760 stall5s=0.0s
+16:20:10.111 conn=12 ts-progress t=880s bytes=25451440 last5s=144760 stall5s=0.0s
+16:20:15.136 conn=12 ts-progress t=885s bytes=25596200 last5s=144760 stall5s=0.0s
+16:20:20.145 conn=12 ts-progress t=890s bytes=25740960 last5s=144760 stall5s=0.0s
+16:20:25.188 conn=12 ts-progress t=895s bytes=25885720 last5s=144760 stall5s=0.0s
+16:20:30.198 conn=12 ts-progress t=900s bytes=26030480 last5s=144760 stall5s=0.0s
+16:20:30.415 conn=12 max-duration
+16:20:30.416 conn=12 close
+
+== Live-HLS-Abrufe je Minute (iPhone Hintergrund 16:00:35–16:00:56 mit Taste Home)
+15:58 42 15:59 60 16:00 59 16:01 10 16:04 56 16:05 28 
+
+== Mock ohne Echtzeit-Takt (B06_TSFAST=1), iPad: Öffnen 16:21:25, Zurück 16:21:33
+16:21:15.420 server start port=18967 ts_rate=28886 B/s segs=10
+16:21:27.246 conn=1 open peer=127.0.0.1:55050
+16:21:27.246 conn=1 GET /tslive/rel.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+16:21:31.438 conn=1 ts-progress t=4s bytes=18331880 last5s=18331880 stall5s=4.0s
+16:21:36.443 conn=1 ts-progress t=9s bytes=18621400 last5s=289520 stall5s=5.0s (blockiert)
+16:21:41.482 conn=1 ts-progress t=14s bytes=18651008 last5s=29608 stall5s=5.0s (blockiert)
+16:21:46.531 conn=1 ts-progress t=19s bytes=18667136 last5s=16128 stall5s=5.0s (blockiert)
+16:21:51.536 conn=1 ts-progress t=24s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)
+16:21:56.541 conn=1 ts-progress t=29s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)
+16:22:01.546 conn=1 ts-progress t=34s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)
+16:22:06.551 conn=1 ts-progress t=39s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)
+16:22:11.556 conn=1 ts-progress t=44s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)
+16:22:16.561 conn=1 ts-progress t=49s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)
+16:22:21.566 conn=1 ts-progress t=54s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)
+16:22:26.571 conn=1 ts-progress t=59s bytes=18667136 last5s=0 stall5s=5.0s (blockiert)

@@ -1,0 +1,4 @@
+2026-09-26T14:16:40Z nul|parser name=9 zeichen, tvg=13|im speicher schlüssel="id:tvg-Null\0Byte"|nach neustart name="Null" schlüssel="id:tvg-Null"
+2026-09-26T14:16:43Z importiert=10 (["B05LANG xxxx…(10008)", "\"Komma, \\\"zitiert\\\"\"", "\"Rechts‮links\"", "\"Null\"", "\"../../etc/passwd\"", "\"A\"", "\"\\\'; DROP TABLE ZCHANNEL; --\"", "\"<script>alert(1)</script>\"", "\"Tab\\tName\"", "\"📺😀 Emoji Sender\""])
+2026-09-26T14:16:43Z favoriten vor/nach unverändertem aktualisieren=10/9|gleich=false|ZCHANNEL=10|kartenhöhen=[76, 76, 76, 76, 76, 76, 76, 76, 76]|lange karte label-länge=10017
+2026-09-26T14:16:43Z verloren beim aktualisieren=["Null@QA Eingaben"]

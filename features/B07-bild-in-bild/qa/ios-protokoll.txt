@@ -1,0 +1,78 @@
+B07 QA Durchlauf 1 · iOS-Simulator-Läufe (2026-09-26) · Mock 127.0.0.1:18917, Medien ohne Tonspur (ffprobe: 0 Audiospuren)
+Simulatoren (eigens angelegt, am Ende gelöscht): QA-B07 iPad Pro 11 (M4), iOS 26.5 · QA-B07 iPhone 17, iOS 27.0 · App: Debug-Build der Kopie, Bundle-ID lu.daumedia.qa1b07.MikaPlusPlayer
+Bedienung: AXe (tap, key = HID-Tastatur, button home), Bildschirmfotos: simctl io screenshot, Bedienungshilfen-Baum: axe describe-ui
+
+== AK-01 iPad: Bedienungshilfen-Baum Player (HLS) ==
+RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+RadioButton 'Favoriten' val='' id='star.fill' (413,36,104x36)
+RadioButton 'Favoriten' val='' id='star.fill' (413,36,104x36)
+Button '127.0.0.1' val='' id='BackButton' (10,32,44x44)
+Button 'Minimise Video' val='' id='pip.enter' (710,152,48x48)
+Button 'Enter Full Screen' val='' id='arrow.up.left.and.arrow.down.right' (775,153,46x46)
+Button 'Pause' val='' id='pause.fill' (12,1134,42x42)
+Button 'Volume High' val='' id='speaker.wave.2.fill' (78,1133,45x45)
+
+== AK-03 iPad: nach Tipp auf 'Minimise Video' 16:14:56 (Baum bei eingeblendeter Steuerung) ==
+RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+RadioButton 'Favoriten' val='' id='star.fill' (413,36,104x36)
+RadioButton 'Favoriten' val='' id='star.fill' (413,36,104x36)
+Button '127.0.0.1' val='' id='BackButton' (10,32,44x44)
+Button 'Maximise Video' val='' id='pip.exit' (710,152,48x48)
+Button 'Enter Full Screen' val='' id='arrow.up.left.and.arrow.down.right' (775,153,46x46)
+Button 'Pause' val='' id='pause.fill' (12,1134,42x42)
+Button 'Volume High' val='' id='speaker.wave.2.fill' (78,1133,45x45)
+
+== AK-10 iPad: Home-Taste 16:19:27 bei laufendem HLS (ios1) ==
+Segmentabrufe ios1 16:19:31–16:19:37 (App im Hintergrund, PiP-Fenster auf dem Home-Bildschirm): 3
+
+== AK-14 iPad: 'Zurück' bei aktivem PiP 16:20:17 ==
+Abrufe ios1 (Playlist+Segmente) 16:19:57–16:20:17: 20   16:20:18–16:20:40: 0
+Systemprotokoll (simctl spawn log show, Prozess MikaPlusPlayer):
+2026-09-26 16:20:18.614 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.avkit:AVKit] -[AVPictureInPicturePlatformAdapter stopPictureInPictureAndRestoreUserInterface:] shouldRestore NO
+2026-09-26 16:20:18.615 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.pegasus:Common] -[PGPictureInPictureProxy stopPictureInPictureAndRestoreUserInterface:] 0x10165de00
+2026-09-26 16:20:18.615 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.pegasus:Common] -[PGPictureInPictureProxy _setActivationState:reason:] 0x10165de00 3 -> 4 reason: _stopPictureInPictureAnimated
+2026-09-26 16:20:18.615 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.pegasus:Common] -[PGPictureInPictureProxy (0x10165de00) _updateIsInterruptedIfNeededForReason:initiatedByRemoteObject:] Did update _i
+2026-09-26 16:20:18.617 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.avkit:AVKit] -[AVPlayerController dealloc] 968 0x1079fea00
+2026-09-26 16:20:18.633 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.coremedia:] <<<< AVPlayerItem >>>> -[AVPlayerItem dealloc]: <I/YRX.01|0x105f01160> currentItem KVO
+2026-09-26 16:20:18.633 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.coremedia:] <<<< AVPlayer >>>> -[AVPlayer dealloc]: AVPlayer [0x105f02530] P/NT releasing figPlayer 0x116ef9960
+2026-09-26 16:20:18.634 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.coremedia:] <<<< AVPlayer >>>> -[AVPlayer dealloc]: AVPlayer [0x1078a48c0] P/XT releasing figPlayer 0x0
+
+== EC-06 iPad: pausiert (Leertaste), dann Home 16:21:53 ==
+kein PiP-Fenster (Bild EC-06-…); Segmentabrufe ios2 während Pause im Hintergrund 16:21:53–16:27:00: 152 (≈ 304 s Inhalt in 303 s) – Beenden der App 16:26:56
+
+== AK-08/AK-21 iPhone: Player ohne PiP-Knopf, Home 16:24:29 ==
+Button '127.0.0.1' val='' id='BackButton' (16,62,44x44)
+Button 'Enter Full Screen' val='' id='arrow.up.left.and.arrow.down.right' (343,128,46x46)
+Button 'Pause' val='' id='pause.fill' (12,735,41x41)
+Button 'Volume High' val='' id='speaker.wave.2.fill' (77,734,45x45)
+RadioButton 'Playlists' val='1' id='list.and.film' (111,795,94x54)
+RadioButton 'Favoriten' val='' id='star.fill' (197,795,94x54)
+Segmentabrufe ios1 16:24:29–16:25:00 (App im Hintergrund, kein PiP): 14
+Segmentabrufe ios1 16:25:07–16:25:37 (App im Hintergrund, kein PiP): 14
+Segmentabrufe ios1 16:25:37–16:26:07 (App im Hintergrund, kein PiP): 18
+Segmentabrufe ios1 16:26:07–16:26:37 (App im Hintergrund, kein PiP): 16
+
+== AK-09 iPad: .ts (VLC) ==
+16:20:54.107 54986 GET /stream.ts ua=VLC/3.0.21 LibVLC/3.0.21
+
+== AK-04/AK-05 iPad (Ablauf, Zeitpunkte 16:14–16:19) ==
+16:14:56 Tipp auf 'Minimise Video' → PiP-Fenster oben rechts (Bild AK-03-ipad-pip-aktiv.png) – es liegt über dem eigenen Knopf (Knopf-Rahmen 710,152 48x48 pt, Fenster ≈ 475–809 × 32–219 pt)
+16:15:1x Tipp auf 'Maximise Video' (Mitte 734,176) trifft das Systemfenster: es blendet seine Knöpfe ein, Bild-in-Bild bleibt (AK-04-ipad-tipp-auf-knopf-unter-pip.png)
+         Taste p (HID 19) ohne vorheriges Tab: keine Wirkung (weder PiP noch Steuerung); ebenso Leertaste (44) und m (16) im normalen Player
+         Tab (43), dann p → Bild-in-Bild startet, Steuerung eingeblendet (AK-05-ipad-tab-dann-p-startet.png); Umschalt+p → beendet (AK-05-ipad-shift-p-beendet.png)
+         Systemknopf „Zurück zur App“ im Fenster → Bild zurück im Player, Knopf wieder 'Minimise Video' (EC-08-ipad-zurueck-zur-app-im-fenster.png)
+         Fenster per Wischen nach unten links verschoben, danach Tipp auf 'Maximise Video' → beendet, Video im Player (AK-04-ipad-knopf-nach-verschieben-beendet.png)
+
+== Fortsetzung 2026-09-26 17:12–17:15 (iPad, derselbe Simulator, App neu gestartet) ==
+17:12:58 HLS „QA HLS Live“ geöffnet, Tipp auf 'Minimise Video' → Knopf 'Maximise Video' (id pip.exit), PiP aktiv
+== AK-22 iPad: Sperren mit aktivem Bild-in-Bild (axe button lock) 17:13:06 ==
+Bildschirmfotos des gesperrten Simulators sind schwarz (AK-22-ipad-gesperrt-mit-pip.png) – Sichtprüfung dort nicht möglich.
+Bedienungshilfen-Baum des Sperrbildschirms (nach Wecken per Seitentaste): nur Uhrzeit „17:13“, Datum, eine Systemmitteilung,
+Statusleiste; KEIN „Jetzt läuft“-Element, kein Sendername, kein Bild-in-Bild-Element.
+Segmentabrufe ios1 gesperrt 17:13:06–17:13:19: 6 · 17:13:55–17:14:15: 10 (Wiedergabe läuft gesperrt weiter)
+17:14:1x Entsperren (Home, Home): App zeigt den Platzhalter, Bild-in-Bild-Fenster spielt weiter (AK-22-ipad-nach-entsperren.png)
+== AK-14 iPad, zweiter Lauf: 'Zurück' bei aktivem PiP 17:14:35 ==
+letzte Abrufe ios1: 17:14:35.945 61483 GET /livehls/ios1/index.m3u8 ua=Appl;17:14:35.947 61483 GET /livehls/ios1/seg01410.ts ua=App; danach keine (bis Ende der Beobachtung 17:14:45)
+Fenster sofort weg, Senderliste sichtbar (AK-14-ipad-nach-zurueck-lauf2.png)

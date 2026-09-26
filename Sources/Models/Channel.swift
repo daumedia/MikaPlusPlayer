@@ -6,6 +6,7 @@ import SwiftData
 final class Channel {
     var id: UUID
     var name: String
+    /// Bei Xtream-Sendern ohne Zugangsdaten. Zum Abspielen immer `StreamURLResolver` benutzen.
     var streamURL: URL
     var logoURL: URL?
     /// `group-title` aus dem #EXTINF-Tag, z. B. "Sport", "News".

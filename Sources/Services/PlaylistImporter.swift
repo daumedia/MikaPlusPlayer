@@ -24,12 +24,23 @@ enum ImportError: LocalizedError {
 final class PlaylistImporter {
     private let modelContext: ModelContext
     private let parser = M3UParser()
+    private let credentialStore: XtreamCredentialStore
+    private let xtreamLimits: XtreamClient.Limits
+    private let loginThrottle: XtreamLoginThrottle
 
     /// True, während ein Import/Refresh läuft (für UI-Spinner).
     var isWorking = false
 
-    init(modelContext: ModelContext) {
+    init(
+        modelContext: ModelContext,
+        credentialStore: XtreamCredentialStore = .standard,
+        xtreamLimits: XtreamClient.Limits = .standard,
+        loginThrottle: XtreamLoginThrottle = .shared
+    ) {
         self.modelContext = modelContext
+        self.credentialStore = credentialStore
+        self.xtreamLimits = xtreamLimits
+        self.loginThrottle = loginThrottle
     }
 
     // MARK: - Import
@@ -57,6 +68,12 @@ final class PlaylistImporter {
     }
 
     /// Importiert eine Playlist über die Xtream-Codes-API (player_api.php).
+    ///
+    /// - Zugangsdaten gehen in den Schlüsselbund, Datenbank und Stream-Adressen bleiben ohne
+    ///   Geheimnis (B01 · BUG-01).
+    /// - Die Sender werden in einem eigenen `ModelContext` abseits des Main-Actors in Blöcken
+    ///   gespeichert (B01 · BUG-12).
+    /// - Wird die aufrufende Aufgabe vor dem Speichern abgebrochen, entsteht nichts (B01 · BUG-11).
     @discardableResult
     func importFromXtream(
         _ credentials: XtreamCredentials,
@@ -66,22 +83,105 @@ final class PlaylistImporter {
         isWorking = true
         defer { isWorking = false }
 
-        let client = XtreamClient(credentials: credentials)
+        let client = XtreamClient(credentials: credentials, limits: xtreamLimits, throttle: loginThrottle)
         let parsed = try await client.fetchLiveChannels(output: output)
         guard !parsed.isEmpty else { throw ImportError.emptyPlaylist }
+        try Task.checkCancellation()
 
+        guard let secret = credentials.secret(), let sourceURL = credentials.storedSourceURL() else {
+            throw XtreamClient.XtreamError.invalidHost
+        }
         let displayName = name.isEmpty ? (credentials.baseURL()?.host ?? "Xtream") : name
-        let playlist = Playlist(
-            name: displayName,
-            sourceURL: credentials.playerAPIURL(),
-            lastRefreshed: Date(),
-            isXtream: true,
-            xtreamOutput: output.rawValue
-        )
-        modelContext.insert(playlist)
-        attach(parsed, to: playlist, preservedFavorites: [])
+        let playlistID = UUID()
+
+        try credentialStore.save(secret, for: playlistID)
+        do {
+            try await Self.persistXtreamPlaylist(
+                in: modelContext.container, id: playlistID, name: displayName,
+                sourceURL: sourceURL, output: output, channels: parsed
+            )
+        } catch {
+            try? credentialStore.delete(for: playlistID)
+            throw error
+        }
+
+        // Im Kontext der Ansicht abholen. Das Speichern hier stößt auch die @Query-Ansichten an.
+        var descriptor = FetchDescriptor<Playlist>(predicate: #Predicate { $0.id == playlistID })
+        descriptor.fetchLimit = 1
+        guard let playlist = try modelContext.fetch(descriptor).first else { throw ImportError.emptyPlaylist }
+        playlist.lastRefreshed = Date()
         try modelContext.save()
         return playlist
+    }
+
+    /// Anzahl Sender je Speichervorgang beim Xtream-Import.
+    nonisolated static let xtreamBatchSize = 5_000
+
+    /// Legt Playlist und Sender in einem eigenen Hintergrund-Kontext an (B01 · BUG-12).
+    ///
+    /// Die Beziehung wird blockweise über `channels.append(contentsOf:)` gesetzt, nicht je Sender:
+    /// `Channel(playlist:)` bzw. `playlist.channels.append(_:)` je Objekt wächst quadratisch
+    /// (17 000 Sender: 285 s). `channelCount` und `playlistID` stimmen nach jedem Block.
+    /// Scheitert ein Block oder wird die aufrufende Aufgabe abgebrochen (BUG-11), wird die Playlist
+    /// samt bereits gespeicherter Sender wieder entfernt.
+    nonisolated private static func persistXtreamPlaylist(
+        in container: ModelContainer,
+        id: UUID,
+        name: String,
+        sourceURL: URL,
+        output: XtreamOutput,
+        channels parsed: [ParsedChannel]
+    ) async throws {
+        let worker = Task.detached(priority: .userInitiated) {
+            let context = ModelContext(container)
+            context.autosaveEnabled = false
+            let playlist = Playlist(
+                id: id,
+                name: name,
+                sourceURL: sourceURL,
+                lastRefreshed: Date(),
+                isXtream: true,
+                xtreamOutput: output.rawValue
+            )
+            context.insert(playlist)
+            do {
+                var start = parsed.startIndex
+                while start < parsed.endIndex {
+                    try Task.checkCancellation()
+                    let end = min(start + xtreamBatchSize, parsed.endIndex)
+                    var batch: [Channel] = []
+                    batch.reserveCapacity(end - start)
+                    for item in parsed[start..<end] {
+                        let channel = Channel(
+                            name: item.name,
+                            streamURL: item.streamURL,
+                            logoURL: item.logoURL,
+                            group: item.group,
+                            tvgID: item.tvgID,
+                            playlistID: id
+                        )
+                        context.insert(channel)
+                        batch.append(channel)
+                    }
+                    playlist.channels.append(contentsOf: batch)
+                    playlist.channelCount = end - parsed.startIndex
+                    try context.save()
+                    start = end
+                }
+            } catch {
+                context.rollback()
+                let saved = try? context.fetch(FetchDescriptor<Playlist>(predicate: #Predicate { $0.id == id }))
+                for leftover in saved ?? [] { context.delete(leftover) }
+                try? context.save()
+                throw error
+            }
+        }
+        // Die abgelöste Aufgabe erbt den Abbruch nicht – ausdrücklich weiterreichen.
+        try await withTaskCancellationHandler {
+            try await worker.value
+        } onCancel: {
+            worker.cancel()
+        }
     }
 
     /// Importiert eine Playlist aus einer lokalen Datei (.m3u/.m3u8).
@@ -123,9 +223,26 @@ final class PlaylistImporter {
         defer { isWorking = false }
 
         let parsed: [ParsedChannel]
-        if playlist.isXtream, let creds = XtreamCredentials(playerAPIURL: url) {
+        if playlist.isXtream {
+            // B01 · BUG-01: Zugangsdaten aus dem Schlüsselbund. Altbestand mit Zugangsdaten in der
+            // Adresse (Umstellung beim Start nicht gelungen) wird hier nachträglich umgestellt.
+            let legacy = XtreamCredentials(legacyPlayerAPIURL: url)
+            let credentials: XtreamCredentials
+            if let legacy {
+                credentials = legacy
+            } else if let secret = try credentialStore.load(for: playlist.id) {
+                credentials = XtreamCredentials(secret: secret)
+            } else {
+                throw StreamURLResolver.ResolveError.missingCredentials
+            }
             let output = XtreamOutput(rawValue: playlist.xtreamOutput ?? "") ?? .hls
-            parsed = try await XtreamClient(credentials: creds).fetchLiveChannels(output: output)
+            parsed = try await XtreamClient(credentials: credentials, limits: xtreamLimits, throttle: loginThrottle)
+                .fetchLiveChannels(output: output)
+            guard !parsed.isEmpty else { throw ImportError.emptyPlaylist }
+            if let legacy, let secret = legacy.secret() {
+                try credentialStore.save(secret, for: playlist.id)
+                playlist.sourceURL = legacy.storedSourceURL()
+            }
         } else {
             let text = try await fetchText(from: url)
             parsed = parser.parse(text)
@@ -145,6 +262,19 @@ final class PlaylistImporter {
         attach(parsed, to: playlist, preservedFavorites: preserved)
         playlist.lastRefreshed = Date()
         try modelContext.save()
+    }
+
+    // MARK: - Löschen
+
+    /// Löscht eine Playlist samt Sendern und – bei Xtream – ihre Zugangsdaten im Schlüsselbund.
+    func delete(_ playlist: Playlist) throws {
+        let id = playlist.id
+        let isXtream = playlist.isXtream
+        modelContext.delete(playlist)
+        try modelContext.save()
+        if isXtream {
+            try credentialStore.delete(for: id)
+        }
     }
 
     // MARK: - Helpers

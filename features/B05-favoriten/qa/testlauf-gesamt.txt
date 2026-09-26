@@ -1,0 +1,72 @@
+# Gefilterte Ausgabe des letzten Gesamtlaufs (Kopie qa1-b05, Debug, 2026-09-26 16:14–16:17)
+# xcodebuild test-without-building -project MikaPlusPlayer.xcodeproj -scheme MikaPlusPlayer-macOS -destination 'platform=macOS' -derivedDataPath build/dd -only-testing:MikaPlusPlayerTests/B05SternTests … /B05SicherheitTests (7 Klassen)
+# mit TEST_RUNNER_B05_EVIDENCE=1 TEST_RUNNER_B05_FULL_VOLUME=<kopie>/voll-mnt
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK11_AK12_AK13_AK14_SchluesselUndVerlustM3U]' passed (0.542 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK11_AK12_AK13_SchluesselXtream]' passed (0.387 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK15_EC01_EC03_DoppelteSchluesselVervielfachenFavoritenM3U]' passed (0.350 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK15_EC02_NamenloseUndVariantenXtream]' passed (2.393 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK16_EC11_ZweiPlaylistsGleicheTvgIDUnabhaengig]' passed (0.320 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK17_EC05_FehlschlagLaesstFavoritenUnveraendert]' passed (0.421 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK17_Randfall_SpeicherfehlerBeimAktualisieren]' passed (2.898 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK18_LokaleDateiNichtAktualisierbarFavoritenBleiben]' passed (0.320 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testAK19_TabUndPlayerWaehrendAktualisieren]' passed (6.236 seconds).
+Test Case '-[MikaPlusPlayerTests.B05AktualisierenTests testEC04_SternWaehrendDesWartensAufDenAnbieter]' passed (6.853 seconds).
+Test Suite 'B05AktualisierenTests' passed at 2026-09-26 16:15:21.970.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 20.721 (20.728) seconds
+Test Case '-[MikaPlusPlayerTests.B05DatenschutzTests testAK22_AK23_AK24_SpeicherortRechteBackupFremderProzess]' passed (0.481 seconds).
+Test Case '-[MikaPlusPlayerTests.B05DatenschutzTests testAK25_Angriff5_TabFragtGenauDieLogosDerFavoritenAn]' passed (11.430 seconds).
+Test Case '-[MikaPlusPlayerTests.B05DatenschutzTests testAK26_Angriff4_KeineSendernamenImSystemprotokoll]' passed (12.651 seconds).
+Test Case '-[MikaPlusPlayerTests.B05DatenschutzTests testAK27_SpeicherfehlerBeimUmschaltenWirdVerschluckt]' passed (16.367 seconds).
+Test Case '-[MikaPlusPlayerTests.B05DatenschutzTests testEC06_UebernahmeDerAltenDatenbankBehaeltFavoriten]' passed (0.833 seconds).
+Test Suite 'B05DatenschutzTests' passed at 2026-09-26 16:16:03.734.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 41.762 (41.764) seconds
+Test Case '-[MikaPlusPlayerTests.B05LeistungTests testAK29_AK30_FavoritenBei17000Und34000Sendern]' passed (19.558 seconds).
+Test Case '-[MikaPlusPlayerTests.B05LeistungTests testEC09_SehrVieleFavoriten]' passed (5.892 seconds).
+Test Suite 'B05LeistungTests' passed at 2026-09-26 16:16:29.185.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 25.450 (25.451) seconds
+Test Case '-[MikaPlusPlayerTests.B05LoeschenTests testAK20_Angriff8_LoeschenNimmtFavoritenOhneHinweisMit]' passed (1.572 seconds).
+Test Case '-[MikaPlusPlayerTests.B05LoeschenTests testAK28_NamenGeloeschterFavoritenInDatenbankdateien]' passed (3.062 seconds).
+Test Suite 'B05LoeschenTests' passed at 2026-09-26 16:16:33.821.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 4.635 (4.636) seconds
+Test Case '-[MikaPlusPlayerTests.B05SicherheitTests testAngriff1_FremdeUndVerwaisteIDsImTab]' passed (3.164 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SicherheitTests testAngriff3_VierzigSchnelleKlicks]' passed (3.882 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SicherheitTests testAngriff7_NulZeichenWirdBeimSpeichernGekuerzt]' passed (0.321 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SicherheitTests testAngriff7_UngewoehnlicheNamenUndTvgIDs]' passed (3.397 seconds).
+Test Suite 'B05SicherheitTests' passed at 2026-09-26 16:16:44.587.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 10.763 (10.766) seconds
+Test Case '-[MikaPlusPlayerTests.B05SternTests testAK01_SternRechtsGrauUndAkzentMitMultiviewDaneben]' passed (2.725 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SternTests testAK02_KlickSpeichertSofortDauerhaftUndDoppelklickSchaltetZweimal]' passed (3.407 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SternTests testAK03_SternOeffnetKeinenPlayerKarteSchon]' passed (5.065 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SternTests testAK04_EC07_TabInZweitemFensterFolgtSofort]' passed (2.712 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SternTests testAK05_VoiceOverKarteEinElementSternNurAlsAktionOhneZustand]' passed (5.529 seconds).
+Test Case '-[MikaPlusPlayerTests.B05SternTests testEC08_EntfernenImTabGrautSternInOffenerListe]' passed (3.481 seconds).
+Test Suite 'B05SternTests' passed at 2026-09-26 16:17:07.510.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 22.919 (22.922) seconds
+Test Case '-[MikaPlusPlayerTests.B05TabTests testAK06_TabLeisteKopfzeileFenstertitel]' passed (4.026 seconds).
+Test Case '-[MikaPlusPlayerTests.B05TabTests testAK07_LeerzustandOhneUndMitPlaylists]' passed (2.318 seconds).
+Test Case '-[MikaPlusPlayerTests.B05TabTests testAK08_AlleFavoritenAllerPlaylistsInEinerListe]' passed (4.419 seconds).
+Test Case '-[MikaPlusPlayerTests.B05TabTests testAK09_GleichnamigeFavoritenNichtUnterscheidbarReihenfolgeDerAnlage]' passed (3.997 seconds).
+Test Case '-[MikaPlusPlayerTests.B05TabTests testAK10_SortierungNachZeichencode]' passed (4.806 seconds).
+Test Case '-[MikaPlusPlayerTests.B05TabTests testAK21_KeinAlleEntfernenKeinExport]' passed (2.795 seconds).
+Test Case '-[MikaPlusPlayerTests.B05TabTests testEC01_GleichnamigeInDerselbenPlaylistNachAktualisierenZweiKarten]' passed (2.344 seconds).
+Test Suite 'B05TabTests' passed at 2026-09-26 16:17:32.220.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 24.706 (24.710) seconds
+Test Suite 'MikaPlusPlayerTests.xctest' passed at 2026-09-26 16:17:32.220.
+	 Executed 36 tests, with 0 failures (0 unexpected) in 150.955 (150.978) seconds
+Test Suite 'Selected tests' passed at 2026-09-26 16:17:32.221.
+	 Executed 36 tests, with 0 failures (0 unexpected) in 150.955 (150.979) seconds
+** TEST EXECUTE SUCCEEDED **
+# Belege für Fehler (XCTExpectFailure, erwartet):
+B05AktualisierenTests.testAK11_AK12_AK13_AK14_SchluesselUndVerlustM3U → BUG-05
+B05AktualisierenTests.testAK15_EC01_EC03_DoppelteSchluesselVervielfachenFavoritenM3U → BUG-01
+B05AktualisierenTests.testAK15_EC02_NamenloseUndVariantenXtream → BUG-01
+B05AktualisierenTests.testAK17_Randfall_SpeicherfehlerBeimAktualisieren → BUG-11
+B05DatenschutzTests.testAK25_Angriff5_TabFragtGenauDieLogosDerFavoritenAn → BUG-03
+B05DatenschutzTests.testAK27_SpeicherfehlerBeimUmschaltenWirdVerschluckt → BUG-02
+B05LoeschenTests.testAK20_Angriff8_LoeschenNimmtFavoritenOhneHinweisMit → BUG-08
+B05SicherheitTests.testAngriff7_NulZeichenWirdBeimSpeichernGekuerzt → BUG-09
+B05SicherheitTests.testAngriff7_UngewoehnlicheNamenUndTvgIDs → BUG-09
+B05SternTests.testAK05_VoiceOverKarteEinElementSternNurAlsAktionOhneZustand → BUG-04
+B05TabTests.testAK09_GleichnamigeFavoritenNichtUnterscheidbarReihenfolgeDerAnlage → BUG-06
+B05TabTests.testAK10_SortierungNachZeichencode → BUG-07
+B05TabTests.testEC01_GleichnamigeInDerselbenPlaylistNachAktualisierenZweiKarten → BUG-01

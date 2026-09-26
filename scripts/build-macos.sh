@@ -29,4 +29,5 @@ rm -rf "$ROOT/build/MikaPlusPlayer.app"
 cp -R "$APP" "$ROOT/build/MikaPlusPlayer.app"
 
 VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$ROOT/build/MikaPlusPlayer.app/Contents/Info.plist")
-echo "==> Fertig: build/MikaPlusPlayer.app (v$VER)"
+BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$ROOT/build/MikaPlusPlayer.app/Contents/Info.plist")
+echo "==> Fertig: build/MikaPlusPlayer.app (v$VER, Build $BUILD)"

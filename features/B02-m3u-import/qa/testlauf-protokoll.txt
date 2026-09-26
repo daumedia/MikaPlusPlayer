@@ -1,0 +1,276 @@
+# B02 QA Durchlauf 1 — Protokoll des Gesamtlaufs (Debug, Test-Host), 2026-09-16 22:45–22:55
+# xcodebuild test-without-building … -derivedDataPath build/dd-qa-b02, TEST_RUNNER_B02_QA_SIZES=1500,3000,6000,17000, TEST_RUNNER_B02_QA_STORE_SIZES=6000
+# Nur erfundene Daten (qa-user / qa-pass-b02…), Server auf 127.0.0.1 (Ports wechseln je Lauf).
+B02QA|AK-16|datei="liste.v2.m3u"|eingabe=nil|name="liste.v2"|sourceURL=nil|isRemote=false|isXtream=false|channelCount=2|lastRefreshed=nil|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}
+B02QA|AK-16|datei="Sender & Ümlaut (Kopie).M3U8"|eingabe=nil|name="Sender & Ümlaut (Kopie)"|sourceURL=nil|isRemote=false|isXtream=false|channelCount=2|lastRefreshed=nil|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}
+B02QA|AK-16|datei=".m3u"|eingabe=nil|name=".m3u"|sourceURL=nil|isRemote=false|isXtream=false|channelCount=2|lastRefreshed=nil|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}
+B02QA|AK-16|datei=".versteckt.m3u"|eingabe=nil|name=".versteckt"|sourceURL=nil|isRemote=false|isXtream=false|channelCount=2|lastRefreshed=nil|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}
+B02QA|AK-16|datei="liste.m3u"|eingabe="   "|name="   "|sourceURL=nil|isRemote=false|isXtream=false|channelCount=2|lastRefreshed=nil|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}
+B02QA|AK-16|datei="liste.m3u"|eingabe="  Eigener Name  "|name="  Eigener Name  "|sourceURL=nil|isRemote=false|isXtream=false|channelCount=2|lastRefreshed=nil|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}
+Test Case '-[MikaPlusPlayerTests.B02DateiImportTests testAK16_DateiImportNameUndOhneQuelladresse]' passed (0.022 seconds).
+B02QA|AK-17|liste.txt|typ=public.plain-text|ergebnis=OK|sender=2
+B02QA|AK-17|daten.csv|typ=public.comma-separated-values-text|ergebnis=OK|sender=2
+B02QA|AK-17|quelltext.swift|typ=public.swift-source|ergebnis=OK|sender=2
+B02QA|AK-17|bild.png|typ=public.png|ergebnis=OK|sender=2
+B02QA|AK-17|ohne-endung|typ=public.data|ergebnis=OK|sender=2
+B02QA|AK-17|liste.json|typ=public.json|ergebnis=OK|sender=2
+Test Case '-[MikaPlusPlayerTests.B02DateiImportTests testAK17_InhaltStattEndung]' passed (0.011 seconds).
+B02QA|AK-18|Rechte 000|meldung=Auf die ausgewählte Datei kann nicht zugegriffen werden.
+B02QA|AK-18|Ordner 000|meldung=Auf die ausgewählte Datei kann nicht zugegriffen werden.
+B02QA|AK-18|gelöscht|meldung=Auf die ausgewählte Datei kann nicht zugegriffen werden.
+B02QA|AK-18|Ordner|meldung=Auf die ausgewählte Datei kann nicht zugegriffen werden.
+B02QA|AK-18|Symlink ins Leere|meldung=Auf die ausgewählte Datei kann nicht zugegriffen werden.
+B02QA|AK-18|Symlink|ergebnis=OK|name=verweis
+B02QA|AK-18|Symlink-Kette|ergebnis=OK|name=kette
+B02QA|EC-19|namedPipe|meldung=Auf die ausgewählte Datei kann nicht zugegriffen werden.|dauer=0.00s|maxMainThreadBlockade=0.00s
+Test Case '-[MikaPlusPlayerTests.B02DateiImportTests testAK18_EC19_NichtLesbareDateienUndSymlinks]' passed (0.221 seconds).
+B02QA|AK-19|macOS|name=scope|sender=2|startAccessingNachImport=true|sandbox=nil
+Test Case '-[MikaPlusPlayerTests.B02DateiImportTests testAK19_SecurityScopedAdresseMacOS]' passed (0.072 seconds).
+B02QA|AK-25|datei|utf8|name="ORF Eins Ä"|gruppe=Österreich|skalare=U+00C4
+B02QA|AK-25|datei|utf8-bom|name="ORF Eins Ä"|gruppe=Österreich|skalare=U+00C4
+B02QA|AK-25|datei|utf8-bom-direkt-extinf|name="ORF Eins Ä"|gruppe=Österreich|skalare=U+00C4
+B02QA|AK-25|datei|latin1|name="ORF Eins Ä"|gruppe=Österreich|skalare=U+00C4
+B02QA|EC-07|name="Ãrger TV"|skalare=U+00C3,U+0084|gruppe=Ãsterreich
+B02QA|EC-08|sender=["\"Preis  TV\""]|skalare=["U+0080"]
+B02QA|EC-09|utf16le|bytes=140|meldung=Die Playlist enthält keine gültigen Sender.
+B02QA|EC-09|utf16be|bytes=140|meldung=Die Playlist enthält keine gültigen Sender.
+Test Case '-[MikaPlusPlayerTests.B02DateiImportTests testAK25_EC07_EC08_EC09_KodierungUeberDatei]' passed (0.129 seconds).
+B02QA|EC-09|url|meldung=Die Playlist enthält keine gültigen Sender.
+Test Case '-[MikaPlusPlayerTests.B02DateiImportTests testEC09_UTF16UeberURL]' passed (0.040 seconds).
+B02QA|EC-10|datei|name="relativ"|sourceURL=nil|isRemote=false|isXtream=false|channelCount=1|lastRefreshed=nil|{"Absolut" gruppe=nil tvg=nil url=file://<tmp>/b02-qa-ec10-696E120D-0098-4BE6-9389-82287DE79422/stream.ts logo=nil}
+Test Case '-[MikaPlusPlayerTests.B02DateiImportTests testEC10_RelativeAdresseNebenDerDatei]' passed (0.111 seconds).
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.605 (0.608) seconds
+B02QA|AK-28|haengt|dauer=60.02s|Netzwerkfehler: The request timed out.
+B02QA|AK-38|troepfelt-10x10s|bytes=1738|dauer=100.30s|OK (20 Sender)
+B02QA|AK-12/EC-17|ftp|dauer=60.02s|Netzwerkfehler: The request timed out.|verbindungenAmZiel=1|anfragenAmZiel=0
+Test Case '-[MikaPlusPlayerTests.B02LangsamTests testAK12_AK28_AK38_EC17_LeerlaufFtpUndTroepfeln]' passed (100.515 seconds).
+B02QA|AK-40|inMemory|sender=1500|bytes=212688|gesamt=2.30s|maxMainThreadBlockade=2.27s|playlistID=1500|beziehung=1500|build=Debug|cpuKerne=16|last=4.7/5.6/6.7
+B02QA|AK-40|inMemory|sender=3000|bytes=429818|gesamt=8.86s|maxMainThreadBlockade=8.84s|playlistID=3000|beziehung=3000|build=Debug|cpuKerne=16|last=5.7/5.8/6.8
+B02QA|AK-40|inMemory|sender=6000|bytes=864068|gesamt=35.31s|maxMainThreadBlockade=35.29s|playlistID=6000|beziehung=6000|build=Debug|cpuKerne=16|last=6.2/5.9/6.8
+B02QA|AK-40|storeDatei|sender=6000|bytes=864068|gesamt=35.46s|maxMainThreadBlockade=35.43s|playlistID=6000|beziehung=6000|build=Debug|cpuKerne=16|last=6.2/5.9/6.8
+B02QA|AK-40|inMemory|sender=17000|bytes=2484318|gesamt=282.04s|maxMainThreadBlockade=282.02s|playlistID=17000|beziehung=17000|build=Debug|cpuKerne=16|last=5.3/5.4/6.3
+B02QA|AK-40|wachstum 3000→6000 Faktor=3.98|build=Debug
+Test Case '-[MikaPlusPlayerTests.B02LangsamTests testAK40_GrosseListeBlockiertMainThread]' passed (365.771 seconds).
+	 Executed 2 tests, with 0 failures (0 unexpected) in 466.287 (466.288) seconds
+B02QA|AK-01|reiterURL|["AXStaticText:Playlist importieren", "AXStaticText:Quelle", "AXRadioButton:Xtream | 0", "AXRadioButton:URL | 1", "AXRadioButton:Datei | 0", "AXHeading:Name (optional)", "AXStaticText:z. B. Mein IPTV-Anbieter", "AXHeading:Playlist-URL", "AXStaticText:https://… .m3u8", "AXButton:Von URL importieren", "AXButton:Abbrechen"]
+B02QA|AK-01|reiterDatei|["AXStaticText:Playlist importieren", "AXStaticText:Quelle", "AXRadioButton:Xtream | 0", "AXRadioButton:URL | 0", "AXRadioButton:Datei | 1", "AXHeading:Name (optional)", "AXStaticText:z. B. Mein IPTV-Anbieter", "AXHeading:Lokale Datei", "AXButton:Datei auswählen (.m3u/.m3u8)", "AXButton:Abbrechen"]
+B02QA|AK-01|zurueckURL|felder=["", "http://127.0.0.1:55384/liste.m3u"]
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK01_ReiterURLUndDatei]' passed (3.542 seconds).
+B02QA|AK-02|autokorrektur Name=true URL=false
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK02_KeineAutokorrekturImURLFeldMacOS]' passed (2.365 seconds).
+B02QA|AK-03|["leer=false", "\" \"=true", "\"\\t\"=true", "\"x\"=true", "\"http://127.0.0.1:55386/liste.m3u\"=true", "\"\"=false", "dateiButton=true"]
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK03_ButtonZustaende]' passed (4.473 seconds).
+B02QA|AK-04|importiere=true|fortschritt=true|urlButton=false|abbrechen=true|EC-20 datei: importiere=true button=false|xtream: importiere=true|anfragen=1
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK04_EC20_ZustandWaehrendDesURLImports]' passed (5.878 seconds).
+B02QA|AK-05|klasse=NSOpenPanel|alsSheet=true|erlaubteTypen=["public.m3u-playlist", "public.plain-text"]|mehrfachauswahl=false|dateien=true|ordner=false|waehlbar=["(ohne Endung)=false", "M3U8=true", "csv=true", "html=false", "json=false", "log=true", "m3u=true", "m3u8=true", "md=true", "pls=false", "swift=true", "txt=true", "xspf=false"]
+B02QA|AK-05|auswahl|zeileUeberAX=false|urls=[]
+B02QA|AK-05|dateiwahlImDialogNichtAutomatisierbar|dialogAbgebrochen|alertNachAbbruch=[]|playlists=0|sheetOffen=true|dateiButton=true
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK05_AK16_Dateidialog]' passed (6.801 seconds).
+B02QA|AK-06|zeilen=["AXButton:QA Zweite, 2 Sender", "AXButton:QA Erste, 2 Sender"]
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK06_ErfolgSchliesstSheetNeuePlaylistOben]' passed (5.752 seconds).
+B02QA|AK-16|kontextmenue datei=["Löschen"]|url=["Aktualisieren", "Löschen"]|symbolLabels=[]
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK16_DateiPlaylistSymbolUndKontextmenue]' passed (3.714 seconds).
+B02QA|AK-27|"http://127.0.0.1:55391/fehlt.m3u"|alert=["AXSheet:alert", "AXStaticText:Fehler", "AXStaticText:Netzwerkfehler: HTTP 404", "AXButton:OK"]
+B02QA|AK-27|nachOK|felder=["QA Alert", "http://127.0.0.1:55391/fehlt.m3u"]|button=true|sheetOffen=true|playlists=0
+B02QA|AK-27|"   "|alert=["AXSheet:alert", "AXStaticText:Fehler", "AXStaticText:Die angegebene URL ist ungültig.", "AXButton:OK"]
+B02QA|AK-27|nachOK|felder=["QA Alert", "   "]|button=true|sheetOffen=true|playlists=0
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK27_FehlerAlertEingabenBleiben]' passed (4.390 seconds).
+B02QA|AK-29|a-erfolgNachAbbrechen|playlistsDirekt=0|playlistsNach4s=1|anfragen=1
+B02QA|AK-29|b-fenster0|klasse=SheetPresentationWindow|sheetParent=nil|frame=(295.0, 234.0, 470.0, 457.0)
+B02QA|AK-29|b-fenster1|klasse=_NSAlertPanel|sheetParent=SheetPresentationWindow|frame=(400.0, 402.0, 260.0, 122.0)
+B02QA|AK-29|b-fehlerNachAbbrechen|neueFensterAufBildschirm=2|texte=["AXRadioButton:URL | 1", "AXHeading:Playlist-URL", "AXButton:Von URL importieren", "AXStaticText:Fehler", "AXStaticText:Netzwerkfehler: HTTP 500", "AXStaticText:Fehler", "AXStaticText:Netzwerkfehler: HTTP 500"]|sheetAmHauptfenster=false|anfragen=1
+B02QA|EC-21|erneutGeoeffnet|alertAmSheet=false
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK29_EC21_AbbrechenBrichtURLImportNichtAb]' passed (15.206 seconds).
+B02QA|AK-30|a-selberDurchlauf|anfragen=2|neuePlaylists=2
+B02QA|AK-30|b-150ms|anfragen=1|neuePlaylists=1
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK30_DoppelklickAufVonURLImportieren]' passed (11.607 seconds).
+B02QA|AK-31|testHost|qa-oeffnen.m3u|dispatchStatus=0
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK31_OeffnenEreignisErzeugtLeeresFensterOhneImport]' passed (7.354 seconds).
+B02QA|AK-31d/AK-32|m3u|typ=public.m3u-playlist|standardApp=Music.app|mikaPlusPlayerKandidaten=18
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK31d_AK32_OeffnerRegistrierung]' passed (0.040 seconds).
+	 Executed 12 tests, with 0 failures (0 unexpected) in 71.123 (71.131) seconds
+B02QA|AK-20|ohneKopf=1|dazwischen={"Mit Zwischenzeilen" url=http://h/a.ts gruppe=nil tvg="a" logo=nil}|rand={"Rand" url=http://h/rand.ts gruppe=nil tvg=nil logo=nil}|kopfInDerMitte=2|ohneSchema=0
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK20_EintragAusExtinfUndAdresszeile]' passed (0.001 seconds).
+B02QA|AK-21|{"Das Erste, HD" url=http://h/a.m3u8 gruppe="News, Politik" tvg="ard.de" logo=http://x/logo.png} {"Name" url=http://h/a.ts gruppe=nil tvg=nil logo=http://x/l.png?a=1,2} {"Sender \"Eins\", HD" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {"stream-name.ts" url=http://h/stream-name.ts gruppe=nil tvg="x" logo=nil} {"letzter.m3u8" url=http://h/pfad/letzter.m3u8 gruppe=nil tvg=nil logo=nil} {"ohne-komma.ts" url=http://h/ohne-komma.ts gruppe=nil tvg="x" logo=nil}
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK21_NameQuoteSicherUndErsatzname]' passed (0.001 seconds).
+B02QA|AK-22|{"Gross" url=http://h/a.ts gruppe="GRUPPE" tvg="up" logo=http://x/u.png} {"Sp" url=http://h/a.ts gruppe="G" tvg="sp" logo=nil} {"Tab" url=http://h/a.ts gruppe="TabG" tvg="tab" logo=nil} {"Doppelt" url=http://h/a.ts gruppe="Zweite" tvg=nil logo=nil} {"Leer" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {"Rand" url=http://h/a.ts gruppe=" News " tvg=" id " logo=nil} {"NoQuote" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {"Hoch" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {"Name group-title=\"Nach Komma\"" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK22_AttributRegeln]' passed (0.001 seconds).
+B02QA|AK-23|folge={"A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {"B" url=http://h/b.ts gruppe=nil tvg=nil logo=nil}
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK23_ExtgrpRegeln]' passed (0.000 seconds).
+B02QA|AK-24|LF=2|CRLF=2|CR=2|gemischt=2
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK24_Zeilenenden]' passed (0.001 seconds).
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK26_KeineGueltigenEintraegeUndStillesVerwerfen]' passed (0.001 seconds).
+B02QA|AK-40|parserAllein|sender=17000|bytes=2484318|dauer=0.32,0.31,0.32s|build=Debug
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK40_ParserAllein17000]' passed (0.967 seconds).
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC01_EinfacheM3UOhneExtinf]' passed (0.000 seconds).
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC02_ExtinfKleinOderOhneDoppelpunkt]' passed (0.000 seconds).
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC03_VerbrauchteUndDoppelteEintraege]' passed (0.001 seconds).
+B02QA|EC-04|{"a.ts" url=http://h/a.ts gruppe="News,Das Erste" tvg=nil logo=nil} {"a.ts" url=http://h/a.ts gruppe=nil tvg="abc group-title=" logo=nil}
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC04_UnbalancierteAnfuehrungszeichen]' passed (0.001 seconds).
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC05_HochkommasMitKomma]' passed (0.000 seconds).
+B02QA|EC-06|U+2028|anzahl=0|
+B02QA|EC-06|U+0085|anzahl=0|
+B02QA|EC-06|VT|anzahl=0|
+B02QA|EC-06|FF|anzahl=0|
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC06_SteuerzeichenImNamen]' passed (0.000 seconds).
+B02QA|EC-10|{"Win" url=C:%5CVideos%5Ca.ts gruppe=nil tvg=nil logo=nil} {"LH" url=localhost:8080/live/1.ts gruppe=nil tvg=nil logo=nil}
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC10_RelativeUndSchemaaehnlicheAdressen]' passed (0.001 seconds).
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC11_LogoAdressen]' passed (0.001 seconds).
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC12_DoppelterSender]' passed (0.001 seconds).
+B02QA|EC-13|Name 1 MB + Logo 5 MB|eingabeBytes=6000050|anzahl=1|dauer=0.68s|name=1000000|logo=5000013|gruppe=-1|url=13|build=Debug
+B02QA|EC-13|Stream-Adresse 2 MB|eingabeBytes=2000025|anzahl=1|dauer=0.09s|name=4|logo=-1|gruppe=-1|url=2000009|build=Debug
+B02QA|EC-13|Gruppe 1 MB|eingabeBytes=1000041|anzahl=1|dauer=0.13s|name=1|logo=-1|gruppe=1000000|url=13|build=Debug
+B02QA|EC-13|1 MB Anführungszeichen|eingabeBytes=1000027|anzahl=1|dauer=0.13s|name=1|logo=-1|gruppe=-1|url=13|build=Debug
+B02QA|EC-13|500.000 × a=|eingabeBytes=1000027|anzahl=1|dauer=0.25s|name=1|logo=-1|gruppe=-1|url=13|build=Debug
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC13_SehrLangeZeilenUngekuerzt]' passed (1.398 seconds).
+B02QA|EC-14|bytes=45380568|anzahl=300000|dekodieren=0.00s|parser=5.57s|speicherVorher=266MB|nachher=518MB|build=Debug
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC14_DreihunderttausendEintraegeParser]' passed (5.780 seconds).
+	 Executed 18 tests, with 0 failures (0 unexpected) in 8.153 (8.157) seconds
+B02QA|AK-34|benutzerinfo|ZPLAYLIST.ZSOURCEURL mit Passwort=1
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK34_BenutzerinfoImKlartext]' passed (0.033 seconds).
+B02QA|AK-34|sqlite|ZPLAYLIST.ZSOURCEURL mit Passwort=1|ZCHANNEL.ZSTREAMURL mit Passwort=3/3|rohBytes=["b02-qa.store-wal": 4, "b02-qa.store-shm": 0, "b02-qa.store": 0]|schluesselbund(Testdienst)=0|umstellung=CredentialMigrationResult(migratedPlaylists: 0, rewrittenChannels: 0, failedPlaylists: 0)|sourceURLDanach=1|abspielbarMitPasswort=3/3|isExcludedFromBackup=false
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK34_ZugangsdatenAusM3ULinkImKlartext]' passed (0.550 seconds).
+B02QA|AK-35|cache|nachImport api=1 bytes=8 dateien=["/privateCache.db-wal"] antwortkoerperMitPasswort=true|nachLoeschen api=1 bytes=8|no-store api=0 bytes=0|leeren1=true->api 0|neuerImport+leeren2=false->api 1
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK35_PlattencacheBehaeltZugangsdatenNachLoeschen]' passed (8.154 seconds).
+B02QA|AK-37|URL|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=3.61s|maxMainThreadBlockade=3.56s|speicherVorher=403MB|nachher=652MB|build=Debug
+B02QA|AK-37|Datei|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=3.49s|maxMainThreadBlockade=3.49s|speicherVorher=601MB|nachher=655MB|build=Debug
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK37_GrosseAntwortUndDateiOhneGrenze]' passed (7.884 seconds).
+B02QA|AK-39|sender=17|streamSchemataInDB=["data:", "file:", "ftp:", "http:", "javascript:", "mailto:", "rtmp:", "rtp:", "rtsp:", "smb:", "udp:", "vlc:", "x-apple.systempreferences:"]|logos=["file:///etc/hosts", "javascript:alert(1)", "logos/relativ.png", "smb://nas.local/logo.png"]|ohneSchemaGespeichert=false
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK39_BeliebigeSchemataWerdenGespeichert]' passed (0.025 seconds).
+B02QA|AK-41|testHost(xcodebuild)|eintraege=6472|trefferMitPasswort=1|subsysteme=["com.apple.CFNetwork": 1]|privateDatenSichtbar=true|eintraegeDerApp=0
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK41_ProtokollImTestHost]' passed (3.525 seconds).
+B02QA|AK-42|vorLoeschen=["b02-qa.store-wal": 4, "b02-qa.store-shm": 0, "b02-qa.store": 0]|nachLoeschenOffen zeilen=0 bytes=["b02-qa.store-shm": 0, "b02-qa.store": 0, "b02-qa.store-wal": 4]
+B02QA|AK-42|nachSchliessen bytes=["b02-qa.store": 0, "b02-qa.store-shm": 0, "b02-qa.store-wal": 0]|cacheEintragBleibt=1|cookieBleibt=1
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK42_LoeschenEntferntKlartextErstNachDemSchliessen]' passed (2.531 seconds).
+B02QA|Angriff-01|A sender=2 favoriten=2 channelCount=2|B sender=2 favoriten=0 ids=true
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAngriff01_FremdeListeVeraendertVorhandenePlaylistNicht]' passed (0.034 seconds).
+B02QA|Angriff-03|versuche=10|anfragen=30|davonMitAuthorization=10|folgeErsteAnfragen=["ohne", "mit", "ohne", "ohne"]|dauer=0.03s|meldungen=["Netzwerkfehler: HTTP 401"]
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAngriff03_WiederholteAbrufeOhneBremse]' passed (0.031 seconds).
+B02QA|Angriff-05|anfrage=GET /get.php?username=qa-user&password=qa-pass-b02a5&type=m3u_plus HTTP/1.1|kopfzeilen=["Host: 127.0.0.1:55409", "Accept: */*", "Accept-Language: de-DE,de;q=0.9", "Connection: keep-alive", "Accept-Encoding: gzip, deflate", "User-Agent: Mika+Player/3 CFNetwork/3896.100.1.1.1 Darwin/27.0.0"]|verbindungenZuLogoUndStreamHost=0
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAngriff05_PayloadUndKeineKontakteZuListenHosts]' passed (1.130 seconds).
+B02QA|Angriff-07|url=""(0)→Die angegebene URL ist ungültig.
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAngriff07_Eingaben]' passed (0.052 seconds).
+	 Executed 11 tests, with 0 failures (0 unexpected) in 23.950 (23.955) seconds
+B02QA|AK-06|name="127.0.0.1"|sourceURL=http://127.0.0.1:55412/liste.m3u|isRemote=true|isXtream=false|channelCount=2|lastRefreshed=gesetzt|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}|anfragen=["GET /liste.m3u HTTP/1.1"]
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK06_ImportLegtPlaylistMitNSendernAn]' passed (0.013 seconds).
+B02QA|AK-07|eingabe=http://127.0.0.1:55413/liste.m3u|name=""|ergebnis="127.0.0.1"
+B02QA|AK-07|eingabe=http://localhost:55413/liste.m3u|name=""|ergebnis="localhost"
+B02QA|AK-07|eingabe=file://<tmp>/b02-|name=""|ergebnis="Playlist"
+B02QA|AK-07|eingabe=data:audio/x-mpegurl;base64,I0VYVE0zVQojRVhUSU5GOi0xIHR2Zy1p|name=""|ergebnis="Playlist"
+B02QA|AK-07|eingabe=http://127.0.0.1:55413/liste.m3u|name="   "|ergebnis="   "
+B02QA|AK-07|eingabe=http://127.0.0.1:55413/liste.m3u|name="  Mein Name  "|ergebnis="  Mein Name  "
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK07_NameAusHostOderEingabe]' passed (0.020 seconds).
+B02QA|AK-08|eingabe="  http://127.0.0.1:55414/liste.m3u  "|anfragen=["GET /liste.m3u HTTP/1.1"]|gespeichert=http://127.0.0.1:55414/liste.m3u
+B02QA|AK-08|eingabe="\n\thttp://127.0.0.1:55414/liste.m3u\n"|anfragen=["GET /liste.m3u HTTP/1.1"]|gespeichert=http://127.0.0.1:55414/liste.m3u
+B02QA|AK-08|eingabe="HTTP://127.0.0.1:55414/gross.m3u"|anfragen=["GET /gross.m3u HTTP/1.1"]|gespeichert=HTTP://127.0.0.1:55414/gross.m3u
+B02QA|AK-08|eingabe="http://127.0.0.1:55414/mit leerzeichen.m3u"|anfragen=["GET /mit%20leerzeichen.m3u HTTP/1.1"]|gespeichert=http://127.0.0.1:55414/mit%20leerzeichen.m3u
+B02QA|AK-08|eingabe="http://127.0.0.1:55414/ümlaut.m3u"|anfragen=["GET /%C3%BCmlaut.m3u HTTP/1.1"]|gespeichert=http://127.0.0.1:55414/%C3%BCmlaut.m3u
+B02QA|AK-08|eingabe="http://127.0.0.1:55414/liste.m3u#fragment"|anfragen=["GET /liste.m3u HTTP/1.1"]|gespeichert=http://127.0.0.1:55414/liste.m3u#fragment
+B02QA|AK-08|eingabe="http://127.0.0.1:55414/liste.m3u?token=qa-token&x=1"|anfragen=["GET /liste.m3u?token=qa-token&x=1 HTTP/1.1"]|gespeichert=http://127.0.0.1:55414/liste.m3u?token=qa-token&x=1
+B02QA|AK-08|eingabe="http://qa-user:qa-pass-b02ak08@127.0.0.1:55414/liste.m3u"|anfragen=["GET /liste.m3u HTTP/1.1"]|gespeichert=http://qa-user:qa-pass-b02ak08@127.0.0.1:55414/liste.m3u
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK08_EingabeAnfrageUndGespeicherteAdresse]' passed (0.021 seconds).
+B02QA|AK-09|contentType=audio/x-mpegurl|ergebnis=OK
+B02QA|AK-09|contentType=application/vnd.apple.mpegurl|ergebnis=OK
+B02QA|AK-09|contentType=text/html|ergebnis=OK
+B02QA|AK-09|contentType=application/octet-stream|ergebnis=OK
+B02QA|AK-09|contentType=image/png|ergebnis=OK
+B02QA|AK-25|url|utf8 + Kopfzeile iso-8859-1|name="ORF Eins Ä"|gruppe=Österreich
+B02QA|AK-25|url|latin1 + Kopfzeile utf-8|name="ORF Eins Ä"|gruppe=Österreich
+B02QA|AK-25|url|utf8 mit BOM|name="ORF Eins Ä"|gruppe=Österreich
+B02QA|AK-25|url|latin1 ohne Angabe|name="ORF Eins Ä"|gruppe=Österreich
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK09_AK25_ContentTypeUndKodierungUeberURL]' passed (0.022 seconds).
+B02QA|AK-10|200=OK|203=OK|204=Die Playlist enthält keine gültigen Sender.|200-leer=Die Playlist enthält keine gültigen Sender.|300=Netzwerkfehler: HTTP 300(anfragen 1)|304=Netzwerkfehler: HTTP 304(anfragen 1)|400=Netzwerkfehler: HTTP 400(anfragen 1)|401=Netzwerkfehler: HTTP 401(anfragen 1)|403=Netzwerkfehler: HTTP 403(anfragen 1)|404=Netzwerkfehler: HTTP 404(anfragen 1)|407=Netzwerkfehler: HTTP 407(anfragen 1)|429=Netzwerkfehler: HTTP 429(anfragen 1)|500=Netzwerkfehler: HTTP 500(anfragen 1)|503=Netzwerkfehler: HTTP 503(anfragen 1)
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK10_EC16_Statuscodes]' passed (0.020 seconds).
+B02QA|AK-11|/301|ergebnis=OK|quelle=2|ziel=[]|gespeichert=http://127.0.0.1:55417/301
+B02QA|AK-11|/302-fremd|ergebnis=OK|quelle=1|ziel=["/ziel.m3u"]|gespeichert=http://127.0.0.1:55417/302-fremd
+B02QA|AK-11|/307-query|ergebnis=OK|quelle=1|ziel=["/ziel.m3u?username=qa-user&password=qa-pass-b02ak11"]|gespeichert=http://127.0.0.1:55417/307-query
+B02QA|AK-11|/schleife|ergebnis=Netzwerkfehler: too many HTTP redirects|quelle=21|ziel=[]|gespeichert=-
+B02QA|AK-11|/nach-file|ergebnis=Netzwerkfehler: You do not have permission to access the requested resource.|quelle=1|ziel=[]|gespeichert=-
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK11_Weiterleitungen]' passed (0.030 seconds).
+B02QA|AK-12|eingabe="127.0.0.1:55419/liste.m3u"|meldung=Die angegebene URL ist ungültig.|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe="example.invalid/liste.m3u"|meldung=Die angegebene URL ist ungültig.|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe="   "|meldung=Die angegebene URL ist ungültig.|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe=""|meldung=Die angegebene URL ist ungültig.|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe="localhost:55419/liste.m3u"|meldung=Netzwerkfehler: unsupported URL|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe="javascript:alert(1)"|meldung=Netzwerkfehler: unsupported URL|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe="http://"|meldung=Netzwerkfehler: Could not connect to the server.|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe="http:///liste.m3u"|meldung=Netzwerkfehler: Could not connect to the server.|dauer=0.00s|anfragenAmServer=0
+B02QA|AK-12|eingabe="ftp://qa-user:qa-pass-b02ec17@127.0.0.1:55420/x.m3u"|meldung=Netzwerkfehler: unknown error|dauer=0.00s|anfragenAmServer=0
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK12_EC17_OhneSchemaUndNichtAbrufbar]' passed (0.006 seconds).
+B02QA|AK-13|file|name="Playlist"|sourceURL=file://<tmp>/b02-qa-ak13-A9C2D1C2-77A1-486A-BA1C-D0D9110E669B/lokal.m3u|isRemote=true|isXtream=false|channelCount=2|lastRefreshed=gesetzt|{"Kanal A" gruppe="News" tvg="a" url=http://127.0.0.1:9/live/a.m3u8 logo=nil} {"Kanal B" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/b.ts logo=nil}
+B02QA|AK-13|data|name="Playlist"|sourceURL=data:audio/x-mpegurl;base64,I0VYVElORjotMSxxYS1iMDJhazEzLTg0ODQKaHR0cDovLzEyNy4wLjAuMTo5L2xpdmUveC50cwo=|isRemote=true|isXtream=false|channelCount=1|lastRefreshed=gesetzt|{"qa-b02ak13-8484" gruppe=nil tvg=nil url=http://127.0.0.1:9/live/x.ts logo=nil}
+B02QA|AK-13|sqlite|dataZeilen=1|laenge=104
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK13_FileUndDataImURLFeld]' passed (0.009 seconds).
+B02QA|AK-14|1-ohne-challenge|host=127.0.0.1|ergebnis=OK|quelle=["/ohne-challenge.m3u auth=nein"]|ziel=[]
+B02QA|AK-14|2-basic|host=127.0.0.1|ergebnis=OK|quelle=["/basic.m3u auth=nein", "/basic.m3u auth=ja"]|ziel=[]
+B02QA|AK-14|3-basic-erneut|host=127.0.0.1|ergebnis=OK|quelle=["/basic.m3u auth=ja"]|ziel=[]
+B02QA|AK-14|4-basic-redirect|host=localhost|ergebnis=OK|quelle=["/basic-redirect auth=nein", "/basic-redirect auth=ja"]|ziel=["/ziel.m3u auth=nein"]
+B02QA|AK-14|beobachtung|zweiterAbrufDesselbenHosts=["/basic.m3u auth=ja"]
+B02QA|AK-14|credentialStorage|["localhost:testport|realm=qa2|methode=NSURLAuthenticationMethodHTTPBasic|persistenz=1|qaUser=true", "127.0.0.1:testport|realm=qa|methode=NSURLAuthenticationMethodHTTPBasic|persistenz=1|qaUser=true"]|schluesselbundInternetPasswoerter(qa-user)=0
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK14_BasicAuthAusBenutzerinfo]' passed (0.017 seconds).
+B02QA|AK-15|playlists=2|sender=4|anfragen=2|gleicheID=false
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK15_DoppelterImportLegtZweitePlaylistAn]' passed (0.011 seconds).
+B02QA|AK-26|leer|meldung=Die Playlist enthält keine gültigen Sender.
+B02QA|AK-26|Captive Portal|meldung=Die Playlist enthält keine gültigen Sender.
+B02QA|AK-26|JSON|meldung=Die Playlist enthält keine gültigen Sender.
+B02QA|AK-26|nur Adressen|meldung=Die Playlist enthält keine gültigen Sender.
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK26_EC01_EC15_KeineGueltigenSenderLegtNichtsAn]' passed (0.011 seconds).
+B02QA|AK-28|portZu=Netzwerkfehler: Could not connect to the server.|hostUnbekannt=Netzwerkfehler: A server with the specified hostname could not be found.
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK28_ServerNichtErreichbar]' passed (0.005 seconds).
+B02QA|AK-33|eingabe=http://127.0.0.1:55428/404.m3u?username=qa-user-b02&password=<PASSWORT>|meldung=Netzwerkfehler: HTTP 404|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=http://127.0.0.1:55428/schleife?password=<PASSWORT>|meldung=Netzwerkfehler: too many HTTP redirects|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=http://127.0.0.1:55428/leer?password=<PASSWORT>|meldung=Die Playlist enthält keine gültigen Sender.|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=http://127.0.0.1:55428/500?username=qa-user-b02&password=<PASSWORT>|meldung=Netzwerkfehler: HTTP 500|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=http://127.0.0.1:55429/get.php?username=qa-user-b02&password=<PASSWORT>|meldung=Netzwerkfehler: Could not connect to the server.|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=http://qa-user-b02:<PASSWORT>@b02-qa-nicht-vorhanden.invalid/get.php?password=<PASSWORT>|meldung=Netzwerkfehler: A server with the specified hostname could not be found.|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=ftp://qa-user-b02:<PASSWORT>@127.0.0.1:55429/x.m3u|meldung=Netzwerkfehler: unknown error|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=qa-user-b02:<PASSWORT>@ohne-schema/x.m3u|meldung=Netzwerkfehler: unsupported URL|passwort=false|benutzer=false|adresse=false
+B02QA|AK-33|eingabe=127.0.0.1:55428/get.php?username=qa-user-b02&password=<PASSWORT>|meldung=Die angegebene URL ist ungültig.|passwort=false|benutzer=false|adresse=false
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK33_FehlermeldungOhneZugangsdatenUndAdresse]' passed (0.026 seconds).
+B02QA|AK-36|anfrage1|/liste.m3u|kopfzeilen=["accept", "accept-encoding", "accept-language", "connection", "host", "user-agent"]|user-agent=Mika+Player/3 CFNetwork/3896.100.1.1.1 Darwin/27.0.0|accept=*/*|accept-language=de-DE,de;q=0.9|accept-encoding=gzip, deflate|connection=keep-alive|cookie=-|referer=-
+B02QA|AK-36|anfrage2|/andere.m3u|kopfzeilen=["accept", "accept-encoding", "accept-language", "connection", "cookie", "host", "user-agent"]|user-agent=Mika+Player/3 CFNetwork/3896.100.1.1.1 Darwin/27.0.0|accept=*/*|accept-language=de-DE,de;q=0.9|accept-encoding=gzip, deflate|connection=keep-alive|cookie=b02qaSess=<marker>|referer=-
+B02QA|AK-36|anfrage3|/liste.m3u|kopfzeilen=["accept", "accept-encoding", "accept-language", "connection", "cookie", "host", "user-agent"]|user-agent=Mika+Player/3 CFNetwork/3896.100.1.1.1 Darwin/27.0.0|accept=*/*|accept-language=de-DE,de;q=0.9|accept-encoding=gzip, deflate|connection=keep-alive|cookie=b02qaSess=<marker>|referer=-
+B02QA|AK-36|cookieImSpeicher=1|sitzungscookie=true|domain=127.0.0.1
+Test Case '-[MikaPlusPlayerTests.B02URLImportTests testAK36_KopfzeilenUndCookies]' passed (0.013 seconds).
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.225 (0.228) seconds
+Test Case '-[MikaPlusPlayerTests.M3UParserTests testExtGrpFallback]' passed (0.000 seconds).
+Test Case '-[MikaPlusPlayerTests.M3UParserTests testMinimalEntry]' passed (0.000 seconds).
+Test Case '-[MikaPlusPlayerTests.M3UParserTests testQuoteSafeNameWithCommas]' passed (0.000 seconds).
+Test Case '-[MikaPlusPlayerTests.M3UParserTests testSkipsInvalidURL]' passed (0.000 seconds).
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+	 Executed 68 tests, with 0 failures (0 unexpected) in 570.346 (570.372) seconds
+	 Executed 68 tests, with 0 failures (0 unexpected) in 570.346 (570.372) seconds
+** TEST EXECUTE SUCCEEDED **
+
+# Nachlauf 2026-09-16 (neuer Dialog-Test, gleicher Build-Stand plus Test)
+B02QA|AK-05|klasse=NSOpenPanel|alsSheet=true|erlaubteTypen=["public.m3u-playlist", "public.plain-text"]|mehrfachauswahl=false|dateien=true|ordner=false|waehlbar=["(ohne Endung)=false", "M3U8=true", "csv=true", "html=false", "json=false", "log=true", "m3u=true", "m3u8=true", "md=true", "pls=false", "swift=true", "txt=true", "xspf=false"]
+B02QA|AK-05|dialogAbgebrochen|alertNachAbbruch=[]|playlists=0|sheetOffen=true|dateiButton=true
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK05_Dateidialog]' passed (5.306 seconds).
+B02QA|AK-27|datei|alert=["AXSheet:alert", "AXStaticText:Fehler", "AXStaticText:Die Playlist enthält keine gültigen Sender.", "AXButton:OK"]|nachOK felder=["QA Datei Fehler"]|button=true|sheetOffen=true|playlists=0
+B02QA|AK-16|ueberDialog|sheetGeschlossen=true|playlists=1|zeilen=["AXButton:qa-dialog, 2 Sender"]
+B02QA|AK-29|datei|abbrechenNach0.5s|sheetZuNach=9.55s|maxMainThreadBlockade=9.23s|playlists=["qa-dialog=2", "gross-3000=3000"]|build=Debug
+Test Case '-[MikaPlusPlayerTests.B02OberflaecheTests testAK16_AK27_AK29_DateiImportUeberDialog]' passed (21.580 seconds).
+	 Executed 2 tests, with 0 failures (0 unexpected) in 26.885 (26.887) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 26.885 (26.887) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 26.885 (26.888) seconds
+** TEST EXECUTE SUCCEEDED **
+
+# Release-Messung 2026-09-16 23:00–23:07: build/dd-qa-b02-release, -configuration Release (-O, -whole-module-optimization) mit ENABLE_TESTABILITY=YES, ENABLE_HARDENED_RUNTIME=NO, CODE_SIGN_INJECT_BASE_ENTITLEMENTS=YES (nur, damit der Test-Host startet)
+B02QA|AK-40|inMemory|sender=1500|bytes=212688|gesamt=2.32s|maxMainThreadBlockade=2.29s|playlistID=1500|beziehung=1500|build=Release|cpuKerne=16|last=3.9/4.8/5.8
+B02QA|AK-40|inMemory|sender=3000|bytes=429818|gesamt=8.99s|maxMainThreadBlockade=8.97s|playlistID=3000|beziehung=3000|build=Release|cpuKerne=16|last=4.1/4.8/5.8
+B02QA|AK-40|inMemory|sender=6000|bytes=864068|gesamt=35.22s|maxMainThreadBlockade=35.21s|playlistID=6000|beziehung=6000|build=Release|cpuKerne=16|last=3.3/4.5/5.7
+B02QA|AK-40|storeDatei|sender=6000|bytes=864068|gesamt=35.80s|maxMainThreadBlockade=35.78s|playlistID=6000|beziehung=6000|build=Release|cpuKerne=16|last=3.5/4.4/5.6
+B02QA|AK-40|inMemory|sender=17000|bytes=2484318|gesamt=282.54s|maxMainThreadBlockade=282.51s|playlistID=17000|beziehung=17000|build=Release|cpuKerne=16|last=5.5/4.7/5.4
+B02QA|AK-40|wachstum 3000→6000 Faktor=3.92|build=Release
+Test Case '-[MikaPlusPlayerTests.B02LangsamTests testAK40_GrosseListeBlockiertMainThread]' passed (366.886 seconds).
+B02QA|AK-40|parserAllein|sender=17000|bytes=2484318|dauer=0.16,0.15,0.16s|build=Release
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testAK40_ParserAllein17000]' passed (0.477 seconds).
+B02QA|EC-14|bytes=45380568|anzahl=300000|dekodieren=0.00s|parser=2.73s|speicherVorher=161MB|nachher=431MB|build=Release
+Test Case '-[MikaPlusPlayerTests.B02ParserTests testEC14_DreihunderttausendEintraegeParser]' passed (2.888 seconds).
+	 Executed 2 tests, with 0 failures (0 unexpected) in 3.365 (3.366) seconds
+B02QA|AK-37|URL|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=1.76s|maxMainThreadBlockade=1.73s|speicherVorher=389MB|nachher=648MB|build=Release
+B02QA|AK-37|Datei|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=1.79s|maxMainThreadBlockade=1.79s|speicherVorher=641MB|nachher=699MB|build=Release
+Test Case '-[MikaPlusPlayerTests.B02SicherheitTests testAK37_GrosseAntwortUndDateiOhneGrenze]' passed (4.352 seconds).
+	 Executed 4 tests, with 0 failures (0 unexpected) in 374.603 (374.605) seconds
+	 Executed 4 tests, with 0 failures (0 unexpected) in 374.603 (374.606) seconds
+** TEST EXECUTE SUCCEEDED **

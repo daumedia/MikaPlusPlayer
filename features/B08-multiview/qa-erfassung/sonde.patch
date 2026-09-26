@@ -1,0 +1,1851 @@
+# B08-Erfassungssonde: Änderungen der Kopie gegenüber dem Stand c01f1cf + Reparatur B01 (snapshot-b01). Nicht einchecken, nicht auf das Repo anwenden.
+# <sonde> = Scratchpad-Kopie. Erfundene Zugangsdaten qa-user / qa-pass-b08, Mock nur auf 127.0.0.1:18908, Streams ohne Tonspur.
+--- snapshot-b01/project.yml	2026-06-23 14:39:09
++++ b08probe/project.yml	2026-09-16 15:12:38
+@@ -30,7 +30,7 @@
+     settings:
+       base:
+         PRODUCT_NAME: MikaPlusPlayer
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b08probe
+         MARKETING_VERSION: "1.1"
+         CURRENT_PROJECT_VERSION: "2"
+         GENERATE_INFOPLIST_FILE: NO
+@@ -90,7 +90,7 @@
+     settings:
+       base:
+         GENERATE_INFOPLIST_FILE: YES
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayerTests
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b08probetests
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+         DEVELOPMENT_TEAM: "CWJM4J4HFN"
+diff -ruN -x .DS_Store snapshot-b01/Sources/App/AppEnvironment.swift b08probe/Sources/App/AppEnvironment.swift
+--- snapshot-b01/Sources/App/AppEnvironment.swift	2026-09-16 13:58:08
++++ b08probe/Sources/App/AppEnvironment.swift	2026-09-16 15:12:45
+@@ -8,6 +8,8 @@
+     /// Nutzers (B01 · BUG-04: „Der Test-Host benutzt dieselbe Datei wie die echte App").
+     static let isRunningTests: Bool = {
+         let env = ProcessInfo.processInfo.environment
++        // B08-SONDE (nur Scratchpad-Kopie): App-Lauf der Sonde wie Test-Host behandeln (In-Memory-DB, Test-Schlüsselbunddienst).
++        if env["B08_PROBE"] != nil { return true }
+         if env["XCTestConfigurationFilePath"] != nil || env["XCTestSessionIdentifier"] != nil
+             || env["XCTestBundlePath"] != nil {
+             return true
+diff -ruN -x .DS_Store snapshot-b01/Sources/App/B08ProbeDriver.swift b08probe/Sources/App/B08ProbeDriver.swift
+--- snapshot-b01/Sources/App/B08ProbeDriver.swift	1970-01-01 01:00:00
++++ b08probe/Sources/App/B08ProbeDriver.swift	2026-09-16 21:59:03
+@@ -0,0 +1,852 @@
++// B08-SONDE — nur in der Scratchpad-Kopie, nie im Repository.
++// Zeitgesteuerter Lauf der echten App (Szenen WindowGroup + Window("Multiview")). Gestartet über
++// B08_PROBE=1 B08_SCENARIO=<name>. In-Memory-Datenbank und Test-Schlüsselbunddienst (AppEnvironment-Patch).
++// Bedienung über synthetische Maus-/Tastaturereignisse an die eigenen Fenster; unbehandelte Tasten
++// werden per B08Beep abgefangen (kein Warnton). Alle Streams ohne Tonspur.
++#if os(macOS)
++import SwiftUI
++import SwiftData
++import AppKit
++
++struct B08ProbeHook: View {
++    @Environment(MultiviewSession.self) private var multiview
++    @Environment(\.openWindow) private var openWindow
++    @Environment(\.modelContext) private var context
++
++    var body: some View {
++        Color.clear.frame(width: 0, height: 0)
++            .task {
++                await B08Driver.startOnce(multiview: multiview, openWindow: openWindow, context: context)
++            }
++    }
++}
++
++@MainActor
++final class B08Driver {
++    nonisolated(unsafe) static var started = false
++    static var current: B08Driver?
++
++    let mv: MultiviewSession
++    let openWindow: OpenWindowAction
++    let ctx: ModelContext
++    let scenario: String
++    var xtream: Playlist?
++    var m3u: Playlist?
++    var weakEngines: [B08Weak] = []
++
++    init(mv: MultiviewSession, openWindow: OpenWindowAction, ctx: ModelContext, scenario: String) {
++        self.mv = mv; self.openWindow = openWindow; self.ctx = ctx; self.scenario = scenario
++    }
++
++    static func startOnce(multiview: MultiviewSession, openWindow: OpenWindowAction, context: ModelContext) async {
++        guard !started else { return }
++        started = true
++        let scenario = ProcessInfo.processInfo.environment["B08_SCENARIO"] ?? "S1"
++        let d = B08Driver(mv: multiview, openWindow: openWindow, ctx: context, scenario: scenario)
++        current = d
++        B08Beep.install()
++        B08Log.w("=== APP|szenario=\(scenario)|pid=\(ProcessInfo.processInfo.processIdentifier)|bundle=\(Bundle.main.bundleIdentifier ?? "?")|schlüsselbundDienst=\(XtreamCredentialStore.standard.service)|beepAbfangIn=\(B08Beep.installedIn)")
++        await B08Mock.control("reset=1&limit=0&shift=0")
++        await d.run()
++    }
++
++    // MARK: - Hilfen
++
++    func spin(_ s: TimeInterval) async { try? await Task.sleep(nanoseconds: UInt64(s * 1_000_000_000)) }
++
++    var mainWindows: [NSWindow] {
++        NSApp.windows.filter { $0.isVisible && $0.title != "Multiview" && $0.contentView != nil && $0.frame.width > 300 }
++            .sorted { $0.windowNumber < $1.windowNumber }
++    }
++    var mvWindow: NSWindow? { NSApp.windows.first { $0.title == "Multiview" && $0.isVisible } }
++    var mvWindowAny: NSWindow? { NSApp.windows.first { $0.title == "Multiview" } }
++
++    func waitFor(_ what: String, timeout: TimeInterval = 8, _ cond: () -> Bool) async -> Bool {
++        let end = Date().addingTimeInterval(timeout)
++        while Date() < end {
++            if cond() { return true }
++            await spin(0.1)
++        }
++        B08Log.w("WARTEN|\(what)|Zeitüberschreitung")
++        return false
++    }
++
++    func lsof() -> String {
++        let p = Process()
++        p.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
++        p.arguments = ["-nP", "-a", "-p", "\(ProcessInfo.processInfo.processIdentifier)", "-iTCP@127.0.0.1:18908", "-sTCP:ESTABLISHED"]
++        let pipe = Pipe()
++        p.standardOutput = pipe
++        p.standardError = Pipe()
++        do { try p.run() } catch { return "lsof-fehler" }
++        p.waitUntilExit()
++        let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
++        let lines = out.split(separator: "\n").dropFirst()
++        return "tcpVerbindungenZumMock=\(lines.count)"
++    }
++
++    func state(_ tag: String, filter: String = "") async {
++        B08Log.w("\(tag)|\(B08Inspect.session(mv))")
++        B08Log.w("\(tag)|mock|\(await B08Mock.summary(filter: filter))|\(lsof())")
++    }
++
++    func windowsLine(_ tag: String) {
++        let list = NSApp.windows.filter { $0.isVisible }.map { "\($0.title)[\(Int($0.frame.width))x\(Int($0.frame.height))\($0.isKeyWindow ? ",key" : "")\($0.isMiniaturized ? ",min" : "")]" }
++        B08Log.w("\(tag)|fenster=\(list)")
++    }
++
++    // Accessibility (im eigenen Prozess)
++    func cards(_ w: NSWindow) -> [NSObject] {
++        B08AX.wake(w)
++        return B08AX.all(w).filter { B08AX.frame($0).width > 200 && B08AX.frame($0).height > 40 && B08AX.frame($0).height < 120
++            && !B08AX.text($0, "accessibilityLabel").isEmpty && !["AXScrollArea", "AXGroup", "AXWindow", "AXToolbar"].contains(B08AX.text($0, "accessibilityRole")) }
++    }
++    func card(_ w: NSWindow, _ name: String) -> NSObject? {
++        cards(w).first { let l = B08AX.text($0, "accessibilityLabel"); return l == name || l.hasPrefix(name + ", ") }
++    }
++    func clickCardBody(_ w: NSWindow, _ name: String) -> Bool {
++        guard let c = card(w, name) else { B08Log.w("AX|karte fehlt|\(name)|karten=\(cards(w).map { B08AX.text($0, "accessibilityLabel") })"); return false }
++        let f = B08AX.frame(c)
++        B08AX.click(at: NSPoint(x: f.minX + 120, y: f.midY), in: w)
++        return true
++    }
++    /// ⊞ sitzt links neben dem Stern: Kartenrand 14 pt, Stern ≈ 20 pt, Abstand 12 pt, ⊞ ≈ 22 pt → Mitte ≈ maxX − 57.
++    func clickPlus(_ w: NSWindow, _ name: String, offset: CGFloat = 57) -> Bool {
++        guard let c = card(w, name) else { B08Log.w("AX|karte fehlt|\(name)"); return false }
++        let f = B08AX.frame(c)
++        B08AX.click(at: NSPoint(x: f.maxX - offset, y: f.midY), in: w)
++        return true
++    }
++    func cardHelp(_ w: NSWindow, _ name: String) -> String {
++        guard let c = card(w, name) else { return "-" }
++        return B08AX.describe(c)
++    }
++    func pressLabeled(_ w: NSWindow, _ label: String, role: String? = nil) -> Bool {
++        B08AX.wake(w)
++        guard let e = B08AX.all(w).first(where: { (B08AX.text($0, "accessibilityLabel") == label || B08AX.text($0, "accessibilityTitle") == label)
++            && (role == nil || B08AX.text($0, "accessibilityRole") == role) }) else {
++            B08Log.w("AX|element fehlt|\(label)")
++            return false
++        }
++        let sel = NSSelectorFromString("accessibilityPerformPress")
++        guard e.responds(to: sel), let imp = e.method(for: sel) else { return false }
++        typealias F = @convention(c) (AnyObject, Selector) -> Bool
++        return unsafeBitCast(imp, to: F.self)(e, sel)
++    }
++    func removeButtons(_ w: NSWindow) -> [NSObject] {
++        B08AX.wake(w)
++        return B08AX.all(w).filter { B08AX.text($0, "accessibilityHelp") == "Stream entfernen" && B08AX.text($0, "accessibilityRole") == "AXButton" }
++    }
++    func picker(_ w: NSWindow) -> NSSegmentedControl? {
++        let roots = [w.contentView?.superview, w.contentView].compactMap { $0 }
++        for r in roots {
++            if let s = r.b08AllSubviews().compactMap({ $0 as? NSSegmentedControl }).first { return s }
++        }
++        return nil
++    }
++    func pickerLine(_ tag: String) {
++        guard let w = mvWindow else { B08Log.w("\(tag)|picker|kein Multiview-Fenster"); return }
++        if let p = picker(w) {
++            B08Log.w("\(tag)|picker|enabled=\(p.isEnabled)|selected=\(p.selectedSegment)|labels=\((0..<p.segmentCount).map { p.label(forSegment: $0) ?? "" })|session.layout=\(mv.layout.rawValue)")
++        } else {
++            B08Log.w("\(tag)|picker|nicht gefunden")
++        }
++    }
++    func selectLayout(_ index: Int) {
++        guard let w = mvWindow, let p = picker(w) else { B08Log.w("LAYOUT|picker fehlt"); return }
++        // Klick auf das Segment (Fensterkoordinaten)
++        let segWidth = p.bounds.width / CGFloat(max(1, p.segmentCount))
++        let local = NSPoint(x: segWidth * (CGFloat(index) + 0.5), y: p.bounds.midY)
++        let inWindow = p.convert(local, to: nil)
++        B08AX.click(windowPoint: inWindow, in: w)
++        B08Log.w("LAYOUT|klick auf Segment \(index)|enabled=\(p.isEnabled)|danach session.layout=\(mv.layout.rawValue)")
++    }
++
++    func hitChain(_ w: NSWindow, screen pt: NSPoint) -> String {
++        let pWin = w.convertPoint(fromScreen: pt)
++        guard let top = w.contentView?.superview else { return "-" }
++        var v = top.hitTest(pWin)
++        var names: [String] = []
++        while let vv = v, names.count < 7 { names.append(String(describing: type(of: vv))); v = vv.superview }
++        return names.joined(separator: " < ")
++    }
++
++    func trackEngines() {
++        for s in mv.slots where !weakEngines.contains(where: { $0.object === s.engine }) {
++            weakEngines.append(B08Weak(s.engine, s.channel.name))
++        }
++    }
++    func enginesLine(_ tag: String) {
++        B08Log.w("\(tag)|engines|" + weakEngines.map { w in
++            guard let e = w.object as? any PlaybackEngine else { return "\(w.label)=freigegeben" }
++            return "\(w.label)=lebt(isPaused=\(e.isPaused),state=\(B08Inspect.state(e)))"
++        }.joined(separator: " "))
++    }
++
++    func importAll() async {
++        let importer = PlaylistImporter(modelContext: ctx)
++        do {
++            m3u = try await importer.importFromURL(B08Mock.base + "/m3u/mix.m3u", name: "M3U MV")
++            xtream = try await importer.importFromXtream(XtreamCredentials(host: B08Mock.host, username: "qa-user", password: "qa-pass-b08"), output: .mpegts, name: "Xtream MV")
++            B08Log.w("IMPORT|m3u=\(m3u?.channelCount ?? -1)|xtream=\(xtream?.channelCount ?? -1)|xtreamStreamURLs=\(xtream?.channels.map(\.streamURL.absoluteString).sorted() ?? [])")
++        } catch {
++            B08Log.w("IMPORT|fehler|\(error.localizedDescription)")
++        }
++    }
++
++    func xch(_ n: Int) -> Channel? { xtream?.channels.first { $0.name == "MV Sender \(n)" } }
++    func mch(_ name: String) -> Channel? { m3u?.channels.first { $0.name == name } }
++
++    /// Dieselbe Aktion wie der ⊞-Button (`ChannelRowView.multiviewButton`).
++    func plusAction(_ c: Channel?) {
++        guard let c else { B08Log.w("PLUS|sender fehlt"); return }
++        mv.add(c)
++        openWindow(id: "multiview")
++        trackEngines()
++    }
++
++    func shot(_ w: NSWindow?, _ name: String) {
++        guard let w else { B08Log.w("SHOT|\(name)|kein Fenster"); return }
++        B08Shot.window(w, name)
++    }
++
++    func closeMultiviewViaButton(_ tag: String) async {
++        guard let w = mvWindow else { B08Log.w("\(tag)|kein Multiview-Fenster"); return }
++        B08Log.w("\(tag)|schließe Multiview über den roten Fensterknopf")
++        w.standardWindowButton(.closeButton)?.performClick(nil)
++        await spin(0.5)
++    }
++
++    func finish() async {
++        try? XtreamCredentialStore.standard.deleteAll()
++        B08Log.w("ENDE|szenario=\(scenario)|beepEreignisse=\(B08Beep.events)")
++        await spin(0.3)
++        NSApp.terminate(nil)
++    }
++
++    func mainWindowNavigateToPlaylist(_ w: NSWindow, _ name: String) async {
++        _ = clickCardBody(w, name)
++        _ = await waitFor("Senderliste \(name)") { w.title == name }
++        await spin(1.0)
++    }
++
++    // MARK: - Szenarien
++
++    func run() async {
++        NSApp.activate(ignoringOtherApps: true)
++        await spin(1.5)
++        await importAll()
++        await spin(1.0)
++        switch scenario {
++        case "S1": await s1()
++        case "S2": await sGridRemoveViaX()
++        case "S3": await sGridCloseWindow()
++        case "S4": await sFocusRemoveAllViaX()
++        case "S5": await sDeletePlaylist(layout: .grid)
++        case "S6": await sDeletePlaylist(layout: .focus)
++        case "S7": await sRefreshPlaylist()
++        case "S8": await sErrorsAndLimit()
++        case "S9": await sGridRemoveLastOfTwo()
++        case "S10": await sFocusClick()
++        case "S11": await sFocusVideo(tag: "S11", channels: [xch(101), xch(102), xch(103)])
++        case "S12": await sFocusVideo(tag: "S12", channels: [mch("M3U HLS A"), mch("M3U HLS B")])
++        case "S13": await sEmptyStateMenuMissingCredentials()
++        case "S14": await sGridCloseWithOne()
++        case "S15": await sQuitInGrid()
++        default: B08Log.w("unbekanntes Szenario")
++        }
++        await finish()
++    }
++
++    /// Hauptlauf: ⊞ per Mausklick, Fokus, Layout, Tastatur, zweites Hauptfenster, Favoriten-Tab, Schließen/Öffnen, Minimieren.
++    func s1() async {
++        guard let main = mainWindows.first else { B08Log.w("S1|kein Hauptfenster"); return }
++        main.setFrame(NSRect(x: 60, y: 120, width: 760, height: 720), display: true)
++        await spin(1.0)
++        windowsLine("S1|start")
++        shot(main, "mac-01-hauptfenster-playlists")
++        await mainWindowNavigateToPlaylist(main, "Xtream MV")
++        B08Log.w("S1|senderliste|titel=\(main.title)|karte101=\(cardHelp(main, "MV Sender 101"))")
++        shot(main, "mac-02-senderliste-plus-buttons")
++
++        // ⊞ per synthetischem Mausklick
++        var added = false
++        for off in [57.0, 54.0, 60.0, 51.0, 63.0] {
++            let before = mv.slots.count
++            _ = clickPlus(main, "MV Sender 101", offset: off)
++            await spin(1.2)
++            B08Log.w("S1|klick ⊞ offset=\(off)|slots \(before)→\(mv.slots.count)|hauptfensterTitel=\(main.title)|multiviewOffen=\(mvWindow != nil)")
++            if mv.slots.count > before { added = true; B08Log.w("S1|⊞-Mitte bei maxX-\(off)"); break }
++            if main.title != "Xtream MV" {
++                B08Log.w("S1|klick landete auf der Karte → Player geöffnet; zurück")
++                _ = pressLabeled(main, "Back") || pressLabeled(main, "Zurück")
++                await spin(1.0)
++            }
++        }
++        guard added else { B08Log.w("S1|⊞ nicht getroffen – Abbruch"); return }
++        trackEngines()
++        let plusOffset: CGFloat = {
++            // letzte erfolgreiche Position aus dem Protokoll ist nicht rückgreifbar – erneut ermitteln über Kartenbreite
++            57
++        }()
++        _ = await waitFor("Multiview-Fenster") { self.mvWindow != nil }
++        await spin(2.5)
++        B08Log.w("S1|nach 1. ⊞|hauptfensterTitel=\(main.title) (bleibt Senderliste = kein Player geöffnet)")
++        windowsLine("S1|nach 1. ⊞")
++        pickerLine("S1|1 Stream")
++        await state("S1|1 Stream")
++        if let w = mvWindow { w.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true) }
++        await spin(1.5)
++        shot(mvWindow, "mac-03-multiview-ein-stream-fokus")
++
++        // weitere per Klick aus der Liste (Hauptfenster muss dafür Key sein)
++        for n in [102, 103, 104] {
++            main.makeKeyAndOrderFront(nil)
++            await spin(0.4)
++            let before = mv.slots.count
++            _ = clickPlus(main, "MV Sender \(n)", offset: plusOffset)
++            await spin(1.5)
++            if mv.slots.count == before {
++                for off in [54.0, 60.0, 51.0, 63.0] {
++                    _ = clickPlus(main, "MV Sender \(n)", offset: off); await spin(1.2)
++                    if mv.slots.count > before { break }
++                }
++            }
++            trackEngines()
++            B08Log.w("S1|⊞ \(n)|slots=\(mv.slots.count)|focusedIndex=\(mv.focusedIndex)|mvKey=\(mvWindow?.isKeyWindow ?? false)")
++            pickerLine("S1|\(mv.slots.count) Streams")
++        }
++        await spin(4)
++        await state("S1|4 Streams", filter: "/live/")
++        B08Log.w("S1|voll|karte101=\(cardHelp(main, "MV Sender 101"))")
++        shot(main, "mac-04-senderliste-multiview-voll")
++        // ⊞ bei voller Session (ausgegraut)
++        main.makeKeyAndOrderFront(nil); await spin(0.3)
++        _ = clickPlus(main, "MV Sender 101", offset: plusOffset)
++        await spin(2.5)
++        B08Log.w("S1|⊞ bei voll|slots=\(mv.slots.count)|hauptfensterTitel=\(main.title)")
++        await state("S1|⊞ bei voll", filter: "/live/")
++        shot(main, "mac-05a-klick-auf-grauen-plus-oeffnet-player")
++        if main.title != "Xtream MV" {
++            let back = pressLabeled(main, "Back") || pressLabeled(main, "Zurück")
++            await spin(3)
++            B08Log.w("S1|zurück aus Player|press=\(back)|titel=\(main.title)")
++            await state("S1|3 s nach Zurück", filter: "/live/")
++        }
++        mvWindow?.makeKeyAndOrderFront(nil)
++        await spin(1.5)
++        shot(mvWindow, "mac-05-multiview-vier-fokus")
++
++        // Klick auf kleine Kachel → Fokus/Ton (mit Treffer-Diagnose)
++        if let w = mvWindow {
++            let btns = removeButtons(w)
++            let bigX = btns.max { B08AX.frame($0).midX < B08AX.frame($1).midX }
++            let small = btns.filter { $0 !== bigX }.sorted { B08AX.frame($0).midY > B08AX.frame($1).midY }
++            B08Log.w("S1|x-knöpfe|groß=\(bigX.map { "\(Int(B08AX.frame($0).midX)),\(Int(B08AX.frame($0).midY))" } ?? "-")|klein=\(small.map { "\(Int(B08AX.frame($0).midX)),\(Int(B08AX.frame($0).midY))" })")
++            for (label, dx, dy) in [("Videofläche", -110.0, -70.0), ("unter dem Namen", -190.0, -35.0)] where small.count >= 2 {
++                let f = B08AX.frame(small[1])
++                let pt = NSPoint(x: f.midX + dx, y: f.midY + dy)
++                B08Log.w("S1|fokus-klick \(label)|trefferKette=\(hitChain(w, screen: pt))")
++                let before = mv.focusedIndex
++                B08AX.click(at: pt, in: w)
++                await spin(1.0)
++                B08Log.w("S1|fokus-klick \(label)|focusedIndex \(before)→\(mv.focusedIndex)")
++                if mv.focusedIndex != before { break }
++            }
++            await state("S1|nach Fokus-Klick")
++            shot(w, "mac-06-multiview-nach-fokus-klick")
++        }
++
++        // Layout über den segmentierten Picker
++        selectLayout(1)
++        await spin(1.5)
++        pickerLine("S1|nach Raster")
++        shot(mvWindow, "mac-07-multiview-vier-raster")
++        // Fokus-Klick im Raster auf die Kachel unten rechts
++        if let w = mvWindow {
++            let btns = removeButtons(w)
++            if let br = btns.min(by: { (B08AX.frame($0).midY - B08AX.frame($0).midX) < (B08AX.frame($1).midY - B08AX.frame($1).midX) }) {
++                let f = B08AX.frame(br)
++                let pt = NSPoint(x: f.midX - 150, y: f.midY - 120)
++                B08Log.w("S1|raster fokus-klick unten rechts|trefferKette=\(hitChain(w, screen: pt))")
++                let before = mv.focusedIndex
++                B08AX.click(at: pt, in: w)
++                await spin(1.0)
++                B08Log.w("S1|raster fokus-klick|focusedIndex \(before)→\(mv.focusedIndex)")
++                await state("S1|Raster nach Fokus-Klick")
++                shot(w, "mac-08-multiview-raster-nach-fokus-klick")
++            }
++        }
++
++        // Tastatur im Multiview
++        if let w = mvWindow {
++            w.makeKeyAndOrderFront(nil)
++            await spin(0.5)
++            let chain = B08Beep.coverResponderChain(of: w)
++            B08Log.w("S1|tastatur|responderKette=\(chain)|warnton-abgefangen-in=\(B08Beep.installedIn)")
++            let keys: [(String, UInt16, String)] = [(" ", 49, "Leertaste"), ("m", 46, "M"), ("f", 3, "F"), ("p", 35, "P"),
++                                                    (String(UnicodeScalar(NSUpArrowFunctionKey)!), 126, "Pfeil hoch"),
++                                                    (String(UnicodeScalar(NSDownArrowFunctionKey)!), 125, "Pfeil runter"),
++                                                    ("\u{1b}", 53, "Esc"), ("1", 18, "1"), ("\t", 48, "Tab")]
++            for (chars, code, label) in keys {
++                _ = B08Beep.coverResponderChain(of: w)
++                let before = B08Beep.events.count
++                let snap = mv.slots.map { "\($0.engine.isPaused)/\($0.engine.isMuted)/\($0.engine.volume)" }
++                B08AX.key(chars, keyCode: code, in: w)
++                await spin(0.4)
++                let after = mv.slots.map { "\($0.engine.isPaused)/\($0.engine.isMuted)/\($0.engine.volume)" }
++                B08Log.w("S1|taste \(label)|warnton-ausgelöst=\(B08Beep.events.count - before)\(B08Beep.events.count > before ? " (" + B08Beep.events.suffix(B08Beep.events.count - before).joined(separator: ",") + ")" : "")|engineZustand geändert=\(snap != after)|fullscreen=\(w.styleMask.contains(.fullScreen))|layout=\(mv.layout.rawValue)|focus=\(mv.focusedIndex)")
++            }
++        }
++
++        // zurück ins Fokus-Layout (Schließen im Raster stürzt ab, siehe S3)
++        selectLayout(0)
++        await spin(1.0)
++        pickerLine("S1|zurück auf Fokus")
++
++        // zweites Hauptfenster über Ablage › Neues Fenster
++        let newItem = NSApp.mainMenu?.items.flatMap { $0.submenu?.items ?? [] }.first { $0.keyEquivalent == "n" && $0.keyEquivalentModifierMask == .command }
++        B08Log.w("S1|menü neues Fenster|\(newItem?.title ?? "nicht gefunden")")
++        if let item = newItem, let menu = item.menu {
++            menu.performActionForItem(at: menu.index(of: item))
++            _ = await waitFor("zweites Hauptfenster") { self.mainWindows.count >= 2 }
++            await spin(1.0)
++        }
++        windowsLine("S1|nach neuem Fenster")
++        if mainWindows.count >= 2 {
++            let second = mainWindows.last!
++            second.setFrame(NSRect(x: 100, y: 80, width: 700, height: 640), display: true)
++            await mainWindowNavigateToPlaylist(second, "Xtream MV")
++            B08Log.w("S1|zweites Fenster|titel=\(second.title)|karte103=\(cardHelp(second, "MV Sender 103"))")
++            shot(second, "mac-09-zweites-hauptfenster-voll")
++            // Stern 104 setzen (Modell, wie der Stern-Button) und Favoriten-Tab im zweiten Fenster öffnen
++            xch(104)?.isFavorite = true
++            try? ctx.save()
++            let pressed = pressLabeled(second, "Favoriten")
++            await spin(1.2)
++            B08Log.w("S1|zweites Fenster Favoriten-Tab|press=\(pressed)|titel=\(second.title)|karte104=\(cardHelp(second, "MV Sender 104"))")
++            shot(second, "mac-10-favoriten-tab-voll")
++
++            // Schließen des Multiview-Fensters
++            trackEngines()
++            await closeMultiviewViaButton("S1|schließen")
++            B08Log.w("S1|direkt nach Schließen|slots=\(mv.slots.count)|mvSichtbar=\(mvWindow != nil)")
++            enginesLine("S1|direkt nach Schließen")
++            await spin(3)
++            enginesLine("S1|3 s nach Schließen")
++            await state("S1|3 s nach Schließen", filter: "/live/")
++            await spin(5)
++            enginesLine("S1|8 s nach Schließen")
++            await state("S1|8 s nach Schließen", filter: "/live/")
++            B08Log.w("S1|nach Schließen|zweitesFenster karte104=\(cardHelp(second, "MV Sender 104"))|erstesFenster karte101=\(cardHelp(main, "MV Sender 101"))")
++            B08Log.w("S1|geschlossene Verbindungen|\(await B08Mock.closed(filter: "/live/"))")
++
++            // Wieder öffnen über ⊞ im Favoriten-Tab (Mausklick)
++            second.makeKeyAndOrderFront(nil); await spin(0.4)
++            let before = mv.slots.count
++            _ = clickPlus(second, "MV Sender 104", offset: plusOffset)
++            await spin(2.5)
++            trackEngines()
++            B08Log.w("S1|⊞ im Favoriten-Tab|slots \(before)→\(mv.slots.count)|zweitesFensterTitel=\(second.title)|multiviewOffen=\(mvWindow != nil)")
++            pickerLine("S1|wieder geöffnet, 1 Stream")
++            windowsLine("S1|wieder geöffnet")
++            await spin(1.5)
++            shot(mvWindow, "mac-11-multiview-wieder-offen-ein-stream")
++
++            // Minimieren
++            if let w = mvWindow {
++                w.miniaturize(nil)
++                await spin(3)
++                B08Log.w("S1|minimiert|slots=\(mv.slots.count)|isMiniaturized=\(w.isMiniaturized)")
++                await state("S1|minimiert", filter: "/live/")
++                w.deminiaturize(nil)
++                await spin(2)
++                B08Log.w("S1|wiederhergestellt|slots=\(mv.slots.count)")
++            }
++            // Hauptfenster schließen, Multiview bleibt?
++            second.performClose(nil)
++            main.performClose(nil)
++            await spin(1.5)
++            windowsLine("S1|beide Hauptfenster geschlossen")
++            await state("S1|beide Hauptfenster geschlossen", filter: "/live/")
++            await closeMultiviewViaButton("S1|ende")
++            await spin(2)
++        }
++    }
++
++    /// Fokus per Klick auf eine Kachel: App aktiv, Fenster Key, Klick mit Mausbewegung und Zeitabstand.
++    func sFocusClick() async {
++        for n in 101...103 { plusAction(xch(n)) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        guard let w = mvWindow else { return }
++        w.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        NSApp.activate(ignoringOtherApps: true)
++        w.makeKeyAndOrderFront(nil)
++        await spin(4)
++        B08Log.w("S10|app aktiv=\(NSApp.isActive)|mvKey=\(w.isKeyWindow)")
++        await state("S10|vorher")
++        let btns = removeButtons(w)
++        let bigX = btns.max { B08AX.frame($0).midX < B08AX.frame($1).midX }
++        let small = btns.filter { $0 !== bigX }.sorted { B08AX.frame($0).midY > B08AX.frame($1).midY }
++        guard small.count >= 2 else { B08Log.w("S10|kleine Kacheln fehlen"); return }
++        let f = B08AX.frame(small[1])
++        let screenPt = NSPoint(x: f.midX - 110, y: f.midY - 70)
++        let pWin = w.convertPoint(fromScreen: screenPt)
++        func ev(_ t: NSEvent.EventType, _ ts: TimeInterval) -> NSEvent? {
++            NSEvent.mouseEvent(with: t, location: pWin, modifierFlags: [], timestamp: ts, windowNumber: w.windowNumber,
++                               context: nil, eventNumber: Int.random(in: 1...10000), clickCount: t == .mouseMoved ? 0 : 1, pressure: t == .leftMouseUp ? 0 : 1)
++        }
++        let t0 = ProcessInfo.processInfo.systemUptime
++        if let m = ev(.mouseMoved, t0) { w.sendEvent(m) }
++        await spin(0.1)
++        if let d = ev(.leftMouseDown, t0 + 0.1) { w.sendEvent(d) }
++        await spin(0.08)
++        if let u = ev(.leftMouseUp, t0 + 0.18) { w.sendEvent(u) }
++        await spin(1.0)
++        B08Log.w("S10|klick mit Zeitabstand auf zweite kleine Kachel|trefferKette=\(hitChain(w, screen: screenPt))|focusedIndex=\(mv.focusedIndex)")
++        if mv.focusedIndex == 0 {
++            // Gegenprobe über NSApp.sendEvent statt Fenster
++            let t1 = ProcessInfo.processInfo.systemUptime
++            if let d = ev(.leftMouseDown, t1) { NSApp.sendEvent(d) }
++            await spin(0.08)
++            if let u = ev(.leftMouseUp, t1 + 0.08) { NSApp.sendEvent(u) }
++            await spin(1.0)
++            B08Log.w("S10|klick über NSApp.sendEvent|focusedIndex=\(mv.focusedIndex)")
++        }
++        await state("S10|nachher")
++        shot(w, "s10-fokus-klick")
++        await closeMultiviewViaButton("S10|ende")
++        await spin(2)
++    }
++
++    /// Bild des großen Streams nach Fokuswechsel (Fokus-Layout), zeitlich und nach Größenänderung.
++    func sFocusVideo(tag: String, channels: [Channel?]) async {
++        for c in channels { plusAction(c) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        guard let w = mvWindow else { return }
++        w.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil)
++        await spin(6)
++        await state("\(tag)|vorher")
++        B08Log.w("\(tag)|großer Stream \(mv.slots[mv.focusedIndex].channel.name)|schwarzAnteil=\(B08Shot.blackRatioBigArea(w))")
++        shot(w, "\(tag.lowercased())-0-vor-fokuswechsel")
++        mv.setFocus(1)   // wie der Klick auf die erste kleine Kachel (S10 belegt den Klickweg)
++        for t in [1.0, 5.0, 15.0] {
++            await spin(t == 1 ? 1 : (t == 5 ? 4 : 10))
++            B08Log.w("\(tag)|\(Int(t)) s nach setFocus(1)|großer Stream \(mv.slots[mv.focusedIndex].channel.name)|schwarzAnteil=\(B08Shot.blackRatioBigArea(w))|state=\(B08Inspect.state(mv.slots[mv.focusedIndex].engine))")
++        }
++        shot(w, "\(tag.lowercased())-1-nach-fokuswechsel-15s")
++        w.setFrame(NSRect(x: 840, y: 120, width: 1000, height: 640), display: true)
++        await spin(2)
++        B08Log.w("\(tag)|nach Fenstergröße geändert|schwarzAnteil=\(B08Shot.blackRatioBigArea(w))")
++        mv.layout = .grid; await spin(2)
++        mv.layout = .focus; await spin(2)
++        B08Log.w("\(tag)|nach Raster→Fokus|großer Stream \(mv.slots[mv.focusedIndex].channel.name)|schwarzAnteil=\(B08Shot.blackRatioBigArea(w))")
++        shot(w, "\(tag.lowercased())-2-nach-raster-fokus")
++        await state("\(tag)|nachher")
++        await closeMultiviewViaButton("\(tag)|ende")
++        await spin(2)
++    }
++
++    /// Fokus-Layout leeren (kleine X, dann großes X), Leerzustand, Fenster-Menü, ⊞ ohne Zugangsdaten.
++    func sEmptyStateMenuMissingCredentials() async {
++        for n in 101...103 { plusAction(xch(n)) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        guard let w = mvWindow else { return }
++        w.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil)
++        await spin(4)
++        var step = 0
++        while !mv.slots.isEmpty && step < 6 {
++            step += 1
++            let btns = removeButtons(w)
++            let target: NSObject?
++            if mv.slots.count > 1 {
++                let bigX = btns.max { B08AX.frame($0).midX < B08AX.frame($1).midX }
++                target = btns.filter { $0 !== bigX }.first
++            } else {
++                target = btns.first
++            }
++            guard let t = target else { B08Log.w("S13|kein X gefunden"); break }
++            let before = mv.slots.count
++            B08AX.click(at: NSPoint(x: B08AX.frame(t).midX, y: B08AX.frame(t).midY), in: w)
++            await spin(1.5)
++            B08Log.w("S13|schritt \(step)|X geklickt|slots \(before)→\(mv.slots.count)|focus=\(mv.focusedIndex)|picker=\(picker(w).map { "\($0.isEnabled)" } ?? "-")")
++        }
++        await spin(1)
++        B08Log.w("S13|leer|fensterOffen=\(mvWindow != nil)")
++        B08AX.wake(w)
++        B08Log.w("S13|leerzustand-texte|\(B08AX.all(w).map { B08AX.text($0, "accessibilityLabel") + B08AX.text($0, "accessibilityValue") }.filter { !$0.isEmpty })")
++        pickerLine("S13|leer")
++        shot(w, "s13-leerzustand")
++        await state("S13|leer", filter: "/live/")
++        // Fenster-Menü
++        let windowMenu = NSApp.windowsMenu ?? NSApp.mainMenu?.items.first(where: { $0.title == "Window" || $0.title == "Fenster" })?.submenu
++        B08Log.w("S13|fenster-menü|\(windowMenu?.items.map { "\($0.title)[\($0.keyEquivalentModifierMask.contains(.command) ? "⌘" : "")\($0.keyEquivalent)]" } ?? [])")
++        await closeMultiviewViaButton("S13|schließen leer")
++        await spin(1)
++        if let item = windowMenu?.items.first(where: { $0.title == "Multiview" }), let menu = item.menu {
++            menu.performActionForItem(at: menu.index(of: item))
++            await spin(1.5)
++            B08Log.w("S13|über Fenster-Menü geöffnet|fensterOffen=\(mvWindow != nil)|slots=\(mv.slots.count)")
++            shot(mvWindow, "s13-ueber-fenstermenue-leer")
++            await closeMultiviewViaButton("S13|schließen nach Menü")
++            await spin(1)
++        }
++        // ⊞ ohne Zugangsdaten im Schlüsselbund (gleiche Aktion wie der Button: add + openWindow)
++        if let x = xtream { try? XtreamCredentialStore.standard.delete(for: x.id) }
++        plusAction(xch(101))
++        await spin(2)
++        B08Log.w("S13|⊞ ohne Zugangsdaten|slots=\(mv.slots.count)|fensterOffen=\(mvWindow != nil)")
++        shot(mvWindow, "s13-plus-ohne-zugangsdaten")
++        await state("S13|⊞ ohne Zugangsdaten", filter: "/live/")
++        await closeMultiviewViaButton("S13|ende")
++        await spin(1)
++    }
++
++    /// Raster mit 2 Streams, per X auf 1 reduzieren, dann Fenster schließen.
++    func sGridCloseWithOne() async {
++        plusAction(xch(101)); plusAction(xch(102))
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        guard let w = mvWindow else { return }
++        NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil)
++        await spin(3)
++        selectLayout(1)
++        await spin(1.5)
++        if let b = removeButtons(w).max(by: { B08AX.frame($0).midX < B08AX.frame($1).midX }) {
++            B08AX.click(at: NSPoint(x: B08AX.frame(b).midX, y: B08AX.frame(b).midY), in: w)
++        }
++        await spin(1.5)
++        pickerLine("S14|ein Stream im Raster")
++        shot(w, "s14-raster-ein-stream-picker-gesperrt")
++        await closeMultiviewViaButton("S14|schließen im Raster mit einem Stream")
++        await spin(2)
++        B08Log.w("S14|überlebt|slots=\(mv.slots.count)")
++    }
++
++    /// App beenden (wie ⌘Q), während das Multiview-Fenster im Raster offen ist.
++    func sQuitInGrid() async {
++        for n in 101...104 { plusAction(xch(n)) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        await spin(3)
++        mv.layout = .grid
++        await spin(1.5)
++        try? XtreamCredentialStore.standard.deleteAll()
++        B08Log.w("S15|NSApp.terminate bei offenem Multiview im Raster (4 Streams)")
++        NSApp.terminate(nil)
++        await spin(5)
++        B08Log.w("S15|nach terminate noch am Leben")
++    }
++
++    /// Raster, X-Knopf: 4 → 3 → 2 → 1 → 0.
++    func sGridRemoveViaX() async {
++        for n in 101...104 { plusAction(xch(n)) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        mvWindow?.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        await spin(3)
++        mv.layout = .grid
++        B08Log.w("S2|Raster gesetzt (Binding wie der Picker)")
++        await spin(1.5)
++        shot(mvWindow, "s2-raster-vier")
++        var step = 0
++        while let w = mvWindow, !mv.slots.isEmpty {
++            step += 1
++            let btns = removeButtons(w).sorted { B08AX.frame($0).midY > B08AX.frame($1).midY || (B08AX.frame($0).midY == B08AX.frame($1).midY && B08AX.frame($0).midX < B08AX.frame($1).midX) }
++            // zweite Kachel entfernen, solange es sie gibt, sonst die erste
++            let idx = btns.count >= 2 ? 1 : 0
++            guard idx < btns.count else { B08Log.w("S2|keine X-Knöpfe"); break }
++            let f = B08AX.frame(btns[idx])
++            B08Log.w("S2|schritt \(step)|klick X auf Kachel \(idx) von \(btns.count)|slots vorher=\(mv.slots.count)")
++            B08AX.click(at: NSPoint(x: f.midX, y: f.midY), in: w)
++            await spin(1.5)
++            B08Log.w("S2|schritt \(step)|slots nachher=\(mv.slots.count)|focus=\(mv.focusedIndex)|picker=\(picker(w).map { "\($0.isEnabled)" } ?? "-")")
++            shot(w, "s2-raster-nach-schritt-\(step)")
++            if step > 6 { break }
++        }
++        await state("S2|leer")
++        await spin(2)
++        B08Log.w("S2|überlebt")
++        await closeMultiviewViaButton("S2|ende")
++    }
++
++    /// Raster mit 2 Kacheln: letzte Kachel per X entfernen (2 → 1), dann die verbleibende (1 → 0).
++    func sGridRemoveLastOfTwo() async {
++        plusAction(xch(101)); plusAction(xch(102))
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        await spin(3)
++        mv.layout = .grid
++        await spin(1.5)
++        guard let w = mvWindow else { return }
++        var btns = removeButtons(w).sorted { B08AX.frame($0).midX > B08AX.frame($1).midX }
++        B08Log.w("S9|klick X auf rechte (letzte) Kachel|slots=\(mv.slots.count)")
++        B08AX.click(at: NSPoint(x: B08AX.frame(btns[0]).midX, y: B08AX.frame(btns[0]).midY), in: w)
++        await spin(1.5)
++        B08Log.w("S9|slots=\(mv.slots.count)")
++        shot(w, "s9-raster-eine-kachel")
++        btns = removeButtons(w)
++        if let b = btns.first {
++            B08Log.w("S9|klick X auf letzte verbleibende Kachel")
++            B08AX.click(at: NSPoint(x: B08AX.frame(b).midX, y: B08AX.frame(b).midY), in: w)
++            await spin(1.5)
++        }
++        B08Log.w("S9|überlebt|slots=\(mv.slots.count)")
++        shot(w, "s9-raster-leer")
++        await closeMultiviewViaButton("S9|ende")
++    }
++
++    /// Raster mit 4 Kacheln, Fenster über den roten Knopf schließen.
++    func sGridCloseWindow() async {
++        for n in 101...104 { plusAction(xch(n)) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        await spin(4)
++        mv.layout = .grid
++        await spin(1.5)
++        shot(mvWindow, "s3-raster-vor-schliessen")
++        await state("S3|vor Schließen", filter: "/live/")
++        await closeMultiviewViaButton("S3|schließen im Raster")
++        await spin(2)
++        B08Log.w("S3|überlebt|slots=\(mv.slots.count)")
++        enginesLine("S3|2 s nach Schließen")
++        await state("S3|2 s nach Schließen", filter: "/live/")
++        // wieder öffnen: Layout gemerkt?
++        plusAction(xch(101))
++        await spin(2)
++        pickerLine("S3|wieder geöffnet")
++        shot(mvWindow, "s3-wieder-offen-raster-ein-stream")
++        await closeMultiviewViaButton("S3|ende")
++        await spin(1)
++    }
++
++    /// Fokus-Layout: alle Kacheln über X am großen Stream entfernen.
++    func sFocusRemoveAllViaX() async {
++        for n in 101...104 { plusAction(xch(n)) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        mvWindow?.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        await spin(3)
++        var step = 0
++        while let w = mvWindow, !mv.slots.isEmpty, step < 6 {
++            step += 1
++            // X des großen Streams: der Knopf mit dem kleinsten x-Abstand zur linken Kachelhälfte … am weitesten links von den X-Knöpfen der kleinen Kacheln? Große Kachel: X ganz rechts oben, aber unter den kleinen Kacheln verdeckt.
++            let btns = removeButtons(w)
++            B08Log.w("S4|schritt \(step)|x-knöpfe=\(btns.map { "\(Int(B08AX.frame($0).midX)),\(Int(B08AX.frame($0).midY))" })|slots=\(mv.slots.count)|focus=\(mv.focusedIndex)")
++            // kleinste x = kleine Kacheln liegen 16 pt vom Rand entfernt, großer X-Knopf 8 pt → größtes x ist der große Stream
++            guard let big = btns.max(by: { B08AX.frame($0).midX < B08AX.frame($1).midX }) else { break }
++            B08AX.click(at: NSPoint(x: B08AX.frame(big).midX, y: B08AX.frame(big).midY), in: w)
++            await spin(1.5)
++            B08Log.w("S4|schritt \(step)|nachher slots=\(mv.slots.count)|focus=\(mv.focusedIndex)")
++            await state("S4|schritt \(step)")
++            shot(w, "s4-fokus-nach-schritt-\(step)")
++        }
++        B08Log.w("S4|überlebt|slots=\(mv.slots.count)")
++        await closeMultiviewViaButton("S4|ende")
++    }
++
++    /// Playlist löschen, während ihre Sender laufen.
++    func sDeletePlaylist(layout: MultiviewLayout) async {
++        let tag = layout == .grid ? "S5" : "S6"
++        for n in 101...104 { plusAction(xch(n)) }
++        plusAction(nil)
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        mvWindow?.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        await spin(4)
++        mv.layout = layout
++        await spin(1.5)
++        await state("\(tag)|vor Löschen", filter: "/live/")
++        shot(mvWindow, "\(tag.lowercased())-vor-loeschen")
++        guard let x = xtream else { return }
++        let pid = x.id
++        do {
++            try PlaylistImporter(modelContext: ctx).delete(x)   // wie „Löschen" im Kontextmenü
++            B08Log.w("\(tag)|playlist gelöscht|schlüsselbundEintrag=\(((try? XtreamCredentialStore.standard.load(for: pid)) ?? nil) != nil)")
++        } catch {
++            B08Log.w("\(tag)|löschen fehler|\(error.localizedDescription)")
++        }
++        await spin(0.5)
++        B08Log.w("\(tag)|nach Löschen|slotChannels isDeleted=\(mv.slots.map { $0.channel.isDeleted })|modelContext=\(mv.slots.map { $0.channel.modelContext == nil ? "nil" : "da" })")
++        await spin(3)
++        await state("\(tag)|3 s nach Löschen", filter: "/live/")
++        shot(mvWindow, "\(tag.lowercased())-nach-loeschen")
++        // Fokuswechsel, Entfernen einer Kachel nach dem Löschen
++        mv.setFocus(1)
++        await spin(1)
++        if let w = mvWindow, let b = removeButtons(w).first {
++            B08AX.click(at: NSPoint(x: B08AX.frame(b).midX, y: B08AX.frame(b).midY), in: w)
++            await spin(1.5)
++            B08Log.w("\(tag)|X nach Löschen|slots=\(mv.slots.count)")
++        }
++        await state("\(tag)|nach Fokus+X", filter: "/live/")
++        await spin(2)
++        if mv.layout == .grid { mv.layout = .focus; B08Log.w("\(tag)|vor dem Schließen auf Fokus umgestellt (Raster-Absturz S3 vermeiden)"); await spin(1) }
++        await closeMultiviewViaButton("\(tag)|schließen")
++        await spin(3)
++        B08Log.w("\(tag)|überlebt|slots=\(mv.slots.count)")
++        await state("\(tag)|3 s nach Schließen", filter: "/live/")
++    }
++
++    /// Playlist aktualisieren (Anbieter liefert neue stream_ids), während ihre Sender laufen.
++    func sRefreshPlaylist() async {
++        guard let main = mainWindows.first else { return }
++        main.setFrame(NSRect(x: 60, y: 120, width: 760, height: 720), display: true)
++        for n in [101, 102] { plusAction(xch(n)) }
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        mvWindow?.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        await spin(4)
++        await state("S7|vor Aktualisieren", filter: "/live/")
++        let oldIDs = mv.slots.map { $0.channel.persistentModelID }
++        await B08Mock.control("shift=1")
++        guard let x = xtream else { return }
++        do {
++            try await PlaylistImporter(modelContext: ctx).refresh(x)   // wie „Aktualisieren" im Kontextmenü
++            B08Log.w("S7|aktualisiert|neue streamURLs=\(x.channels.map(\.streamURL.absoluteString).sorted())")
++        } catch {
++            B08Log.w("S7|aktualisieren fehler|\(error.localizedDescription)")
++        }
++        await spin(1)
++        B08Log.w("S7|nach Aktualisieren|slotChannels isDeleted=\(mv.slots.map { $0.channel.isDeleted })|name=\(mv.slots.map { $0.channel.name })|alteObjekteNochInPlaylist=\(oldIDs.map { id in x.channels.contains { $0.persistentModelID == id } })")
++        await spin(3)
++        await state("S7|3 s nach Aktualisieren", filter: "/live/")
++        shot(mvWindow, "s7-nach-aktualisieren")
++        // neue Objekte desselben Senders über ⊞ hinzufügen
++        plusAction(xch(101))
++        await spin(3)
++        await state("S7|neuer 101 zusätzlich", filter: "/live/")
++        shot(mvWindow, "s7-alter-und-neuer-sender")
++        // Main: Senderliste öffnen und prüfen, ob ⊞ etwas über laufende Kacheln sagt
++        await mainWindowNavigateToPlaylist(main, "Xtream MV")
++        B08Log.w("S7|senderliste|karte101=\(cardHelp(main, "MV Sender 101"))")
++        await closeMultiviewViaButton("S7|ende")
++        await spin(3)
++        await state("S7|nach Schließen", filter: "/live/")
++        await B08Mock.control("shift=0")
++    }
++
++    /// Fehler je Kachel und Anbieterlimit 1.
++    func sErrorsAndLimit() async {
++        plusAction(mch("M3U 404 HLS")); plusAction(mch("M3U 404 TS")); plusAction(mch("M3U Abbruch TS")); plusAction(mch("M3U TS C"))
++        _ = await waitFor("Multiview") { self.mvWindow != nil }
++        mvWindow?.setFrame(NSRect(x: 840, y: 120, width: 960, height: 600), display: true)
++        await spin(0.5)
++        mv.layout = .grid
++        await spin(5)
++        await state("S8|5 s", filter: "m3u")
++        shot(mvWindow, "s8-fehler-5s")
++        await spin(10)
++        await state("S8|15 s", filter: "m3u")
++        shot(mvWindow, "s8-fehler-15s")
++        mv.layout = .focus; await spin(1)
++        await closeMultiviewViaButton("S8|zwischen")
++        await spin(3)
++        await B08Mock.control("limit=1")
++        for n in 101...104 { plusAction(xch(n)) }
++        await spin(0.5)
++        mv.layout = .grid
++        await spin(8)
++        await state("S8|Limit 1", filter: "/live/")
++        shot(mvWindow, "s8-anbieterlimit-eins")
++        mv.layout = .focus; await spin(1)
++        await closeMultiviewViaButton("S8|ende")
++        await B08Mock.control("limit=0")
++        await spin(2)
++    }
++}
++#endif
+diff -ruN -x .DS_Store snapshot-b01/Sources/App/B08ProbeSupport.swift b08probe/Sources/App/B08ProbeSupport.swift
+--- snapshot-b01/Sources/App/B08ProbeSupport.swift	1970-01-01 01:00:00
++++ b08probe/Sources/App/B08ProbeSupport.swift	2026-09-16 21:50:44
+@@ -0,0 +1,324 @@
++// B08-SONDE — nur in der Scratchpad-Kopie, nie im Repository.
++// Hilfen für die Rückerfassung von B08 (Multiview): Protokoll, Mock-Abfrage, Engine-Innenzustand,
++// Fensteraufnahmen, Abfangen des Systemwarntons. Keine Tonausgabe: Streams ohne Tonspur bzw. mit
++// digitaler Stille und Engine-Lautstärke 0; unbehandelte Tasten werden abgefangen statt zu piepen.
++#if os(macOS)
++import Foundation
++import AppKit
++import AVFoundation
++import SwiftUI
++import SwiftData
++import ObjectiveC
++import CoreGraphics
++import VLCKitSPM
++
++enum B08Log {
++    static let dir: URL = {
++        let p = ProcessInfo.processInfo.environment["B08_EVIDENCE"]
++            ?? "<sonde>/evidence"
++        let u = URL(fileURLWithPath: p, isDirectory: true)
++        try? FileManager.default.createDirectory(at: u, withIntermediateDirectories: true)
++        return u
++    }()
++    static let lock = NSLock()
++    static let t0 = Date()
++
++    static func w(_ s: String) {
++        let line = "B08PROBE|\(String(format: "%7.2f", Date().timeIntervalSince(t0)))|\(s)\n"
++        lock.withLock {
++            let url = dir.appendingPathComponent("probe.log")
++            if let h = try? FileHandle(forWritingTo: url) {
++                h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close()
++            } else {
++                try? Data(line.utf8).write(to: url)
++            }
++            FileHandle.standardError.write(Data(line.utf8))
++        }
++    }
++}
++
++enum B08Mock {
++    static let host = "127.0.0.1:18908"
++    static let base = "http://127.0.0.1:18908"
++    static func url(_ path: String) -> URL { URL(string: base + path)! }
++
++    private static let session: URLSession = {
++        let c = URLSessionConfiguration.ephemeral
++        c.urlCache = nil
++        c.timeoutIntervalForRequest = 5
++        return URLSession(configuration: c)
++    }()
++
++    static func stats() async -> [String: Any] {
++        guard let (data, _) = try? await session.data(from: url("/stats")),
++              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
++        return obj
++    }
++
++    static func control(_ query: String) async {
++        _ = try? await session.data(from: url("/control?" + query))
++    }
++
++    /// Offene TS-Verbindungen (Pfad, Byte, Leerlauf) und Playlist-Abrufe der letzten 6 s.
++    static func summary(filter: String = "") async -> String {
++        let s = await stats()
++        let open = (s["open"] as? [[String: Any]] ?? []).filter { filter.isEmpty || (($0["path"] as? String) ?? "").contains(filter) }
++        let openText = open.map { "\($0["path"] ?? "?")#\($0["id"] ?? "?")(idle=\($0["idle"] ?? "?")s)" }.sorted()
++        let polls = (s["playlistPollsLast6s"] as? [String: [Int]] ?? [:]).filter { filter.isEmpty || $0.key.contains(filter) }
++        let pollText = polls.keys.sorted().map { "\($0):\(polls[$0]!.count)x\(Set(polls[$0]!).sorted())" }
++        return "offeneTS=\(open.count) \(openText) | playlistAbrufe6s=\(pollText)"
++    }
++
++    static func openCount(filter: String = "") async -> Int {
++        let s = await stats()
++        return (s["open"] as? [[String: Any]] ?? []).filter { filter.isEmpty || (($0["path"] as? String) ?? "").contains(filter) }.count
++    }
++
++    static func closed(filter: String) async -> [String] {
++        let s = await stats()
++        return (s["closed"] as? [[String: Any]] ?? []).filter { (($0["path"] as? String) ?? "").contains(filter) }
++            .map { "\($0["path"] ?? "?")#\($0["id"] ?? "?")[\($0["reason"] ?? "?"), \($0["dauer"] ?? "?")s]" }
++    }
++}
++
++@MainActor
++enum B08Inspect {
++    static func child(_ o: Any, _ label: String) -> Any? {
++        var m: Mirror? = Mirror(reflecting: o)
++        while let mm = m {
++            if let c = mm.children.first(where: { $0.label == label }) { return c.value }
++            m = mm.superclassMirror
++        }
++        return nil
++    }
++
++    static func kind(_ e: any PlaybackEngine) -> String {
++        if e is AVKitPlaybackEngine { return "AVKit" }
++        if e is VLCPlaybackEngine { return "VLC" }
++        return String(describing: type(of: e))
++    }
++
++    static func state(_ e: any PlaybackEngine) -> String {
++        switch e.state {
++        case .idle: return "idle"
++        case .loading: return "loading"
++        case .playing: return "playing"
++        case .failed(let m): return "failed(\(m))"
++        }
++    }
++
++    /// Innenzustand des eigentlichen Players (nicht nur der Engine-Flags).
++    static func low(_ e: any PlaybackEngine) -> String {
++        if let p = child(e, "player") as? AVPlayer {
++            let st: String
++            switch p.currentItem?.status {
++            case .readyToPlay: st = "ready"
++            case .failed: st = "failed"
++            case .unknown: st = "unknown"
++            default: st = "nil"
++            }
++            return "avPlayer.isMuted=\(p.isMuted) volume=\(p.volume) rate=\(p.rate) item=\(st)"
++        }
++        if let mp = child(e, "mediaPlayer") as? VLCMediaPlayer {
++            let audio: String
++            if let a = mp.audio {
++                audio = "audio.isMuted=\(a.isMuted) audio.volume=\(a.volume) audioTracks=\(mp.numberOfAudioTracks)"
++            } else {
++                audio = "audio=nil"
++            }
++            return "vlc.isPlaying=\(mp.isPlaying) vlc.state=\(VLCMediaPlayerStateToString(mp.state)) \(audio)"
++        }
++        return "?"
++    }
++
++    static func slot(_ s: MultiviewSession.Slot, index: Int, focus: Int) -> String {
++        let e = s.engine
++        return "[\(index)\(index == focus ? "*" : "")] \(s.channel.name) \(kind(e)) state=\(state(e)) isMuted=\(e.isMuted) isPaused=\(e.isPaused) vol=\(e.volume) | \(low(e))"
++    }
++
++    static func session(_ s: MultiviewSession) -> String {
++        var parts = ["slots=\(s.slots.count) focusedIndex=\(s.focusedIndex) canAddMore=\(s.canAddMore) layout=\(s.layout.rawValue)"]
++        for (i, sl) in s.slots.enumerated() { parts.append(Self.slot(sl, index: i, focus: s.focusedIndex)) }
++        return parts.joined(separator: "\n        ")
++    }
++}
++
++final class B08Weak {
++    weak var object: AnyObject?
++    let label: String
++    init(_ o: AnyObject, _ label: String) { object = o; self.label = label }
++    var alive: Bool { object != nil }
++}
++
++/// Fängt den Systemwarnton ab: `-[NSResponder noResponderFor:]` ruft bei `keyDown:` `NSBeep()`
++/// (per Disassembly belegt). Ersetzt die Methode in allen Klassen, die sie implementieren – ohne
++/// das Original aufzurufen. Es entsteht also kein Ton; gezählt wird, wie oft er entstanden wäre.
++final class B08Beep {
++    nonisolated(unsafe) static var events: [String] = []
++    nonisolated(unsafe) static var installedIn: [String] = []
++
++    nonisolated(unsafe) static var imp: IMP?
++
++    /// Ersetzt `noResponderFor:` in NSResponder (Basis, per Disassembly: ruft NSBeep bei keyDown:).
++    static func install() {
++        guard imp == nil else { return }
++        let block: @convention(block) (AnyObject, Selector) -> Void = { obj, eventSelector in
++            B08Beep.events.append("\(NSStringFromSelector(eventSelector))@\(type(of: obj))")
++        }
++        let newImp = imp_implementationWithBlock(block)
++        imp = newImp
++        patch(NSResponder.self)
++    }
++
++    /// Findet in der Klassenkette die Klasse, die `noResponderFor:` selbst implementiert, und ersetzt dort.
++    static func patch(_ start: AnyClass) {
++        guard let newImp = imp else { return }
++        let sel = NSSelectorFromString("noResponderFor:")
++        var cls: AnyClass? = start
++        while let c = cls {
++            var mc: UInt32 = 0
++            if let methods = class_copyMethodList(c, &mc) {
++                for j in 0..<Int(mc) where method_getName(methods[j]) == sel {
++                    if method_getImplementation(methods[j]) != newImp {
++                        method_setImplementation(methods[j], newImp)
++                        installedIn.append(NSStringFromClass(c))
++                    }
++                }
++                free(methods)
++            }
++            cls = class_getSuperclass(c)
++        }
++    }
++
++    /// Vor dem Senden von Tasten: alle Objekte der Responder-Kette prüfen und ggf. nachpatchen.
++    @MainActor
++    static func coverResponderChain(of window: NSWindow) -> [String] {
++        var chain: [String] = []
++        var r: NSResponder? = window.firstResponder
++        var guardCount = 0
++        while let rr = r, guardCount < 40 {
++            patch(type(of: rr))
++            chain.append(String(describing: type(of: rr)))
++            r = rr.nextResponder
++            guardCount += 1
++        }
++        patch(type(of: window))
++        patch(type(of: NSApp!))
++        if let d = NSApp.delegate as? NSObject { patch(type(of: d)) }
++        return chain
++    }
++}
++
++@MainActor
++enum B08Shot {
++    /// Aufnahme genau eines Fensters dieses Prozesses (inkl. Videoebenen).
++    static func window(_ w: NSWindow, _ name: String) {
++        if let img = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(w.windowNumber), [.boundsIgnoreFraming, .bestResolution]) {
++            let rep = NSBitmapImageRep(cgImage: img)
++            if let data = rep.representation(using: .png, properties: [:]) {
++                try? data.write(to: B08Log.dir.appendingPathComponent("\(name).png"))
++                B08Log.w("SHOT|\(name)|\(img.width)x\(img.height)|fenster=\(w.title)")
++                return
++            }
++        }
++        B08Log.w("SHOT|\(name)|fehlgeschlagen")
++    }
++
++    /// Anteil (fast) schwarzer Pixel im linken, mittleren Bereich des Fensters (Fläche des großen Streams im Fokus-Layout).
++    static func blackRatioBigArea(_ w: NSWindow) -> Double {
++        guard let img = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(w.windowNumber), [.boundsIgnoreFraming, .nominalResolution]) else { return -1 }
++        let rep = NSBitmapImageRep(cgImage: img)
++        let wpx = rep.pixelsWide, hpx = rep.pixelsHigh
++        var black = 0, total = 0
++        let x0 = Int(Double(wpx) * 0.05), x1 = Int(Double(wpx) * 0.65)
++        let y0 = Int(Double(hpx) * 0.30), y1 = Int(Double(hpx) * 0.85)
++        var y = y0
++        while y < y1 {
++            var x = x0
++            while x < x1 {
++                if let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) {
++                    total += 1
++                    if c.redComponent < 0.06 && c.greenComponent < 0.06 && c.blueComponent < 0.06 { black += 1 }
++                }
++                x += 12
++            }
++            y += 12
++        }
++        return total == 0 ? -1 : Double(black) / Double(total)
++    }
++}
++
++@MainActor
++enum B08AX {
++    static func obj(_ e: NSObject, _ name: String) -> Any? {
++        let sel = NSSelectorFromString(name)
++        guard e.responds(to: sel) else { return nil }
++        return e.perform(sel)?.takeUnretainedValue()
++    }
++    static func frame(_ e: NSObject) -> NSRect {
++        let sel = NSSelectorFromString("accessibilityFrame")
++        guard e.responds(to: sel), let imp = e.method(for: sel) else { return .zero }
++        typealias F = @convention(c) (AnyObject, Selector) -> NSRect
++        return unsafeBitCast(imp, to: F.self)(e, sel)
++    }
++    static func text(_ e: NSObject, _ name: String) -> String {
++        let v = obj(e, name)
++        if let s = v as? String { return s }
++        if let a = v as? NSAttributedString { return a.string }
++        if let n = v as? NSNumber { return n.stringValue }
++        return ""
++    }
++    static func bool(_ e: NSObject, _ name: String) -> Bool? {
++        let sel = NSSelectorFromString(name)
++        guard e.responds(to: sel), let imp = e.method(for: sel) else { return nil }
++        typealias F = @convention(c) (AnyObject, Selector) -> Bool
++        return unsafeBitCast(imp, to: F.self)(e, sel)
++    }
++    static func kids(_ e: NSObject) -> [NSObject] { (obj(e, "accessibilityChildren") as? [Any] ?? []).compactMap { $0 as? NSObject } }
++    static func all(_ root: NSObject, depth: Int = 0) -> [NSObject] {
++        guard depth < 50 else { return [] }
++        return [root] + kids(root).flatMap { all($0, depth: depth + 1) }
++    }
++    static func wake(_ w: NSWindow) {
++        if let v = w.contentView { _ = v.accessibilityHitTest(NSPoint(x: w.frame.midX, y: w.frame.midY)) }
++    }
++    static func describe(_ e: NSObject) -> String {
++        let actions = (obj(e, "accessibilityCustomActions") as? [NSAccessibilityCustomAction] ?? []).map(\.name)
++        return "role=\(text(e, "accessibilityRole")) label=\(text(e, "accessibilityLabel")) title=\(text(e, "accessibilityTitle")) help=\(text(e, "accessibilityHelp")) value=\(text(e, "accessibilityValue")) enabled=\(bool(e, "isAccessibilityEnabled").map { $0 ? "1" : "0" } ?? "-") frame=\(Int(frame(e).width))x\(Int(frame(e).height)) actions=\(actions)"
++    }
++
++    static func click(at screenPoint: NSPoint, in window: NSWindow) {
++        let p = window.convertPoint(fromScreen: screenPoint)
++        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
++            if let ev = NSEvent.mouseEvent(with: type, location: p, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
++                                           windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) {
++                window.sendEvent(ev)
++            }
++        }
++    }
++
++    /// Klick in Fensterkoordinaten (Ursprung unten links).
++    static func click(windowPoint p: NSPoint, in window: NSWindow) {
++        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
++            if let ev = NSEvent.mouseEvent(with: type, location: p, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
++                                           windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) {
++                window.sendEvent(ev)
++            }
++        }
++    }
++
++    static func key(_ chars: String, keyCode: UInt16, in window: NSWindow) {
++        for type in [NSEvent.EventType.keyDown, .keyUp] {
++            if let ev = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
++                                         windowNumber: window.windowNumber, context: nil, characters: chars,
++                                         charactersIgnoringModifiers: chars, isARepeat: false, keyCode: keyCode) {
++                window.sendEvent(ev)
++            }
++        }
++    }
++}
++
++extension NSView {
++    func b08AllSubviews() -> [NSView] { [self] + subviews.flatMap { $0.b08AllSubviews() } }
++}
++#endif
+diff -ruN -x .DS_Store snapshot-b01/Sources/App/ContentView.swift b08probe/Sources/App/ContentView.swift
+--- snapshot-b01/Sources/App/ContentView.swift	2026-06-19 14:57:16
++++ b08probe/Sources/App/ContentView.swift	2026-09-16 15:23:17
+@@ -20,6 +20,12 @@
+             }
+         }
+         .tint(.playerAccent)
++        #if os(macOS)
++        // B08-SONDE (nur Scratchpad-Kopie)
++        .background {
++            if ProcessInfo.processInfo.environment["B08_SCENARIO"] != nil { B08ProbeHook() }
++        }
++        #endif
+         #if os(iOS)
+         .toolbarBackground(.visible, for: .tabBar)
+         #endif
+diff -ruN -x .DS_Store snapshot-b01/Sources/Resources/Info.plist b08probe/Sources/Resources/Info.plist
+--- snapshot-b01/Sources/Resources/Info.plist	2026-08-01 21:18:46
++++ b08probe/Sources/Resources/Info.plist	2026-09-16 15:12:38
+@@ -25,11 +25,11 @@
+ 	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
+ 	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
+ 	<key>SUFeedURL</key>
+-	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
++	<string>http://127.0.0.1:9/appcast.xml</string>
+ 	<key>SUPublicEDKey</key>
+ 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
+ 	<key>SUEnableAutomaticChecks</key>
+-	<true/>
++	<false/>
+ 
+ 	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
+ 	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den
+diff -ruN -x .DS_Store snapshot-b01/Tests/B08/B08SessionTests.swift b08probe/Tests/B08/B08SessionTests.swift
+--- snapshot-b01/Tests/B08/B08SessionTests.swift	1970-01-01 01:00:00
++++ b08probe/Tests/B08/B08SessionTests.swift	2026-09-16 15:23:09
+@@ -0,0 +1,275 @@
++import XCTest
++import SwiftUI
++import SwiftData
++import AppKit
++import AVFoundation
++import VLCKitSPM
++@testable import MikaPlusPlayer
++
++// B08-SONDE (nur Scratchpad-Kopie): MultiviewSession mit echten Engines gegen den lokalen, stummen Mock
++// auf 127.0.0.1:18908. Kein Ton: Streams ohne Tonspur; wo eine Tonspur nötig ist, digitale Stille
++// (-91 dB) UND Engine-Lautstärke 0. Erfundene Zugangsdaten qa-user / qa-pass-b08.
++@MainActor
++final class B08SessionTests: XCTestCase {
++
++    private func spin(_ s: TimeInterval) async { try? await Task.sleep(nanoseconds: UInt64(s * 1_000_000_000)) }
++
++    private func ch(_ name: String, _ path: String) -> Channel {
++        Channel(name: name, streamURL: B08Mock.url(path))
++    }
++
++    private func log(_ tag: String, _ s: MultiviewSession) {
++        B08Log.w("\(tag)|\(B08Inspect.session(s))")
++    }
++
++    override func setUp() async throws {
++        await B08Mock.control("reset=1&limit=0")
++        B08Log.w("=== \(name)")
++    }
++
++    override func tearDown() async throws {
++        try? XtreamCredentialStore.standard.deleteAll()
++    }
++
++    // MARK: 1 · Hinzufügen 1–4, fünfter abgewiesen, Fokus/Ton nach Hinzufügen
++
++    func test01_HinzufuegenBisVierFuenfterAbgewiesen() async throws {
++        let s = MultiviewSession()
++        log("T01|leer", s)
++        let chans = [ch("A HLS", "/hls/t01a/live.m3u8"), ch("B TS", "/ts/t01b.ts"), ch("C HLS", "/hls/t01c/live.m3u8"), ch("D TS", "/ts/t01d.ts")]
++        var weak: [B08Weak] = []
++        for c in chans {
++            s.add(c)
++            log("T01|nach add(\(c.name))", s)
++            if let e = s.slots.last?.engine { weak.append(B08Weak(e, c.name)) }
++        }
++        let fifth = ch("E TS", "/ts/t01e.ts")
++        s.add(fifth)
++        log("T01|nach add(E) (fünfter)", s)
++        await spin(6)
++        log("T01|nach 6 s", s)
++        B08Log.w("T01|mock|\(await B08Mock.summary(filter: "t01"))")
++        B08Log.w("T01|mock|fuenfterAngefragt=\(await B08Mock.openCount(filter: "t01e"))")
++        XCTAssertEqual(s.slots.count, 4)
++
++        // clear() wie beim Schließen des Fensters
++        s.clear()
++        log("T01|nach clear()", s)
++        B08Log.w("T01|engines direkt nach clear|" + weak.map { "\($0.label)=\($0.alive ? "lebt" : "frei")" }.joined(separator: " "))
++        await spin(5)
++        B08Log.w("T01|engines 5 s nach clear|" + weak.map { "\($0.label)=\($0.alive ? "lebt" : "frei")" }.joined(separator: " "))
++        B08Log.w("T01|mock 5 s nach clear|\(await B08Mock.summary(filter: "t01"))")
++        B08Log.w("T01|mock geschlossen|\(await B08Mock.closed(filter: "t01"))")
++    }
++
++    // MARK: 2 · Fokus setzen, Entfernen vor/auf/nach dem Fokus
++
++    func test02_FokusUndEntfernen() async throws {
++        let s = MultiviewSession()
++        let chans = [ch("R1 HLS", "/hls/t02r1/live.m3u8"), ch("R2 TS", "/ts/t02r2.ts"), ch("R3 HLS", "/hls/t02r3/live.m3u8"), ch("R4 TS", "/ts/t02r4.ts")]
++        chans.forEach { s.add($0) }
++        await spin(4)
++        log("T02|vier Streams", s)
++        s.setFocus(2); log("T02|setFocus(2)", s)
++        s.setFocus(7); log("T02|setFocus(7) ungültig", s)
++        s.setFocus(-1); log("T02|setFocus(-1) ungültig", s)
++
++        // Entfernen VOR dem Fokus
++        let r1 = s.slots[0]; let r1Weak = B08Weak(r1.engine, "R1")
++        s.remove(r1.id)
++        log("T02|remove(R1) vor dem Fokus", s)
++        B08Log.w("T02|R1 entfernt|isPaused=\(r1.engine.isPaused)")
++        // Entfernen AUF dem Fokus (R3 an Index 1)
++        let r3 = s.slots[s.focusedIndex]; let r3Weak = B08Weak(r3.engine, "R3")
++        s.remove(r3.id)
++        log("T02|remove(R3) = fokussiert", s)
++        // Hinzufügen bei bestehendem Fokus
++        s.add(ch("R5 TS", "/ts/t02r5.ts"))
++        log("T02|add(R5)", s)
++        // Fokus auf den letzten, dann den letzten entfernen
++        s.setFocus(s.slots.count - 1); log("T02|setFocus(letzter)", s)
++        let last = s.slots[s.slots.count - 1]
++        s.remove(last.id); log("T02|remove(letzter = fokussiert)", s)
++        // Entfernen NACH dem Fokus
++        s.setFocus(0); log("T02|setFocus(0)", s)
++        let after = s.slots[1]
++        s.remove(after.id); log("T02|remove(nach dem Fokus)", s)
++        // unbekannte ID
++        s.remove(UUID()); log("T02|remove(unbekannte ID)", s)
++        // letzter Stream
++        let only = s.slots[0]
++        s.remove(only.id); log("T02|remove(letzter verbleibender)", s)
++        s.add(ch("R6 HLS", "/hls/t02r6/live.m3u8")); log("T02|add(R6) nach leer", s)
++        _ = (r1Weak, r3Weak)
++        await spin(4)
++        B08Log.w("T02|R1/R3 4 s nach Entfernen|R1=\(r1Weak.alive ? "lebt" : "frei") R3=\(r3Weak.alive ? "lebt" : "frei")")
++        B08Log.w("T02|mock|\(await B08Mock.summary(filter: "t02"))")
++        s.clear()
++        await spin(3)
++        B08Log.w("T02|mock nach clear|\(await B08Mock.summary(filter: "t02"))")
++    }
++
++    // MARK: 3 · Gleicher Sender zweimal
++
++    func test03_GleicherSenderZweimal() async throws {
++        let s = MultiviewSession()
++        let c = ch("Doppelt TS", "/ts/t03same.ts")
++        s.add(c); s.add(c)
++        log("T03|zweimal derselbe Channel", s)
++        B08Log.w("T03|slotIDs verschieden=\(s.slots[0].id != s.slots[1].id)|gleicheEngine=\(s.slots[0].engine === s.slots[1].engine)")
++        await spin(5)
++        log("T03|nach 5 s", s)
++        B08Log.w("T03|mock|\(await B08Mock.summary(filter: "t03"))")
++        s.clear()
++    }
++
++    // MARK: 4 · Audio-Fokus am VLC-Audiokanal (stumme Tonspur, Engine-Lautstärke 0)
++
++    func test04_AudioFokusVLCMitStummerTonspur() async throws {
++        let s = MultiviewSession()
++        s.add(ch("V1 TS Stille", "/tsa/t04v1.ts"))
++        s.slots.last?.engine.setVolume(0)
++        s.add(ch("V2 TS Stille", "/tsa/t04v2.ts"))
++        s.slots.last?.engine.setVolume(0)
++        s.add(ch("V3 TS ohne Tonspur", "/ts/t04v3.ts"))
++        s.slots.last?.engine.setVolume(0)
++        log("T04|direkt nach add (Audiokanal noch nicht da)", s)
++        await spin(5)
++        log("T04|nach 5 s", s)
++        s.setFocus(1); await spin(0.5); log("T04|setFocus(1)", s)
++        s.setFocus(2); await spin(0.5); log("T04|setFocus(2) (Stream ohne Tonspur)", s)
++        s.remove(s.slots[2].id); await spin(0.5); log("T04|remove(fokussierter V3)", s)
++        s.clear()
++    }
++
++    // MARK: 5 · Verbindungen je Kachel beim Xtream-Anbieter, Limit 1
++
++    func test05_VerbindungenXtream() async throws {
++        let container = try B01.inMemoryContainer()
++        let ctx = container.mainContext
++        let tsResult = await B01.importXtream(host: B08Mock.host, pass: "qa-pass-b08", output: .mpegts, name: "Xtream TS", context: ctx)
++        let ts = try tsResult.get()
++        let chans = ts.channels.sorted { $0.name < $1.name }
++        B08Log.w("T05|import TS|sender=\(chans.map(\.name))|gespeichert=\(chans.map(\.streamURL.absoluteString))")
++        let s = MultiviewSession()
++        for (i, c) in chans.enumerated() {
++            s.add(c)
++            await spin(2.5)
++            B08Log.w("T05|\(i + 1) Kachel(n)|\(await B08Mock.summary(filter: "/live/"))")
++        }
++        log("T05|vier Xtream-TS", s)
++        s.clear()
++        await spin(4)
++        B08Log.w("T05|nach clear|\(await B08Mock.summary(filter: "/live/"))")
++
++        // Anbieter erlaubt 1 Verbindung
++        await B08Mock.control("limit=1")
++        await spin(1)
++        for c in chans { s.add(c) }
++        await spin(8)
++        log("T05|Limit 1, vier Kacheln", s)
++        B08Log.w("T05|Limit 1|\(await B08Mock.summary(filter: "/live/"))")
++        s.clear()
++        await spin(3)
++        await B08Mock.control("limit=0")
++
++        // HLS-Variante
++        let hlsResult = await B01.importXtream(host: B08Mock.host, pass: "qa-pass-b08", output: .hls, name: "Xtream HLS", context: ctx)
++        let hls = try hlsResult.get().channels.sorted { $0.name < $1.name }
++        await B08Mock.control("reset=1")
++        for c in hls { s.add(c) }
++        await spin(8)
++        log("T05|vier Xtream-HLS", s)
++        B08Log.w("T05|HLS vier Kacheln|\(await B08Mock.summary(filter: "/live/"))")
++        s.clear()
++        await spin(8)
++        B08Log.w("T05|HLS 8 s nach clear|\(await B08Mock.summary(filter: "/live/"))")
++
++        // Fehlende Zugangsdaten: ⊞ fügt nichts hinzu
++        try XtreamCredentialStore.standard.delete(for: ts.id)
++        s.add(chans[0])
++        log("T05|add ohne Schlüsselbund-Eintrag", s)
++        s.clear()
++    }
++
++    // MARK: 6 · Fehler je Kachel
++
++    func test06_FehlerJeKachel() async throws {
++        let s1 = MultiviewSession()
++        s1.add(ch("404 HLS", "/err404/t06a/live.m3u8"))
++        s1.add(ch("404 TS", "/err404/t06b.ts"))
++        s1.add(ch("Abbruch TS", "/abort/t06c.ts"))
++        s1.add(ch("Abbruch HLS", "/hlsabort/t06d/live.m3u8"))
++        for t in [2.0, 6.0, 14.0, 30.0] {
++            await spin(t == 2 ? 2 : (t == 6 ? 4 : (t == 14 ? 8 : 16)))
++            log("T06|nach \(Int(t)) s", s1)
++        }
++        B08Log.w("T06|mock|\(await B08Mock.closed(filter: "t06"))")
++        s1.clear()
++
++        let s2 = MultiviewSession()
++        s2.add(ch("Hängt TS", "/hang/t06e.ts"))
++        s2.add(ch("OK TS", "/ts/t06f.ts"))
++        s2.add(Channel(name: "Port zu HLS", streamURL: URL(string: "http://127.0.0.1:9/t06g/live.m3u8")!))
++        // geschlossener Port
++        s2.add(Channel(name: "Port zu TS", streamURL: URL(string: "http://127.0.0.1:9/t06h.ts")!))
++        await spin(8)
++        log("T06|zweite Session nach 8 s", s2)
++        // Entfernen einer ladenden VLC-Kachel
++        let hang = s2.slots[0]
++        let hangWeak = B08Weak(hang.engine, "Hängt")
++        s2.remove(hang.id)
++        await spin(4)
++        B08Log.w("T06|hängende Kachel entfernt|engine=\(hangWeak.alive ? "lebt" : "frei")|isPaused=\(String(describing: hangWeak.object.map { ($0 as! any PlaybackEngine).isPaused }))")
++        s2.clear()
++        await spin(3)
++    }
++
++    // MARK: 7 · Entfernen ohne fremde Referenz: Pause, Freigabe, Verbindung (spielend und ladend)
++
++    private func addAndWeak(_ s: MultiviewSession, _ name: String, _ path: String) -> B08Weak {
++        s.add(ch(name, path))
++        return B08Weak(s.slots[s.slots.count - 1].engine, name)
++    }
++
++    func test07_EntfernenPauseFreigabeVerbindung() async throws {
++        let s = MultiviewSession()
++        let w1 = addAndWeak(s, "VLC spielt", "/ts/t07vlc.ts")
++        let w2 = addAndWeak(s, "AVKit spielt", "/hls/t07av/live.m3u8")
++        let w3 = addAndWeak(s, "VLC lädt", "/hang/t07hang.ts")
++        let w4 = addAndWeak(s, "AVKit lädt", "/hang/t07hang2/live.m3u8")
++        await spin(5)
++        log("T07|vorher", s)
++        B08Log.w("T07|mock vorher|\(await B08Mock.summary(filter: "t07"))")
++        let ids = s.slots.map(\.id)
++        for id in ids { s.remove(id) }
++        let weaks = [w1, w2, w3, w4]
++        B08Log.w("T07|direkt nach remove|" + weaks.map { "\($0.label)=\($0.alive ? "lebt" : "frei")" }.joined(separator: " "))
++        for t in [2, 5, 10] {
++            await spin(t == 2 ? 2 : (t == 5 ? 3 : 5))
++            B08Log.w("T07|\(t) s nach remove|" + weaks.map { "\($0.label)=\($0.alive ? "lebt" : "frei")" }.joined(separator: " ") + "|\(await B08Mock.summary(filter: "t07"))")
++        }
++        B08Log.w("T07|mock geschlossen|\(await B08Mock.closed(filter: "t07"))")
++        let hangLog = (try? String(contentsOfFile: "<sonde>/mock/mock.log", encoding: .utf8)) ?? ""
++        B08Log.w("T07|mock hang-protokoll|" + hangLog.split(separator: "\n").filter { $0.contains("t07hang") && ($0.contains("HANG|") || $0.contains("HANGCLOSED")) }.map { String($0) }.joined(separator: " ; "))
++    }
++
++    // MARK: 8 · Pausieren ohne Freigabe (Engine gehalten): bleibt die Verbindung?
++
++    func test08_PauseHaeltVerbindung() async throws {
++        let e = VLCPlaybackEngine()
++        e.setMuted(true)
++        e.load(B08Mock.url("/ts/t08vlc.ts"))
++        let a = AVKitPlaybackEngine()
++        a.setMuted(true)
++        a.load(B08Mock.url("/hls/t08av/live.m3u8"))
++        await spin(5)
++        B08Log.w("T08|spielen|VLC \(B08Inspect.state(e)) | AVKit \(B08Inspect.state(a))|\(await B08Mock.summary(filter: "t08"))")
++        e.pause(); a.pause()
++        for t in [3, 10, 20] {
++            await spin(t == 3 ? 3 : (t == 10 ? 7 : 10))
++            B08Log.w("T08|\(t) s pausiert (Engine gehalten)|VLC isPlaying=\(B08Inspect.low(e))|\(await B08Mock.summary(filter: "t08"))")
++        }
++        _ = (e, a)
++    }
++}
+--- /dev/null	2026-09-16 22:00:38
++++ b08probe/mock/b08mock.py	2026-09-16 15:20:35
+@@ -0,0 +1,285 @@
++#!/usr/bin/env python3
++"""B08-Sonde: lokaler Stream-Mock (nur 127.0.0.1, nur stumme Medien, erfundene Zugangsdaten).
++
++Pfade
++  /player_api.php                 Xtream-Panel (qa-user / qa-pass-b08), 4 Live-Sender
++  /live/<u>/<p>/<id>.ts           Xtream-MPEG-TS, endlos im Echtzeittakt (ts300.ts, ohne Tonspur)
++  /live/<u>/<p>/<id>.m3u8         Xtream-HLS (Live-Playlist aus hls/)
++  /live/<u>/<p>/seg*.ts           HLS-Segmente zu obigem
++  /ts/<name>.ts                   MPEG-TS endlos (ohne Tonspur)
++  /tsa/<name>.ts                  MPEG-TS mit stummer Tonspur (anullsrc, -91 dB)
++  /hls/<name>/live.m3u8, seg*.ts  HLS live (ohne Tonspur)
++  /err404/...                     immer 404
++  /abort/<name>.ts                sendet 4 s, trennt dann hart
++  /hang/<name>.ts                 nimmt an, antwortet nie
++  /stats                          JSON: offene Verbindungen, Anfragen je Pfad
++  /control?limit=N|reset=1        Verbindungslimit je Xtream-Benutzer (0 = aus)
++"""
++import json, os, socket, sys, threading, time, re
++from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
++from urllib.parse import urlparse, parse_qs, unquote
++
++BASE = os.path.dirname(os.path.abspath(__file__))
++MEDIA = os.path.join(BASE, "media")
++HLS = os.path.join(BASE, "hls")
++LOG = open(os.path.join(BASE, "mock.log"), "a", buffering=1)
++PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 18908
++
++lock = threading.Lock()
++conn_seq = 0
++streams = {}      # id -> dict(path, client, opened, bytes, last_progress, closed, reason)
++requests = []     # (t, client, method, path, status)
++limit = {"max": 0}
++hls_abort_first = {}
++shift = {"on": 0}
++T0 = time.time()
++
++
++def now():
++    return time.time()
++
++
++def log(msg):
++    LOG.write("MOCK|%.3f|%s\n" % (now(), msg))
++
++
++class H(BaseHTTPRequestHandler):
++    protocol_version = "HTTP/1.1"
++
++    def log_message(self, *a):
++        pass
++
++    def client(self):
++        return "%s:%d" % self.client_address
++
++    def rec(self, status):
++        with lock:
++            requests.append((now(), self.client(), self.command, self.path, status))
++        log("REQ|%s|%s|%s|%d" % (self.client(), self.command, self.path, status))
++
++    def send_simple(self, status, body=b"", ctype="text/plain", extra=None):
++        self.rec(status)
++        self.send_response(status)
++        self.send_header("Content-Type", ctype)
++        self.send_header("Content-Length", str(len(body)))
++        self.send_header("Cache-Control", "no-cache")
++        for k, v in (extra or {}).items():
++            self.send_header(k, v)
++        self.end_headers()
++        if self.command != "HEAD":
++            try:
++                self.wfile.write(body)
++            except OSError:
++                pass
++
++    def do_HEAD(self):
++        self.do_GET()
++
++    def do_GET(self):
++        u = urlparse(self.path)
++        path = unquote(u.path)
++        q = parse_qs(u.query)
++        if path == "/stats":
++            return self.stats()
++        if path == "/control":
++            with lock:
++                if "limit" in q:
++                    limit["max"] = int(q["limit"][0])
++                if "shift" in q:
++                    shift["on"] = int(q["shift"][0])
++                if "reset" in q:
++                    requests.clear()
++                    hls_abort_first.clear()
++                    for k in [k for k, s in streams.items() if s["closed"]]:
++                        del streams[k]
++            log("CONTROL|%s" % u.query)
++            return self.send_simple(200, b"ok")
++        if path == "/player_api.php":
++            return self.panel(q)
++        if path == "/m3u/mix.m3u":
++            body = "#EXTM3U\n"
++            entries = [("M3U HLS A", "/hls/m3ua/live.m3u8"), ("M3U HLS B", "/hls/m3ub/live.m3u8"), ("M3U TS C", "/ts/m3uc.ts"),
++                       ("M3U 404 HLS", "/err404/m3ud/live.m3u8"), ("M3U 404 TS", "/err404/m3ue.ts"), ("M3U Abbruch TS", "/abort/m3uf.ts")]
++            for n, pth in entries:
++                body += '#EXTINF:-1 group-title="Sonde",%s\nhttp://127.0.0.1:%d%s\n' % (n, PORT, pth)
++            return self.send_simple(200, body.encode(), "audio/x-mpegurl")
++        if path.startswith("/err404/"):
++            return self.send_simple(404, b"not found")
++        if path.startswith("/hang/"):
++            self.rec(0)
++            log("HANG|%s|%s" % (self.client(), path))
++            try:
++                while True:
++                    time.sleep(1)
++                    self.connection.settimeout(0.01)
++                    try:
++                        if self.connection.recv(1) == b"":
++                            break
++                    except socket.timeout:
++                        pass
++                    except OSError:
++                        break
++            finally:
++                log("HANGCLOSED|%s|%s" % (self.client(), path))
++            self.close_connection = True
++            return
++        m = re.match(r"^/live/([^/]+)/([^/]+)/(.+)$", path)
++        if m:
++            user, pw, rest = m.group(1), m.group(2), m.group(3)
++            if user != "qa-user" or pw != "qa-pass-b08":
++                return self.send_simple(401, b"auth")
++            if rest.endswith(".m3u8"):
++                return self.file(os.path.join(HLS, "live.m3u8"), "application/vnd.apple.mpegurl")
++            if rest.startswith("seg") and rest.endswith(".ts"):
++                return self.file(os.path.join(HLS, rest), "video/mp2t")
++            if rest.endswith(".ts"):
++                return self.ts_stream(os.path.join(MEDIA, "ts300.ts"), user=user)
++            return self.send_simple(404)
++        if path.startswith("/ts/") and path.endswith(".ts"):
++            return self.ts_stream(os.path.join(MEDIA, "ts300.ts"))
++        if path.startswith("/tsa/") and path.endswith(".ts"):
++            return self.ts_stream(os.path.join(MEDIA, "ts120_silentaudio.ts"))
++        if path.startswith("/abort/") and path.endswith(".ts"):
++            return self.ts_stream(os.path.join(MEDIA, "ts300.ts"), abort_after=4.0)
++        m = re.match(r"^/hlsabort/([^/]+)/(.+)$", path)
++        if m:
++            with lock:
++                first = hls_abort_first.setdefault(m.group(1), now())
++            if now() - first > 6.0:
++                return self.send_simple(404, b"gone")
++            name = m.group(2)
++            if name.endswith(".m3u8"):
++                return self.file(os.path.join(HLS, "live.m3u8"), "application/vnd.apple.mpegurl")
++            return self.file(os.path.join(HLS, os.path.basename(name)), "video/mp2t")
++        m = re.match(r"^/hls/([^/]+)/(.+)$", path)
++        if m:
++            name = m.group(2)
++            if name.endswith(".m3u8"):
++                return self.file(os.path.join(HLS, "live.m3u8"), "application/vnd.apple.mpegurl")
++            return self.file(os.path.join(HLS, os.path.basename(name)), "video/mp2t")
++        return self.send_simple(404, b"unknown")
++
++    def file(self, fp, ctype):
++        try:
++            with open(fp, "rb") as f:
++                data = f.read()
++        except OSError:
++            return self.send_simple(404, b"gone")
++        return self.send_simple(200, data, ctype)
++
++    def panel(self, q):
++        user = q.get("username", [""])[0]
++        pw = q.get("password", [""])[0]
++        action = q.get("action", [None])[0]
++        if action is None:
++            ok = 1 if (user == "qa-user" and pw == "qa-pass-b08") else 0
++            body = {"user_info": {"auth": ok, "status": "Active", "max_connections": "1"}, "server_info": {"url": "127.0.0.1"}}
++        elif action == "get_live_categories":
++            body = [{"category_id": "1", "category_name": "Test"}]
++        elif action == "get_live_streams":
++            off = 100 if shift["on"] else 0
++            body = [{"stream_id": i + off, "name": "MV Sender %d" % i, "category_id": "1", "stream_icon": "", "epg_channel_id": ""} for i in range(101, 105)]
++        else:
++            body = []
++        return self.send_simple(200, json.dumps(body).encode(), "application/json")
++
++    def ts_stream(self, fp, user=None, abort_after=None):
++        global conn_seq
++        with lock:
++            if user and limit["max"] > 0:
++                open_for_user = [s for s in streams.values() if not s["closed"] and s.get("user") == user]
++                if len(open_for_user) >= limit["max"]:
++                    over = True
++                else:
++                    over = False
++            else:
++                over = False
++        if over:
++            log("LIMIT|%s|%s|abgewiesen" % (self.client(), self.path))
++            return self.send_simple(403, b"max connections reached")
++        with lock:
++            conn_seq += 1
++            cid = conn_seq
++            st = dict(id=cid, path=self.path, client=self.client(), opened=now(), bytes=0,
++                      last_progress=now(), closed=None, reason=None, user=user)
++            streams[cid] = st
++        self.rec(200)
++        log("OPEN|#%d|%s|%s" % (cid, self.client(), self.path))
++        self.send_response(200)
++        self.send_header("Content-Type", "video/mp2t")
++        self.send_header("Connection", "close")
++        self.send_header("Cache-Control", "no-cache")
++        self.end_headers()
++        self.close_connection = True
++        size = os.path.getsize(fp)
++        duration = 300.0 if "ts300" in fp else 120.0
++        rate = size / duration  # Bytes pro Sekunde
++        chunk = int(rate * 0.1) // 188 * 188
++        reason = "?"
++        try:
++            with open(fp, "rb") as f:
++                # 2 s Vorlauf sofort, dann Echtzeit
++                pre = f.read(int(rate * 2) // 188 * 188)
++                self.wfile.write(pre)
++                with lock:
++                    st["bytes"] += len(pre); st["last_progress"] = now()
++                start = now()
++                sent_time = 2.0
++                while True:
++                    if abort_after is not None and now() - start >= abort_after:
++                        reason = "server-abbruch"
++                        try:
++                            self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, b"\x01\x00\x00\x00\x00\x00\x00\x00")
++                        except OSError:
++                            pass
++                        break
++                    data = f.read(chunk)
++                    if not data:
++                        f.seek(0)
++                        continue
++                    self.wfile.write(data)
++                    with lock:
++                        st["bytes"] += len(data); st["last_progress"] = now()
++                    sent_time += 0.1
++                    delay = (start + sent_time - 2.0) - now()
++                    if delay > 0:
++                        time.sleep(delay)
++        except (BrokenPipeError, ConnectionResetError, OSError) as e:
++            reason = "client-getrennt(%s)" % type(e).__name__
++        finally:
++            with lock:
++                st["closed"] = now(); st["reason"] = reason
++            log("CLOSE|#%d|%s|%s|%s|bytes=%d|dauer=%.1fs" % (cid, self.client(), self.path, reason, st["bytes"], st["closed"] - st["opened"]))
++
++    def stats(self):
++        t = now()
++        with lock:
++            open_streams = [dict(id=s["id"], path=s["path"], client=s["client"], age=round(t - s["opened"], 1), bytes=s["bytes"],
++                                 idle=round(t - s["last_progress"], 1)) for s in streams.values() if not s["closed"]]
++            closed = [dict(id=s["id"], path=s["path"], reason=s["reason"], dauer=round(s["closed"] - s["opened"], 1)) for s in streams.values() if s["closed"]]
++            recent = {}
++            for (rt, c, m, p, status) in requests:
++                if t - rt <= 5:
++                    recent[p.split("?")[0]] = recent.get(p.split("?")[0], 0) + 1
++            playlistPolls = {}
++            for (rt, c, m, p, status) in requests:
++                if t - rt <= 6 and p.endswith(".m3u8"):
++                    playlistPolls.setdefault(p, []).append(status)
++            clients = sorted({c for (rt, c, m, p, status) in requests if t - rt <= 5})
++        body = json.dumps(dict(open=open_streams, closed=closed, requestsLast5s=recent, hlsClientsLast5s=clients, playlistPollsLast6s=playlistPolls, limit=limit["max"])).encode()
++        self.send_response(200)
++        self.send_header("Content-Type", "application/json")
++        self.send_header("Content-Length", str(len(body)))
++        self.end_headers()
++        self.wfile.write(body)
++
++
++class S(ThreadingHTTPServer):
++    daemon_threads = True
++    allow_reuse_address = True
++
++
++if __name__ == "__main__":
++    srv = S(("127.0.0.1", PORT), H)
++    log("START|port=%d" % PORT)
++    srv.serve_forever()
+--- /dev/null	2026-09-16 22:00:38
++++ b08probe/run-scenario.sh	2026-09-16 15:27:41
+@@ -0,0 +1,30 @@
++#!/bin/zsh
++# B08-Sonde: startet die App-Kopie (eigene Bundle-ID, In-Memory-DB) mit einem Szenario und sammelt Absturzberichte.
++set -u
++cd <sonde>
++name=$1
++limit=${2:-300}
++APP=dd/Build/Products/Debug/MikaPlusPlayer.app/Contents/MacOS/MikaPlusPlayer
++marker=evidence/.marker-$name
++touch $marker
++sleep 1
++echo "B08PROBE|--- APP-LAUF $name $(date '+%H:%M:%S')" >> evidence/probe.log
++B08_PROBE=1 B08_SCENARIO=$name "$APP" -ApplePersistenceIgnoreState YES > evidence/app-$name.stderr 2>&1 &
++pid=$!
++i=0
++while kill -0 $pid 2>/dev/null; do
++  sleep 1; i=$((i+1))
++  if [ $i -ge $limit ]; then echo "timeout nach ${limit}s"; kill $pid; break; fi
++done
++wait $pid
++code=$?
++echo "B08PROBE|--- APP-LAUF $name beendet exit=$code nach ${i}s" >> evidence/probe.log
++echo "exit=$code nach ${i}s"
++sleep 10
++for f in $(find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name "MikaPlusPlayer*.ips" -newer $marker 2>/dev/null); do
++  if grep -q "lu.daumedia.MikaPlusPlayer.b08probe" "$f"; then
++    echo "ABSTURZBERICHT: $f"
++    cp "$f" evidence/crash-$name-$(basename $f)
++  fi
++done
++rm -f $marker

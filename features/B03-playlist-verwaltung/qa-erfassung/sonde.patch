@@ -1,0 +1,1103 @@
+# B03-Erfassungssonde: Änderungen der Kopie gegenüber dem Stand c01f1cf + Reparatur B01 (nicht einchecken, nicht auf das Repo anwenden)
+--- a/project.yml	2026-06-23 14:39:09
++++ b/project.yml	2026-09-16 14:37:31
+@@ -30,7 +30,7 @@
+     settings:
+       base:
+         PRODUCT_NAME: MikaPlusPlayer
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b03probe
+         MARKETING_VERSION: "1.1"
+         CURRENT_PROJECT_VERSION: "2"
+         GENERATE_INFOPLIST_FILE: NO
+@@ -90,7 +90,7 @@
+     settings:
+       base:
+         GENERATE_INFOPLIST_FILE: YES
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayerTests
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b03probetests
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+         DEVELOPMENT_TEAM: "CWJM4J4HFN"
+--- a/Sources/Resources/Info.plist	2026-08-01 21:18:46
++++ b/Sources/Resources/Info.plist	2026-09-16 14:37:31
+@@ -25,11 +25,11 @@
+ 	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
+ 	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
+ 	<key>SUFeedURL</key>
+-	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
++	<string>http://127.0.0.1:9/appcast.xml</string>
+ 	<key>SUPublicEDKey</key>
+ 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
+ 	<key>SUEnableAutomaticChecks</key>
+-	<true/>
++	<false/>
+ 
+ 	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
+ 	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den
+--- a/Tests/B03ProbeTests.swift	1970-01-01 01:00:00
++++ b/Tests/B03ProbeTests.swift	2026-09-16 15:02:45
+@@ -0,0 +1,1063 @@
++import XCTest
++import SwiftUI
++import SwiftData
++import AppKit
++import SQLite3
++import Darwin
++import CoreGraphics
++@testable import MikaPlusPlayer
++
++// TEMPORÄRE Verhaltenssonde für die B03-Rückerfassung (Playlist-Verwaltung).
++// Läuft NUR in der Scratchpad-Kopie unter eigener Bundle-ID, wird nicht eingecheckt.
++// Erfundene Daten (qa-user / qa-pass-…), Mock-Server nur auf 127.0.0.1, keine Tonausgabe:
++// Stream-Adressen antworten nie (hang) oder zeigen auf einen geschlossenen Port.
++
++enum B03Log {
++    static let base = URL(fileURLWithPath: "<sonde>/evidence")
++    static let lock = NSLock()
++
++    static func w(_ s: String) {
++        let line = "B03PROBE|\(String(format: "%.2f", Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 10_000)))|\(s)\n"
++        lock.withLock {
++            try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
++            let url = base.appendingPathComponent("probe.log")
++            if let h = try? FileHandle(forWritingTo: url) {
++                h.seekToEndOfFile()
++                h.write(Data(line.utf8))
++                try? h.synchronize()
++                try? h.close()
++            } else {
++                try? Data(line.utf8).write(to: url)
++            }
++            FileHandle.standardError.write(Data(line.utf8))
++        }
++    }
++
++    static func ts(_ d: Date) -> String { String(format: "%.3f", d.timeIntervalSince1970) }
++    static func f2(_ t: TimeInterval) -> String { String(format: "%.2f", t) }
++}
++
++/// Konfigurierbares Panel/M3U-Verhalten des Mocks.
++struct B03Panel {
++    var m3u: Data? = nil
++    var m3uStatus = 200
++    var m3uDelay: TimeInterval = 0
++    var auth: Data = try! JSONSerialization.data(withJSONObject: MockXtreamServer.okAuth)
++    var categories: Data = try! JSONSerialization.data(withJSONObject: [
++        ["category_id": "1", "category_name": "News"],
++        ["category_id": "2", "category_name": "Sport"]
++    ])
++    var streams: Data = try! JSONSerialization.data(withJSONObject: MockXtreamServer.streams)
++    var streamsStatus = 200
++    var streamsDelay: TimeInterval = 0
++
++    func handler() -> @Sendable (MockXtreamServer.Request) -> MockXtreamServer.Reply {
++        let m3u = self.m3u, m3uStatus = self.m3uStatus, m3uDelay = self.m3uDelay
++        let auth = self.auth, categories = self.categories, streams = self.streams
++        let streamsStatus = self.streamsStatus, streamsDelay = self.streamsDelay
++        return { req in
++            if req.path.hasSuffix(".m3u") {
++                guard let body = m3u else { return .raw(status: 404, contentType: "text/plain", body: Data("nicht gefunden".utf8)) }
++                let r = MockXtreamServer.Reply.raw(status: m3uStatus, contentType: "audio/x-mpegurl", body: body)
++                return m3uDelay > 0 ? .delayed(m3uDelay, r) : r
++            }
++            if req.path == "/player_api.php" {
++                switch req.action {
++                case nil: return .raw(status: 200, contentType: "application/json", body: auth)
++                case "get_live_categories": return .raw(status: 200, contentType: "application/json", body: categories)
++                case "get_live_streams":
++                    let r = MockXtreamServer.Reply.raw(status: streamsStatus, contentType: "application/json", body: streams)
++                    return streamsDelay > 0 ? .delayed(streamsDelay, r) : r
++                default: return .raw(status: 200, contentType: "application/json", body: Data("[]".utf8))
++                }
++            }
++            if req.path.hasPrefix("/live/") { return .hang }
++            return .raw(status: 404, contentType: "text/plain", body: Data())
++        }
++    }
++
++    static func m3uText(_ entries: [(name: String, tvg: String?, group: String?, url: String)]) -> Data {
++        var s = "#EXTM3U\n"
++        for e in entries {
++            var attrs = ""
++            if let t = e.tvg { attrs += " tvg-id=\"\(t)\"" }
++            if let g = e.group { attrs += " group-title=\"\(g)\"" }
++            s += "#EXTINF:-1\(attrs),\(e.name)\n\(e.url)\n"
++        }
++        return Data(s.utf8)
++    }
++
++    static func streamsJSON(_ entries: [(name: String, id: Int, epg: String?, cat: String?)], logoPrefix: String? = nil) -> Data {
++        let arr: [[String: Any]] = entries.map { e in
++            var d: [String: Any] = ["name": e.name, "stream_id": e.id]
++            d["epg_channel_id"] = e.epg ?? NSNull()
++            d["category_id"] = e.cat ?? NSNull()
++            if let logoPrefix { d["stream_icon"] = "\(logoPrefix)\(e.id).png" }
++            return d
++        }
++        return try! JSONSerialization.data(withJSONObject: arr)
++    }
++}
++
++enum B03 {
++    static func sqliteRows(_ path: String, _ sql: String) -> [String] {
++        var db: OpaquePointer?
++        guard sqlite3_open_v2(path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else { sqlite3_close(db); return ["<open failed>"] }
++        defer { sqlite3_close(db) }
++        var stmt: OpaquePointer?
++        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
++            return ["<prepare failed: \(String(cString: sqlite3_errmsg(db)))>"]
++        }
++        defer { sqlite3_finalize(stmt) }
++        var rows: [String] = []
++        while sqlite3_step(stmt) == SQLITE_ROW {
++            var cols: [String] = []
++            for i in 0..<sqlite3_column_count(stmt) {
++                if let c = sqlite3_column_text(stmt, i) { cols.append(String(cString: c)) } else { cols.append("NULL") }
++            }
++            rows.append(cols.joined(separator: ","))
++        }
++        return rows
++    }
++
++    static func dbSummary(_ url: URL) -> String {
++        let p = url.path
++        let q: [(String, String)] = [
++            ("ZPLAYLIST", "SELECT count(*) FROM ZPLAYLIST"),
++            ("ZCHANNEL", "SELECT count(*) FROM ZCHANNEL"),
++            ("ohneBeziehung", "SELECT count(*) FROM ZCHANNEL WHERE ZPLAYLIST IS NULL"),
++            ("favoriten", "SELECT count(*) FROM ZCHANNEL WHERE ZISFAVORITE = 1"),
++            ("channelCounts", "SELECT group_concat(ZNAME || '=' || ZCHANNELCOUNT, ';') FROM ZPLAYLIST")
++        ]
++        return q.map { "\($0.0)=\(sqliteRows(p, $0.1).joined(separator: "/"))" }.joined(separator: "|")
++    }
++
++    @MainActor
++    static func describe(_ p: Playlist, _ ctx: ModelContext) -> String {
++        let pid = p.id
++        let db = (try? ctx.fetchCount(FetchDescriptor<Channel>(predicate: #Predicate { $0.playlistID == pid }))) ?? -1
++        let favs = p.channels.filter(\.isFavorite).map(\.name).sorted()
++        return "name=\(p.name)|channelCount=\(p.channelCount)|beziehung=\(p.channels.count)|dbPlaylistID=\(db)|favoriten=\(favs)|createdAt=\(B03Log.ts(p.createdAt))|lastRefreshed=\(p.lastRefreshed.map(B03Log.ts) ?? "nil")|sourceURL=\(p.sourceURL?.absoluteString ?? "nil")|xtreamOutput=\(p.xtreamOutput ?? "nil")|isRemote=\(p.isRemote)|isXtream=\(p.isXtream)"
++    }
++
++    static func footprintMB() -> Double {
++        var info = task_vm_info_data_t()
++        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
++        let kr = withUnsafeMutablePointer(to: &info) {
++            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
++                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
++            }
++        }
++        return kr == KERN_SUCCESS ? Double(info.phys_footprint) / 1_048_576 : -1
++    }
++
++    static var cacheDB: URL {
++        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
++            .appendingPathComponent(Bundle.main.bundleIdentifier ?? "?")
++            .appendingPathComponent("Cache.db")
++    }
++
++    @MainActor
++    static func shot(_ w: NSWindow, _ name: String) {
++        guard let img = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(w.windowNumber),
++                                                [.boundsIgnoreFraming, .nominalResolution]) else {
++            B03Log.w("SHOT|\(name)|fehlgeschlagen")
++            return
++        }
++        let rep = NSBitmapImageRep(cgImage: img)
++        if let data = rep.representation(using: .png, properties: [:]) {
++            try? data.write(to: B03Log.base.appendingPathComponent("\(name).png"))
++            B03Log.w("SHOT|\(name)|\(img.width)x\(img.height)")
++        }
++    }
++}
++
++final class B03MenuBox: @unchecked Sendable {
++    var titles: [String] = []
++    var menu: NSMenu?
++    var shown = 0
++}
++
++class B03ProbeBase: XCTestCase {
++    var mock: MockXtreamServer!
++    var dirs: [URL] = []
++
++    override func setUpWithError() throws {
++        try super.setUpWithError()
++        mock = MockXtreamServer()
++        try mock.start()
++        B03Log.w("SETUP|\(name)|mock=\(mock.hostPort)|keychainDienst=\(XtreamCredentialStore.standard.service)|bundle=\(Bundle.main.bundleIdentifier ?? "?")")
++    }
++
++    override func tearDown() {
++        mock?.stop()
++        mock = nil
++        for d in dirs { try? FileManager.default.removeItem(at: d) }
++        XCTAssertNoThrow(try XtreamCredentialStore.standard.deleteAll())
++        super.tearDown()
++    }
++
++    @MainActor
++    func fileContainer(_ label: String) throws -> (ModelContainer, URL) {
++        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("b03-probe-\(label)-\(UUID().uuidString)", isDirectory: true)
++        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
++        dirs.append(dir)
++        let url = dir.appendingPathComponent("b03.store")
++        let c = try ModelContainer(for: B01.schema, configurations: [ModelConfiguration(schema: B01.schema, url: url)])
++        return (c, url)
++    }
++
++    static let dead = "http://127.0.0.1:9"
++
++    static let v1: [(name: String, tvg: String?, group: String?, url: String)] = [
++        ("Alpha", "alpha.id", "News", "\(dead)/a.m3u8"),
++        ("Beta", nil, "News", "\(dead)/b.m3u8"),
++        ("Sport HD", nil, "Sport", "\(dead)/s1.m3u8"),
++        ("sport hd", nil, "Sport", "\(dead)/s2.m3u8"),
++        ("Film HD", "film.id", "Film", "\(dead)/f1.m3u8"),
++        ("Film SD", "film.id", "Film", "\(dead)/f2.m3u8"),
++        ("Gamma", nil, "Doku", "\(dead)/g.m3u8")
++    ]
++}
++
++final class B03ProbeTests: B03ProbeBase {
++
++    // MARK: - 01 M3U aktualisieren
++
++    @MainActor func test01_M3UAktualisieren() async throws {
++        let (container, url) = try fileContainer("t01")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let p = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "")
++        for ch in p.channels where ["Alpha", "Sport HD", "Film HD", "Gamma"].contains(ch.name) { ch.isFavorite = true }
++        try ctx.save()
++        let oldIDs = Set(p.channels.map(\.id))
++        let oldPIDs = Set(p.channels.map(\.persistentModelID))
++        let created = p.createdAt
++        let refreshed = p.lastRefreshed
++        B03Log.w("T01|vorher|\(B03.describe(p, ctx))|db=\(B03.dbSummary(url))")
++        try await Task.sleep(nanoseconds: 1_100_000_000)
++
++        cfg.m3u = B03Panel.m3uText([
++            ("Alpha Neu", "alpha.id", "News", "\(Self.dead)/a2.m3u8"),
++            ("Beta", nil, "News", "\(Self.dead)/b.m3u8"),
++            ("Sport HD", nil, "Sport", "\(Self.dead)/s1.m3u8"),
++            ("sport hd", nil, "Sport", "\(Self.dead)/s2.m3u8"),
++            ("Film HD", "film.id", "Film", "\(Self.dead)/f1.m3u8"),
++            ("Film SD", "film.id", "Film", "\(Self.dead)/f2.m3u8"),
++            ("Film 4K", "film.id", "Film", "\(Self.dead)/f3.m3u8"),
++            ("Gamma Plus", nil, "Doku", "\(Self.dead)/g.m3u8"),
++            ("Delta", nil, "Neu", "\(Self.dead)/d.m3u8")
++        ])
++        mock.handler = cfg.handler()
++        mock.resetLog()
++        let watchdog = MainThreadWatchdog(); watchdog.start()
++        try await PlaylistImporter(modelContext: ctx).refresh(p)
++        let gap = watchdog.stop()
++        let newIDs = Set(p.channels.map(\.id))
++        let newPIDs = Set(p.channels.map(\.persistentModelID))
++        B03Log.w("T01|nachV2|\(B03.describe(p, ctx))|db=\(B03.dbSummary(url))|anfragen=\(mock.requests.map(\.target))|gleicheIDs=\(oldIDs.intersection(newIDs).count)|gleichePIDs=\(oldPIDs.intersection(newPIDs).count)|createdAtGleich=\(created == p.createdAt)|lastRefreshedNeu=\(p.lastRefreshed != refreshed)|hasChanges=\(ctx.hasChanges)|maxGap=\(B03Log.f2(gap))")
++        let favAll = try ctx.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true })).map(\.name).sorted()
++        B03Log.w("T01|favoritenTabAbfrage|\(favAll)")
++
++        // Anbieter liefert vorübergehend nur einen Sender
++        cfg.m3u = B03Panel.m3uText([("Beta", nil, "News", "\(Self.dead)/b.m3u8")])
++        mock.handler = cfg.handler()
++        try await PlaylistImporter(modelContext: ctx).refresh(p)
++        B03Log.w("T01|nachV3nurEinSender|\(B03.describe(p, ctx))|db=\(B03.dbSummary(url))")
++
++        // Liste kommt zurück
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        try await PlaylistImporter(modelContext: ctx).refresh(p)
++        B03Log.w("T01|nachV1zurueck|\(B03.describe(p, ctx))|db=\(B03.dbSummary(url))")
++
++        // Doppelte Sender (gleicher Name, gleiche tvg-id) in der Quelle
++        cfg.m3u = B03Panel.m3uText([
++            ("Kanal X", "x.id", nil, "\(Self.dead)/x1.m3u8"),
++            ("Kanal X", "x.id", nil, "\(Self.dead)/x2.m3u8"),
++            ("Kanal Y", nil, nil, "\(Self.dead)/y.m3u8")
++        ])
++        mock.handler = cfg.handler()
++        try await PlaylistImporter(modelContext: ctx).refresh(p)
++        p.channels.first(where: { $0.name == "Kanal X" })?.isFavorite = true
++        try ctx.save()
++        B03Log.w("T01|dublettenVorher|\(B03.describe(p, ctx))")
++        try await PlaylistImporter(modelContext: ctx).refresh(p)
++        B03Log.w("T01|dublettenNachher|\(B03.describe(p, ctx))")
++    }
++
++    // MARK: - 02 Xtream aktualisieren
++
++    @MainActor func test02_XtreamAktualisieren() async throws {
++        let (container, url) = try fileContainer("t02")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.streams = B03Panel.streamsJSON([
++            ("Kanal A", 101, "a.epg", "1"), ("Kanal B", 102, nil, "1"), ("Sport 1", 103, "sport.epg", "2"),
++            ("Sport 1 HD", 104, "sport.epg", "2"), ("Kanal C", 105, nil, "2")
++        ])
++        mock.handler = cfg.handler()
++        let throttle = XtreamLoginThrottle()
++        let p = try await PlaylistImporter(modelContext: ctx, loginThrottle: throttle).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03"), output: .mpegts, name: "")
++        for ch in p.channels where ["Kanal A", "Sport 1", "Kanal C"].contains(ch.name) { ch.isFavorite = true }
++        try ctx.save()
++        let oldIDs = Set(p.channels.map(\.id))
++        B03Log.w("T02|vorher|\(B03.describe(p, ctx))|db=\(B03.dbSummary(url))|stream=\(p.channels.map(\.streamURL.absoluteString).sorted().first ?? "")")
++        try await Task.sleep(nanoseconds: 1_100_000_000)
++
++        cfg.streams = B03Panel.streamsJSON([
++            ("Kanal A (neu)", 201, "a.epg", "2"), ("Kanal B", 102, nil, "1"), ("Sport 1", 103, "sport.epg", "2"),
++            ("Sport 1 HD", 104, "sport.epg", "2"), ("Sport 1 4K", 106, "sport.epg", "2"), ("Kanal C", 105, nil, "1")
++        ])
++        mock.handler = cfg.handler()
++        mock.resetLog()
++        try await PlaylistImporter(modelContext: ctx, loginThrottle: throttle).refresh(p)
++        let reqs = mock.requests.map { "\($0.action ?? "(anmeldung)")[\($0.username ?? "-")/\($0.password ?? "-")]" }
++        B03Log.w("T02|nachher|\(B03.describe(p, ctx))|db=\(B03.dbSummary(url))|anfragen=\(reqs)|gleicheIDs=\(oldIDs.intersection(Set(p.channels.map(\.id))).count)")
++        B03Log.w("T02|adressen|\(p.channels.map { "\($0.name)=\($0.streamURL.absoluteString)" }.sorted())")
++        B03Log.w("T02|gruppen|\(p.channels.map { "\($0.name)=\($0.group ?? "nil")" }.sorted())")
++        let secret = try XtreamCredentialStore.standard.load(for: p.id)
++        B03Log.w("T02|schluesselbund|vorhanden=\(secret != nil)|host=\(secret?.host ?? "nil")|passwortImStore=\(B01.rawOccurrences(of: "qa-pass-b03", inFilesWithPrefix: url))")
++
++        for raw in ["ts", "m3u8", "", nil] as [String?] {
++            p.xtreamOutput = raw
++            try ctx.save()
++            try await PlaylistImporter(modelContext: ctx, loginThrottle: throttle).refresh(p)
++            B03Log.w("T02|xtreamOutput=\(raw ?? "nil")|nachRefresh=\(p.xtreamOutput ?? "nil")|endung=\(Set(p.channels.map(\.streamURL.pathExtension)))")
++        }
++        p.xtreamOutput = "mpegts"
++        try ctx.save()
++        try await PlaylistImporter(modelContext: ctx, loginThrottle: throttle).refresh(p)
++        B03Log.w("T02|xtreamOutput=mpegts|endung=\(Set(p.channels.map(\.streamURL.pathExtension)))")
++    }
++
++    // MARK: - 03 Fehlerfälle
++
++    @MainActor
++    private func errorCase(_ label: String, _ p: Playlist, _ ctx: ModelContext, _ url: URL,
++                           _ op: () async throws -> Void) async {
++        let ids = Set(p.channels.map(\.id))
++        let favs = p.channels.filter(\.isFavorite).map(\.name).sorted()
++        let lr = p.lastRefreshed
++        let count = p.channelCount
++        let rows = B03.dbSummary(url)
++        let start = Date()
++        var msg = "KEIN FEHLER"
++        do { try await op() } catch { msg = "\(type(of: error))|\(error.localizedDescription)" }
++        let dt = Date().timeIntervalSince(start)
++        let same = ids == Set(p.channels.map(\.id)) && favs == p.channels.filter(\.isFavorite).map(\.name).sorted()
++            && lr == p.lastRefreshed && count == p.channelCount
++        let leak = msg.contains("qa-pass") || msg.contains("qa-user")
++        B03Log.w("T03|\(label)|meldung=\(msg)|dauer=\(B03Log.f2(dt))s|alteListeUnveraendert=\(same)|dbGleich=\(rows == B03.dbSummary(url))|hasChanges=\(ctx.hasChanges)|zugangsdatenInMeldung=\(leak)|\(B03.describe(p, ctx))")
++    }
++
++    @MainActor func test03_FehlerfaelleAlteListe() async throws {
++        let (container, url) = try fileContainer("t03")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let m = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "M3U")
++        let x = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03err"), output: .mpegts, name: "Xtream")
++        m.channels.first?.isFavorite = true
++        x.channels.first?.isFavorite = true
++        try ctx.save()
++
++        // Zweiter Mock, der später verschwindet
++        let down = MockXtreamServer(handler: cfg.handler())
++        try down.start()
++        let m2 = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(down.hostPort)/list.m3u", name: "M3U weg")
++        let x2 = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: down.hostPort, username: "qa-user", password: "qa-pass-b03err"), output: .mpegts, name: "Xtream weg")
++        down.stop()
++        B03Log.w("T03|ausgang|\(B03.dbSummary(url))")
++
++        func importer() -> PlaylistImporter { PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()) }
++
++        var c = cfg; c.m3u = nil; mock.handler = c.handler()
++        await errorCase("M3U-HTTP404", m, ctx, url) { try await importer().refresh(m) }
++        c = cfg; c.m3uStatus = 500; mock.handler = c.handler()
++        await errorCase("M3U-HTTP500", m, ctx, url) { try await importer().refresh(m) }
++        c = cfg; c.m3u = Data("<html><body>Wartung</body></html>".utf8); mock.handler = c.handler()
++        await errorCase("M3U-HTML-200", m, ctx, url) { try await importer().refresh(m) }
++        c = cfg; c.m3u = Data(); mock.handler = c.handler()
++        await errorCase("M3U-leer-200", m, ctx, url) { try await importer().refresh(m) }
++        c = cfg; c.m3u = Data("#EXTM3U\n".utf8); mock.handler = c.handler()
++        await errorCase("M3U-nurKopfzeile", m, ctx, url) { try await importer().refresh(m) }
++        await errorCase("M3U-Host-weg", m2, ctx, url) { try await importer().refresh(m2) }
++
++        c = cfg; c.streams = Data("[]".utf8); mock.handler = c.handler()
++        await errorCase("Xtream-leer", x, ctx, url) { try await importer().refresh(x) }
++        c = cfg; c.streamsStatus = 500; mock.handler = c.handler()
++        await errorCase("Xtream-HTTP500-streams", x, ctx, url) { try await importer().refresh(x) }
++        c = cfg; c.streams = Data("{\"a\":1}".utf8); mock.handler = c.handler()
++        await errorCase("Xtream-Streams-Objekt", x, ctx, url) { try await importer().refresh(x) }
++        mock.handler = cfg.handler()
++        var small = XtreamClient.Limits.standard; small.maxStreams = 2
++        await errorCase("Xtream-zuVieleSender", x, ctx, url) {
++            try await PlaylistImporter(modelContext: ctx, xtreamLimits: small, loginThrottle: XtreamLoginThrottle()).refresh(x)
++        }
++        await errorCase("Xtream-Host-weg", x2, ctx, url) { try await importer().refresh(x2) }
++        let secret = try XtreamCredentialStore.standard.load(for: x.id)
++        try XtreamCredentialStore.standard.delete(for: x.id)
++        await errorCase("Xtream-Schluesselbund-fehlt", x, ctx, url) { try await importer().refresh(x) }
++        if let secret { try XtreamCredentialStore.standard.save(secret, for: x.id) }
++
++        c = cfg; c.auth = try JSONSerialization.data(withJSONObject: ["user_info": ["auth": 0]]); mock.handler = c.handler()
++        let throttle = XtreamLoginThrottle()
++        for i in 1...4 {
++            await errorCase("Xtream-auth0-Versuch\(i)", x, ctx, url) {
++                try await PlaylistImporter(modelContext: ctx, loginThrottle: throttle).refresh(x)
++            }
++        }
++        B03Log.w("T03|anfragenAnmeldungGesamt=\(mock.requests.filter { $0.path == "/player_api.php" && $0.action == nil }.count)")
++        mock.handler = cfg.handler()
++        await errorCase("Xtream-OK-nachFehlern", x, ctx, url) { try await importer().refresh(x) }
++    }
++
++    // MARK: - 04 Leistung
++
++    @MainActor func test04_LeistungAktualisierenUndLoeschen() async throws {
++        let env = ProcessInfo.processInfo.environment
++        let sizes = (env["B03_SIZES"] ?? "1000,2000,4000").split(separator: ",").compactMap { Int($0) }
++        let kinds = (env["B03_KIND"] ?? "m3u,xtream").split(separator: ",").map(String.init)
++        for kind in kinds {
++            for n in sizes {
++                let (container, url) = try fileContainer("t04-\(kind)-\(n)")
++                let ctx = container.mainContext
++                var cfg = B03Panel()
++                let p: Playlist
++                let tImport0 = Date()
++                if kind == "m3u" {
++                    var entries: [(name: String, tvg: String?, group: String?, url: String)] = []
++                    for i in 0..<n { entries.append(("Sender \(i)", "s.\(i)", "Gruppe \(i % 40)", "\(Self.dead)/\(i).m3u8")) }
++                    cfg.m3u = B03Panel.m3uText(entries)
++                    mock.handler = cfg.handler()
++                    p = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "Perf")
++                } else {
++                    var entries: [(name: String, id: Int, epg: String?, cat: String?)] = []
++                    for i in 0..<n { entries.append(("Sender \(i)", i, "s.\(i)", i % 2 == 0 ? "1" : "2")) }
++                    cfg.streams = B03Panel.streamsJSON(entries, logoPrefix: "http://127.0.0.1:9/logo/")
++                    mock.handler = cfg.handler()
++                    p = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++                        XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-perf"), output: .mpegts, name: "Perf")
++                }
++                let tImport = Date().timeIntervalSince(tImport0)
++                var favCount = 0
++                for ch in p.channels where ch.tvgID.map({ (Int($0.dropFirst(2)) ?? 1) % 1000 == 0 }) == true { ch.isFavorite = true; favCount += 1 }
++                try ctx.save()
++                try await Task.sleep(nanoseconds: 500_000_000)
++
++                if env["B03_SKIP_REFRESH"] == "1" {
++                    let wdx = MainThreadWatchdog(); wdx.start()
++                    let tx = Date()
++                    try PlaylistImporter(modelContext: ctx).delete(p)
++                    let tDel = Date().timeIntervalSince(tx)
++                    try await Task.sleep(nanoseconds: 300_000_000)
++                    B03Log.w("T04|\(kind)|sender=\(n)|ohneAktualisieren|loeschenDirektNachImport=\(B03Log.f2(tDel))s|maxMainThreadBlockade=\(B03Log.f2(wdx.stop()))s|db=\(B03.dbSummary(url))")
++                    continue
++                }
++                let mem0 = B03.footprintMB()
++                let wd = MainThreadWatchdog(); wd.start()
++                let t0 = Date()
++                try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(p)
++                let tRefresh = Date().timeIntervalSince(t0)
++                try await Task.sleep(nanoseconds: 300_000_000)
++                let gap = wd.stop()
++                let mem1 = B03.footprintMB()
++                let favAfter = p.channels.filter(\.isFavorite).count
++                B03Log.w("T04|\(kind)|sender=\(n)|import=\(B03Log.f2(tImport))s|aktualisieren=\(B03Log.f2(tRefresh))s|maxMainThreadBlockade=\(B03Log.f2(gap))s|speicherVorher=\(Int(mem0))MB|speicherNachher=\(Int(mem1))MB|favoriten=\(favCount)->\(favAfter)|count=\(p.channelCount)|db=\(B03.dbSummary(url))")
++
++                let wd2 = MainThreadWatchdog(); wd2.start()
++                let t1 = Date()
++                try PlaylistImporter(modelContext: ctx).delete(p)
++                let tDelete = Date().timeIntervalSince(t1)
++                try await Task.sleep(nanoseconds: 300_000_000)
++                let gap2 = wd2.stop()
++                B03Log.w("T04|\(kind)|sender=\(n)|loeschen=\(B03Log.f2(tDelete))s|maxMainThreadBlockade=\(B03Log.f2(gap2))s|db=\(B03.dbSummary(url))|speicher=\(Int(B03.footprintMB()))MB")
++            }
++        }
++    }
++
++    // MARK: - 06 Löschen: was bleibt wo
++
++    @MainActor func test06_LoeschenWasBleibt() async throws {
++        let tag = String(UInt32.random(in: 100_000...999_999))
++        let pass = "qa-pass-b03del-\(tag)"
++        let token = "qa-b03-tok-\(tag)"
++        var storeURL: URL!
++        do {
++            let (container, url) = try fileContainer("t06")
++            storeURL = url
++            let ctx = container.mainContext
++            B03Log.w("T06|undoManager=\(String(describing: ctx.undoManager))|autosave=\(ctx.autosaveEnabled)")
++            var cfg = B03Panel()
++            cfg.streams = B03Panel.streamsJSON((0..<20).map { ("qa-b03-xchan-\(tag)-\($0)", 500 + $0, "x\($0).epg", "1") },
++                                              logoPrefix: "http://127.0.0.1:9/qa-b03-logo-\(tag)-")
++            cfg.m3u = B03Panel.m3uText((0..<20).map { ("qa-b03-mchan-\(tag)-\($0)", nil, "G", "\(Self.dead)/qa-b03-stream-\(tag)-\($0).m3u8") })
++            mock.handler = cfg.handler()
++            let x = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++                XtreamCredentials(host: mock.hostPort, username: "qa-user", password: pass), output: .mpegts, name: "QA-B03-X-\(tag)")
++            var cfgY = cfg
++            cfgY.streams = B03Panel.streamsJSON((0..<20).map { ("qa-b03-ychan-\(tag)-\($0)", 900 + $0, "y\($0).epg", "1") },
++                                               logoPrefix: "http://127.0.0.1:9/qa-b03-ylogo-\(tag)-")
++            mock.handler = cfgY.handler()
++            let y = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++                XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03keep-\(tag)"), output: .mpegts, name: "QA-B03-Y-\(tag)")
++            mock.handler = cfg.handler()
++            let mURL = "http://\(mock.hostPort)/list-\(tag).m3u?token=\(token)"
++            let m = try await PlaylistImporter(modelContext: ctx).importFromURL(mURL, name: "QA-B03-M-\(tag)")
++            for ch in x.channels.prefix(3) { ch.isFavorite = true }
++            for ch in m.channels.prefix(3) { ch.isFavorite = true }
++            try ctx.save()
++            try await Task.sleep(nanoseconds: 2_000_000_000)
++
++            let markers = ["QA-B03-X-\(tag)", "qa-b03-xchan-\(tag)", "qa-b03-logo-\(tag)", "qa-b03-mchan-\(tag)", "qa-b03-stream-\(tag)", token, pass, "qa-b03-ychan-\(tag)", "QA-B03-M-\(tag)"]
++            func raw() -> String {
++                markers.map { mk in "\(mk)=\(B01.rawOccurrences(of: mk, inFilesWithPrefix: url).sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" }.joined(separator: ","))" }.joined(separator: " ; ")
++            }
++            func cache() -> String {
++                let c = B03.cacheDB.path
++                let exists = FileManager.default.fileExists(atPath: c)
++                let keys = B03.sqliteRows(c, "SELECT count(*) FROM cfurl_cache_response WHERE request_key LIKE '%\(token)%'")
++                let bodies = B03.sqliteRows(c, "SELECT count(*) FROM cfurl_cache_receiver_data WHERE CAST(receiver_data AS TEXT) LIKE '%qa-b03-mchan-\(tag)%'")
++                let onFS = B03.sqliteRows(c, "SELECT count(*) FROM cfurl_cache_receiver_data d JOIN cfurl_cache_response r ON r.entry_ID = d.entry_ID WHERE r.request_key LIKE '%\(token)%' AND d.isDataOnFS = 1")
++                let shared = URLCache.shared.cachedResponse(for: URLRequest(url: URL(string: mURL)!)) != nil
++                let xtreamKeys = B03.sqliteRows(c, "SELECT count(*) FROM cfurl_cache_response WHERE request_key LIKE '%player_api%' AND request_key LIKE '%\(tag)%'")
++                return "cacheDB=\(exists)|eintraegeM3UAdresse=\(keys)|koerperMitSendernamen=\(bodies)|koerperAufPlatte=\(onFS)|URLCache.shared=\(shared)|xtreamEintraege=\(xtreamKeys)"
++            }
++            let secretsBefore = "X=\((try? XtreamCredentialStore.standard.load(for: x.id)) != nil)|Y=\((try? XtreamCredentialStore.standard.load(for: y.id)) != nil)"
++            let freelist0 = B03.sqliteRows(url.path, "PRAGMA freelist_count")
++            B03Log.w("T06|vorher|db=\(B03.dbSummary(url))|schluesselbund=\(secretsBefore)|\(cache())|freelist=\(freelist0)|pageCount=\(B03.sqliteRows(url.path, "PRAGMA page_count"))|secureDelete=\(B03.sqliteRows(url.path, "PRAGMA secure_delete"))|journal=\(B03.sqliteRows(url.path, "PRAGMA journal_mode"))")
++            B03Log.w("T06|vorher|roh|\(raw())")
++
++            let xid = x.id, yid = y.id
++            try PlaylistImporter(modelContext: ctx).delete(x)
++            try PlaylistImporter(modelContext: ctx).delete(m)
++            let secretsAfter = "X=\((try? XtreamCredentialStore.standard.load(for: xid)) != nil)|Y=\((try? XtreamCredentialStore.standard.load(for: yid)) != nil)"
++            let favLeft = try ctx.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true })).count
++            B03Log.w("T06|nachLoeschen|db=\(B03.dbSummary(url))|schluesselbund=\(secretsAfter)|favoritenUebrig=\(favLeft)|hasChanges=\(ctx.hasChanges)|\(cache())|freelist=\(B03.sqliteRows(url.path, "PRAGMA freelist_count"))")
++            B03Log.w("T06|nachLoeschen|roh|\(raw())")
++            let undone = ctx.undoManager?.canUndo ?? false
++            B03Log.w("T06|rueckgaengig|undoManager=\(ctx.undoManager != nil)|canUndo=\(undone)")
++            try await Task.sleep(nanoseconds: 3_000_000_000)
++            B03Log.w("T06|nach3s|roh|\(raw())")
++            _ = container
++        }
++        // Container freigeben, Datei schließen lassen
++        try await Task.sleep(nanoseconds: 3_000_000_000)
++        let markers = ["QA-B03-X-\(tag)", "qa-b03-xchan-\(tag)", "qa-b03-logo-\(tag)", "qa-b03-mchan-\(tag)", "qa-b03-stream-\(tag)", token, pass, "qa-b03-ychan-\(tag)", "QA-B03-M-\(tag)"]
++        let rawClosed = markers.map { mk in "\(mk)=\(B01.rawOccurrences(of: mk, inFilesWithPrefix: storeURL).sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" }.joined(separator: ","))" }.joined(separator: " ; ")
++        let files = (try? FileManager.default.contentsOfDirectory(atPath: storeURL.deletingLastPathComponent().path)) ?? []
++        B03Log.w("T06|containerFreigegeben|dateien=\(files.sorted())|roh|\(rawClosed)")
++        // Neue Verbindung öffnet und schließt (wie ein Neustart der App)
++        do {
++            let c2 = try ModelContainer(for: B01.schema, configurations: [ModelConfiguration(schema: B01.schema, url: storeURL)])
++            B03Log.w("T06|neuGeoeffnet|playlists=\(try c2.mainContext.fetchCount(FetchDescriptor<Playlist>()))|channels=\(try c2.mainContext.fetchCount(FetchDescriptor<Channel>()))")
++        }
++        try await Task.sleep(nanoseconds: 2_000_000_000)
++        let rawReopen = markers.map { mk in "\(mk)=\(B01.rawOccurrences(of: mk, inFilesWithPrefix: storeURL).sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" }.joined(separator: ","))" }.joined(separator: " ; ")
++        B03Log.w("T06|nachNeustart|roh|\(rawReopen)|freelist=\(B03.sqliteRows(storeURL.path, "PRAGMA freelist_count"))")
++    }
++
++    // MARK: - 07/08 Aktualisieren und Löschen gleichzeitig (einzeln ausführen)
++
++    @MainActor func test07_AktualisierenUndLoeschenGleichzeitig_M3U() async throws {
++        let (container, url) = try fileContainer("t07")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let p = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "M3U")
++        p.channels.first(where: { $0.name == "Alpha" })?.isFavorite = true
++        try ctx.save()
++        cfg.m3uDelay = 2
++        mock.handler = cfg.handler()
++        B03Log.w("T07|start|\(B03.dbSummary(url))")
++        let task = Task { @MainActor in try await PlaylistImporter(modelContext: ctx).refresh(p) }
++        try await Task.sleep(nanoseconds: 500_000_000)
++        B03Log.w("T07|loescheWaehrendAktualisieren")
++        try PlaylistImporter(modelContext: ctx).delete(p)
++        B03Log.w("T07|geloescht|\(B03.dbSummary(url))")
++        let result = await task.result
++        B03Log.w("T07|aktualisierenErgebnis|\(result)")
++        B03Log.w("T07|danach|\(B03.dbSummary(url))|hasChanges=\(ctx.hasChanges)")
++        let channels = try ctx.fetch(FetchDescriptor<Channel>())
++        let favs = try ctx.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true }))
++        B03Log.w("T07|kontext|channels=\(channels.count)|favoritenTab=\(favs.map(\.name))|playlists=\(try ctx.fetchCount(FetchDescriptor<Playlist>()))|ohnePlaylist=\(channels.filter { $0.playlist == nil }.count)")
++        try? ctx.save()
++        B03Log.w("T07|nachSave|\(B03.dbSummary(url))")
++    }
++
++    @MainActor func test08_AktualisierenUndLoeschenGleichzeitig_Xtream() async throws {
++        let (container, url) = try fileContainer("t08")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        mock.handler = cfg.handler()
++        let p = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03race"), output: .mpegts, name: "Xtream")
++        p.channels.first?.isFavorite = true
++        try ctx.save()
++        let pid = p.id
++        cfg.streamsDelay = 2
++        mock.handler = cfg.handler()
++        B03Log.w("T08|start|\(B03.dbSummary(url))")
++        let task = Task { @MainActor in try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(p) }
++        try await Task.sleep(nanoseconds: 700_000_000)
++        B03Log.w("T08|loescheWaehrendAktualisieren|anfragenBisher=\(mock.requests.map { $0.action ?? "(anmeldung)" })")
++        try PlaylistImporter(modelContext: ctx).delete(p)
++        B03Log.w("T08|geloescht|\(B03.dbSummary(url))|schluesselbund=\((try? XtreamCredentialStore.standard.load(for: pid)) != nil)")
++        let result = await task.result
++        B03Log.w("T08|aktualisierenErgebnis|\(result)")
++        let channels = try ctx.fetch(FetchDescriptor<Channel>())
++        let favs = try ctx.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true }))
++        B03Log.w("T08|danach|\(B03.dbSummary(url))|kontextChannels=\(channels.count)|favoritenTab=\(favs.map(\.name))|schluesselbund=\((try? XtreamCredentialStore.standard.load(for: pid)) != nil)")
++        if let ch = channels.first {
++            do {
++                let u = try StreamURLResolver.playableURL(for: ch)
++                B03Log.w("T08|verwaisterSenderAbspielbar|\(u.absoluteString)")
++            } catch {
++                B03Log.w("T08|verwaisterSenderAbspielbar|Fehler=\(error.localizedDescription)")
++            }
++        }
++    }
++
++    /// Altbestand (Zugangsdaten noch in sourceURL): Aktualisieren schreibt nach dem Netzabruf in den Schlüsselbund.
++    @MainActor func test08b_AltbestandAktualisierenUndLoeschen() async throws {
++        let (container, url) = try fileContainer("t08b")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.streamsDelay = 2
++        mock.handler = cfg.handler()
++        let api = URL(string: "http://\(mock.hostPort)/player_api.php?username=qa-user&password=qa-pass-b03legacy")!
++        let p = Playlist(name: "Alt", sourceURL: api, lastRefreshed: Date(), isXtream: true, xtreamOutput: "mpegts")
++        ctx.insert(p)
++        let ch = Channel(name: "Kanal Int", streamURL: URL(string: "http://\(mock.hostPort)/live/qa-user/qa-pass-b03legacy/101.ts")!, playlist: p, playlistID: p.id)
++        ctx.insert(ch)
++        p.channelCount = 1
++        try ctx.save()
++        let pid = p.id
++        let task = Task { @MainActor in try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(p) }
++        try await Task.sleep(nanoseconds: 700_000_000)
++        try PlaylistImporter(modelContext: ctx).delete(p)
++        B03Log.w("T08b|geloescht|\(B03.dbSummary(url))|schluesselbund=\((try? XtreamCredentialStore.standard.load(for: pid)) != nil)")
++        let result = await task.result
++        B03Log.w("T08b|aktualisierenErgebnis|\(result)|\(B03.dbSummary(url))|schluesselbundNachher=\((try? XtreamCredentialStore.standard.load(for: pid)) != nil)")
++    }
++
++    // MARK: - 09/10 Mehrfach und parallel
++
++    @MainActor func test09_ZweimalAktualisierenSelbePlaylist() async throws {
++        let (container, url) = try fileContainer("t09")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let p = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "M3U")
++        p.channels.first(where: { $0.name == "Alpha" })?.isFavorite = true
++        try ctx.save()
++        // erste Anfrage langsam, zweite schnell
++        let counter = B03Counter()
++        let body = B03Panel.m3uText(Self.v1)
++        mock.handler = { req in
++            guard req.path.hasSuffix(".m3u") else { return .raw(status: 404, contentType: "text/plain", body: Data()) }
++            let n = counter.next()
++            return .delayed(n == 1 ? 2.0 : 0.5, .raw(status: 200, contentType: "audio/x-mpegurl", body: body))
++        }
++        mock.resetLog()
++        let t1 = Task { @MainActor in try await PlaylistImporter(modelContext: ctx).refresh(p) }
++        try await Task.sleep(nanoseconds: 100_000_000)
++        let t2 = Task { @MainActor in try await PlaylistImporter(modelContext: ctx).refresh(p) }
++        let r1 = await t1.result, r2 = await t2.result
++        B03Log.w("T09|m3u|ergebnis1=\(r1)|ergebnis2=\(r2)|anfragen=\(mock.requests.count)|\(B03.describe(p, ctx))|db=\(B03.dbSummary(url))")
++
++        let x = try await {
++            mock.handler = B03Panel().handler()
++            return try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++                XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03dbl"), output: .mpegts, name: "Xtream")
++        }()
++        x.channels.first?.isFavorite = true
++        try ctx.save()
++        var cfg2 = B03Panel(); cfg2.streamsDelay = 1
++        mock.handler = cfg2.handler()
++        mock.resetLog()
++        let tasks = (0..<3).map { _ in Task { @MainActor in try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(x) } }
++        var results: [String] = []
++        for t in tasks { results.append("\(await t.result)") }
++        B03Log.w("T09|xtream3x|ergebnisse=\(results)|anfragen=\(mock.requests.count)|\(B03.describe(x, ctx))|db=\(B03.dbSummary(url))")
++    }
++
++    @MainActor func test10_ZweiPlaylistsParallel() async throws {
++        let (container, url) = try fileContainer("t10")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let m = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "M3U")
++        let x = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03par"), output: .mpegts, name: "Xtream")
++        m.channels.first?.isFavorite = true; x.channels.first?.isFavorite = true
++        try ctx.save()
++        cfg.m3uDelay = 1.5; cfg.streamsDelay = 1.0
++        mock.handler = cfg.handler()
++        let t0 = Date()
++        let a = Task { @MainActor in try await PlaylistImporter(modelContext: ctx).refresh(m) }
++        let b = Task { @MainActor in try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(x) }
++        let ra = await a.result, rb = await b.result
++        B03Log.w("T10|m3u=\(ra)|xtream=\(rb)|dauer=\(B03Log.f2(Date().timeIntervalSince(t0)))s|\(B03.describe(m, ctx))|\(B03.describe(x, ctx))|db=\(B03.dbSummary(url))")
++    }
++
++    // MARK: - 11 Lokale Datei
++
++    @MainActor func test11_LokaleDatei() async throws {
++        let (container, url) = try fileContainer("t11")
++        let ctx = container.mainContext
++        let file = url.deletingLastPathComponent().appendingPathComponent("qa-b03-lokal.m3u")
++        try B03Panel.m3uText(Self.v1).write(to: file)
++        let p = try await PlaylistImporter(modelContext: ctx).importFromFile(file)
++        p.channels.first?.isFavorite = true
++        try ctx.save()
++        let ids = Set(p.channels.map(\.id))
++        B03Log.w("T11|import|\(B03.describe(p, ctx))")
++        mock.resetLog()
++        var msg = "kein Fehler"
++        do { try await PlaylistImporter(modelContext: ctx).refresh(p) } catch { msg = error.localizedDescription }
++        B03Log.w("T11|aktualisieren|meldung=\(msg)|anfragen=\(mock.requests.count)|idsGleich=\(ids == Set(p.channels.map(\.id)))|\(B03.describe(p, ctx))")
++        // Datei geändert: kein Weg, sie neu einzulesen
++        try B03Panel.m3uText([("Nur noch einer", nil, nil, "\(Self.dead)/1.m3u8")]).write(to: file)
++        try await PlaylistImporter(modelContext: ctx).refresh(p)
++        B03Log.w("T11|nachDateiAenderung|\(B03.describe(p, ctx))")
++        try PlaylistImporter(modelContext: ctx).delete(p)
++        B03Log.w("T11|geloescht|\(B03.dbSummary(url))|dateiNochDa=\(FileManager.default.fileExists(atPath: file.path))")
++    }
++
++    // MARK: - 12 Gehaltene Sender-Objekte (einzeln ausführen)
++
++    @MainActor func test12_GehalteneSenderNachLoeschen() async throws {
++        let (container, _) = try fileContainer("t12")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let x = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03held"), output: .hls, name: "Xtream")
++        let m = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "M3U")
++        let chX = try XCTUnwrap(x.channels.first(where: { $0.name == "Kanal Int" }))
++        let chM = try XCTUnwrap(m.channels.first(where: { $0.name == "Alpha" }))
++        B03Log.w("T12|vorher|x=\(try StreamURLResolver.playableURL(for: chX).absoluteString)|m=\(try StreamURLResolver.playableURL(for: chM).absoluteString)")
++        try PlaylistImporter(modelContext: ctx).delete(x)
++        try PlaylistImporter(modelContext: ctx).delete(m)
++        B03Log.w("T12|geloescht")
++        for (label, ch) in [("xtream", chX), ("m3u", chM)] {
++            B03Log.w("T12|\(label)|isDeleted=\(ch.isDeleted)")
++            B03Log.w("T12|\(label)|modelContextNil=\(ch.modelContext == nil)")
++            B03Log.w("T12|\(label)|name=\(ch.name)")
++            B03Log.w("T12|\(label)|streamURL=\(ch.streamURL.absoluteString)")
++            B03Log.w("T12|\(label)|isFavorite=\(ch.isFavorite)")
++            B03Log.w("T12|\(label)|playlistNil=\(ch.playlist == nil)")
++            do {
++                let u = try StreamURLResolver.playableURL(for: ch)
++                B03Log.w("T12|\(label)|resolver=\(u.absoluteString)")
++            } catch {
++                B03Log.w("T12|\(label)|resolverFehler=\(error.localizedDescription)")
++            }
++        }
++        B03Log.w("T12|playlistObjekt|isDeleted=\(x.isDeleted)|name=\(x.name)|channelCount=\(x.channelCount)")
++    }
++
++    @MainActor func test12b_GehalteneSenderNachAktualisieren() async throws {
++        let (container, _) = try fileContainer("t12b")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let x = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03held"), output: .hls, name: "Xtream")
++        let m = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "M3U")
++        let chX = try XCTUnwrap(x.channels.first(where: { $0.name == "Kanal Int" }))
++        let chM = try XCTUnwrap(m.channels.first(where: { $0.name == "Alpha" }))
++        try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(x)
++        try await PlaylistImporter(modelContext: ctx).refresh(m)
++        B03Log.w("T12b|aktualisiert")
++        for (label, ch) in [("xtream", chX), ("m3u", chM)] {
++            B03Log.w("T12b|\(label)|isDeleted=\(ch.isDeleted)|modelContextNil=\(ch.modelContext == nil)")
++            B03Log.w("T12b|\(label)|name=\(ch.name)|playlistNil=\(ch.playlist == nil)")
++            do {
++                let u = try StreamURLResolver.playableURL(for: ch)
++                B03Log.w("T12b|\(label)|resolver=\(u.absoluteString)")
++            } catch {
++                B03Log.w("T12b|\(label)|resolverFehler=\(error.localizedDescription)")
++            }
++            let same = x.channels.contains { $0.persistentModelID == ch.persistentModelID } || m.channels.contains { $0.persistentModelID == ch.persistentModelID }
++            B03Log.w("T12b|\(label)|nochInPlaylist=\(same)")
++        }
++    }
++
++    // MARK: - 13 Multiview und Player während Löschen (einzeln ausführen, stumm: Streams antworten nie)
++
++    @MainActor func test13_MultiviewUndPlayerBeimLoeschen() async throws {
++        let (container, _) = try fileContainer("t13")
++        let ctx = container.mainContext
++        mock.handler = B03Panel().handler()
++        let x = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03mv"), output: .hls, name: "Xtream MV")
++        let ch = try XCTUnwrap(x.channels.first(where: { $0.name == "Kanal Int" }))
++        let session = MultiviewSession()
++        session.add(ch)
++        let engine = try XCTUnwrap(session.slots.first?.engine)
++        engine.setMuted(true)
++        let w = UIHarness.window(MultiviewScreen().environment(session).modelContainer(container), size: CGSize(width: 900, height: 560))
++        await UIHarness.spin(2.0)
++        B03Log.w("T13|multiview|slots=\(session.slots.count)|engineState=\(engine.state)|liveAnfragen=\(mock.requests.filter { $0.path.hasPrefix("/live/") }.map(\.path))")
++        B03.shot(w, "mac-08-multiview-vor-loeschen")
++        try PlaylistImporter(modelContext: ctx).delete(x)
++        B03Log.w("T13|multiview|geloescht|slots=\(session.slots.count)|slotChannelDeleted=\(session.slots.first?.channel.isDeleted ?? false)")
++        B03Log.w("T13|multiview|slotName=\(session.slots.first?.channel.name ?? "-")")
++        session.layout = .grid
++        await UIHarness.spin(1.5)
++        B03Log.w("T13|multiview|nachNeuzeichnen|slots=\(session.slots.count)|engineState=\(engine.state)|isPaused=\(engine.isPaused)")
++        B03.shot(w, "mac-09-multiview-nach-loeschen")
++        // Wie in der App: Fenster schließen (onDisappear leert die Session). Raster-Layout bleibt eingestellt.
++        B03Log.w("T13|multiview|schliesseFensterImRaster")
++        w.close()
++        await UIHarness.spin(1.5)
++        B03Log.w("T13|multiview|fensterGeschlossen|slots=\(session.slots.count)|isPaused=\(engine.isPaused)")
++    }
++
++    @MainActor func test13b_PlayerBeimLoeschen() async throws {
++        let (container, _) = try fileContainer("t13b")
++        let ctx = container.mainContext
++        mock.handler = B03Panel().handler()
++        // Player
++        let x2 = try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03pl"), output: .hls, name: "Xtream Player")
++        let ch2 = try XCTUnwrap(x2.channels.first(where: { $0.name == "Kanal String" }))
++        mock.resetLog()
++        let pw = UIHarness.window(NavigationStack { PlayerView(channel: ch2) }.modelContainer(container), size: CGSize(width: 800, height: 500))
++        await UIHarness.spin(2.0)
++        B03Log.w("T13|player|liveAnfragen=\(mock.requests.filter { $0.path.hasPrefix("/live/") }.map(\.path))|fenstertitel=\(pw.title)")
++        B03.shot(pw, "mac-10-player-vor-loeschen")
++        try PlaylistImporter(modelContext: ctx).delete(x2)
++        B03Log.w("T13|player|geloescht|channelDeleted=\(ch2.isDeleted)|name=\(ch2.name)")
++        pw.setContentSize(NSSize(width: 820, height: 520))
++        if let ev = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
++                                     windowNumber: pw.windowNumber, context: nil, characters: "m", charactersIgnoringModifiers: "m",
++                                     isARepeat: false, keyCode: 46) {
++            pw.sendEvent(ev)
++        }
++        await UIHarness.spin(2.0)
++        B03Log.w("T13|player|nachNeuzeichnen|fenstertitel=\(pw.title)|liveAnfragenOffen=\(mock.requests.filter { $0.path.hasPrefix("/live/") }.count)")
++        B03.shot(pw, "mac-11-player-nach-loeschen")
++        pw.close()
++        await UIHarness.spin(0.5)
++        B03Log.w("T13|ende")
++    }
++
++    // MARK: - 14 Oberfläche der Übersicht
++
++    @MainActor
++    private func contextMenu(_ w: NSWindow, row: String, perform title: String? = nil) async -> [String] {
++        guard let content = w.contentView else { return [] }
++        AX.wake(w)
++        await UIHarness.spin(0.2)
++        guard let el = AX.all(content).first(where: { AX.label($0) == row }) ?? AX.all(content).first(where: { AX.label($0).contains(row) }) else {
++            B03Log.w("T14|kontextmenue|zeile nicht gefunden: \(row)")
++            return []
++        }
++        let f = AX.frame(el)
++        let pt = w.convertPoint(fromScreen: NSPoint(x: f.midX, y: f.midY))
++        let box = B03MenuBox()
++        let obs = NotificationCenter.default.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: nil) { note in
++            guard let menu = note.object as? NSMenu else { return }
++            box.menu = menu
++            box.shown += 1
++            box.titles = menu.items.map { $0.isSeparatorItem ? "—" : $0.title }
++            DispatchQueue.main.async { menu.cancelTracking() }
++        }
++        defer { NotificationCenter.default.removeObserver(obs) }
++        let ts = ProcessInfo.processInfo.systemUptime
++        if let down = NSEvent.mouseEvent(with: .rightMouseDown, location: pt, modifierFlags: [], timestamp: ts, windowNumber: w.windowNumber,
++                                         context: nil, eventNumber: 0, clickCount: 1, pressure: 1) {
++            w.sendEvent(down)
++        }
++        await UIHarness.spin(0.3)
++        B03Log.w("T14|kontextmenue|\(row)|punkt=\(pt)|menues=\(box.shown)|eintraege=\(box.titles)|nochUebersicht=\(rowNames(w).contains("MIKA+PLAYER · PLAYLISTS"))")
++        if let title, let menu = box.menu, let idx = menu.items.firstIndex(where: { $0.title == title }) {
++            menu.performActionForItem(at: idx)
++            B03Log.w("T14|kontextmenue|\(row)|ausgefuehrt=\(title)")
++        }
++        return box.titles
++    }
++
++    @MainActor
++    private func busyCount(_ w: NSWindow) -> Int {
++        guard let content = w.contentView else { return -1 }
++        AX.wake(w)
++        return AX.all(content).filter { AX.role($0).contains("ProgressIndicator") || AX.role($0).contains("BusyIndicator") }.count
++    }
++
++    @MainActor
++    private func rowNames(_ w: NSWindow) -> [String] {
++        guard let content = w.contentView else { return [] }
++        AX.wake(w)
++        return AX.all(content).map(AX.label).filter { !$0.isEmpty }
++    }
++
++    @MainActor func test14_OberflaecheUebersicht() async throws {
++        let (container, url) = try fileContainer("t14")
++        let ctx = container.mainContext
++        let session = MultiviewSession()
++        let w = UIHarness.window(NavigationStack { PlaylistsView() }.environment(session).modelContainer(container),
++                                 size: CGSize(width: 760, height: 640))
++        defer { w.close() }
++        await UIHarness.spin(1.5)
++        B03.shot(w, "mac-01-leer")
++        B03Log.w("T14|leer|texte=\(rowNames(w))")
++
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let file = url.deletingLastPathComponent().appendingPathComponent("qa-b03-lokal.m3u")
++        try B03Panel.m3uText(Self.v1).write(to: file)
++        _ = try await PlaylistImporter(modelContext: ctx).importFromFile(file)
++        try await Task.sleep(nanoseconds: 50_000_000)
++        let m = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "QA M3U-Liste")
++        try await Task.sleep(nanoseconds: 50_000_000)
++        let x = try await PlaylistImporter(modelContext: ctx).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03ui"), output: .mpegts, name: "QA Xtream-Zugang")
++        await UIHarness.spin(1.5)
++        B03.shot(w, "mac-02-drei-playlists")
++        B03Log.w("T14|liste|texte=\(rowNames(w))")
++
++        _ = await contextMenu(w, row: "qa-b03-lokal")
++        _ = await contextMenu(w, row: "QA M3U-Liste")
++        _ = await contextMenu(w, row: "QA Xtream-Zugang")
++
++        // Spinner: siehe test14b (dort mit langen Verzögerungen und Zeitstempeln)
++        cfg.m3uDelay = 3; cfg.streamsDelay = 4.5
++        mock.handler = cfg.handler()
++        B03Log.w("T14|spinner|vorher=\(busyCount(w))")
++        _ = await contextMenu(w, row: "QA M3U-Liste", perform: "Aktualisieren")
++        await UIHarness.spin(0.6)
++        B03Log.w("T14|spinner|m3uLaeuft=\(busyCount(w))")
++        B03.shot(w, "mac-03-spinner-m3u")
++        _ = await contextMenu(w, row: "QA Xtream-Zugang", perform: "Aktualisieren")
++        await UIHarness.spin(0.6)
++        B03Log.w("T14|spinner|beideLaufen=\(busyCount(w))")
++        B03.shot(w, "mac-04-spinner-beide-laufen")
++        await UIHarness.spin(2.2)
++        B03Log.w("T14|spinner|m3uFertigXtreamLaeuft=\(busyCount(w))|xtreamLastRefreshed=\(x.lastRefreshed.map(B03Log.ts) ?? "nil")|m3uLastRefreshed=\(m.lastRefreshed.map(B03Log.ts) ?? "nil")")
++        B03.shot(w, "mac-05-m3u-fertig-xtream-laeuft-ohne-spinner")
++        await UIHarness.spin(2.5)
++        B03Log.w("T14|spinner|beideFertig=\(busyCount(w))|anfragenStreams=\(mock.requests.filter { $0.action == "get_live_streams" }.count)")
++
++        // Mehrfach tippen
++        cfg.m3uDelay = 1.5; cfg.streamsDelay = 0
++        mock.handler = cfg.handler()
++        mock.resetLog()
++        _ = await contextMenu(w, row: "QA M3U-Liste", perform: "Aktualisieren")
++        _ = await contextMenu(w, row: "QA M3U-Liste", perform: "Aktualisieren")
++        _ = await contextMenu(w, row: "QA M3U-Liste", perform: "Aktualisieren")
++        await UIHarness.spin(3.5)
++        B03Log.w("T14|mehrfach|m3uAnfragen=\(mock.requests.filter { $0.path.hasSuffix(".m3u") }.count)|alert=\(w.attachedSheet != nil)|\(B03.describe(m, ctx))")
++
++        // Fehler-Alert
++        var bad = cfg; bad.m3u = nil; bad.m3uDelay = 0
++        mock.handler = bad.handler()
++        _ = await contextMenu(w, row: "QA M3U-Liste", perform: "Aktualisieren")
++        await UIHarness.spin(1.5)
++        let sheet = w.attachedSheet
++        var sheetTexts: [String] = []
++        if let sv = sheet?.contentView {
++            var list: [(Int, NSView)] = []
++            UIHarness.views(sv, into: &list)
++            sheetTexts = list.compactMap { ($0.1 as? NSTextField)?.stringValue ?? ($0.1 as? NSButton)?.title }.filter { !$0.isEmpty }
++        }
++        B03Log.w("T14|fehler|sheet=\(sheet != nil)|texte=\(sheetTexts)|fenster=\(NSApp.windows.map { "\(type(of: $0)):\($0.title)" })")
++        B03.shot(w, "mac-06-fehler-alert")
++        if let sv = sheet?.contentView {
++            var list: [(Int, NSView)] = []
++            UIHarness.views(sv, into: &list)
++            (list.first { ($0.1 as? NSButton)?.title == "OK" }?.1 as? NSButton)?.performClick(nil)
++        }
++        await UIHarness.spin(0.8)
++        B03Log.w("T14|fehler|nachOK|sheet=\(w.attachedSheet != nil)|\(B03.describe(m, ctx))")
++
++        // Löschen über das Kontextmenü
++        mock.handler = cfg.handler()
++        B03Log.w("T14|loeschen|vorher|\(B03.dbSummary(url))")
++        _ = await contextMenu(w, row: "QA Xtream-Zugang", perform: "Löschen")
++        B03Log.w("T14|loeschen|sofort|sheet=\(w.attachedSheet != nil)|\(B03.dbSummary(url))|schluesselbund=\((try? XtreamCredentialStore.standard.load(for: x.id)) != nil)")
++        await UIHarness.spin(1.0)
++        B03.shot(w, "mac-07-nach-loeschen")
++        B03Log.w("T14|loeschen|texte=\(rowNames(w))|undoManager=\(ctx.undoManager != nil)")
++        let handled = NSApp.sendAction(Selector(("undo:")), to: nil, from: w)
++        await UIHarness.spin(0.5)
++        B03Log.w("T14|loeschen|undo:behandelt=\(handled)|\(B03.dbSummary(url))")
++    }
++
++    @MainActor func test14b_SpinnerBeiZweiAktualisierungen() async throws {
++        let (container, _) = try fileContainer("t14b")
++        let ctx = container.mainContext
++        let w = UIHarness.window(NavigationStack { PlaylistsView() }.environment(MultiviewSession()).modelContainer(container),
++                                 size: CGSize(width: 760, height: 480))
++        defer { w.close() }
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let m = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "QA M3U-Liste")
++        let x = try await PlaylistImporter(modelContext: ctx).importFromXtream(
++            XtreamCredentials(host: mock.hostPort, username: "qa-user", password: "qa-pass-b03ui2"), output: .mpegts, name: "QA Xtream-Zugang")
++        await UIHarness.spin(1.0)
++        let m0 = m.lastRefreshed, x0 = x.lastRefreshed
++        cfg.m3uDelay = 25; cfg.streamsDelay = 50
++        mock.handler = cfg.handler()
++        let t0 = Date()
++        _ = await contextMenu(w, row: "QA M3U-Liste", perform: "Aktualisieren")
++        B03Log.w("T14b|menueDauer=\(B03Log.f2(Date().timeIntervalSince(t0)))s")
++        await UIHarness.spin(1.0)
++        B03Log.w("T14b|nurM3U|spinner=\(busyCount(w))|m3uLaeuft=\(m.lastRefreshed == m0)")
++        B03.shot(w, "mac-03-spinner-m3u")
++        _ = await contextMenu(w, row: "QA Xtream-Zugang", perform: "Aktualisieren")
++        await UIHarness.spin(1.0)
++        B03Log.w("T14b|beide|spinner=\(busyCount(w))|m3uLaeuft=\(m.lastRefreshed == m0)|xtreamLaeuft=\(x.lastRefreshed == x0)")
++        B03.shot(w, "mac-04-spinner-beide-laufen")
++        while m.lastRefreshed == m0 && Date().timeIntervalSince(t0) < 60 { await UIHarness.spin(0.5) }
++        await UIHarness.spin(0.5)
++        B03Log.w("T14b|m3uFertig|spinner=\(busyCount(w))|m3uLaeuft=\(m.lastRefreshed == m0)|xtreamLaeuft=\(x.lastRefreshed == x0)")
++        B03.shot(w, "mac-05-m3u-fertig-xtream-laeuft-ohne-spinner")
++        while x.lastRefreshed == x0 && Date().timeIntervalSince(t0) < 120 { await UIHarness.spin(0.5) }
++        await UIHarness.spin(0.5)
++        B03Log.w("T14b|beideFertig|spinner=\(busyCount(w))|xtreamLaeuft=\(x.lastRefreshed == x0)")
++    }
++
++    @MainActor func test15_SenderlisteOffenBeimLoeschen() async throws {
++        let (container, _) = try fileContainer("t15")
++        let ctx = container.mainContext
++        var cfg = B03Panel()
++        cfg.m3u = B03Panel.m3uText(Self.v1)
++        mock.handler = cfg.handler()
++        let m = try await PlaylistImporter(modelContext: ctx).importFromURL("http://\(mock.hostPort)/list.m3u", name: "QA M3U offen")
++        let w = UIHarness.window(NavigationStack { ChannelListView(playlist: m) }.environment(MultiviewSession()).modelContainer(container),
++                                 size: CGSize(width: 760, height: 520))
++        defer { w.close() }
++        await UIHarness.spin(1.5)
++        B03Log.w("T15|vorher|texte=\(rowNames(w).prefix(12))|titel=\(w.title)")
++        B03.shot(w, "mac-12-senderliste-vor-loeschen")
++        try PlaylistImporter(modelContext: ctx).delete(m)
++        await UIHarness.spin(1.5)
++        B03Log.w("T15|nachLoeschen|texte=\(rowNames(w).prefix(12))|titel=\(w.title)")
++        B03.shot(w, "mac-13-senderliste-nach-loeschen")
++    }
++}
++
++final class B03Counter: @unchecked Sendable {
++    private let lock = NSLock()
++    private var n = 0
++    func next() -> Int { lock.withLock { n += 1; return n } }
++}

@@ -1,0 +1,318 @@
+B07 Bild-in-Bild — Protokoll der Rückerfassungs-Sonde, 2026-09-15
+Stand main @ c01f1cf, Kopie im Scratchpad (Bundle-ID lu.daumedia.b07probe, In-Memory-Store, Sparkle-Feed abgeschaltet).
+Streams lokal: ffmpeg-Testbild (testsrc2) über python3 -m http.server auf 127.0.0.1:18907.
+Sonden-Code: siehe sonde.patch (Protokollzeilen 'B07 …', Harness 'B07ProbeRoot', XCTest 'B07ProbeTests').
+Hinweis Ton: die macOS-XCTest-Läufe und Läufe M1–M3 liefen noch mit Testton; ab dem iOS-Teil stumm (Stream ohne Tonspur, player.isMuted).
+Hinweis muted=1 in M1/M3 auf macOS: kam nicht aus dem App-Code (keine Aktion der Sonde), vermutlich Tastatureingaben am laufenden Rechner — ohne Bedeutung für B07.
+
+=== 1 · macOS XCTest (B07ProbeTests, 2. Lauf nach Korrektur der Sonde) ===
+23:31:26.364700 B07T factory m3u8=AVKitPlaybackEngine ts=VLCPlaybackEngine m3u=AVKitPlaybackEngine mp4=AVKitPlaybackEngine noExt=AVKitPlaybackEngine
+23:31:26.364741 B07T supports m3u8=true ts=false isSupportedSystem=true
+23:31:26.364750 B07T ts after toggle active=false
+23:31:26.364768 B07 engine deinit
+23:31:26.364793 B07 engine deinit
+23:31:26.364799 B07 engine deinit
+23:31:26.365438 B07 engine deinit
+Test Case '-[MikaPlusPlayerTests.B07ProbeTests testA_FactoryAndSupport]' passed (0.083 seconds).
+23:31:26.387978 B07 startPictureInPicture called, controller=1 possible=0
+23:31:26.388150 B07T B immediately after start (before ready): state=loading active=false
+23:31:29.389368 B07T B 3s later: state=playing active=false possible=true
+23:31:29.401744 B07 engine deinit
+Test Case '-[MikaPlusPlayerTests.B07ProbeTests testB_StartBeforeReady]' passed (3.050 seconds).
+23:31:29.538192 B07T C playing, possible=true rate=1.0
+23:31:29.538262 B07 startPictureInPicture called, controller=1 possible=1
+23:31:29.611263 B07 delegate didStart
+23:31:31.654472 B07T C active=true rate=1.0 isPaused=false newWindows=["Bild-in-Bild|layer=19||514x270"]
+23:31:32.657783 B07T C after player.pause() in PiP: engine.isPaused=false rate=0.0
+23:31:34.242434 B07 delegate didStop
+23:31:36.268095 B07T C after toggle(stop): stopped=true rate=1.0 tcs=2 isPaused=false windows=[]
+23:31:36.272413 B07 engine deinit
+Test Case '-[MikaPlusPlayerTests.B07ProbeTests testC_StartStopAndAfterStop]' passed (6.873 seconds).
+23:31:36.422009 B07 startPictureInPicture called, controller=1 possible=1
+23:31:36.434111 B07 delegate didStart
+23:31:38.532157 B07T D active before release, windows=["Bild-in-Bild|layer=19||514x270", "Dock|layer=20||1920x1080"]
+23:31:38.532285 B07 engine deinit
+23:31:43.553934 B07T D 5s after release: engine=false player=true controller=false rate=1.0 windows=["Dock|layer=20||1920x1080", "Window Server|layer=2147483630|StatusIndicator|28x28"]
+23:31:48.557497 B07T D 10s after release: engine=false player=true controller=false rate=1.0 windows=["Window Server|layer=2147483630|StatusIndicator|28x28"]
+Test Case '-[MikaPlusPlayerTests.B07ProbeTests testD_ReleaseEngineWhilePiPActive]' passed (14.291 seconds).
+23:31:50.714588 B07 startPictureInPicture called, controller=1 possible=1
+23:31:50.722079 B07 delegate didStart
+23:31:51.822464 B07T E A active=true; B possible=true
+23:31:51.822734 B07 startPictureInPicture called, controller=1 possible=1
+23:31:51.897464 B07 delegate didStart
+23:31:52.342304 B07 delegate didStop
+23:31:56.844340 B07T E after B start: A active=false rateA=0.0 B active=true rateB=1.0
+23:31:57.376329 B07 delegate didStop
+23:31:58.855773 B07 engine deinit
+23:31:58.857924 B07 engine deinit
+Test Case '-[MikaPlusPlayerTests.B07ProbeTests testE_TwoEnginesSecondStart]' passed (8.301 seconds).
+23:31:59.006889 B07 startPictureInPicture called, controller=1 possible=0
+23:32:01.008326 B07T F failed stream: state=failed("The requested URL was not found on this server.") active=false supports=true
+23:32:01.011839 B07 engine deinit
+Test Case '-[MikaPlusPlayerTests.B07ProbeTests testF_LoadFailsThenStart]' passed (2.143 seconds).
+	 Executed 6 tests, with 0 failures (0 unexpected) in 34.741 (34.746) seconds
+	 Executed 6 tests, with 0 failures (0 unexpected) in 34.741 (34.747) seconds
+	 Executed 6 tests, with 0 failures (0 unexpected) in 34.741 (34.748) seconds
+
+=== 1a · macOS XCTest, 1. Lauf: bestehende PlaybackEngineTests (6) im selben Lauf ===
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testPictureInPictureInactiveInitially]' passed (0.003 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testRaisingVolumeUnmutes]' passed (0.002 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testSetVolumeClampsToUnitRange]' passed (0.002 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testToggleMuteFlips]' passed (0.003 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testTogglePictureInPictureIsSafeWithoutOnscreenLayer]' passed (0.004 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testTogglePlayPauseFlipsIsPaused]' passed (0.001 seconds).
+	 Executed 12 tests, with 0 failures (0 unexpected) in 35.926 (35.934) seconds
+	 Executed 12 tests, with 0 failures (0 unexpected) in 35.926 (35.935) seconds
+
+=== M1 · macOS-App: PiP nach 6 s, Zurück nach 14 s, Sender erneut öffnen nach 26 s ===
+1 23:33:01.425 B07 harness: pushed player for http://127.0.0.1:18907/hls/vod.m3u8
+1 23:33:01.440 B07 PlayerView onAppear engine=0 supportsPiP=0
+1 23:33:01.443 B07 [3E38] engine init
+1 23:33:02.444 B07 [3E38] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:03.439 B07 harness: PiP-Systemfenster sichtbar=0
+2 23:33:03.444 B07 [3E38] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:05.427 B07 harness: PiP-Systemfenster sichtbar=0
+2 23:33:05.444 B07 [3E38] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:07.428 B07 harness: PiP-Systemfenster sichtbar=0
+1 23:33:07.444 B07 [3E38] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:07.534 B07 harness: togglePiP via notification
+1 23:33:07.534 B07 startPictureInPicture called, controller=1 possible=1
+1 23:33:07.692 B07 delegate didStart
+1 23:33:08.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:09.427 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:09.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:11.427 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:11.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:13.427 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:13.443 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:15.428 B07 harness: PiP-Systemfenster sichtbar=1
+1 23:33:15.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:15.533 B07 harness: pop
+1 23:33:15.536 B07 PlayerView onDisappear pipActive=1
+1 23:33:16.443 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:17.428 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:17.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:19.426 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:19.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:21.427 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:21.443 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:23.428 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:23.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:25.427 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:33:25.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:27.429 B07 harness: PiP-Systemfenster sichtbar=1
+1 23:33:27.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:27.500 B07 harness: repush
+1 23:33:27.506 B07 PlayerView onAppear engine=0 supportsPiP=0
+1 23:33:27.507 B07 [6EFB] engine init
+1 23:33:28.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:28.507 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:29.427 B07 harness: PiP-Systemfenster sichtbar=1
+1 23:33:29.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:29.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:30.443 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:30.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:31.427 B07 harness: PiP-Systemfenster sichtbar=1
+1 23:33:31.444 B07 [3E38] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:31.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:32.080 B07 engine deinit
+1 23:33:32.444 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:32.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:33.436 B07 harness: PiP-Systemfenster sichtbar=0
+1 23:33:33.443 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:33.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:34.444 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:34.507 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:35.427 B07 harness: PiP-Systemfenster sichtbar=0
+1 23:33:35.444 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:35.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:33:36.444 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:36.507 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1
+1 23:33:37.427 B07 harness: PiP-Systemfenster sichtbar=0
+1 23:33:37.444 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:37.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1
+1 23:33:38.444 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:38.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1
+1 23:33:39.428 B07 harness: PiP-Systemfenster sichtbar=0
+1 23:33:39.443 B07 [3E38] tick: engine gone, player alive=0 rate=nan
+1 23:33:39.508 B07 [6EFB] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1
+
+=== M2 · macOS-App: PiP nach 6 s, Zurück nach 12 s, danach 37 s nichts ===
+1 23:34:32.815 B07 harness: pushed player for http://127.0.0.1:18907/hls/vod.m3u8
+1 23:34:32.821 B07 PlayerView onAppear engine=0 supportsPiP=0
+1 23:34:32.825 B07 [9A93] engine init
+1 23:34:33.825 B07 [9A93] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:34.826 B07 harness: PiP-Systemfenster sichtbar=0
+2 23:34:34.827 B07 [9A93] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:36.818 B07 harness: PiP-Systemfenster sichtbar=0
+2 23:34:36.826 B07 [9A93] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:38.818 B07 harness: PiP-Systemfenster sichtbar=0
+1 23:34:38.826 B07 [9A93] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:38.962 B07 harness: togglePiP via notification
+1 23:34:38.962 B07 startPictureInPicture called, controller=1 possible=1
+1 23:34:39.078 B07 delegate didStart
+1 23:34:39.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:40.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:40.825 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:42.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:42.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:44.817 B07 harness: PiP-Systemfenster sichtbar=1
+1 23:34:44.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:44.827 B07 harness: pop
+1 23:34:44.828 B07 PlayerView onDisappear pipActive=1
+1 23:34:45.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:46.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:46.825 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:48.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:48.825 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:50.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:50.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:52.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:52.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:54.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:54.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:56.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:56.825 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:34:58.826 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:34:58.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:00.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:00.825 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:02.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:02.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:04.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:04.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:06.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:06.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:08.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:08.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:10.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:10.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:12.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:12.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:14.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:14.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:16.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:16.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:18.818 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:18.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:35:20.817 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:35:20.826 B07 [9A93] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+
+=== M3 · macOS-App: PiP nach 6 s, Zurück nach 12 s, stopPictureInPicture() auf der alten Engine nach 20 s ===
+1 23:35:58.787 B07 harness: pushed player for http://127.0.0.1:18907/hls/vod.m3u8
+1 23:35:58.793 B07 PlayerView onAppear engine=0 supportsPiP=0
+1 23:35:58.796 B07 [6B49] engine init
+1 23:35:59.797 B07 [6B49] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:36:00.790 B07 harness: PiP-Systemfenster sichtbar=0
+2 23:36:00.797 B07 [6B49] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:36:02.790 B07 harness: PiP-Systemfenster sichtbar=0
+2 23:36:02.797 B07 [6B49] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:36:04.789 B07 harness: PiP-Systemfenster sichtbar=0
+1 23:36:04.797 B07 [6B49] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=0
+1 23:36:04.879 B07 harness: togglePiP via notification
+1 23:36:04.879 B07 startPictureInPicture called, controller=1 possible=1
+1 23:36:04.904 B07 delegate didStart
+1 23:36:05.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=0
+1 23:36:06.790 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:06.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:08.789 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:08.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:10.790 B07 harness: PiP-Systemfenster sichtbar=1
+1 23:36:10.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:10.825 B07 harness: pop
+1 23:36:10.828 B07 PlayerView onDisappear pipActive=1
+1 23:36:11.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:12.790 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:12.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:14.789 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:14.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:16.790 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:16.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:18.797 B07 harness: PiP-Systemfenster sichtbar=1
+1 23:36:18.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:18.910 B07 harness: stopPictureInPicture on first engine (alive=1)
+1 23:36:19.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:20.790 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:20.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:22.789 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:22.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:24.790 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:24.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:26.789 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:26.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:28.789 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:28.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:30.790 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:30.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+1 23:36:32.796 B07 harness: PiP-Systemfenster sichtbar=1
+2 23:36:32.797 B07 [6B49] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1
+
+=== I0 · iPhone-17-Simulator (iOS 26.5) und iPhone-18-Pro-Simulator (iOS 27.0): PiP nicht unterstützt ===
+1 Timestamp               Ty Process[PID:TID]
+1 2026-09-15 23:38:53.077 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 harness: pushed player for http://127.0.0.1:18907/hls/vod.m3u8
+1 2026-09-15 23:38:53.119 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 PlayerView onAppear engine=0 supportsPiP=0
+1 2026-09-15 23:38:53.140 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] engine init
+1 2026-09-15 23:38:54.150 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:38:55.142 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:38:56.141 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:38:57.142 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:38:58.142 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:38:59.141 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:00.141 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:01.142 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:02.141 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:03.262 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:04.236 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:05.177 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:06.236 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:07.177 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:08.142 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+1 2026-09-15 23:39:09.142 Df MikaPlusPlayer[31953:14ebdd] (Foundation) B07 [D07B] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=0 muted=1
+(iPhone 18 Pro, iOS 27.0: supported=0 ctrl=0, gleiche Beobachtung)
+
+=== I1 · iPad Pro 11 Simulator (iOS 26.5): Wiedergabe, App-Wechsel zu Einstellungen um 23:43:01, zurück um 23:43:08 ===
+1 Timestamp               Ty Process[PID:TID]
+1 23:42:53.550 B07 harness: pushed player for http://127.0.0.1:18907/hls/vod.m3u8
+1 23:42:53.572 B07 PlayerView onAppear engine=0 supportsPiP=0
+1 23:42:53.577 B07 [8775] engine init
+9 23:42:54.579 B07 [8775] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:43:02.952 B07 delegate didStart
+13 23:43:03.643 B07 [8775] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+
+=== I2 · iPad: PiP nach 6 s, Zurück nach 12 s, erneut öffnen nach 40 s ===
+1 Timestamp               Ty Process[PID:TID]
+6 23:43:34.413 B07 [AA90] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:43:39.472 B07 harness: togglePiP via notification
+1 23:43:39.472 B07 startPictureInPicture called, controller=1 possible=1
+1 23:43:40.042 B07 delegate didStart
+5 23:43:40.412 B07 [AA90] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:43:45.398 B07 harness: pop
+1 23:43:45.466 B07 [AA90] tick state=playing isPaused=0 pipActive=1 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:43:45.960 B07 PlayerView onDisappear pipActive=1
+1 23:43:45.969 B07 engine deinit
+29 23:43:46.412 B07 [AA90] tick: engine gone, player alive=0 rate=nan
+1 23:44:15.382 B07 harness: repush
+1 23:44:15.392 B07 PlayerView onAppear engine=0 supportsPiP=0
+1 23:44:15.394 B07 [4461] engine init
+1 23:44:16.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:17.395 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:18.395 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:19.395 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:20.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:21.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:22.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:23.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:24.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:25.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:26.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:27.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+1 23:44:28.396 B07 [4461] tick state=playing isPaused=0 pipActive=0 rate=1.00 tcs=2 possible=1 muted=1 supported=1 ctrl=1
+
+=== I3 · iPad: .ts-Stream (VLC), togglePiP nach 5 s ===
+Timestamp               Ty Process[PID:TID]
+23:45:02.198 B07 harness: togglePiP via notification
+
+=== I4 · Barrierefreiheits-Snapshot (XcodeBuildMCP snapshot_ui) ===
+HLS/AVKit, 1,5 s nach Start: button 'Minimise Video' (pip.enter) · 'Enter Full Screen' · 'Pause' · 'Volume High' · Zurück
+.ts/VLC, 1,8 s nach Start: 'Enter Full Screen' · 'Pause' · 'Volume High' · Zurück — kein PiP-Knopf
+.ts/VLC, ~6,8 s nach Start (1,8 s nach togglePiP): dieselben Knöpfe weiterhin sichtbar (ohne Aktion wären sie nach 3,5 s ausgeblendet)

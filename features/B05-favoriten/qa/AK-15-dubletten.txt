@@ -1,0 +1,7 @@
+2026-09-26T14:15:02Z m3u|vorher=3 ["Leer-ID A@QA Dubletten", "News@QA Dubletten", "ZDF HD@QA Dubletten"]
+2026-09-26T14:15:02Z m3u|nach-aktualisieren-unveraendert=8 ["Leer-ID A@QA Dubletten", "Leer-ID B@QA Dubletten", "NEWS@QA Dubletten", "News@QA Dubletten", "News@QA Dubletten", "ZDF FHD@QA Dubletten", "ZDF HD@QA Dubletten", "ZDF SD@QA Dubletten"]
+2026-09-26T14:15:02Z m3u|nutzer-entfernt-dubletten=3 → nach-aktualisieren=8 ["Leer-ID A@QA Dubletten", "Leer-ID B@QA Dubletten", "NEWS@QA Dubletten", "News@QA Dubletten", "News@QA Dubletten", "ZDF FHD@QA Dubletten", "ZDF HD@QA Dubletten", "ZDF SD@QA Dubletten"]
+2026-09-26T14:15:02Z m3u|nur-ZDF-SD-markiert → ["ZDF FHD", "ZDF HD", "ZDF SD"]
+2026-09-26T14:15:03Z xtream|tab-vorher=["Sport", "DE: ZDF HD, Deutschland"]
+2026-09-26T14:15:04Z xtream|vorher=2 ["@QA Xtream", "DE: ZDF HD@QA Xtream"] → nach-aktualisieren=6 ["@QA Xtream", "@QA Xtream", "@QA Xtream", "DE: ZDF FHD@QA Xtream", "DE: ZDF HD@QA Xtream", "DE: ZDF SD@QA Xtream"]
+2026-09-26T14:15:04Z xtream|tab-nachher=["Sport", "Sport", "Sport", "DE: ZDF FHD, Deutschland", "DE: ZDF HD, Deutschland", "DE: ZDF SD, Deutschland"]

@@ -1,0 +1,18 @@
+# codesign -d --entitlements - (Debug-Test-Host der QA-Kopie), Schlüssel:
+	[Key] com.apple.security.app-sandbox
+	[Key] com.apple.security.cs.disable-library-validation
+	[Key] com.apple.security.get-task-allow
+	[Key] com.apple.security.temporary-exception.files.absolute-path.read-only
+	[Key] com.apple.security.temporary-exception.mach-lookup.global-name
+# Treffer icloud/ubiquity/cloudkit/keychain-access-groups:
+0
+# Quelle Sources/Resources/MikaPlusPlayer.entitlements:
+{
+  "com.apple.security.app-sandbox" => false
+  "com.apple.security.cs.disable-library-validation" => true
+}
+# strings über alle Binärdateien des Bundles: Treffer password=|token=|sk_live|service_role|qa-pass:
+MikaPlusPlayer: 0
+MikaPlusPlayer.debug.dylib: 0
+__preview.dylib: 0
+# git log -p --all (19 Commits) über FavoritesView/ChannelRowView/ContentView/Channel: Treffer Passwort/Token/Secret/URL/IP in hinzugefügten Zeilen: 0

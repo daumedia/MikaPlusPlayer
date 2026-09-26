@@ -21,6 +21,8 @@ struct ImportPlaylistView: View {
     @State private var isImporting = false
     @State private var showingFileImporter = false
     @State private var errorMessage: String?
+    /// Laufender Xtream-Import; „Abbrechen" und das Schließen des Sheets brechen ihn ab (B01 · BUG-11).
+    @State private var xtreamImportTask: Task<Void, Never>?
 
     // Xtream-Codes-Felder
     @State private var xtreamHost = ""
@@ -53,7 +55,7 @@ struct ImportPlaylistView: View {
 
                 switch source {
                 case .xtream:
-                    Section("Xtream-Codes-Zugang") {
+                    Section {
                         TextField("Host (z. B. http://dein-anbieter.tld)", text: $xtreamHost)
                             #if os(iOS)
                             .textInputAutocapitalization(.never)
@@ -66,6 +68,13 @@ struct ImportPlaylistView: View {
                             #endif
                             .autocorrectionDisabled()
                         SecureField("Passwort", text: $xtreamPassword)
+                    } header: {
+                        Text("Xtream-Codes-Zugang")
+                    } footer: {
+                        // B01 · BUG-02: ohne https gehen die Zugangsdaten im Klartext übers Netz.
+                        if !xtreamCredentials.usesHTTPS {
+                            Text("Ohne „https://“ gehen Benutzername und Passwort unverschlüsselt über das Netz.")
+                        }
                     }
                     Section {
                         Picker("Format", selection: $xtreamOutput) {
@@ -79,7 +88,7 @@ struct ImportPlaylistView: View {
                     }
                     Section {
                         Button {
-                            Task { await importFromXtream() }
+                            startXtreamImport()
                         } label: {
                             Label("Anmelden & importieren", systemImage: "person.badge.key")
                         }
@@ -121,7 +130,10 @@ struct ImportPlaylistView: View {
             .navigationTitle("Playlist importieren")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") {
+                        xtreamImportTask?.cancel()
+                        dismiss()
+                    }
                 }
             }
             .fileImporter(
@@ -138,6 +150,8 @@ struct ImportPlaylistView: View {
             }
         }
         .tint(.playerAccent)
+        // iOS: auch Wegwischen des Sheets bricht einen laufenden Xtream-Import ab (B01 · BUG-11).
+        .onDisappear { xtreamImportTask?.cancel() }
         #if os(macOS)
         .frame(minWidth: 420, minHeight: 360)
         #endif
@@ -149,18 +163,28 @@ struct ImportPlaylistView: View {
         XtreamCredentials(host: xtreamHost, username: xtreamUser, password: xtreamPassword)
     }
 
-    private func importFromXtream() async {
+    /// Startet den Xtream-Import. `isImporting` wird **vor** dem Start der Aufgabe gesetzt, damit ein
+    /// zweiter Klick vor dem Neuzeichnen keinen zweiten Import auslöst (B01 · BUG-09).
+    private func startXtreamImport() {
+        guard !isImporting else { return }
         guard xtreamCredentials.isComplete else {
             errorMessage = "Bitte Host, Benutzername und Passwort ausfüllen."
             return
         }
         isImporting = true
+        xtreamImportTask = Task { await importFromXtream() }
+    }
+
+    private func importFromXtream() async {
         defer { isImporting = false }
         let importer = PlaylistImporter(modelContext: modelContext)
         do {
             try await importer.importFromXtream(xtreamCredentials, output: xtreamOutput, name: name)
+            guard !Task.isCancelled else { return }
             dismiss()
         } catch {
+            // Abgebrochen („Abbrechen", Sheet geschlossen): kein Alert mehr (B01 · BUG-11).
+            guard !Task.isCancelled, !(error is CancellationError) else { return }
             errorMessage = error.localizedDescription
         }
     }

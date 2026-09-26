@@ -1,0 +1,14 @@
+2026-09-26T13:55:25Z [Debug] log show --info --debug --last 3m --predicate 'process == "MikaPlusPlayer"': 30285 Zeilen, davon 43 mit einer Logo-Adresse (Marke qab04log206590).
+  2026-09-26 15:55:10.511 I  MikaPlusPlayer[33981:66dbd4] [com.apple.network:ATS] Warning [ATS violation]: Did not use TLS when opening connection for server: qab04log206590.invalid
+  2026-09-26 15:55:10.518 I  MikaPlusPlayer[33981:66dbd4] [com.apple.network:connection] nw_connection_create_with_id [C1] create connection to qab04log206590.invalid:80
+  2026-09-26 15:55:10.518 Df MikaPlusPlayer[33981:66dbd4] [com.apple.network:connection] [C1 9248D284-A43E-4AF1-8ADC-8A989AEE5D96 qab04log206590.invalid:80 tcp, url: http://qab04log206590.invalid/logo.png, definite, attribution: developer, context: com.apple.CFN
+  2026-09-26 15:55:10.518 I  MikaPlusPlayer[33981:66dbd4] [com.apple.network:connection] nw_endpoint_handler_start [C1 qab04log206590.invalid:80 initial parent-flow ((null))]
+  2026-09-26 15:55:10.518 Df MikaPlusPlayer[33981:66dbd4] [com.apple.network:connection] [C1 qab04log206590.invalid:80 initial parent-flow ((null))] event: path:start @0.000s
+  2026-09-26 15:55:10.519 Df MikaPlusPlayer[33981:66dbd4] [com.apple.network:connection] [C1 qab04log206590.invalid:80 waiting parent-flow (satisfied (Path is satisfied), interface: en0[802.11], ipv4, ipv6, dns, uses wifi, LQM: moderate)] event: path:satisfied @
+2026-09-26T13:57:58Z [Debug] log show --info --debug --last 3m --predicate 'process == "MikaPlusPlayer"': 22630 Zeilen, davon 42 mit einer Logo-Adresse (Marke qab04log206761).
+  2026-09-26 15:57:45.079 I  MikaPlusPlayer[72510:68a5e5] [com.apple.network:ATS] Warning [ATS violation]: Did not use TLS when opening connection for server: qab04log206761.invalid
+  2026-09-26 15:57:45.079 Df MikaPlusPlayer[72510:68a5e5] [com.apple.network:connection] [C108 63E0D537-858F-416D-A744-4405E7531D49 127.0.0.1:9 tcp, url: http://127.0.0.1:9/qab04log206761-port.png, definite, attribution: developer, context: com.apple.CFNetwork.N
+  2026-09-26 15:57:45.080 I  MikaPlusPlayer[72510:68a5e5] [com.apple.network:connection] nw_connection_create_with_id [C109] create connection to qab04log206761.invalid:80
+  2026-09-26 15:57:45.080 Df MikaPlusPlayer[72510:68a5e5] [com.apple.network:connection] [C109 8BD45F5B-97AA-4135-9099-27D33DA20F6D qab04log206761.invalid:80 tcp, url: http://qab04log206761.invalid/logo.png, definite, attribution: developer, context: com.apple.C
+  2026-09-26 15:57:45.080 I  MikaPlusPlayer[72510:68a5e5] [com.apple.network:connection] nw_endpoint_handler_start [C109 qab04log206761.invalid:80 initial parent-flow ((null))]
+  2026-09-26 15:57:45.080 Df MikaPlusPlayer[72510:68a5e5] [com.apple.network:connection] [C109 qab04log206761.invalid:80 initial parent-flow ((null))] event: path:start @0.000s

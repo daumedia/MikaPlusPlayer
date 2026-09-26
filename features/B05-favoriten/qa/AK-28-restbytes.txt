@@ -1,0 +1,4 @@
+2026-09-26T14:16:30Z vor-loeschen|["MikaPlusPlayer.store": 0, "MikaPlusPlayer.store-wal": 4, "MikaPlusPlayer.store-shm": 0]
+2026-09-26T14:16:31Z nach-loeschen-offen|["MikaPlusPlayer.store-wal": 4, "MikaPlusPlayer.store": 0, "MikaPlusPlayer.store-shm": 0]|zeilen=0
+2026-09-26T14:16:33Z nach-freigabe|["MikaPlusPlayer.store": 0, "MikaPlusPlayer.store-wal": 0, "MikaPlusPlayer.store-shm": 0]
+2026-09-26T14:16:33Z nach-neustart|["MikaPlusPlayer.store": 0, "MikaPlusPlayer.store-shm": 0, "MikaPlusPlayer.store-wal": 0]|["secure_delete=2", "journal_mode=wal", "freelist_count=6", "page_count=30"]|datei=/var/folders/bt/lrn7cb495n17rqmn2s28_0dm0000gn/T/b05-qa-ak28-E325A239-3F07-420E-830C-379ABC4064DF/MikaPlusPlayer.store
