@@ -1,0 +1,14 @@
+2026-09-26T14:15:48Z volume gefüllt|bytes=7966720|frei=0|autosave=true
+2026-09-26T14:15:49Z nach-klick-voll|isFavorite=true|hasChanges=true|db=0|stern=akzent|tab=["Voll Zwei"]|alerts=[]
+2026-09-26T14:15:49Z expliziter-save|NSSQLiteErrorDomain 13 · 13
+2026-09-26T14:15:49Z neustart-voll|favoriten=[]
+2026-09-26T14:15:52Z 3s-voll|db=0|hasChanges=true
+2026-09-26T14:15:55Z 3s-nach-freigabe|db=0|hasChanges=true
+2026-09-26T14:15:56Z weiterer-stern-mit-platz|dbZwei=1|dbDrei=1|hasChanges=false
+2026-09-26T14:15:57Z entfernen-im-tab-voll|tab=["Voll Zwei"]|isFavorite=false|db=1|alerts=[]
+2026-09-26T14:15:57Z neustart-nach-entfernen|favoriten=["Voll Drei", "Voll Zwei"]
+2026-09-26T14:16:02Z systemprotokoll|com.apple.coredata|CoreData: error: (13) database or disk is full
+2026-09-26T14:16:02Z systemprotokoll|com.apple.coredata|CoreData: error: SQLCore dispatchRequest: exception handling request: <NSSQLGenerateObjectIDRequestContext: 0x7b0f51d570> , error during SQL execution : database or disk is full with userInfo of {
+    NSFilePath = "/priv
+2026-09-26T14:16:02Z systemprotokoll|com.apple.coredata|CoreData: error: (13) database or disk is full
+2026-09-26T14:16:02Z systemprotokoll-zeilen=37

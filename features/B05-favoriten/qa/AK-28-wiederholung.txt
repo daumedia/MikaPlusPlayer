@@ -1,0 +1,10 @@
+# AK-28 Wiederholung: testAK28_… 6× einzeln (TEST_RUNNER_B05_KEEP_STORES=1), Nachkontrolle NACH Prozessende mit grep -a / sqlite3 auf die aufbewahrten Dateien
+16:13:37 store=1 wal=0 ZCHANNEL-zeilen=0 treffer=[B05REST Partei TV;]
+16:13:16 store=1 wal=0 ZCHANNEL-zeilen=0 treffer=[B05REST Glaube TV;]
+16:13:11 store=0 wal=0 ZCHANNEL-zeilen=0 treffer=[]
+16:13:32 store=0 wal=0 ZCHANNEL-zeilen=0 treffer=[]
+15:54:31 store=0 wal=0 ZCHANNEL-zeilen=0 treffer=[]
+16:13:27 store=0 wal=0 ZCHANNEL-zeilen=0 treffer=[]
+16:13:22 store=0 wal=0 ZCHANNEL-zeilen=0 treffer=[]
+# dazu Gesamtlauf 16:11 (final2): nach Neustart store=1
+# Ergebnis: 3 von 10 Läufen (Gesamtläufe + Wiederholungen) mit Restbytes eines gelöschten Favoriten-Namens in der Hauptdatei

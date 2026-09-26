@@ -1,0 +1,2 @@
+2026-09-26T14:15:01Z vorher|schluessel=["id:ARD.de", "id:ZDF.de", "id:kika.de", "name: rand tv", "name:de: sky sport 1", "name:sport extra"]
+2026-09-26T14:15:01Z nachher|["DE: ZDF HD@QA Xtream", "Das Erste HD@QA Xtream", "SPORT EXTRA@QA Xtream"]|stream-ids neu=["101.m3u8", "102.m3u8", "103.m3u8", "104.m3u8", "105.m3u8", "106.m3u8", "107.m3u8"]

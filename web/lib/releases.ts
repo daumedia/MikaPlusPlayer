@@ -4,11 +4,16 @@ import { REPO_NAME, REPO_OWNER } from "@/lib/site";
 const API = "https://api.github.com";
 const REVALIDATE = 3600;
 
+/** After a failed lookup, `/download` waits this long before it asks GitHub again. */
+export const DOWNLOAD_RETRY_AFTER_MS = 5 * 60 * 1000;
+
 export type DmgAsset = {
   name: string;
   url: string;
   sizeBytes: number;
   downloadCount: number;
+  /** SHA-256 of the file as reported by GitHub (asset `digest`), lowercase hex. null if GitHub has none. */
+  sha256: string | null;
 };
 
 export type Release = {
@@ -19,8 +24,6 @@ export type Release = {
   htmlUrl: string;
   notes: string;
   dmg: DmgAsset | null;
-  /** true when GitHub was unreachable or rate limited and we fell back. */
-  isFallback: boolean;
 };
 
 type GhAsset = {
@@ -29,6 +32,7 @@ type GhAsset = {
   content_type: string;
   browser_download_url: string;
   download_count: number;
+  digest?: string | null;
 };
 
 type GhRelease = {
@@ -40,23 +44,6 @@ type GhRelease = {
   published_at: string;
   html_url: string;
   assets: GhAsset[];
-};
-
-/** Last known good release. Keeps the download working when the API does not answer. */
-export const FALLBACK_RELEASE: Release = {
-  tag: "v1.1",
-  version: "1.1",
-  title: "v1.1 – Multiview",
-  publishedAt: "2026-06-23T12:42:50Z",
-  htmlUrl: `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/tag/v1.1`,
-  notes: NOTE_OVERRIDES["v1.1"] ?? "",
-  dmg: {
-    name: "MikaPlusPlayer-v1.1.dmg",
-    url: `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v1.1/MikaPlusPlayer-v1.1.dmg`,
-    sizeBytes: 36_455_860,
-    downloadCount: 0,
-  },
-  isFallback: true,
 };
 
 async function gh<T>(path: string): Promise<T | null> {
@@ -90,6 +77,11 @@ async function gh<T>(path: string): Promise<T | null> {
   }
 }
 
+function sha256FromDigest(digest: string | null | undefined): string | null {
+  const match = /^sha256:([0-9a-f]{64})$/i.exec(digest ?? "");
+  return match ? match[1].toLowerCase() : null;
+}
+
 function pickDmg(assets: GhAsset[] = []): DmgAsset | null {
   const asset =
     assets.find((a) => a.content_type === "application/x-apple-diskimage") ??
@@ -101,6 +93,7 @@ function pickDmg(assets: GhAsset[] = []): DmgAsset | null {
     url: asset.browser_download_url,
     sizeBytes: asset.size,
     downloadCount: asset.download_count,
+    sha256: sha256FromDigest(asset.digest),
   };
 }
 
@@ -113,24 +106,52 @@ function toRelease(raw: GhRelease): Release {
     htmlUrl: raw.html_url,
     notes: NOTE_OVERRIDES[raw.tag_name] ?? raw.body?.trim() ?? "",
     dmg: pickDmg(raw.assets),
-    isFallback: false,
   };
 }
 
-export async function getLatestRelease(): Promise<Release> {
+/**
+ * The newest published release, or null when GitHub did not answer.
+ *
+ * There is deliberately no built-in replacement release: hard-coded version data goes stale and
+ * would quietly send visitors to an old build. Callers link to the release page instead —
+ * `htmlUrl` when the release has no DMG yet, `LATEST_RELEASE_URL` when there is no release data.
+ */
+export async function getLatestRelease(): Promise<Release | null> {
   const raw = await gh<GhRelease>(`/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`);
-  if (!raw) return FALLBACK_RELEASE;
-
-  const release = toRelease(raw);
-  // Release exists but the DMG is missing (upload still running) — keep the old link.
-  return release.dmg ? release : { ...release, dmg: FALLBACK_RELEASE.dmg };
+  return raw ? toRelease(raw) : null;
 }
 
-export async function getReleases(limit = 20): Promise<Release[]> {
+let lastDownloadFailureAt = Number.NEGATIVE_INFINITY;
+let pendingDownloadLookup: Promise<Release | null> | null = null;
+
+/**
+ * `getLatestRelease` for the `/download` route handler, which runs on every click.
+ *
+ * Next.js only keeps successful fetches in its data cache, so during a GitHub outage or an
+ * exhausted rate limit every click would ask GitHub again. Here concurrent clicks share one
+ * request, and after a failure the answer stays "unknown" for `DOWNLOAD_RETRY_AFTER_MS`.
+ * The window lives in this server process (on Vercel: per function instance).
+ *
+ * Pages must not use this: an ISR render has to run the fetch itself, otherwise it loses the
+ * fetch's hourly revalidation.
+ */
+export async function getLatestReleaseForDownload(now = Date.now()): Promise<Release | null> {
+  if (now - lastDownloadFailureAt < DOWNLOAD_RETRY_AFTER_MS) return null;
+
+  pendingDownloadLookup ??= getLatestRelease().finally(() => {
+    pendingDownloadLookup = null;
+  });
+  const release = await pendingDownloadLookup;
+  if (!release) lastDownloadFailureAt = Math.max(lastDownloadFailureAt, now);
+  return release;
+}
+
+/** Up to `limit` releases in API order, drafts removed; null when GitHub did not answer. */
+export async function getReleases(limit = 20): Promise<Release[] | null> {
   const raw = await gh<GhRelease[]>(
     `/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=${limit}`,
   );
-  if (!raw?.length) return [FALLBACK_RELEASE];
+  if (!Array.isArray(raw)) return null;
 
   return raw.filter((r) => !r.draft).map(toRelease);
 }

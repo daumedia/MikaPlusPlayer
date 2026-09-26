@@ -8,13 +8,30 @@ struct PlaylistsView: View {
     @Query(sort: \Playlist.createdAt, order: .reverse) private var playlists: [Playlist]
 
     @State private var showingImport = false
-    @State private var refreshingID: PersistentIdentifier?
+    /// Laufende Aktualisierungen dieses Fensters, je Playlist ein Indikator (B03 · BUG-03).
+    @State private var refreshingIDs: Set<UUID> = []
+    /// Playlists, deren Löschen läuft: sofort ausgeblendet (B03 · BUG-01).
+    @State private var deletingIDs: Set<UUID> = []
     @State private var errorMessage: String?
+    #if os(iOS)
+    @State private var confirmingErase = false
+    #endif
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PlayerTheme.sectionSpacing) {
                 PlayerHeader(subline: "MIKA+PLAYER · PLAYLISTS", title: "Playlists") {
+                    #if os(iOS)
+                    // B03 · BUG-09: iOS hat keine Menüleiste – „Alle Daten entfernen …" hier.
+                    Menu {
+                        Button(role: .destructive) { confirmingErase = true } label: {
+                            Label("Alle Daten entfernen …", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .accessibilityLabel("Weitere Aktionen")
+                    #endif
                     Button { showingImport = true } label: {
                         Image(systemName: "plus")
                     }
@@ -23,15 +40,15 @@ struct PlaylistsView: View {
                     .tint(.playerAccent)
                 }
 
-                if playlists.isEmpty {
+                if visiblePlaylists.isEmpty {
                     emptyState
                 } else {
                     LazyVStack(spacing: PlayerTheme.rowSpacing) {
-                        ForEach(playlists) { playlist in
+                        ForEach(visiblePlaylists) { playlist in
                             NavigationLink(value: playlist) {
                                 PlaylistRow(
                                     playlist: playlist,
-                                    isRefreshing: refreshingID == playlist.persistentModelID
+                                    isRefreshing: refreshingIDs.contains(playlist.id)
                                 )
                                 .playerCard()
                             }
@@ -39,10 +56,12 @@ struct PlaylistsView: View {
                             .contextMenu {
                                 if playlist.isRemote {
                                     Button {
-                                        Task { await refresh(playlist) }
+                                        startRefresh(playlist)
                                     } label: {
                                         Label("Aktualisieren", systemImage: "arrow.clockwise")
                                     }
+                                    // B03 · BUG-04: gesperrt, solange diese Playlist aktualisiert wird.
+                                    .disabled(refreshingIDs.contains(playlist.id))
                                 }
                                 Button(role: .destructive) {
                                     delete(playlist)
@@ -75,6 +94,18 @@ struct PlaylistsView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        #if os(iOS)
+        .confirmationDialog(AppDataReset.confirmationTitle, isPresented: $confirmingErase, titleVisibility: .visible) {
+            Button("Alle Daten entfernen", role: .destructive) { eraseAll() }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text(AppDataReset.confirmationMessage)
+        }
+        #endif
+    }
+
+    private var visiblePlaylists: [Playlist] {
+        deletingIDs.isEmpty ? playlists : playlists.filter { !deletingIDs.contains($0.id) }
     }
 
     private var emptyState: some View {
@@ -101,21 +132,52 @@ struct PlaylistsView: View {
 
     // MARK: - Aktionen
 
+    /// Zentraler Löschweg (B03 · BUG-01, -05 … -08): läuft abseits des Main-Actors; die Karte verschwindet sofort.
+    /// Scheitert etwas, erscheint die Karte wieder bzw. ein Hinweis – nichts wird verschluckt (BUG-08).
     private func delete(_ playlist: Playlist) {
-        modelContext.delete(playlist)
-        try? modelContext.save()
-    }
-
-    private func refresh(_ playlist: Playlist) async {
-        refreshingID = playlist.persistentModelID
-        defer { refreshingID = nil }
+        let id = playlist.id
+        guard !deletingIDs.contains(id) else { return }
+        deletingIDs.insert(id)
         let importer = PlaylistImporter(modelContext: modelContext)
-        do {
-            try await importer.refresh(playlist)
-        } catch {
-            errorMessage = error.localizedDescription
+        Task {
+            defer { deletingIDs.remove(id) }
+            do {
+                try await importer.delete(playlist)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
+
+    /// Markiert die Playlist **vor** dem Start der Aufgabe als laufend (wie `isImporting` im Import-Sheet), damit eine
+    /// zweite Wahl vor dem Neuzeichnen schon gesperrt ist (B03 · BUG-03, BUG-04).
+    private func startRefresh(_ playlist: Playlist) {
+        let id = playlist.id
+        guard !refreshingIDs.contains(id) else { return }
+        refreshingIDs.insert(id)
+        let importer = PlaylistImporter(modelContext: modelContext)
+        Task {
+            defer { refreshingIDs.remove(id) }
+            do {
+                try await importer.refresh(playlist)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    #if os(iOS)
+    private func eraseAll() {
+        let context = modelContext
+        Task {
+            do {
+                try await AppDataReset.eraseAll(context: context, targets: .app(container: context.container))
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+    #endif
 }
 
 /// Eine Card-Zeile in der Playlist-Liste.

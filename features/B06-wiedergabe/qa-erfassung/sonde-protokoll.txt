@@ -1,0 +1,1274 @@
+B06 Wiedergabe — Protokoll der Rückerfassungs-Sonde, 2026-09-16
+Stand: c01f1cf + Reparatur B01 (2026-09-16), eingefrorene Kopie snapshot-b01, im Scratchpad kopiert nach b06probe
+(eigene Bundle-ID lu.daumedia.MikaPlusPlayer.b06probe, DerivedData in der Kopie, Datenbank im Speicher bzw. Temp-Datei,
+Sparkle-Feed auf 127.0.0.1:9 und automatische Prüfung aus, Schlüsselbund-Dienst ...b06probe.xtream bzw. ...b06probe.tests.<UUID>).
+Streams: ffmpeg testsrc2 640x360 25 fps, ohne Tonspur (-an; ffprobe: nur Videostrom), über mock_b06.py auf 127.0.0.1:18906.
+Zugangsdaten erfunden: qa-user / qa-pass-123. Kein Anbieter, kein Ton.
+Tastenereignisse: in der App über NSApp.sendEvent; Beep-Wächter ersetzt -[NSResponder noResponderFor:] für keyDown: durch eine
+Protokollzeile (SYSTEMBEEP-WUERDE-ERTOENEN) – der Beep selbst wird unterdrückt. Systemwarnton-Lautstärke war zusätzlich 0.
+Rechner: macOS 27.0, Xcode-Toolchain; iPhone-17-Simulator iOS 26.5. Sonden-Code: sonde.patch.
+Zeitstempel: B06T/B06-Zeilen App/Test, Mock-Zeilen Server (gleiche Uhr).
+
+=== 1 · XCTest 01/02 — Engine-Wahl je Adresse, Resolver (Xtream/M3U), PlaybackEngineTests (6) ===
+B06T|14:47:18.649|01|http://127.0.0.1:18906/a.m3u8|pathExtension=m3u8|StreamType=hls|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.650|01|http://127.0.0.1:18906/a.M3U8|pathExtension=M3U8|StreamType=hls|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.650|01|http://127.0.0.1:18906/a.m3u|pathExtension=m3u|StreamType=hls|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.729|01|http://127.0.0.1:18906/a.ts|pathExtension=ts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.733|01|http://127.0.0.1:18906/a.TS|pathExtension=TS|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.738|01|http://127.0.0.1:18906/a.mpegts|pathExtension=mpegts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.743|01|http://127.0.0.1:18906/a.mts|pathExtension=mts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.747|01|http://127.0.0.1:18906/a.m2ts|pathExtension=m2ts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.748|01|http://127.0.0.1:18906/a.mp4|pathExtension=mp4|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.748|01|http://127.0.0.1:18906/a.mkv|pathExtension=mkv|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.748|01|http://127.0.0.1:18906/live/u/p/101|pathExtension=|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.752|01|http://127.0.0.1:18906/a.ts?token=abc|pathExtension=ts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.752|01|http://127.0.0.1:18906/a.m3u8?token=abc|pathExtension=m3u8|StreamType=hls|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.753|01|http://127.0.0.1:18906/play.php?file=a.ts|pathExtension=php|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.753|01|http://127.0.0.1:18906/get?type=m3u8|pathExtension=|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.757|01|http://127.0.0.1:18906/a.ts#frag|pathExtension=ts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.761|01|http://127.0.0.1:18906/stream.ts/|pathExtension=ts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.765|01|http://127.0.0.1:18906/a.m3u8.ts|pathExtension=ts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.765|01|http://127.0.0.1:18906/a.ts.m3u8|pathExtension=m3u8|StreamType=hls|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.766|01|http://127.0.0.1:18906/a.ts%20|pathExtension=|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.766|01|rtmp://127.0.0.1/live/a|pathExtension=|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.766|01|rtsp://127.0.0.1/a|pathExtension=|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.767|01|udp://@239.0.0.1:1234|pathExtension=|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:18.770|01|file:///tmp/a.ts|pathExtension=ts|StreamType=transportStream|engine=VLCPlaybackEngine|PiP=false
+B06T|14:47:18.771|01|http://127.0.0.1:18906/a.|pathExtension=|StreamType=other|engine=AVKitPlaybackEngine|PiP=true
+B06T|14:47:19.180|02|TS|stored=http://127.0.0.1:18906/live/101.ts|playable=http://127.0.0.1:18906/live/qa-user/qa-pass-123/101.ts|engine=VLCPlaybackEngine|hinweisTS=true
+B06T|14:47:19.184|02|HLS|stored=http://127.0.0.1:18906/live/102.m3u8|playable=http://127.0.0.1:18906/live/qa-user/qa-pass-123/102.m3u8|engine=AVKitPlaybackEngine|hinweisTS=false
+B06T|14:47:19.186|02|Bad|stored=http://127.0.0.1:18906/stream/103.ts|FEHLER=Die Stream-Adresse ist ungültig.|enthältPass=false|enthältUser=false
+B06T|14:47:19.187|02|Miss|stored=http://127.0.0.1:18906/live/104.ts|FEHLER=Die Zugangsdaten dieser Xtream-Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren.|enthältPass=false|enthältUser=false
+B06T|14:47:19.194|02|Leg|stored=http://127.0.0.1:18906/live/qa-user/qa-pass-123/105.ts|playable=http://127.0.0.1:18906/live/qa-user/qa-pass-123/105.ts|engine=VLCPlaybackEngine|hinweisTS=true
+B06T|14:47:19.198|02|M3U|stored=http://127.0.0.1:18906/u:pw@x/a.ts?token=geheim|playable=http://127.0.0.1:18906/u:pw@x/a.ts?token=geheim|engine=VLCPlaybackEngine|hinweisTS=true
+B06T|14:47:19.204|02|Sp|stored=http://127.0.0.1:18906/live/106.ts|playable=http://127.0.0.1:18906/live/qa%20user/a%2Fb%23c%3Fd.m3u8/106.ts|engine=VLCPlaybackEngine|hinweisTS=true
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test01_EngineWahlJeAdresse]' passed (0.449 seconds).
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test02_ResolverUndEngineFuerXtream]' passed (0.532 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testPictureInPictureInactiveInitially]' passed (0.002 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testRaisingVolumeUnmutes]' passed (0.003 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testSetVolumeClampsToUnitRange]' passed (0.002 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testToggleMuteFlips]' passed (0.002 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testTogglePictureInPictureIsSafeWithoutOnscreenLayer]' passed (0.010 seconds).
+Test Case '-[MikaPlusPlayerTests.PlaybackEngineTests testTogglePlayPauseFlipsIsPaused]' passed (0.002 seconds).
+** TEST EXECUTE SUCCEEDED **
+
+=== 2 · XCTest 03/04 — Zustände AVKit und VLC (70 s bzw. 60 s beobachtet, Übergänge + Endstand) ===
+B06T|14:47:34.337|03a-hls-vod|load|AVKitPlaybackEngine|http://127.0.0.1:18906/hls/vod.m3u8
+B06T|14:47:34.354|03b-hls-live|load|AVKitPlaybackEngine|http://127.0.0.1:18906/livehls/t03b/index.m3u8
+B06T|14:47:34.369|03c-mp4|load|AVKitPlaybackEngine|http://127.0.0.1:18906/clip.mp4
+B06T|14:47:34.387|03d-404-m3u8|load|AVKitPlaybackEngine|http://127.0.0.1:18906/404/x.m3u8
+B06T|14:47:34.399|03e-404-mp4|load|AVKitPlaybackEngine|http://127.0.0.1:18906/404/x.mp4
+B06T|14:47:34.415|03f-html-m3u8|load|AVKitPlaybackEngine|http://127.0.0.1:18906/html/x.m3u8
+B06T|14:47:34.428|03g-html-mp4|load|AVKitPlaybackEngine|http://127.0.0.1:18906/html/x.mp4
+B06T|14:47:34.443|03h-refused-m3u8|load|AVKitPlaybackEngine|http://127.0.0.1:1/x.m3u8
+B06T|14:47:34.463|03i-dns-m3u8|load|AVKitPlaybackEngine|http://b06-sonde.invalid/x.m3u8
+B06T|14:47:34.478|03j-rawts-ohne-endung|load|AVKitPlaybackEngine|http://127.0.0.1:18906/tslive/t03j
+B06T|14:47:34.493|03k-rawts-.ts-ueber-AVKit|load|AVKitPlaybackEngine|http://127.0.0.1:18906/tslive/t03k.ts
+B06T|14:47:34.505|03l-hls-als-.m3u|load|AVKitPlaybackEngine|http://127.0.0.1:18906/livehls/t03l/index.m3u
+B06T|14:47:34.520|03m-m3u-senderliste|load|AVKitPlaybackEngine|http://127.0.0.1:18906/m3uplaylist/list.m3u
+B06T|14:47:34.531|03n-xtream-404-m3u8|load|AVKitPlaybackEngine|http://127.0.0.1:18906/live/qa-user/qa-pass-123/404/101.m3u8
+B06T|14:47:34.546|03o-xtream-hls|load|AVKitPlaybackEngine|http://127.0.0.1:18906/live/qa-user/qa-pass-123/102.m3u8
+B06T|14:47:34.549|03a-hls-vod|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03b-hls-live|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03c-mp4|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03d-404-m3u8|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03e-404-mp4|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03f-html-m3u8|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03g-html-mp4|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03h-refused-m3u8|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.549|03i-dns-m3u8|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.550|03j-rawts-ohne-endung|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.550|03k-rawts-.ts-ueber-AVKit|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.550|03l-hls-als-.m3u|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.550|03m-m3u-senderliste|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.550|03n-xtream-404-m3u8|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.550|03o-xtream-hls|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:47:34.790|03c-mp4|t=0.2s|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850
+B06T|14:47:34.790|03d-404-m3u8|t=0.2s|state=failed(The requested URL was not found on this server.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1100
+B06T|14:47:34.790|03e-404-mp4|t=0.2s|state=failed(The requested URL was not found on this server.)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1100
+B06T|14:47:34.791|03g-html-mp4|t=0.2s|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850
+B06T|14:47:34.791|03k-rawts-.ts-ueber-AVKit|t=0.2s|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850
+B06T|14:47:34.891|03a-hls-vod|t=0.3s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:47:34.891|03b-hls-live|t=0.3s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:47:34.891|03f-html-m3u8|t=0.3s|state=failed(unsupported URL)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1002
+B06T|14:47:34.891|03h-refused-m3u8|t=0.3s|state=failed(Could not connect to the server.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1004
+B06T|14:47:34.892|03i-dns-m3u8|t=0.3s|state=failed(A server with the specified hostname could not be found.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1003
+B06T|14:47:34.892|03j-rawts-ohne-endung|t=0.3s|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850
+B06T|14:47:34.892|03l-hls-als-.m3u|t=0.3s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:47:34.892|03m-m3u-senderliste|t=0.3s|state=failed(The operation couldn’t be completed. (CoreMediaErrorDomain error -12646.))|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=CoreMediaErrorDomain#-12646
+B06T|14:47:34.892|03n-xtream-404-m3u8|t=0.3s|state=failed(The requested URL was not found on this server.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1100
+B06T|14:47:34.892|03o-xtream-hls|t=0.3s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:48:44.575|03a-hls-vod|ENDE|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:48:44.578|03b-hls-live|ENDE|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:48:44.580|03c-mp4|ENDE|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850|domain=AVFoundationErrorDomain|code=-11850|reason=The server is not correctly configured.|userInfoKeys=["NSLocalizedDescription", "NSLocalizedFailureReason", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.583|03d-404-m3u8|ENDE|state=failed(The requested URL was not found on this server.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1100|domain=NSURLErrorDomain|code=-1100|reason=-|userInfoKeys=["NSLocalizedDescription", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.585|03e-404-mp4|ENDE|state=failed(The requested URL was not found on this server.)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1100|domain=NSURLErrorDomain|code=-1100|reason=-|userInfoKeys=["NSLocalizedDescription", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.586|03f-html-m3u8|ENDE|state=failed(unsupported URL)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1002|domain=NSURLErrorDomain|code=-1002|reason=-|userInfoKeys=["NSLocalizedDescription", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.587|03g-html-mp4|ENDE|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850|domain=AVFoundationErrorDomain|code=-11850|reason=The server is not correctly configured.|userInfoKeys=["NSLocalizedDescription", "NSLocalizedFailureReason", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.587|03h-refused-m3u8|ENDE|state=failed(Could not connect to the server.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1004|domain=NSURLErrorDomain|code=-1004|reason=-|userInfoKeys=["NSLocalizedDescription", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.588|03i-dns-m3u8|ENDE|state=failed(A server with the specified hostname could not be found.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1003|domain=NSURLErrorDomain|code=-1003|reason=-|userInfoKeys=["NSLocalizedDescription", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.588|03j-rawts-ohne-endung|ENDE|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850|domain=AVFoundationErrorDomain|code=-11850|reason=The server is not correctly configured.|userInfoKeys=["NSLocalizedDescription", "NSLocalizedFailureReason", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.588|03k-rawts-.ts-ueber-AVKit|ENDE|state=failed(Operation Stopped)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11850|domain=AVFoundationErrorDomain|code=-11850|reason=The server is not correctly configured.|userInfoKeys=["NSLocalizedDescription", "NSLocalizedFailureReason", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.589|03l-hls-als-.m3u|ENDE|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:48:44.591|03m-m3u-senderliste|ENDE|state=failed(The operation couldn’t be completed. (CoreMediaErrorDomain error -12646.))|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=CoreMediaErrorDomain#-12646|domain=CoreMediaErrorDomain|code=-12646|reason=-|userInfoKeys=[]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.591|03n-xtream-404-m3u8|ENDE|state=failed(The requested URL was not found on this server.)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1100|domain=NSURLErrorDomain|code=-1100|reason=-|userInfoKeys=["NSLocalizedDescription", "NSUnderlyingError"]|errorDumpEnthältPass=false|anzeigeEnthältPass=false|anzeigeEnthältHost=false
+B06T|14:48:44.592|03o-xtream-hls|ENDE|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:48:45.002|04a-ts-live|load|VLCPlaybackEngine|http://127.0.0.1:18906/tslive/t04a.ts
+B06T|14:48:45.014|04b-mpegts|load|VLCPlaybackEngine|http://127.0.0.1:18906/tslive/t04b.mpegts
+B06T|14:48:45.025|04c-mts|load|VLCPlaybackEngine|http://127.0.0.1:18906/tslive/t04c.mts
+B06T|14:48:45.036|04d-m2ts|load|VLCPlaybackEngine|http://127.0.0.1:18906/tslive/t04d.m2ts
+B06T|14:48:45.046|04e-TS-gross|load|VLCPlaybackEngine|http://127.0.0.1:18906/tslive/t04e.TS
+B06T|14:48:45.057|04f-404-ts|load|VLCPlaybackEngine|http://127.0.0.1:18906/404/x.ts
+B06T|14:48:45.067|04g-html-ts|load|VLCPlaybackEngine|http://127.0.0.1:18906/html/x.ts
+B06T|14:48:45.076|04h-refused-ts|load|VLCPlaybackEngine|http://127.0.0.1:1/x.ts
+B06T|14:48:45.083|04i-dns-ts|load|VLCPlaybackEngine|http://b06-sonde.invalid/x.ts
+B06T|14:48:45.091|04j-abbruch-nach-10s|load|VLCPlaybackEngine|http://127.0.0.1:18906/abort/10/tslive/t04j.ts
+B06T|14:48:45.098|04k-xtream-ts|load|VLCPlaybackEngine|http://127.0.0.1:18906/live/qa-user/qa-pass-123/101.ts
+B06T|14:48:45.106|04l-xtream-404-ts|load|VLCPlaybackEngine|http://127.0.0.1:18906/live/qa-user/qa-pass-123/404/101.ts
+B06T|14:48:45.106|04a-ts-live|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.106|04b-mpegts|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.106|04c-mts|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04d-m2ts|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04e-TS-gross|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04f-404-ts|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04g-html-ts|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04h-refused-ts|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04i-dns-ts|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04j-abbruch-nach-10s|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04k-xtream-ts|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.107|04l-xtream-404-ts|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.213|04a-ts-live|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.213|04b-mpegts|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04c-mts|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04d-m2ts|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04e-TS-gross|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04f-404-ts|t=0.1s|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04h-refused-ts|t=0.1s|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04i-dns-ts|t=0.1s|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04j-abbruch-nach-10s|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04k-xtream-ts|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:48:45.214|04l-xtream-404-ts|t=0.1s|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.173|04a-ts-live|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.174|04b-mpegts|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.174|04c-mts|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.174|04d-m2ts|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.174|04e-TS-gross|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.175|04f-404-ts|ENDE|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.175|04g-html-ts|ENDE|state=loading|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.175|04h-refused-ts|ENDE|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.176|04i-dns-ts|ENDE|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.176|04j-abbruch-nach-10s|ENDE|state=playing|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.176|04k-xtream-ts|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:49:45.176|04l-xtream-404-ts|ENDE|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test03_AVKitZustaende]' passed (70.658 seconds).
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test04_VLCZustaende]' passed (60.652 seconds).
+** TEST EXECUTE SUCCEEDED **
+
+=== 3 · XCTest 05–08 — Hänger/langsamer Start (200 s), Steuerung, Verlassen/Freigabe, VLC-Rohzustände ===
+B06T|14:50:51.321|05a-av-hang|load|AVKitPlaybackEngine|http://127.0.0.1:18906/hang/t05a.m3u8
+B06T|14:50:51.340|05b-av-delay25|load|AVKitPlaybackEngine|http://127.0.0.1:18906/delay/25/livehls/t05b/index.m3u8
+B06T|14:50:51.397|05c-vlc-hang|load|VLCPlaybackEngine|http://127.0.0.1:18906/hang/t05c.ts
+B06T|14:50:51.413|05d-vlc-delay25|load|VLCPlaybackEngine|http://127.0.0.1:18906/delay/25/tslive/t05d.ts
+B06T|14:50:51.428|05e-av-livehls-abbruch-nach-15s|load|AVKitPlaybackEngine|http://127.0.0.1:18906/abort/15/livehls/t05e/index.m3u8
+B06T|14:50:51.445|05f-av-mp4-hang|load|AVKitPlaybackEngine|http://127.0.0.1:18906/hang/t05f.mp4
+B06T|14:50:51.448|05a-av-hang|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:50:51.448|05b-av-delay25|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:50:51.449|05c-vlc-hang|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:50:51.449|05d-vlc-delay25|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:50:51.449|05e-av-livehls-abbruch-nach-15s|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:50:51.449|05f-av-mp4-hang|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:50:51.556|05c-vlc-hang|t=0.1s|state=playing|vlc state=buffering isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:50:51.557|05d-vlc-delay25|t=0.1s|state=playing|vlc state=buffering isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:50:51.660|05e-av-livehls-abbruch-nach-15s|t=0.2s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:51:11.551|05b-av-delay25|t=20.1s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:51:31.356|05a-av-hang|t=39.9s|state=failed(resource unavailable)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1008
+B06T|14:51:37.817|05e-av-livehls-abbruch-nach-15s|t=46.4s|state=failed(The network connection was lost.)|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:52:51.471|05f-av-mp4-hang|t=120.0s|state=failed(The operation could not be completed)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11800
+B06T|14:54:11.482|05a-av-hang|ENDE|state=failed(resource unavailable)|av rate=0.0 tcs=paused item=failed vol=1.0 muted=false err=NSURLErrorDomain#-1008
+B06T|14:54:11.483|05b-av-delay25|ENDE|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:11.485|05c-vlc-hang|ENDE|state=playing|vlc state=buffering isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:11.486|05d-vlc-delay25|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:11.486|05e-av-livehls-abbruch-nach-15s|ENDE|state=failed(The network connection was lost.)|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:11.487|05f-av-mp4-hang|ENDE|state=failed(The operation could not be completed)|av rate=0.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=failed vol=1.0 muted=false err=AVFoundationErrorDomain#-11800
+B06T|14:54:11.915|06-av|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:54:11.915|06-vlc|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:12.022|06-av|t=0.1s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:12.022|06-vlc|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:17.921|06-av|start|vol=1.0|muted=false|paused=false|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:17.922|06-av|3x hoch bei 1.0|vol=1.0|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:17.923|06-av|22x runter|1:0.95|95% 2:0.8999999999999999|90% 3:0.8499999999999999|85% 4:0.7999999999999998|80% 5:0.7499999999999998|75% 6:0.6999999999999997|70% 7:0.6499999999999997|65% 8:0.5999999999999996|60% 9:0.5499999999999996|55% 10:0.4999999999999996|50% 11:0.4499999999999996|45% 12:0.39999999999999963|40% 13:0.34999999999999964|35% 14:0.29999999999999966|30% 15:0.24999999999999967|25% 16:0.19999999999999968|20% 17:0.1499999999999997|15% 18:0.09999999999999969|10% 19:0.049999999999999684|5% 20:0.0|0% 21:0.0|0% 22:0.0|0%
+B06T|14:54:17.924|06-av|nach runter|vol=0.0|muted=false|av rate=1.0 tcs=playing item=ready vol=0.0 muted=false
+B06T|14:54:17.924|06-av|0.5 + stumm|vol=0.5|muted=true|av rate=1.0 tcs=playing item=ready vol=0.5 muted=true
+B06T|14:54:17.925|06-av|stumm, dann runter|vol=0.45|muted=false|av rate=1.0 tcs=playing item=ready vol=0.45 muted=false
+B06T|14:54:17.926|06-av|lautstärke 0|vol=0.0|muted=true|av rate=1.0 tcs=playing item=ready vol=0.0 muted=true
+B06T|14:54:17.926|06-av|0 -> 0.05|vol=0.05|muted=false|av rate=1.0 tcs=playing item=ready vol=0.05 muted=false
+B06T|14:54:17.927|06-av|setMuted(true) x2|muted=true|av rate=1.0 tcs=playing item=ready vol=0.05 muted=true
+B06T|14:54:19.934|06-av|nach Pause 2s|paused=true|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:21.946|06-av|nach Play 2s|paused=false|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:21.947|06-vlc|start|vol=1.0|muted=false|paused=false|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:21.948|06-vlc|3x hoch bei 1.0|vol=1.0|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:21.948|06-vlc|22x runter|1:0.95|95% 2:0.8999999999999999|90% 3:0.8499999999999999|85% 4:0.7999999999999998|80% 5:0.7499999999999998|75% 6:0.6999999999999997|70% 7:0.6499999999999997|65% 8:0.5999999999999996|60% 9:0.5499999999999996|55% 10:0.4999999999999996|50% 11:0.4499999999999996|45% 12:0.39999999999999963|40% 13:0.34999999999999964|35% 14:0.29999999999999966|30% 15:0.24999999999999967|25% 16:0.19999999999999968|20% 17:0.1499999999999997|15% 18:0.09999999999999969|10% 19:0.049999999999999684|5% 20:0.0|0% 21:0.0|0% 22:0.0|0%
+B06T|14:54:21.949|06-vlc|nach runter|vol=0.0|muted=false|vlc state=buffering isPlaying=true audio=da audio.volume=0 audio.muted=0
+B06T|14:54:21.949|06-vlc|0.5 + stumm|vol=0.5|muted=true|vlc state=buffering isPlaying=true audio=da audio.volume=50 audio.muted=1
+B06T|14:54:21.949|06-vlc|stumm, dann runter|vol=0.45|muted=false|vlc state=buffering isPlaying=true audio=da audio.volume=45 audio.muted=0
+B06T|14:54:21.949|06-vlc|lautstärke 0|vol=0.0|muted=true|vlc state=buffering isPlaying=true audio=da audio.volume=0 audio.muted=1
+B06T|14:54:21.950|06-vlc|0 -> 0.05|vol=0.05|muted=false|vlc state=buffering isPlaying=true audio=da audio.volume=5 audio.muted=0
+B06T|14:54:21.950|06-vlc|setMuted(true) x2|muted=true|vlc state=buffering isPlaying=true audio=da audio.volume=5 audio.muted=1
+B06T|14:54:23.960|06-vlc|nach Pause 2s|paused=true|state=playing|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:25.969|06-vlc|nach Play 2s|paused=false|state=playing|vlc state=playing isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:26.895|07c|pause() während des Ladens|state=playing|vlc state=buffering isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:26.895|07c|nach pause()|isPaused=true|vlc state=buffering isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:26.895|07a|t=0.0s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:26.896|07b|t=0.0s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:26.896|07c|t=0.0s|state=playing|vlc state=buffering isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:26.896|07d|t=0.0s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:26.896|07e|t=0.0s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:34.996|07a|pause() wie onDisappear
+B06T|14:54:34.996|07b|pause() wie onDisappear
+B06T|14:54:34.997|07a|t=0.0s|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:34.997|07b|t=0.0s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:34.997|07c|t=0.0s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:34.997|07d|t=0.0s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:34.998|07e|t=0.0s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:55.081|07|Fenster schließen + Referenzen fallen lassen: a, b, d, e (c bleibt)
+B06T|14:54:55.626|07|+0.5s|engineA=false avPlayerA=false rateA=-1.0 | engineB=false vlcB=false | engineD=false avPlayerD=false rateD=-1.0 | engineE=false vlcE=false
+B06T|14:54:57.166|07|+2.0s|engineA=false avPlayerA=false rateA=-1.0 | engineB=false vlcB=false | engineD=false avPlayerD=false rateD=-1.0 | engineE=false vlcE=false
+B06T|14:55:00.184|07|+5.0s|engineA=false avPlayerA=false rateA=-1.0 | engineB=false vlcB=false | engineD=false avPlayerD=false rateD=-1.0 | engineE=false vlcE=false
+B06T|14:55:10.242|07|+15.0s|engineA=false avPlayerA=false rateA=-1.0 | engineB=false vlcB=false | engineD=false avPlayerD=false rateD=-1.0 | engineE=false vlcE=false
+B06T|14:55:10.242|07c|am Ende|isPaused=true|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:13.329|07c|nach Freigabe +3s|engineC=false vlcC=false
+B06T|14:55:13.893|08a-vlc-live|load|VLCPlaybackEngine|http://127.0.0.1:18906/tslive/t08a.ts
+B06T|14:55:13.914|08b-vlc-404|load|VLCPlaybackEngine|http://127.0.0.1:18906/404/t08b.ts
+B06T|14:55:13.930|08c-vlc-refused|load|VLCPlaybackEngine|http://127.0.0.1:1/t08c.ts
+B06T|14:55:13.942|08d-vlc-html|load|VLCPlaybackEngine|http://127.0.0.1:18906/html/t08d.ts
+B06T|14:55:13.950|08e-vlc-abbruch-8s|load|VLCPlaybackEngine|http://127.0.0.1:18906/abort/8/tslive/t08e.ts
+B06T|14:55:13.961|08f-vlc-datei-ende-120s-nicht-abgewartet|load|VLCPlaybackEngine|http://127.0.0.1:18906/static/src.ts
+B06T|14:55:13.970|08g-av-mp4-range|load|AVKitPlaybackEngine|http://127.0.0.1:18906/clip.mp4
+B06T|14:55:13.990|08h-av-ts-datei-range|load|AVKitPlaybackEngine|http://127.0.0.1:18906/static/src.mp4
+B06T|14:55:13.992|08a-vlc-live|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:13.993|08b-vlc-404|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:13.993|08c-vlc-refused|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:13.993|08d-vlc-html|t=0.0s|state=loading|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:13.993|08e-vlc-abbruch-8s|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:13.993|08f-vlc-datei-ende-120s-nicht-abgewartet|t=0.0s|state=loading|vlc state=stopped isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:13.993|08g-av-mp4-range|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:55:13.993|08h-av-ts-datei-range|t=0.0s|state=loading|av rate=1.0 tcs=waiting(AVPlayerWaitingWhileEvaluatingBufferingRateReason) item=unknown vol=1.0 muted=false
+B06T|14:55:14.022|08a-vlc-live|VLC-Benachrichtigung state=opening thread=main
+B06T|14:55:14.022|08a-vlc-live|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.023|08b-vlc-404|VLC-Benachrichtigung state=opening thread=main
+B06T|14:55:14.023|08b-vlc-404|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.023|08a-vlc-live|VLC-Benachrichtigung state=playing thread=main
+B06T|14:55:14.023|08a-vlc-live|VLC-Benachrichtigung state=esAdded thread=main
+B06T|14:55:14.023|08a-vlc-live|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.024|08b-vlc-404|VLC-Benachrichtigung state=error thread=main
+B06T|14:55:14.024|08b-vlc-404|VLC-Benachrichtigung state=stopped thread=main
+B06T|14:55:14.024|08c-vlc-refused|VLC-Benachrichtigung state=opening thread=main
+B06T|14:55:14.024|08c-vlc-refused|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.024|08c-vlc-refused|VLC-Benachrichtigung state=error thread=main
+B06T|14:55:14.024|08c-vlc-refused|VLC-Benachrichtigung state=stopped thread=main
+B06T|14:55:14.024|08d-vlc-html|VLC-Benachrichtigung state=opening thread=main
+B06T|14:55:14.024|08d-vlc-html|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.025|08d-vlc-html|VLC-Benachrichtigung state=playing thread=main
+B06T|14:55:14.025|08d-vlc-html|VLC-Benachrichtigung state=paused thread=main
+B06T|14:55:14.025|08e-vlc-abbruch-8s|VLC-Benachrichtigung state=opening thread=main
+B06T|14:55:14.025|08e-vlc-abbruch-8s|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.025|08e-vlc-abbruch-8s|VLC-Benachrichtigung state=playing thread=main
+B06T|14:55:14.025|08e-vlc-abbruch-8s|VLC-Benachrichtigung state=esAdded thread=main
+B06T|14:55:14.025|08e-vlc-abbruch-8s|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.026|08f-vlc-datei-ende-120s-nicht-abgewartet|VLC-Benachrichtigung state=opening thread=main
+B06T|14:55:14.026|08f-vlc-datei-ende-120s-nicht-abgewartet|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.026|08f-vlc-datei-ende-120s-nicht-abgewartet|VLC-Benachrichtigung state=playing thread=main
+B06T|14:55:14.027|08f-vlc-datei-ende-120s-nicht-abgewartet|VLC-Benachrichtigung state=esAdded thread=main
+B06T|14:55:14.027|08f-vlc-datei-ende-120s-nicht-abgewartet|VLC-Benachrichtigung state=buffering thread=main
+B06T|14:55:14.101|08a-vlc-live|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:14.101|08b-vlc-404|t=0.1s|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:14.101|08c-vlc-refused|t=0.1s|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:14.101|08e-vlc-abbruch-8s|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:14.101|08f-vlc-datei-ende-120s-nicht-abgewartet|t=0.1s|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:14.101|08g-av-mp4-range|t=0.1s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:55:14.101|08h-av-ts-datei-range|t=0.1s|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:55:23.643|08e-vlc-abbruch-8s|VLC-Benachrichtigung state=paused thread=main
+B06T|14:55:44.067|08a-vlc-live|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:44.068|08b-vlc-404|ENDE|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:44.068|08c-vlc-refused|ENDE|state=idle|vlc state=stopped isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:44.069|08d-vlc-html|ENDE|state=loading|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:44.069|08e-vlc-abbruch-8s|ENDE|state=playing|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:55:44.069|08f-vlc-datei-ende-120s-nicht-abgewartet|ENDE|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:55:44.069|08g-av-mp4-range|ENDE|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:55:44.070|08h-av-ts-datei-range|ENDE|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test05_HaengerUndLangsamerStart]' passed (200.571 seconds).
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test06_Steuerung]' passed (14.443 seconds).
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test07_VerlassenUndFreigabe]' passed (47.541 seconds).
+Test Case '-[MikaPlusPlayerTests.B06EngineProbeTests test08_VLCRohzustaendeUndAVKitMitRange]' passed (30.618 seconds).
+** TEST EXECUTE SUCCEEDED **
+
+=== 3a · XCTest 07 — Ticks (Zustand alle 5 s nach pause()) ===
+B06T|14:54:26.896|07a|t=0.0s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:26.896|07b|t=0.0s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:26.897|07c|t=0.0s|tick|state=playing|vlc state=buffering isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:26.897|07d|t=0.0s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:26.897|07e|t=0.0s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:31.971|07a|t=5.1s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:31.971|07b|t=5.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:31.971|07c|t=5.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:31.971|07d|t=5.1s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:31.972|07e|t=5.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:34.998|07a|t=0.0s|tick|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:34.998|07b|t=0.0s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:34.998|07c|t=0.0s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:34.998|07d|t=0.0s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:34.998|07e|t=0.0s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:40.087|07a|t=5.1s|tick|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:40.087|07b|t=5.1s|tick|state=playing|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:40.087|07c|t=5.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:40.087|07d|t=5.1s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:40.088|07e|t=5.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:45.058|07a|t=10.1s|tick|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:45.059|07b|t=10.1s|tick|state=playing|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:45.059|07c|t=10.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:45.060|07d|t=10.1s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:45.060|07e|t=10.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:50.021|07a|t=15.0s|tick|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:50.021|07b|t=15.0s|tick|state=playing|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:50.022|07c|t=15.0s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:50.022|07d|t=15.0s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:50.022|07e|t=15.0s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:55.079|07a|t=20.1s|tick|state=playing|av rate=0.0 tcs=paused item=ready vol=1.0 muted=false
+B06T|14:54:55.080|07b|t=20.1s|tick|state=playing|vlc state=paused isPlaying=false audio=da audio.volume=100 audio.muted=0
+B06T|14:54:55.080|07c|t=20.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+B06T|14:54:55.080|07d|t=20.1s|tick|state=playing|av rate=1.0 tcs=playing item=ready vol=1.0 muted=false
+B06T|14:54:55.080|07e|t=20.1s|tick|state=playing|vlc state=buffering isPlaying=true audio=da audio.volume=100 audio.muted=0
+
+=== 4 · Mock — Anfragen aus 03/04 (Pfad, User-Agent, Range), zusammengefasst ===
+MOCK   2x GET /404/x.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK   1x GET /404/x.mp4 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1'
+MOCK   2x GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK   2x GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK   1x GET /abort/10/tslive/t04j.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK   1x GET /clip.mp4 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1'
+MOCK   2x GET /hls/vod.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK   2x GET /html/x.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK   1x GET /html/x.mp4 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1'
+MOCK   1x GET /html/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK   1x GET /live/qa-user/qa-pass-123/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK  37x GET /live/qa-user/qa-pass-123/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK   2x GET /live/qa-user/qa-pass-123/404/101.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK   2x GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK   2x GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK  37x GET /livehls/t03b/index.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK  37x GET /livehls/t03l/index.m3u ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK   2x GET /m3uplaylist/list.m3u ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK   1x GET /tslive/t03j ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1'
+MOCK   1x GET /tslive/t03k.ts ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1'
+MOCK   1x GET /tslive/t04a.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK   1x GET /tslive/t04b.mpegts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK   1x GET /tslive/t04c.mts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK   1x GET /tslive/t04d.m2ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK   1x GET /tslive/t04e.TS ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.058 conn=16 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.059 conn=17 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.060 conn=18 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 14:48:45.060 conn=19 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 14:48:45.068 conn=20 GET /html/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.091 conn=21 GET /abort/10/tslive/t04j.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.098 conn=22 GET /live/qa-user/qa-pass-123/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.106 conn=23 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.108 conn=24 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:48:45.109 conn=25 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 14:48:45.110 conn=26 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 14:48:55.129 conn=21 abort-after=10.0s bytes=1210720
+MOCK 14:49:45.363 conn=12 client-closed after=60.3s bytes=6685280 (BrokenPipeError)
+MOCK 14:49:45.370 conn=13 client-closed after=60.3s bytes=6685280 (BrokenPipeError)
+MOCK 14:49:45.406 conn=15 client-closed after=60.4s bytes=6685280 (BrokenPipeError)
+MOCK 14:49:45.438 conn=22 client-closed after=60.3s bytes=6685280 (BrokenPipeError)
+MOCK 14:49:45.506 conn=11 client-closed after=60.5s bytes=6698440 (BrokenPipeError)
+MOCK 14:49:45.511 conn=14 client-closed after=60.5s bytes=6698440 (BrokenPipeError)
+
+=== 4a · Mock — 07 Verlassen: Segment- und Playlist-Anfragen nach pause() (07a pausiert, 07d läuft) und Schließen der Verbindungen ===
+MOCK t07a Segmentanfragen (17): 14:54:26.409 14:54:26.431 14:54:26.439 14:54:28.413 14:54:30.421 14:54:32.431 14:54:34.434 14:54:36.441 14:54:38.443 14:54:40.449 14:54:42.443 14:54:44.441 14:54:46.448 14:54:48.449 14:54:50.456 14:54:52.468 14:54:54.476
+MOCK t07d Segmentanfragen (17): 14:54:26.413 14:54:26.432 14:54:26.441 14:54:28.413 14:54:30.421 14:54:32.432 14:54:34.438 14:54:36.441 14:54:38.443 14:54:40.450 14:54:42.447 14:54:44.443 14:54:46.450 14:54:48.449 14:54:50.459 14:54:52.469 14:54:54.477
+MOCK 14:54:21.960 conn=36 ts-progress t=10s bytes=1210720 last5s=552720 stall5s=0.0s
+MOCK 14:54:26.150 conn=36 client-closed after=14.2s bytes=1658160 (BrokenPipeError)
+MOCK 14:54:26.460 conn=38 GET /tslive/t07b.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:54:26.461 conn=39 GET /delay/4/tslive/t07c.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:54:26.461 conn=40 GET /tslive/t07e.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 14:54:31.493 conn=38 ts-progress t=5s bytes=658000 last5s=658000 stall5s=0.0s
+MOCK 14:54:31.493 conn=40 ts-progress t=5s bytes=658000 last5s=658000 stall5s=0.0s
+MOCK 14:54:35.482 conn=39 ts-progress t=5s bytes=658000 last5s=658000 stall5s=0.0s
+MOCK 14:54:36.508 conn=38 ts-progress t=10s bytes=1210720 last5s=552720 stall5s=0.0s
+MOCK 14:54:36.531 conn=40 ts-progress t=10s bytes=1210720 last5s=552720 stall5s=0.0s
+MOCK 14:54:40.517 conn=39 ts-progress t=10s bytes=1210720 last5s=552720 stall5s=0.0s
+MOCK 14:54:41.549 conn=40 ts-progress t=15s bytes=1750280 last5s=539560 stall5s=0.0s
+MOCK 14:54:42.115 conn=38 ts-progress t=16s bytes=1594588 last5s=383868 stall5s=2.0s (blockiert)
+MOCK 14:54:45.545 conn=39 ts-progress t=15s bytes=1750280 last5s=539560 stall5s=0.0s
+MOCK 14:54:46.582 conn=40 ts-progress t=20s bytes=2303000 last5s=552720 stall5s=0.0s
+MOCK 14:54:47.844 conn=38 ts-progress t=21s bytes=1604572 last5s=9984 stall5s=5.0s (blockiert)
+MOCK 14:54:50.558 conn=39 ts-progress t=20s bytes=2303000 last5s=552720 stall5s=0.0s
+MOCK 14:54:51.616 conn=40 ts-progress t=25s bytes=2855720 last5s=552720 stall5s=0.0s
+MOCK 14:54:52.849 conn=38 ts-progress t=26s bytes=1604572 last5s=0 stall5s=5.0s (blockiert)
+MOCK 14:54:55.126 conn=38 client-closed after=28.7s bytes=1604572 (BrokenPipeError)
+MOCK 14:54:55.315 conn=40 client-closed after=28.9s bytes=3250520 (BrokenPipeError)
+MOCK 14:54:55.572 conn=39 ts-progress t=25s bytes=2842560 last5s=539560 stall5s=0.0s
+MOCK 14:55:00.612 conn=39 ts-progress t=30s bytes=3395280 last5s=552720 stall5s=0.0s
+MOCK 14:55:05.628 conn=39 ts-progress t=35s bytes=3948000 last5s=552720 stall5s=0.0s
+MOCK 14:55:10.416 conn=39 client-closed after=40.0s bytes=4461240 (BrokenPipeError)
+
+=== 5 · macOS-App, Ablauf "windows" — zwei Hauptfenster, Vollbild-Aktion des Players bei anderem Schlüsselfenster ===
+14:57:38.773 B06 start skript=windows
+14:57:38.774 B06 Beep-Wächter installiert auf NSResponder
+14:57:39.828 B06 Beep-Wächter aktiv für AppKitWindow: true
+14:57:39.828 B06 fenster: [2798 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+14:57:39.832 B06 push Sonde HLS live
+14:57:39.846 B06 player onAppear engine=false channel=Sonde HLS live
+14:57:39.850 B06 engine erzeugt #1 AVKitPlaybackEngine für Sonde HLS live
+14:57:39.862 B06 player engine.state=loading controlsVisible=true
+14:57:39.904 B06 player keyboardFocused=true
+14:57:40.050 B06 player engine.state=playing controlsVisible=true
+14:57:43.497 B06 player showControls=false
+14:57:43.875 B06 Fenster A=2798 [2798 'Sonde HLS live' key=true main=true fullscreen=false frame=900x450 firstResponder=HostingView]
+14:57:43.875 B06 Menüeintrag 'New Window'
+14:57:43.919 B06 zweites Fenster: keine Sonde
+14:57:45.970 B06 neues Fenster geöffnet=true [2798 'Sonde HLS live' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] [2811 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+14:57:47.038 B06 B ist Schlüsselfenster: [2798 'Sonde HLS live' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] [2811 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+14:57:47.038 B06 Vollbild-Aktion des Players in A (wie Knopf) auslösen
+14:57:47.038 B06 player b06.toggleFullscreen
+14:57:47.038 B06 player applyFullscreenSideEffects(true) keyWindow=2811 mainWindow=2811
+14:57:47.091 B06 player isFullscreen=true
+14:57:47.095 B06 player showControls=true
+14:57:50.093 B06 nach Vollbild-Aktion: A.fullscreen=false B.fullscreen=true [2798 '' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] [2811 'B06-Sonde' key=true main=true fullscreen=true frame=1920x1080 firstResponder=SwiftUIOutlineListView] [2813 '' key=true main=true fullscreen=false frame=1920x52 firstResponder=SwiftUIOutlineListView]
+14:57:50.094 B06 screenshot angefordert mac-w01-vollbild-falsches-fenster-B fenster=2811
+14:57:50.096 B06 screenshot angefordert mac-w02-player-fenster-A fenster=2798
+14:57:50.619 B06 player showControls=false
+14:57:51.132 B06 player b06.toggleFullscreen
+14:57:51.132 B06 player applyFullscreenSideEffects(false) keyWindow=2811 mainWindow=2811
+14:57:51.168 B06 player isFullscreen=false
+14:57:51.182 B06 player showControls=true
+14:57:54.199 B06 nach zweiter Vollbild-Aktion: A.fullscreen=false B.fullscreen=false [2798 'Sonde HLS live' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] [2811 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+14:57:54.708 B06 player showControls=false
+14:57:55.791 B06 pop (Zurück)
+14:57:55.795 B06 player onDisappear isFullscreen=false pipActive=false
+14:57:57.813 B06 ENDE engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+
+=== 6 · macOS-App, Ablauf "keys" — Steuerung, HUD, Tastatur, unbehandelte Tasten, Vollbild, Zurück, Tabwechsel ===
+15:07:53.819 B06 start skript=keys
+15:07:53.820 B06 Beep-Wächter installiert auf NSResponder
+15:07:54.889 B06 Beep-Wächter aktiv für AppKitWindow: true
+15:07:54.890 B06 fenster: [3045 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+15:07:54.899 B06 push Sonde HLS live
+15:07:54.917 B06 player onAppear engine=false channel=Sonde HLS live
+15:07:54.923 B06 engine erzeugt #1 AVKitPlaybackEngine für Sonde HLS live
+15:07:54.937 B06 player engine.state=loading controlsVisible=true
+15:07:54.983 B06 player keyboardFocused=true
+15:07:55.126 B06 player engine.state=playing controlsVisible=true
+15:07:58.550 B06 player showControls=false
+15:08:01.089 B06 screenshot angefordert mac-k01-nach-6s-steuerung-aus fenster=3045
+15:08:02.110 B06 sende taste Leertaste an fenster 3045
+15:08:02.111 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=1.0 muted=false paused=true
+15:08:02.116 B06 player showControls=true
+15:08:02.116 B06 player hud=playPause(true)
+15:08:02.472 B06 screenshot angefordert mac-k02-hud-pause fenster=3045
+15:08:03.024 B06 player hud=nil
+15:08:04.496 B06 sende taste Leertaste an fenster 3045
+15:08:04.497 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:08:04.501 B06 player hud=playPause(false)
+15:08:05.423 B06 player hud=nil
+15:08:06.621 B06 sende taste Pfeil hoch an fenster 3045
+15:08:06.621 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:08:06.625 B06 player hud=volume(1.0)
+15:08:06.675 B06 sende taste Pfeil hoch an fenster 3045
+15:08:06.675 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:08:06.729 B06 sende taste Pfeil hoch an fenster 3045
+15:08:06.729 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:08:06.993 B06 screenshot angefordert mac-k03-hud-lautstaerke-100 fenster=3045
+15:08:07.633 B06 player hud=nil
+15:08:08.032 B06 player showControls=false
+15:08:08.502 B06 sende taste Pfeil runter an fenster 3045
+15:08:08.503 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> handled vol=0.95 muted=false paused=false
+15:08:08.507 B06 player hud=volume(0.95)
+15:08:08.556 B06 sende taste Pfeil runter an fenster 3045
+15:08:08.557 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:08.560 B06 player hud=volume(0.8999999999999999)
+15:08:08.611 B06 sende taste Pfeil runter an fenster 3045
+15:08:08.611 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> handled vol=0.8499999999999999 muted=false paused=false
+15:08:08.613 B06 player hud=volume(0.8499999999999999)
+15:08:09.535 B06 player hud=nil
+15:08:09.900 B06 sende taste - an fenster 3045
+15:08:09.900 B06 player onKeyPress key=KeyEquivalent(character: "-") chars="-" mods=0 phase=.down -> handled vol=0.7999999999999998 muted=false paused=false
+15:08:09.902 B06 player hud=volume(0.7999999999999998)
+15:08:09.954 B06 sende taste + an fenster 3045
+15:08:09.954 B06 player onKeyPress key=KeyEquivalent(character: "+") chars="+" mods=2 phase=.down -> handled vol=0.8499999999999999 muted=false paused=false
+15:08:09.955 B06 player hud=volume(0.8499999999999999)
+15:08:10.008 B06 sende taste = an fenster 3045
+15:08:10.008 B06 player onKeyPress key=KeyEquivalent(character: "=") chars="=" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:10.009 B06 player hud=volume(0.8999999999999999)
+15:08:10.949 B06 player hud=nil
+15:08:11.292 B06 sende taste m an fenster 3045
+15:08:11.292 B06 player onKeyPress key=KeyEquivalent(character: "m") chars="m" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=true paused=false
+15:08:11.297 B06 player showControls=true
+15:08:11.297 B06 player hud=mute(true)
+15:08:11.548 B06 screenshot angefordert mac-k04-hud-stumm fenster=3045
+15:08:12.239 B06 player hud=nil
+15:08:13.107 B06 sende taste M (Umschalt) an fenster 3045
+15:08:13.107 B06 player onKeyPress key=KeyEquivalent(character: "M") chars="M" mods=2 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:13.111 B06 player hud=mute(false)
+15:08:14.035 B06 player hud=nil
+15:08:14.382 B06 --- unbehandelte Tasten ---
+15:08:14.382 B06 sende taste x an fenster 3045
+15:08:14.383 B06 player onKeyPress key=KeyEquivalent(character: "x") chars="x" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:14.390 B06 SYSTEMBEEP-WUERDE-ERTOENEN noResponderFor:keyDown: in AppDelegate (unterdrueckt)
+15:08:14.857 B06 sende taste k an fenster 3045
+15:08:14.857 B06 player onKeyPress key=KeyEquivalent(character: "k") chars="k" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:14.861 B06 SYSTEMBEEP-WUERDE-ERTOENEN noResponderFor:keyDown: in AppDelegate (unterdrueckt)
+15:08:15.336 B06 sende taste 1 an fenster 3045
+15:08:15.336 B06 player onKeyPress key=KeyEquivalent(character: "1") chars="1" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:15.341 B06 SYSTEMBEEP-WUERDE-ERTOENEN noResponderFor:keyDown: in AppDelegate (unterdrueckt)
+15:08:15.820 B06 sende taste Pfeil links an fenster 3045
+15:08:15.821 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:15.825 B06 SYSTEMBEEP-WUERDE-ERTOENEN noResponderFor:keyDown: in AppDelegate (unterdrueckt)
+15:08:16.306 B06 sende taste Pfeil rechts an fenster 3045
+15:08:16.306 B06 player onKeyPress key=KeyEquivalent(character: "") chars="" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:16.310 B06 SYSTEMBEEP-WUERDE-ERTOENEN noResponderFor:keyDown: in AppDelegate (unterdrueckt)
+15:08:16.630 B06 player showControls=false
+15:08:16.764 B06 sende taste Return an fenster 3045
+15:08:16.764 B06 player onKeyPress key=KeyEquivalent(character: "\r") chars="\r" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:16.768 B06 SYSTEMBEEP-WUERDE-ERTOENEN noResponderFor:keyDown: in AppDelegate (unterdrueckt)
+15:08:17.228 B06 sende taste Tab an fenster 3045
+15:08:17.228 B06 player onKeyPress key=KeyEquivalent(character: "\t") chars="\t" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:17.699 B06 sende taste Esc (kein Vollbild) an fenster 3045
+15:08:17.699 B06 player onKeyPress key=KeyEquivalent(character: "\u{1B}") chars="\u{1B}" mods=0 phase=.down -> ignored vol=0.8999999999999999 muted=false paused=false
+15:08:18.169 B06 sende taste Cmd-F an fenster 3045
+15:08:18.170 B06 player applyFullscreenSideEffects(true) keyWindow=3045 mainWindow=3045
+15:08:18.223 B06 player onKeyPress key=KeyEquivalent(character: "f") chars="f" mods=16 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:18.224 B06 player isFullscreen=true
+15:08:18.227 B06 player showControls=true
+15:08:20.836 B06 nach Cmd-F fenster=[3045 '' key=true main=true fullscreen=true frame=1920x1080 firstResponder=KeyViewProxy] [3067 '' key=true main=true fullscreen=false frame=1920x52 firstResponder=KeyViewProxy]
+15:08:20.836 B06 sende taste Esc an fenster 3045
+15:08:20.836 B06 player applyFullscreenSideEffects(false) keyWindow=3045 mainWindow=3045
+15:08:20.897 B06 player onKeyPress key=KeyEquivalent(character: "\u{1B}") chars="\u{1B}" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:20.897 B06 player isFullscreen=false
+15:08:23.663 B06 --- Vollbild ---
+15:08:23.663 B06 sende taste f an fenster 3045
+15:08:23.663 B06 player applyFullscreenSideEffects(true) keyWindow=3045 mainWindow=3045
+15:08:23.709 B06 player onKeyPress key=KeyEquivalent(character: "f") chars="f" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:23.709 B06 player isFullscreen=true
+15:08:26.336 B06 nach f fenster=[3045 '' key=true main=true fullscreen=true frame=1920x1080 firstResponder=KeyViewProxy] [3077 '' key=true main=true fullscreen=false frame=1920x52 firstResponder=KeyViewProxy]
+15:08:26.337 B06 screenshot angefordert mac-k05-vollbild fenster=3045
+15:08:26.337 B06 sende taste Leertaste im Vollbild an fenster 3045
+15:08:26.338 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=true
+15:08:26.342 B06 player hud=playPause(true)
+15:08:27.278 B06 player hud=nil
+15:08:27.992 B06 sende taste Leertaste im Vollbild an fenster 3045
+15:08:27.995 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:28.003 B06 player hud=playPause(false)
+15:08:28.918 B06 player hud=nil
+15:08:29.647 B06 sende taste Esc im Vollbild an fenster 3045
+15:08:29.648 B06 player applyFullscreenSideEffects(false) keyWindow=3045 mainWindow=3045
+15:08:29.704 B06 player onKeyPress key=KeyEquivalent(character: "\u{1B}") chars="\u{1B}" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:29.704 B06 player isFullscreen=false
+15:08:32.446 B06 nach Esc fenster=[3045 'Sonde HLS live' key=true main=true fullscreen=false frame=900x450 firstResponder=KeyViewProxy]
+15:08:32.446 B06 sende taste Leertaste nach Vollbild an fenster 3045
+15:08:32.447 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=true
+15:08:32.451 B06 player hud=playPause(true)
+15:08:33.358 B06 player hud=nil
+15:08:33.723 B06 sende taste Leertaste nach Vollbild an fenster 3045
+15:08:33.725 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:33.730 B06 player hud=playPause(false)
+15:08:34.691 B06 player hud=nil
+15:08:34.846 B06 --- Klick auf das Bild, danach Taste ---
+15:08:34.848 B06 klick an (450.0, 225.0) in fenster 3045
+15:08:34.849 B06 player showControls=false
+15:08:35.425 B06 screenshot angefordert mac-k06-nach-klick fenster=3045
+15:08:35.425 B06 sende taste m nach Klick an fenster 3045
+15:08:35.426 B06 player onKeyPress key=KeyEquivalent(character: "m") chars="m" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=true paused=false
+15:08:35.428 B06 player showControls=true
+15:08:35.428 B06 player hud=mute(true)
+15:08:36.391 B06 player hud=nil
+15:08:36.684 B06 sende taste m nach Klick an fenster 3045
+15:08:36.685 B06 player onKeyPress key=KeyEquivalent(character: "m") chars="m" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:36.689 B06 player hud=mute(false)
+15:08:37.606 B06 player hud=nil
+15:08:37.752 B06 --- Vollbild von außen (grüner Knopf/Menü) ---
+15:08:40.214 B06 player showControls=false
+15:08:40.320 B06 nach toggleFullScreen von außen fenster=[3045 'Sonde HLS live' key=true main=true fullscreen=true frame=1920x1080 firstResponder=KeyViewProxy] [3095 '' key=true main=true fullscreen=false frame=1920x52 firstResponder=KeyViewProxy]
+15:08:40.322 B06 screenshot angefordert mac-k07-natives-vollbild-von-aussen fenster=3045
+15:08:40.322 B06 sende taste f nach Vollbild von außen an fenster 3045
+15:08:40.323 B06 player applyFullscreenSideEffects(true) keyWindow=3045 mainWindow=3045
+15:08:40.324 B06 player onKeyPress key=KeyEquivalent(character: "f") chars="f" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:40.328 B06 player isFullscreen=true
+15:08:40.329 B06 player showControls=true
+15:08:42.882 B06 nach f fenster=[3045 '' key=true main=true fullscreen=true frame=1920x1080 firstResponder=KeyViewProxy] [3095 '' key=true main=true fullscreen=false frame=1920x52 firstResponder=KeyViewProxy]
+15:08:42.883 B06 screenshot angefordert mac-k08-f-nach-vollbild-von-aussen fenster=3045
+15:08:42.883 B06 sende taste f erneut an fenster 3045
+15:08:42.884 B06 player applyFullscreenSideEffects(false) keyWindow=3045 mainWindow=3045
+15:08:42.934 B06 player onKeyPress key=KeyEquivalent(character: "f") chars="f" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:42.934 B06 player isFullscreen=false
+15:08:45.542 B06 nach f erneut fenster=[3045 'Sonde HLS live' key=true main=true fullscreen=false frame=900x450 firstResponder=KeyViewProxy]
+15:08:45.542 B06 --- Zurück im Vollbild ---
+15:08:45.543 B06 sende taste f an fenster 3045
+15:08:45.543 B06 player applyFullscreenSideEffects(true) keyWindow=3045 mainWindow=3045
+15:08:45.594 B06 player onKeyPress key=KeyEquivalent(character: "f") chars="f" mods=0 phase=.down -> handled vol=0.8999999999999999 muted=false paused=false
+15:08:45.594 B06 player isFullscreen=true
+15:08:48.157 B06 vor pop fenster=[3045 '' key=true main=true fullscreen=true frame=1920x1080 firstResponder=KeyViewProxy] [3109 '' key=true main=true fullscreen=false frame=1920x52 firstResponder=KeyViewProxy]
+15:08:48.157 B06 pop (Zurück)
+15:08:48.164 B06 player onDisappear isFullscreen=true pipActive=false
+15:08:48.164 B06 player applyFullscreenSideEffects(false) keyWindow=3045 mainWindow=3045
+15:08:51.185 B06 nach pop fenster=[3045 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=AppKitWindow] engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:08:51.186 B06 screenshot angefordert mac-k09-nach-zurueck-aus-vollbild fenster=3045
+15:08:53.244 B06 nach pop +5s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:08:55.261 B06 nach pop +7s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:08:57.292 B06 nach pop +9s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:08:59.299 B06 nach pop +11s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:01.309 B06 nach pop +13s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:03.423 B06 nach pop +15s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:03.423 B06 --- erneut öffnen, Tabwechsel ---
+15:09:03.423 B06 push Sonde HLS live
+15:09:03.427 B06 player onAppear engine=false channel=Sonde HLS live
+15:09:03.428 B06 engine erzeugt #2 AVKitPlaybackEngine für Sonde HLS live
+15:09:03.435 B06 player engine.state=loading controlsVisible=true
+15:09:03.468 B06 player keyboardFocused=true
+15:09:03.501 B06 player engine.state=playing controlsVisible=true
+15:09:06.979 B06 player showControls=false
+15:09:09.436 B06 engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=false rate=1.0
+15:09:09.437 B06 tab -> Favoriten
+15:09:09.443 B06 player onDisappear isFullscreen=false pipActive=false
+15:09:09.448 B06 player keyboardFocused=false
+15:09:15.466 B06 im anderen Tab engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:15.466 B06 tab -> Playlists
+15:09:15.471 B06 player onAppear engine=true channel=Sonde HLS live
+15:09:15.472 B06 player startIfNeeded: vorhandene Engine -> play()
+15:09:15.479 B06 player keyboardFocused=true
+15:09:19.483 B06 zurück im Tab engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=false rate=1.0
+15:09:19.483 B06 pop (Zurück)
+15:09:19.486 B06 player onDisappear isFullscreen=false pipActive=false
+15:09:21.492 B06 nach pop +2s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:23.494 B06 nach pop +4s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:25.509 B06 nach pop +6s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:27.521 B06 nach pop +8s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:29.528 B06 nach pop +10s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:31.540 B06 nach pop +12s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:33.545 B06 nach pop +14s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:35.555 B06 nach pop +16s engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+15:09:35.555 B06 ENDE engines: #1 Sonde HLS live=lebt state=playing paused=true rate=0.0 ; #2 Sonde HLS live=lebt state=playing paused=true rate=0.0
+MOCK Playlist-Anfragen /livehls/keys je 10 s: 15:07:50=4 15:08:00=5 15:08:10=5 15:08:20=5 15:08:30=5 15:08:40=5 15:08:50=5 15:09:00=10 15:09:10=10 15:09:20=10 15:09:30=6
+
+=== 7 · macOS-App, Ablauf "leak" — Freigabe der Engine nach Zurück (Sonden-Stapel) ===
+15:00:57.608 B06 start skript=leak
+15:00:57.608 B06 Beep-Wächter installiert auf NSResponder
+15:00:58.664 B06 Beep-Wächter aktiv für AppKitWindow: true
+15:00:58.664 B06 fenster: [2873 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+15:00:58.672 B06 push HLS A1 ohne Bedienung
+15:00:58.690 B06 engine erzeugt #1 AVKitPlaybackEngine für HLS A1 ohne Bedienung
+15:01:03.692 B06 A1 vor pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=false rate=1.0
+15:01:03.692 B06 pop (Zurück)
+15:01:03.694 B06 player onDisappear isFullscreen=false pipActive=false
+15:01:05.786 B06 A1 nach pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=true rate=0.0
+15:01:09.790 B06 A1 nach pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=true rate=0.0
+15:01:14.029 B06 A1 nach pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=true rate=0.0
+15:01:14.030 B06 push HLS B1 ohne Bedienung
+15:01:14.037 B06 engine erzeugt #2 AVKitPlaybackEngine für HLS B1 ohne Bedienung
+15:01:19.102 B06 B1 vor pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=true rate=0.0 ; #2 HLS B1 ohne Bedienung=lebt state=playing paused=false rate=1.0
+15:01:19.102 B06 pop (Zurück)
+15:01:19.104 B06 player onDisappear isFullscreen=false pipActive=false
+15:01:21.194 B06 B1 nach pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=true rate=0.0 ; #2 HLS B1 ohne Bedienung=freigegeben
+15:01:25.212 B06 B1 nach pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=true rate=0.0 ; #2 HLS B1 ohne Bedienung=freigegeben
+15:01:29.228 B06 B1 nach pop engines: #1 HLS A1 ohne Bedienung=lebt state=playing paused=true rate=0.0 ; #2 HLS B1 ohne Bedienung=freigegeben
+15:01:29.230 B06 push HLS A2 mit Leertaste
+15:01:29.241 B06 engine erzeugt #3 AVKitPlaybackEngine für HLS A2 mit Leertaste
+15:01:34.269 B06 sende taste Leertaste an fenster 2873
+15:01:34.272 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=1.0 muted=false paused=true
+15:01:35.383 B06 sende taste Leertaste an fenster 2873
+15:01:35.383 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:01:36.464 B06 A2 vor pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=lebt state=playing paused=false rate=1.0
+15:01:36.464 B06 pop (Zurück)
+15:01:36.470 B06 player onDisappear isFullscreen=false pipActive=false
+15:01:38.598 B06 A2 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=lebt state=playing paused=true rate=0.0
+15:01:42.637 B06 A2 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=lebt state=playing paused=true rate=0.0
+15:01:46.817 B06 A2 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=lebt state=playing paused=true rate=0.0
+15:01:46.819 B06 push HLS B2 mit Vollbild
+15:01:46.827 B06 engine erzeugt #4 AVKitPlaybackEngine für HLS B2 mit Vollbild
+15:01:51.893 B06 sende taste f an fenster 2873
+15:01:51.895 B06 player applyFullscreenSideEffects(true) keyWindow=2873 mainWindow=2873
+15:01:51.946 B06 player onKeyPress key=KeyEquivalent(character: "f") chars="f" mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:01:51.946 B06 player isFullscreen=true
+15:01:55.004 B06 sende taste Esc an fenster 2873
+15:01:55.005 B06 player applyFullscreenSideEffects(false) keyWindow=2873 mainWindow=2873
+15:01:55.060 B06 player onKeyPress key=KeyEquivalent(character: "\u{1B}") chars="\u{1B}" mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:01:55.060 B06 player isFullscreen=false
+15:01:58.208 B06 B2 vor pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=false rate=1.0
+15:01:58.209 B06 pop (Zurück)
+15:01:58.211 B06 player onDisappear isFullscreen=false pipActive=false
+15:02:00.209 B06 B2 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0
+15:02:04.214 B06 B2 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0
+15:02:08.432 B06 B2 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0
+15:02:08.432 B06 push TS C1 ohne Bedienung
+15:02:08.450 B06 engine erzeugt #5 VLCPlaybackEngine für TS C1 ohne Bedienung
+15:02:13.501 B06 C1 vor pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=lebt state=playing paused=false vlcState=2 playing=true
+15:02:13.501 B06 pop (Zurück)
+15:02:13.505 B06 player onDisappear isFullscreen=false pipActive=false
+15:02:15.606 B06 C1 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben
+15:02:19.634 B06 C1 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben
+15:02:23.864 B06 C1 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben
+15:02:23.866 B06 push HLS D1 ohne Bedienung
+15:02:23.875 B06 engine erzeugt #6 AVKitPlaybackEngine für HLS D1 ohne Bedienung
+15:02:28.895 B06 D1 vor pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben ; #6 HLS D1 ohne Bedienung=lebt state=playing paused=false rate=1.0
+15:02:28.895 B06 pop (Zurück)
+15:02:28.897 B06 player onDisappear isFullscreen=false pipActive=false
+15:02:30.895 B06 D1 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben ; #6 HLS D1 ohne Bedienung=freigegeben
+15:02:35.057 B06 D1 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben ; #6 HLS D1 ohne Bedienung=freigegeben
+15:02:39.074 B06 D1 nach pop engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben ; #6 HLS D1 ohne Bedienung=freigegeben
+15:02:43.091 B06 ENDE leak engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben ; #6 HLS D1 ohne Bedienung=freigegeben
+15:02:43.091 B06 ENDE engines: #1 HLS A1 ohne Bedienung=freigegeben ; #2 HLS B1 ohne Bedienung=freigegeben ; #3 HLS A2 mit Leertaste=freigegeben ; #4 HLS B2 mit Vollbild=lebt state=playing paused=true rate=0.0 ; #5 TS C1 ohne Bedienung=freigegeben ; #6 HLS D1 ohne Bedienung=freigegeben
+MOCK leak-a1: erste 15:00:58.714 letzte 15:01:32.946 Playlist=19 Segmente=20
+MOCK leak-b1: erste 15:01:14.046 letzte 15:01:18.094 Playlist=4 Segmente=5
+MOCK leak-a2: erste 15:01:29.251 letzte 15:01:51.382 Playlist=13 Segmente=14
+MOCK leak-b2: erste 15:01:46.838 letzte 15:02:43.116 Playlist=30 Segmente=31
+MOCK leak-d1: erste 15:02:23.884 letzte 15:02:27.930 Playlist=4 Segmente=5
+MOCK 15:02:08.492 conn=55 open peer=127.0.0.1:64127
+MOCK 15:02:08.492 conn=55 GET /tslive/leak-c1.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:02:13.513 conn=55 ts-progress t=5s bytes=658000 last5s=658000 stall5s=0.0s
+MOCK 15:02:13.673 conn=55 client-closed after=5.2s bytes=671160 (BrokenPipeError)
+MOCK 15:02:13.673 conn=55 close
+
+=== 8 · macOS-App, Ablauf "realnav" — echter Weg ContentView → Playlists → Senderliste → Player, Zurück per Klick ===
+15:05:45.768 B06 Beep-Wächter installiert auf NSResponder
+15:05:48.807 B06 realnav fenster 3021 frame=(510.0, 300.0, 900.0, 450.0) content=(0.0, 0.0, 900.0, 450.0)
+15:05:50.473 B06 realnav klick oben-links (450.0, 165.0) fenster=3021 key=true inhaltshöhe=450.0
+15:05:54.628 B06 realnav öffne Kanal HLS eins
+15:05:54.691 B06 player onAppear engine=false channel=Kanal HLS eins
+15:05:54.695 B06 engine erzeugt #1 AVKitPlaybackEngine für Kanal HLS eins
+15:05:54.706 B06 player engine.state=loading controlsVisible=true
+15:05:54.737 B06 realnav klick oben-links (400.0, 206.0) fenster=3021 key=true inhaltshöhe=450.0
+15:05:54.896 B06 player engine.state=playing controlsVisible=true
+15:06:00.757 B06 realnav im player (neue engine=true) engines: #1 Kanal HLS eins=lebt state=playing paused=false rate=1.0
+15:06:00.818 B06 player onDisappear isFullscreen=false pipActive=false
+15:06:00.866 B06 realnav klick oben-links (114.0, 26.0) fenster=3021 key=true inhaltshöhe=450.0
+15:06:02.930 B06 realnav nach zurück (Kanal HLS eins) engines: #1 Kanal HLS eins=lebt state=playing paused=true rate=0.0
+15:06:06.949 B06 realnav nach zurück (Kanal HLS eins) engines: #1 Kanal HLS eins=lebt state=playing paused=true rate=0.0
+15:06:12.974 B06 realnav nach zurück (Kanal HLS eins) engines: #1 Kanal HLS eins=lebt state=playing paused=true rate=0.0
+15:06:12.976 B06 realnav öffne Kanal HLS zwei
+15:06:13.037 B06 player onAppear engine=false channel=Kanal HLS zwei
+15:06:13.039 B06 engine erzeugt #2 AVKitPlaybackEngine für Kanal HLS zwei
+15:06:13.045 B06 player engine.state=loading controlsVisible=true
+15:06:13.086 B06 realnav klick oben-links (400.0, 292.0) fenster=3021 key=true inhaltshöhe=450.0
+15:06:13.108 B06 player engine.state=playing controlsVisible=true
+15:06:19.105 B06 realnav im player (neue engine=true) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=lebt state=playing paused=false rate=1.0
+15:06:19.169 B06 player onDisappear isFullscreen=false pipActive=false
+15:06:19.216 B06 realnav klick oben-links (114.0, 26.0) fenster=3021 key=true inhaltshöhe=450.0
+15:06:21.218 B06 realnav nach zurück (Kanal HLS zwei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben
+15:06:25.459 B06 realnav nach zurück (Kanal HLS zwei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben
+15:06:31.790 B06 realnav nach zurück (Kanal HLS zwei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben
+15:06:31.790 B06 realnav öffne Kanal HLS eins
+15:06:31.852 B06 player onAppear engine=false channel=Kanal HLS eins
+15:06:31.854 B06 engine erzeugt #3 AVKitPlaybackEngine für Kanal HLS eins
+15:06:31.860 B06 player engine.state=loading controlsVisible=true
+15:06:31.901 B06 realnav klick oben-links (400.0, 206.0) fenster=3021 key=true inhaltshöhe=450.0
+15:06:31.927 B06 player engine.state=playing controlsVisible=true
+15:06:37.922 B06 realnav im player (neue engine=true) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=lebt state=playing paused=false rate=1.0
+15:06:37.985 B06 player onDisappear isFullscreen=false pipActive=false
+15:06:38.031 B06 realnav klick oben-links (114.0, 26.0) fenster=3021 key=true inhaltshöhe=450.0
+15:06:40.164 B06 realnav nach zurück (Kanal HLS eins) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben
+15:06:44.428 B06 realnav nach zurück (Kanal HLS eins) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben
+15:06:50.827 B06 realnav nach zurück (Kanal HLS eins) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben
+15:06:50.827 B06 realnav öffne Kanal TS drei
+15:06:50.890 B06 player onAppear engine=false channel=Kanal TS drei
+15:06:50.910 B06 engine erzeugt #4 VLCPlaybackEngine für Kanal TS drei
+15:06:50.912 B06 player engine.state=loading controlsVisible=true
+15:06:50.937 B06 realnav klick oben-links (400.0, 378.0) fenster=3021 key=true inhaltshöhe=450.0
+15:06:50.939 B06 player engine.state=playing controlsVisible=true
+15:06:57.103 B06 realnav im player (neue engine=true) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=lebt state=playing paused=false vlcState=2 playing=true
+15:06:57.160 B06 player onDisappear isFullscreen=false pipActive=false
+15:06:57.212 B06 realnav klick oben-links (114.0, 26.0) fenster=3021 key=true inhaltshöhe=450.0
+15:06:59.339 B06 realnav nach zurück (Kanal TS drei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben
+15:07:03.489 B06 realnav nach zurück (Kanal TS drei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben
+15:07:09.493 B06 realnav nach zurück (Kanal TS drei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben
+15:07:09.493 B06 realnav öffne Kanal HLS zwei
+15:07:09.556 B06 player onAppear engine=false channel=Kanal HLS zwei
+15:07:09.557 B06 engine erzeugt #5 AVKitPlaybackEngine für Kanal HLS zwei
+15:07:09.564 B06 player engine.state=loading controlsVisible=true
+15:07:09.603 B06 realnav klick oben-links (400.0, 292.0) fenster=3021 key=true inhaltshöhe=450.0
+15:07:09.625 B06 player engine.state=playing controlsVisible=true
+15:07:15.620 B06 realnav im player (neue engine=true) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben ; #5 Kanal HLS zwei=lebt state=playing paused=false rate=1.0
+15:07:15.678 B06 player onDisappear isFullscreen=false pipActive=false
+15:07:15.726 B06 realnav klick oben-links (114.0, 26.0) fenster=3021 key=true inhaltshöhe=450.0
+15:07:17.860 B06 realnav nach zurück (Kanal HLS zwei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben ; #5 Kanal HLS zwei=freigegeben
+15:07:21.957 B06 realnav nach zurück (Kanal HLS zwei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben ; #5 Kanal HLS zwei=freigegeben
+15:07:28.312 B06 realnav nach zurück (Kanal HLS zwei) engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben ; #5 Kanal HLS zwei=freigegeben
+15:07:30.442 B06 ENDE engines: #1 Kanal HLS eins=freigegeben ; #2 Kanal HLS zwei=freigegeben ; #3 Kanal HLS eins=freigegeben ; #4 Kanal TS drei=freigegeben ; #5 Kanal HLS zwei=freigegeben
+MOCK 15:06:00.816 /livehls/real-1/index.m3u8
+MOCK 15:06:00.826 /livehls/real-1/seg00473.ts
+MOCK 15:06:02.823 /livehls/real-1/index.m3u8
+MOCK 15:06:02.826 /livehls/real-1/seg00474.ts
+MOCK 15:06:04.832 /livehls/real-1/index.m3u8
+MOCK 15:06:04.834 /livehls/real-1/seg00475.ts
+MOCK 15:06:06.840 /livehls/real-1/index.m3u8
+MOCK 15:06:06.845 /livehls/real-1/seg00476.ts
+MOCK 15:06:08.848 /livehls/real-1/index.m3u8
+MOCK 15:06:08.851 /livehls/real-1/seg00477.ts
+MOCK 15:06:10.858 /livehls/real-1/index.m3u8
+MOCK 15:06:10.861 /livehls/real-1/seg00478.ts
+MOCK 15:06:12.866 /livehls/real-1/index.m3u8
+MOCK 15:06:12.870 /livehls/real-1/seg00479.ts
+MOCK 15:06:31.866 /livehls/real-1/index.m3u8
+MOCK 15:06:31.901 /livehls/real-1/index.m3u8
+MOCK 15:06:31.905 /livehls/real-1/seg00487.ts
+MOCK 15:06:31.918 /livehls/real-1/seg00488.ts
+MOCK 15:06:31.925 /livehls/real-1/seg00489.ts
+
+=== 9 · macOS-App, Ablauf "vlc" — VLC: P, Pause, Zurück spielend, Zurück während des Ladens, zweimal öffnen ===
+15:10:13.743 B06 start skript=vlc
+15:10:13.743 B06 Beep-Wächter installiert auf NSResponder
+15:10:14.781 B06 Beep-Wächter aktiv für AppKitWindow: true
+15:10:14.781 B06 fenster: [3132 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+15:10:14.788 B06 push Sonde TS live
+15:10:14.801 B06 player onAppear engine=false channel=Sonde TS live
+15:10:14.912 B06 engine erzeugt #1 VLCPlaybackEngine für Sonde TS live
+15:10:14.915 B06 player engine.state=loading controlsVisible=true
+15:10:14.967 B06 player engine.state=playing controlsVisible=true
+15:10:21.066 B06 screenshot angefordert mac-v01-vlc-spielt fenster=3132
+15:10:21.067 B06 engines: #1 Sonde TS live=lebt state=playing paused=false vlcState=2 playing=true
+15:10:21.067 B06 fenster 3132 nicht Schlüsselfenster (keyWindow=-1, App aktiv=false) – aktiviere
+15:10:21.494 B06 sende taste p (VLC, kein PiP) an fenster 3132
+15:10:21.495 B06 player onKeyPress key=KeyEquivalent(character: "p") chars="p" mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:10:22.074 B06 sende taste Leertaste an fenster 3132
+15:10:22.075 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=1.0 muted=false paused=true
+15:10:25.173 B06 pausiert engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:25.173 B06 sende taste Leertaste an fenster 3132
+15:10:25.174 B06 player onKeyPress key=KeyEquivalent(character: " ") chars=" " mods=0 phase=.down -> handled vol=1.0 muted=false paused=false
+15:10:28.255 B06 läuft engines: #1 Sonde TS live=lebt state=playing paused=false vlcState=5 playing=true
+15:10:28.255 B06 pop (Zurück)
+15:10:28.260 B06 player onDisappear isFullscreen=false pipActive=false
+15:10:30.376 B06 nach pop +2s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:32.499 B06 nach pop +4s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:34.549 B06 nach pop +6s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:36.683 B06 nach pop +8s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:38.796 B06 nach pop +10s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:40.885 B06 nach pop +12s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:43.018 B06 nach pop +14s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:45.151 B06 nach pop +16s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:47.162 B06 nach pop +18s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:49.285 B06 nach pop +20s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:10:49.285 B06 --- Zurück während des Ladens (Start verzögert 8 s) ---
+15:10:49.286 B06 push Sonde TS langsam
+15:10:49.294 B06 player onAppear engine=false channel=Sonde TS langsam
+15:10:49.300 B06 engine erzeugt #2 VLCPlaybackEngine für Sonde TS langsam
+15:10:49.303 B06 player engine.state=loading controlsVisible=true
+15:10:49.337 B06 player engine.state=playing controlsVisible=true
+15:10:51.417 B06 lädt engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=false vlcState=2 playing=false
+15:10:51.417 B06 pop (Zurück)
+15:10:51.424 B06 player onDisappear isFullscreen=false pipActive=false
+15:10:53.499 B06 nach pop (laden) +2s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=false
+15:10:55.630 B06 nach pop (laden) +4s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=false
+15:10:57.735 B06 nach pop (laden) +6s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:10:59.764 B06 nach pop (laden) +8s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:01.888 B06 nach pop (laden) +10s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:03.998 B06 nach pop (laden) +12s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:06.098 B06 nach pop (laden) +14s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:08.163 B06 nach pop (laden) +16s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:10.287 B06 nach pop (laden) +18s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:12.421 B06 nach pop (laden) +20s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:14.501 B06 nach pop (laden) +22s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:16.552 B06 nach pop (laden) +24s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:18.664 B06 nach pop (laden) +26s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:20.796 B06 nach pop (laden) +28s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:22.930 B06 nach pop (laden) +30s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=lebt state=playing paused=true vlcState=2 playing=true
+15:11:22.930 B06 --- zweimal hintereinander öffnen ---
+15:11:22.931 B06 push Sonde TS live
+15:11:22.940 B06 player onAppear engine=false channel=Sonde TS live
+15:11:22.950 B06 engine erzeugt #3 VLCPlaybackEngine für Sonde TS live
+15:11:22.953 B06 player engine.state=loading controlsVisible=true
+15:11:22.993 B06 player engine.state=playing controlsVisible=true
+15:11:27.097 B06 pop (Zurück)
+15:11:27.099 B06 player onDisappear isFullscreen=false pipActive=false
+15:11:27.618 B06 push Sonde TS live
+15:11:27.627 B06 player onAppear engine=false channel=Sonde TS live
+15:11:27.638 B06 engine erzeugt #4 VLCPlaybackEngine für Sonde TS live
+15:11:27.643 B06 player engine.state=loading controlsVisible=true
+15:11:27.690 B06 player engine.state=playing controlsVisible=true
+15:11:33.865 B06 engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=false vlcState=2 playing=true
+15:11:33.865 B06 pop (Zurück)
+15:11:33.867 B06 player onDisappear isFullscreen=false pipActive=false
+15:11:35.979 B06 nach pop +2s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:11:38.098 B06 nach pop +4s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:11:40.226 B06 nach pop +6s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:11:42.358 B06 nach pop +8s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:11:44.362 B06 nach pop +10s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:11:46.469 B06 nach pop +12s engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+15:11:46.469 B06 ENDE engines: #1 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false ; #2 Sonde TS langsam=freigegeben ; #3 Sonde TS live=freigegeben ; #4 Sonde TS live=lebt state=playing paused=true vlcState=6 playing=false
+MOCK 15:10:14.953 conn=60 GET /tslive/vlc-a.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:10:49.338 conn=61 GET /delay/8/tslive/vlc-b.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:10:49.338 conn=61 delay 8s
+MOCK 15:11:22.993 conn=62 GET /tslive/vlc-a.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:11:23.140 conn=61 client-closed after=25.8s bytes=2921520 (BrokenPipeError)
+MOCK 15:11:27.641 conn=63 GET /tslive/vlc-a.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:11:27.792 conn=62 client-closed after=4.8s bytes=631680 (BrokenPipeError)
+MOCK 15:11:47.628 conn=60 client-closed after=92.7s bytes=2128604 (BrokenPipeError)
+MOCK 15:11:47.628 conn=63 client-closed after=20.0s bytes=1604060 (BrokenPipeError)
+
+=== 10 · macOS-App, Ablauf "errors" — Fehleransicht je Fehlerart (Bilder mac-e*), Anfragen am Mock ===
+15:12:00.464 B06 start skript=errors
+15:12:00.465 B06 Beep-Wächter installiert auf NSResponder
+15:12:01.500 B06 Beep-Wächter aktiv für AppKitWindow: true
+15:12:01.500 B06 fenster: [3151 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+15:12:01.505 B06 push AVKit 404
+15:12:01.518 B06 player onAppear engine=false channel=AVKit 404
+15:12:01.522 B06 engine erzeugt #1 AVKitPlaybackEngine für AVKit 404
+15:12:01.536 B06 player engine.state=loading controlsVisible=true
+15:12:01.647 B06 player engine.state=failed("The requested URL was not found on this server.") controlsVisible=true
+15:12:05.609 B06 screenshot angefordert mac-e1-AVKit-404 fenster=3151
+15:12:10.558 B06 pop (Zurück)
+15:12:10.564 B06 player onDisappear isFullscreen=false pipActive=false
+15:12:11.567 B06 push VLC 404
+15:12:11.580 B06 player onAppear engine=false channel=VLC 404
+15:12:11.598 B06 engine erzeugt #2 VLCPlaybackEngine für VLC 404
+15:12:11.602 B06 player engine.state=loading controlsVisible=true
+15:12:11.631 B06 player engine.state=idle controlsVisible=true
+15:12:17.856 B06 screenshot angefordert mac-e2-VLC-404 fenster=3151
+15:12:24.857 B06 pop (Zurück)
+15:12:24.865 B06 player onDisappear isFullscreen=false pipActive=false
+15:12:25.925 B06 push AVKit HTML
+15:12:25.944 B06 player onAppear engine=false channel=AVKit HTML
+15:12:25.947 B06 engine erzeugt #3 AVKitPlaybackEngine für AVKit HTML
+15:12:25.958 B06 player engine.state=loading controlsVisible=true
+15:12:26.016 B06 player engine.state=failed("unsupported URL") controlsVisible=true
+15:12:30.039 B06 screenshot angefordert mac-e3-AVKit-HTML fenster=3151
+15:12:30.891 B06 pop (Zurück)
+15:12:30.893 B06 player onDisappear isFullscreen=false pipActive=false
+15:12:31.957 B06 push VLC HTML
+15:12:31.968 B06 player onAppear engine=false channel=VLC HTML
+15:12:31.976 B06 engine erzeugt #4 VLCPlaybackEngine für VLC HTML
+15:12:31.978 B06 player engine.state=loading controlsVisible=true
+15:12:31.985 B06 player engine.state=playing controlsVisible=true
+15:12:40.283 B06 screenshot angefordert mac-e4-VLC-HTML fenster=3151
+15:12:41.108 B06 pop (Zurück)
+15:12:41.110 B06 player onDisappear isFullscreen=false pipActive=false
+15:12:42.172 B06 push Xtream ohne Zugangsdaten
+15:12:42.178 B06 player onAppear engine=false channel=Xtream ohne Zugangsdaten
+15:12:42.237 B06 player resolveError=Die Zugangsdaten dieser Xtream-Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren.
+15:12:45.367 B06 screenshot angefordert mac-e5-Xtream-ohne-Zugangsdaten fenster=3151
+15:12:49.374 B06 pop (Zurück)
+15:12:49.376 B06 player onDisappear isFullscreen=false pipActive=false
+15:12:50.475 B06 push Xtream 404 HLS
+15:12:50.481 B06 player onAppear engine=false channel=Xtream 404 HLS
+15:12:50.486 B06 engine erzeugt #5 AVKitPlaybackEngine für Xtream 404 HLS
+15:12:50.492 B06 player engine.state=loading controlsVisible=true
+15:12:50.537 B06 player engine.state=failed("The requested URL was not found on this server.") controlsVisible=true
+15:12:54.503 B06 screenshot angefordert mac-e6-Xtream-404-HLS fenster=3151
+15:12:55.325 B06 pop (Zurück)
+15:12:55.327 B06 player onDisappear isFullscreen=false pipActive=false
+15:12:56.335 B06 push VLC Abbruch nach 6 s
+15:12:56.349 B06 player onAppear engine=false channel=VLC Abbruch nach 6 s
+15:12:56.357 B06 engine erzeugt #6 VLCPlaybackEngine für VLC Abbruch nach 6 s
+15:12:56.360 B06 player engine.state=loading controlsVisible=true
+15:12:56.392 B06 player engine.state=playing controlsVisible=true
+15:13:12.601 B06 screenshot angefordert mac-e7-VLC-Abbruch-nach-6-s fenster=3151
+15:13:13.430 B06 pop (Zurück)
+15:13:13.432 B06 player onDisappear isFullscreen=false pipActive=false
+15:13:14.440 B06 push AVKit Verbindung abgelehnt
+15:13:14.457 B06 player onAppear engine=false channel=AVKit Verbindung abgelehnt
+15:13:14.459 B06 engine erzeugt #7 AVKitPlaybackEngine für AVKit Verbindung abgelehnt
+15:13:14.466 B06 player engine.state=loading controlsVisible=true
+15:13:14.519 B06 player engine.state=failed("Could not connect to the server.") controlsVisible=true
+15:13:18.611 B06 screenshot angefordert mac-e8-AVKit-Verbindung-abgelehnt fenster=3151
+15:13:19.464 B06 pop (Zurück)
+15:13:19.470 B06 player onDisappear isFullscreen=false pipActive=false
+15:13:20.477 B06 push roher TS ohne Endung (AVKit)
+15:13:20.492 B06 player onAppear engine=false channel=roher TS ohne Endung (AVKit)
+15:13:20.495 B06 engine erzeugt #8 AVKitPlaybackEngine für roher TS ohne Endung (AVKit)
+15:13:20.504 B06 player engine.state=loading controlsVisible=true
+15:13:20.544 B06 player engine.state=failed("Operation Stopped") controlsVisible=true
+15:13:28.937 B06 screenshot angefordert mac-e9-roher-TS-ohne-Endung-(AVKit) fenster=3151
+15:13:29.781 B06 pop (Zurück)
+15:13:29.785 B06 player onDisappear isFullscreen=false pipActive=false
+15:13:30.874 B06 push Xtream HLS localhost
+15:13:30.882 B06 player onAppear engine=false channel=Xtream HLS localhost
+15:13:30.887 B06 engine erzeugt #9 AVKitPlaybackEngine für Xtream HLS localhost
+15:13:30.893 B06 player engine.state=loading controlsVisible=true
+15:13:30.966 B06 player engine.state=playing controlsVisible=true
+15:13:36.954 B06 screenshot angefordert mac-e10-Xtream-HLS-localhost fenster=3151
+15:13:37.766 B06 pop (Zurück)
+15:13:37.770 B06 player onDisappear isFullscreen=false pipActive=false
+15:13:38.886 B06 push Xtream TS VLC
+15:13:38.892 B06 player onAppear engine=false channel=Xtream TS VLC
+15:13:38.899 B06 engine erzeugt #10 VLCPlaybackEngine für Xtream TS VLC
+15:13:38.901 B06 player engine.state=loading controlsVisible=true
+15:13:38.927 B06 player engine.state=playing controlsVisible=true
+15:13:45.271 B06 screenshot angefordert mac-e11-Xtream-TS-VLC fenster=3151
+15:13:46.112 B06 pop (Zurück)
+15:13:46.116 B06 player onDisappear isFullscreen=false pipActive=false
+15:13:47.226 B06 push Xtream TS VLC 404
+15:13:47.233 B06 player onAppear engine=false channel=Xtream TS VLC 404
+15:13:47.241 B06 engine erzeugt #11 VLCPlaybackEngine für Xtream TS VLC 404
+15:13:47.243 B06 player engine.state=loading controlsVisible=true
+15:13:47.268 B06 player engine.state=idle controlsVisible=true
+15:13:52.496 B06 screenshot angefordert mac-e12-Xtream-TS-VLC-404 fenster=3151
+15:13:53.350 B06 pop (Zurück)
+15:13:53.352 B06 player onDisappear isFullscreen=false pipActive=false
+15:13:54.416 B06 ENDE engines: #1 AVKit 404=lebt state=failed("The requested URL was not found on this server.") paused=true rate=0.0 ; #2 VLC 404=freigegeben ; #3 AVKit HTML=freigegeben ; #4 VLC HTML=freigegeben ; #5 Xtream 404 HLS=freigegeben ; #6 VLC Abbruch nach 6 s=freigegeben ; #7 AVKit Verbindung abgelehnt=freigegeben ; #8 roher TS ohne Endung (AVKit)=freigegeben ; #9 Xtream HLS localhost=freigegeben ; #10 Xtream TS VLC=freigegeben ; #11 Xtream TS VLC 404=freigegeben
+MOCK 15:12:01.547 GET /404/x.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:12:01.636 GET /404/x.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:12:11.627 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:12:11.628 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:12:11.629 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:12:11.629 GET /404/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:12:25.960 GET /html/x.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:12:26.010 GET /html/x.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:12:32.013 GET /html/x.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:12:50.497 GET /live/qa-user/qa-pass-123/404/101.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:12:50.532 GET /live/qa-user/qa-pass-123/404/101.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:12:56.397 GET /abort/6/tslive/err-e7.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:13:20.503 GET /tslive/err-e9 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1'
+MOCK 15:13:30.904 GET /live/qa-user/qa-pass-123/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:13:30.935 GET /live/qa-user/qa-pass-123/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:13:32.937 GET /live/qa-user/qa-pass-123/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:13:34.948 GET /live/qa-user/qa-pass-123/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:13:36.954 GET /live/qa-user/qa-pass-123/102.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:13:38.900 GET /live/qa-user/qa-pass-123/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:13:47.242 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:13:47.243 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:13:47.243 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:13:47.244 GET /live/qa-user/qa-pass-123/404/101.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+
+=== 11 · macOS-App, Ablauf "retry" — Erneut versuchen (Aktion des Knopfs), MP4-Ende ===
+15:15:05.590 B06 start skript=retry
+15:15:05.591 B06 Beep-Wächter installiert auf NSResponder
+15:15:06.662 B06 Beep-Wächter aktiv für AppKitWindow: true
+15:15:06.662 B06 fenster: [3218 'B06-Sonde' key=false main=false fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+15:15:06.670 B06 push AVKit 404 retry
+15:15:06.690 B06 player onAppear engine=false channel=AVKit 404 retry
+15:15:06.695 B06 engine erzeugt #1 AVKitPlaybackEngine für AVKit 404 retry
+15:15:06.708 B06 player engine.state=loading controlsVisible=true
+15:15:06.818 B06 player engine.state=failed("The requested URL was not found on this server.") controlsVisible=true
+15:15:09.863 B06 screenshot angefordert mac-r1-vor-erneut fenster=3218
+15:15:09.863 B06 Erneut versuchen (Aktion des Knopfs) #1
+15:15:09.864 B06 player b06.retry
+15:15:09.875 B06 player engine.state=loading controlsVisible=true
+15:15:09.892 B06 player engine.state=failed("The requested URL was not found on this server.") controlsVisible=true
+15:15:12.987 B06 Erneut versuchen (Aktion des Knopfs) #2
+15:15:12.987 B06 player b06.retry
+15:15:13.003 B06 player engine.state=loading controlsVisible=false
+15:15:13.020 B06 player engine.state=failed("The requested URL was not found on this server.") controlsVisible=false
+15:15:16.187 B06 r1 engines: #1 AVKit 404 retry=lebt state=failed("The requested URL was not found on this server.") paused=false rate=0.0
+15:15:16.187 B06 pop (Zurück)
+15:15:16.195 B06 player onDisappear isFullscreen=false pipActive=false
+15:15:17.246 B06 push Xtream fehlt retry
+15:15:17.258 B06 player onAppear engine=false channel=Xtream fehlt retry
+15:15:17.316 B06 player resolveError=Die Zugangsdaten dieser Xtream-Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren.
+15:15:19.379 B06 Erneut versuchen (Aktion des Knopfs) bei fehlenden Zugangsdaten
+15:15:19.379 B06 player b06.retry
+15:15:21.503 B06 r2 engines: #1 AVKit 404 retry=lebt state=failed("The requested URL was not found on this server.") paused=true rate=0.0
+15:15:21.503 B06 pop (Zurück)
+15:15:21.513 B06 player onDisappear isFullscreen=false pipActive=false
+15:15:22.568 B06 push VLC 404 retry
+15:15:22.581 B06 player onAppear engine=false channel=VLC 404 retry
+15:15:22.601 B06 engine erzeugt #2 VLCPlaybackEngine für VLC 404 retry
+15:15:22.604 B06 player engine.state=loading controlsVisible=true
+15:15:22.637 B06 player engine.state=idle controlsVisible=true
+15:15:25.762 B06 Erneut versuchen (Aktion) bei VLC-idle – Knopf ist nicht sichtbar, nur zum Vergleich
+15:15:25.762 B06 player b06.retry
+15:15:25.763 B06 player engine.state=loading controlsVisible=true
+15:15:25.768 B06 player engine.state=playing controlsVisible=true
+15:15:25.769 B06 player engine.state=idle controlsVisible=true
+15:15:28.963 B06 r3 engines: #1 AVKit 404 retry=lebt state=failed("The requested URL was not found on this server.") paused=true rate=0.0 ; #2 VLC 404 retry=lebt state=idle paused=false vlcState=0 playing=false
+15:15:28.964 B06 pop (Zurück)
+15:15:28.971 B06 player onDisappear isFullscreen=false pipActive=false
+15:15:30.027 B06 push MP4 20 s bis zum Ende
+15:15:30.040 B06 player onAppear engine=false channel=MP4 20 s bis zum Ende
+15:15:30.042 B06 engine erzeugt #3 AVKitPlaybackEngine für MP4 20 s bis zum Ende
+15:15:30.050 B06 player engine.state=loading controlsVisible=true
+15:15:30.159 B06 player engine.state=playing controlsVisible=true
+15:15:55.331 B06 r4 nach Ende engines: #1 AVKit 404 retry=lebt state=failed("The requested URL was not found on this server.") paused=true rate=0.0 ; #2 VLC 404 retry=freigegeben ; #3 MP4 20 s bis zum Ende=lebt state=playing paused=false rate=0.0
+15:15:55.332 B06 screenshot angefordert mac-r4-mp4-nach-ende fenster=3218
+15:15:55.332 B06 pop (Zurück)
+15:15:55.334 B06 player onDisappear isFullscreen=false pipActive=false
+15:15:56.335 B06 push TS-Datei VLC bis zum Ende
+15:15:56.341 B06 player onAppear engine=false channel=TS-Datei VLC bis zum Ende
+15:15:56.346 B06 engine erzeugt #4 VLCPlaybackEngine für TS-Datei VLC bis zum Ende
+15:15:56.348 B06 player engine.state=loading controlsVisible=true
+15:15:56.378 B06 player engine.state=playing controlsVisible=true
+15:16:02.496 B06 r5 läuft; Datei ist 120 s lang – Ende nicht abgewartet
+15:16:02.496 B06 r5 engines: #1 AVKit 404 retry=lebt state=failed("The requested URL was not found on this server.") paused=true rate=0.0 ; #2 VLC 404 retry=freigegeben ; #3 MP4 20 s bis zum Ende=freigegeben ; #4 TS-Datei VLC bis zum Ende=lebt state=playing paused=false vlcState=2 playing=true
+15:16:02.496 B06 pop (Zurück)
+15:16:02.499 B06 player onDisappear isFullscreen=false pipActive=false
+15:16:03.499 B06 ENDE engines: #1 AVKit 404 retry=lebt state=failed("The requested URL was not found on this server.") paused=true rate=0.0 ; #2 VLC 404 retry=freigegeben ; #3 MP4 20 s bis zum Ende=freigegeben ; #4 TS-Datei VLC bis zum Ende=freigegeben
+MOCK 15:15:06.718 conn=79 GET /404/retry-av.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:15:06.806 conn=79 GET /404/retry-av.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:15:09.876 conn=79 GET /404/retry-av.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:15:09.884 conn=79 GET /404/retry-av.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:15:13.007 conn=79 GET /404/retry-av.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:15:13.013 conn=79 GET /404/retry-av.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:15:22.605 conn=80 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:15:22.606 conn=81 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:15:22.607 conn=82 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:15:22.608 conn=83 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:15:25.763 conn=84 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:15:25.764 conn=85 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:15:25.765 conn=86 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:15:25.765 conn=87 GET /404/retry-vlc.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:15:30.053 conn=88 GET /clip.mp4 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1'
+MOCK 15:15:30.062 conn=89 GET /clip.mp4 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range='bytes=0-1763900'
+
+=== 12 · iPhone-17-Simulator (iOS 26.5), Ablauf "ios-orientation" ===
+15:18:34.436 B06 start skript=ios-orientation
+15:18:35.475 B06 start: orientation=portrait size=402x874 idiom=phone activation=0 statusBarHidden=false engines:
+15:18:35.475 B06 push
+15:18:35.502 B06 player onAppear engine=false channel=Sonde iOS
+15:18:35.526 B06 engine erzeugt #1 AVKitPlaybackEngine für Sonde iOS
+15:18:35.627 B06 player engine.state=loading controlsVisible=true
+15:18:35.966 B06 player engine.state=playing controlsVisible=true
+15:18:36.169 B06 player keyboardFocused=true
+15:18:39.368 B06 player showControls=false
+15:18:41.601 B06 player hochformat: orientation=portrait size=402x874 idiom=phone activation=0 statusBarHidden=false engines: #1 Sonde iOS=lebt state=playing paused=false rate=1.0
+15:18:41.602 B06 player b06.toggleFullscreen
+15:18:41.602 B06 player applyFullscreenSideEffects(true) idiom=0
+15:18:41.603 B06 vollbild an
+15:18:41.617 B06 player isFullscreen=true
+15:18:41.618 B06 player showControls=true
+15:18:45.298 B06 player showControls=false
+15:18:46.695 B06 vollbild an: orientation=landscapeRight size=874x402 idiom=phone activation=0 statusBarHidden=true engines: #1 Sonde iOS=lebt state=playing paused=false rate=1.0
+15:18:46.696 B06 player b06.toggleFullscreen
+15:18:46.696 B06 player applyFullscreenSideEffects(false) idiom=0
+15:18:46.697 B06 vollbild aus
+15:18:46.703 B06 player isFullscreen=false
+15:18:46.703 B06 player showControls=true
+15:18:50.407 B06 player showControls=false
+15:18:51.907 B06 vollbild aus: orientation=portrait size=402x874 idiom=phone activation=0 statusBarHidden=false engines: #1 Sonde iOS=lebt state=playing paused=false rate=1.0
+15:18:51.908 B06 gerät vorher auf Querformat links
+15:18:56.942 B06 vorher querformat links: orientation=landscapeLeft size=874x402 idiom=phone activation=0 statusBarHidden=true engines: #1 Sonde iOS=lebt state=playing paused=false rate=1.0
+15:18:56.943 B06 player b06.toggleFullscreen
+15:18:56.943 B06 player applyFullscreenSideEffects(true) idiom=0
+15:18:56.943 B06 vollbild an (aus Querformat links)
+15:18:56.949 B06 player isFullscreen=true
+15:18:56.949 B06 player showControls=true
+15:19:00.469 B06 player showControls=false
+15:19:01.944 B06 vollbild an aus links: orientation=landscapeRight size=874x402 idiom=phone activation=0 statusBarHidden=true engines: #1 Sonde iOS=lebt state=playing paused=false rate=1.0
+15:19:01.945 B06 player b06.toggleFullscreen
+15:19:01.945 B06 player applyFullscreenSideEffects(false) idiom=0
+15:19:01.946 B06 vollbild aus (vorher links)
+15:19:01.949 B06 player isFullscreen=false
+15:19:01.950 B06 player showControls=true
+15:19:05.524 B06 player showControls=false
+15:19:07.059 B06 vollbild aus nach links: orientation=portrait size=402x874 idiom=phone activation=0 statusBarHidden=false engines: #1 Sonde iOS=lebt state=playing paused=false rate=1.0
+15:19:07.059 B06 player b06.toggleFullscreen
+15:19:07.060 B06 player applyFullscreenSideEffects(true) idiom=0
+15:19:07.060 B06 vollbild an, dann zurück
+15:19:07.064 B06 player isFullscreen=true
+15:19:07.064 B06 player showControls=true
+15:19:10.809 B06 player showControls=false
+15:19:11.268 B06 vollbild an vor zurück: orientation=landscapeRight size=874x402 idiom=phone activation=0 statusBarHidden=true engines: #1 Sonde iOS=lebt state=playing paused=false rate=1.0
+15:19:11.268 B06 pop im vollbild
+15:19:11.805 B06 player onDisappear isFullscreen=true pipActive=false
+15:19:11.805 B06 player applyFullscreenSideEffects(false) idiom=0
+15:19:16.406 B06 nach zurück: orientation=portrait size=402x874 idiom=phone activation=0 statusBarHidden=false engines: #1 Sonde iOS=freigegeben
+15:19:22.424 B06 nach zurück +6s: orientation=portrait size=402x874 idiom=phone activation=0 statusBarHidden=false engines: #1 Sonde iOS=freigegeben
+15:19:22.425 B06 ENDE engines: #1 Sonde iOS=freigegeben
+
+=== 13 · Protokolle: Zugangsdaten im Unified Log, in stdout/stderr (VLC), im Fehlertext ===
+13a Test-Host (xcodebuild test, PID 42525, Lauf 03/04): Zeilen mit 'qa-pass-123' im Stream-Mitschnitt:
+10
+2026-09-16 14:47:34.543 Df MikaPlusPlayer[42525:bfe50] [com.apple.CFNetwork:Default] Task <3604AFD3-EA5F-4BCF-8B20-76BED20DCE4E>.<14> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLStringKey=http://127.0.0.1:18906/live/qa-user/qa-pass-123/404/101.m3u8 …
+2026-09-16 14:47:34.721 Df MikaPlusPlayer[42525:bfe51] [com.apple.network:connection] [C13 772D156E-8933-4818-8C4E-E6AC64254010 127.0.0.1:18906 tcp, url: http://127.0.0.1:18906/live/qa-user/qa-pass-123/404/101.m3u8 …
+2026-09-16 14:47:34.723 Df MikaPlusPlayer[42525:bfe51] [com.apple.network:connection] [C14 BACBD289-7590-4A76-A054-D70F8CCB7ABB 127.0.0.1:18906 tcp, url: http://127.0.0.1:18906/live/qa-user/qa-pass-123/102.m3u8 …
+2026-09-16 14:47:34.813 Df MikaPlusPlayer[42525:bfeb3] [com.apple.CFNetwork:Default] Task <2FAA1786-E890-4BE0-90A1-F5FB65E7A5F0>.<24> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLStringKey=http://127.0.0.1:18906/live/qa-user/qa-pass-123/404/101.m3u8 …
+13b Dasselbe im gespeicherten Log (log show, 14:47–14:56):
+8
+13c Private-Data-Logging systemweit: /Library/Preferences/Logging/com.apple.system.logging.plist nicht vorhanden; Profile: keine
+13d App-Lauf errors (PID 15998, normal gestartet): Unified-Log-Zeilen mit qa-pass-123=0, 'url: http'=0, 'url hash'=21; stdout/stderr mit qa-pass-123=0
+13d App-Lauf vlc (PID 11342, normal gestartet): Unified-Log-Zeilen mit qa-pass-123=0, 'url: http'=0, 'url hash'=0; stdout/stderr mit qa-pass-123=0
+13d App-Lauf keys (PID 1015, normal gestartet): Unified-Log-Zeilen mit qa-pass-123=0, 'url: http'=0, 'url hash'=1; stdout/stderr mit qa-pass-123=0
+13d App-Lauf retry (PID 29148, normal gestartet): Unified-Log-Zeilen mit qa-pass-123=0, 'url: http'=0, 'url hash'=3; stdout/stderr mit qa-pass-123=0
+13d App-Lauf realnav (PID 92237, normal gestartet): Unified-Log-Zeilen mit qa-pass-123=0, 'url: http'=0, 'url hash'=5; stdout/stderr mit qa-pass-123=0
+13d App-Lauf leak (PID 80800, normal gestartet): Unified-Log-Zeilen mit qa-pass-123=0, 'url: http'=0, 'url hash'=1; stdout/stderr mit qa-pass-123=0
+13d App-Lauf windows (PID 69980, normal gestartet): Unified-Log-Zeilen mit qa-pass-123=0, 'url: http'=0, 'url hash'=1; stdout/stderr mit qa-pass-123=0
+13e Beispiel App-Lauf errors (normal gestartet):
+2026-09-16 15:12:01.545 Df MikaPlusPlayer[15998:f75eb] [com.apple.network:connection] [C1 FF89FDDE-C967-49FD-9092-B2C1477A654C IPv4#c1f07b9d:18906 tcp, url hash: 1a33b18d, definite, attribution: devel
+2026-09-16 15:12:26.005 Df MikaPlusPlayer[15998:f87c6] [com.apple.network:connection] [C2 929B3886-A414-4272-B950-3AC96D6AC710 IPv4#c1f07b9d:18906 tcp, url hash: 5a31ce9c, definite, attribution: devel
+13f VLC-Ausgaben auf stdout/stderr im App-Lauf errors (alle Nicht-Sonden-Zeilen):
+   5 MikaPlusPlayer[15998:1013214] creating player instance using shared library
+   1 exit=0
+13g Fehlertexte in 03 (anzeigeEnthältPass/Host) siehe Abschnitt 2 (…|ENDE|…); Resolver-Texte Abschnitt 1.
+
+=== 14 · Paketstand VLCKit ===
+User-Agent der VLC-Engine am Mock: ua='VLC/3.0.21 LibVLC/3.0.21'
+User-Agent der AVKit-Engine am Mock: ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)'
+project.yml: VLCKitSPM exactVersion 3.6.0 (tylerjonesio/vlckit-spm); Binärziel VLCKit-all.xcframework.zip von GitHub-Release 3.6.0, checksum in Package.swift
+git ls-remote --tags tylerjonesio/vlckit-spm (2026-09-16): 3.6.0 v3.5.1 v3.6.0.b10 
+Letzter Commit im Paket: 2025-02-22 20:42:51 -0700 Update for 3.6.0
+VideoLAN Security Bulletin VLC 3.0.22 (Dezember 2025): betrifft VLC 3.0.21 und älter, CVE-2025-51602, u. a. MMS, CEA-708-Untertitel, MP4-, Ogg-, ASF-, WebVTT-Demuxer; Angriffsweg präparierte Dateien oder Streams.
+
+=== 15 · macOS-App, Ablauf "auth" — HTTP 401 (mit WWW-Authenticate) und 403 an beiden Engines; zusätzliche Fenster (VLC-Dialoge)? ===
+15:25:41.603 B06 start skript=auth
+15:25:41.604 B06 Beep-Wächter installiert auf NSResponder
+15:25:42.674 B06 Beep-Wächter aktiv für AppKitWindow: true
+15:25:42.674 B06 fenster: [3352 'B06-Sonde' key=true main=true fullscreen=false frame=900x450 firstResponder=SwiftUIOutlineListView]
+15:25:42.682 B06 push VLC 401
+15:25:42.700 B06 player onAppear engine=false channel=VLC 401
+15:25:42.813 B06 engine erzeugt #1 VLCPlaybackEngine für VLC 401
+15:25:42.817 B06 player engine.state=loading controlsVisible=true
+15:25:42.868 B06 player engine.state=idle controlsVisible=true
+15:25:48.009 B06 a1 VLC 401: fenster=[3352 'VLC 401' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] engines: #1 VLC 401=lebt state=idle paused=false vlcState=0 playing=false
+15:25:48.011 B06 screenshot angefordert mac-a1-VLC-401 fenster=3352
+15:25:49.059 B06 pop (Zurück)
+15:25:49.064 B06 player onDisappear isFullscreen=false pipActive=false
+15:25:50.124 B06 push AVKit 401
+15:25:50.140 B06 player onAppear engine=false channel=AVKit 401
+15:25:50.146 B06 engine erzeugt #2 AVKitPlaybackEngine für AVKit 401
+15:25:50.160 B06 player engine.state=loading controlsVisible=true
+15:25:50.284 B06 player engine.state=failed("The operation couldn’t be completed. (NSURLErrorDomain error -1013.)") controlsVisible=true
+15:25:55.450 B06 a2 AVKit 401: fenster=[3352 'AVKit 401' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] engines: #1 VLC 401=lebt state=idle paused=true vlcState=0 playing=false ; #2 AVKit 401=lebt state=failed("The operation couldn’t be completed. (NSURLErrorDomain error -1013.)") paused=false rate=0.0
+15:25:55.451 B06 screenshot angefordert mac-a2-AVKit-401 fenster=3352
+15:25:56.502 B06 pop (Zurück)
+15:25:56.505 B06 player onDisappear isFullscreen=false pipActive=false
+15:25:57.567 B06 push VLC 403
+15:25:57.575 B06 player onAppear engine=false channel=VLC 403
+15:25:57.581 B06 engine erzeugt #3 VLCPlaybackEngine für VLC 403
+15:25:57.583 B06 player engine.state=loading controlsVisible=true
+15:25:57.616 B06 player engine.state=idle controlsVisible=true
+15:26:02.811 B06 a3 VLC 403: fenster=[3352 'VLC 403' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] engines: #1 VLC 401=lebt state=idle paused=true vlcState=0 playing=false ; #2 AVKit 401=freigegeben ; #3 VLC 403=lebt state=idle paused=false vlcState=0 playing=false
+15:26:02.812 B06 screenshot angefordert mac-a3-VLC-403 fenster=3352
+15:26:03.847 B06 pop (Zurück)
+15:26:03.851 B06 player onDisappear isFullscreen=false pipActive=false
+15:26:04.915 B06 push AVKit 403
+15:26:04.929 B06 player onAppear engine=false channel=AVKit 403
+15:26:04.931 B06 engine erzeugt #4 AVKitPlaybackEngine für AVKit 403
+15:26:04.943 B06 player engine.state=loading controlsVisible=true
+15:26:05.010 B06 player engine.state=failed("You do not have permission to access the requested resource.") controlsVisible=true
+15:26:10.079 B06 a4 AVKit 403: fenster=[3352 'AVKit 403' key=false main=false fullscreen=false frame=900x450 firstResponder=HostingView] engines: #1 VLC 401=lebt state=idle paused=true vlcState=0 playing=false ; #2 AVKit 401=freigegeben ; #3 VLC 403=freigegeben ; #4 AVKit 403=lebt state=failed("You do not have permission to access the requested resource.") paused=false rate=0.0
+15:26:10.080 B06 screenshot angefordert mac-a4-AVKit-403 fenster=3352
+15:26:11.129 B06 pop (Zurück)
+15:26:11.134 B06 player onDisappear isFullscreen=false pipActive=false
+15:26:12.187 B06 ENDE engines: #1 VLC 401=lebt state=idle paused=true vlcState=0 playing=false ; #2 AVKit 401=freigegeben ; #3 VLC 403=freigegeben ; #4 AVKit 403=lebt state=failed("You do not have permission to access the requested resource.") paused=true rate=0.0
+MOCK 15:25:42.854 GET /auth/a1.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:25:42.854 auth-header=''
+MOCK 15:25:42.855 GET /auth/a1.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:25:42.855 auth-header=''
+MOCK 15:25:42.856 GET /auth/a1.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:25:42.856 auth-header=''
+MOCK 15:25:42.856 GET /auth/a1.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:25:42.856 auth-header=''
+MOCK 15:25:50.173 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.173 auth-header=''
+MOCK 15:25:50.244 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.244 auth-header=''
+MOCK 15:25:50.251 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.251 auth-header=''
+MOCK 15:25:50.256 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.256 auth-header=''
+MOCK 15:25:50.263 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.263 auth-header=''
+MOCK 15:25:50.267 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.267 auth-header=''
+MOCK 15:25:50.269 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.269 auth-header=''
+MOCK 15:25:50.272 GET /auth/a2.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:25:50.272 auth-header=''
+MOCK 15:25:57.604 GET /403/a3.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:25:57.605 GET /403/a3.ts ua='VLC/3.0.21 LibVLC/3.0.21' range='bytes=0-'
+MOCK 15:25:57.606 GET /403/a3.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:25:57.607 GET /403/a3.ts ua='VLC/3.0.21 LibVLC/3.0.21' range=''
+MOCK 15:26:04.946 GET /403/a4.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:26:04.948 GET /403/a4.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:26:05.001 GET /403/a4.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+MOCK 15:26:05.003 GET /403/a4.m3u8 ua='AppleCoreMedia/1.0.0.26A428 (Macintosh; U; Intel Mac OS X 27_0; de_de)' range=''
+VLCKit-Standardparameter, von VLCKit in die Einstellungen der App geschrieben (defaults read lu.daumedia.MikaPlusPlayer.b06probe VLCParams):
+( "--play-and-pause", "--no-color", "--no-video-title-show", "--verbose=4", "--no-sout-keep", "--vout=macosx", "--text-renderer=freetype", "--extraintf=macosx_dialog_provider", "--audio-resampler=soxr")
+HTTP-Cache der Sonde (~/Library/Caches/<Bundle-ID>/Cache.db): cfurl_cache_response Zeilen = 0

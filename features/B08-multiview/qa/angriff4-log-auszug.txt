@@ -1,0 +1,17 @@
+# Angriff 4 · Unified Log des Test-Hosts der QA-Kopie (processImagePath enthält qa1-b08), 2026-09-26 15:40–16:25
+# Befehl: /usr/bin/log show --style compact --start "2026-09-26 15:40:00" --predicate 'processImagePath CONTAINS "qa1-b08"'
+# Zeilen gesamt:    44807 · davon <private>: 0 · Subsystem lu.daumedia: 0
+# Treffer Passwort qa-pass-123: 6 (alle aus com.apple.network:connection, HLS-Kachel eines Xtream-Senders) – Passwort hier durch <pass> ersetzt
+
+2026-09-26 15:49:06.453 Df MikaPlusPlayer[98585:5fbb7b] [com.apple.network:connection] [C123 2B1D58A0-B636-4837-A4B8-C46F8B04382D 127.0.0.1:49871 tcp, url: http://127.0.0.1:49871/live/qa-user/<pass>/102.m3u8, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{0C96D4A7-A2D1-4D52-922D-AC41EC85D1C7}{(null)
+2026-09-26 15:49:06.457 Df MikaPlusPlayer[98585:603cb2] [com.apple.network:connection] [C125 AE9FAF8B-5EDE-4B8E-B514-4F5A2BDA2FDE 127.0.0.1:49871 tcp, url: http://127.0.0.1:49871/live/qa-user/<pass>/seg00003.ts, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{0C96D4A7-A2D1-4D52-922D-AC41EC85D1C7}{(nu
+2026-09-26 15:49:11.799 Df MikaPlusPlayer[98585:606729] [com.apple.network:connection] [C125 AE9FAF8B-5EDE-4B8E-B514-4F5A2BDA2FDE 127.0.0.1:49871 tcp, traffic class: 500, url: http://127.0.0.1:49871/live/qa-user/<pass>/seg00003.ts, definite, attribution: developer] cancel
+2026-09-26 15:49:11.799 Df MikaPlusPlayer[98585:606729] [com.apple.network:connection] [C125 AE9FAF8B-5EDE-4B8E-B514-4F5A2BDA2FDE 127.0.0.1:49871 tcp, traffic class: 500, url: http://127.0.0.1:49871/live/qa-user/<pass>/seg00003.ts, definite, attribution: developer] cancelled
+2026-09-26 15:49:11.799 Df MikaPlusPlayer[98585:606729] [com.apple.network:connection] [C123 2B1D58A0-B636-4837-A4B8-C46F8B04382D 127.0.0.1:49871 tcp, traffic class: 500, url: http://127.0.0.1:49871/live/qa-user/<pass>/102.m3u8, definite, attribution: developer] cancel
+2026-09-26 15:49:11.799 Df MikaPlusPlayer[98585:606729] [com.apple.network:connection] [C123 2B1D58A0-B636-4837-A4B8-C46F8B04382D 127.0.0.1:49871 tcp, traffic class: 500, url: http://127.0.0.1:49871/live/qa-user/<pass>/102.m3u8, definite, attribution: developer] cancelled
+
+# Beispiel CFNetwork-Fehlerzeile (Kachel mit geschlossenem Port, M3U-Adresse ohne Zugangsdaten):
+2026-09-26 15:47:12.006 Df MikaPlusPlayer[98585:5f5301] [com.apple.CFNetwork:Default] Task <89484995-F743-4F02-95D3-1100FCB99925>.<21> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLStringKey=http://127.0.0.1:49831/livehls/r5/index.m3u8, NSErrorFailingURLKey=http://127.0.0.1:49831/livehls/r5/index.m3u8, _NSURLErrorRelatedURLSessionTaskErro
+
+# VLC-Kacheln (MPEG-TS): keine Adresse im Protokoll, nur:
+2026-09-26 15:47:01.141 Df MikaPlusPlayer[98585:5f5290] (VLCKit) creating player instance using shared library

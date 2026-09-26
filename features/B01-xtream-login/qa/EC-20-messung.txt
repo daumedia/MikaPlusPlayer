@@ -1,0 +1,15 @@
+EC-20 / BUG-12 — Blockade des Main-Threads beim Xtream-Import
+Gemessen am 2026-09-16 im macOS-Test-Host (Debug), In-Memory-Store, lokaler Mock.
+
+Befehl:
+  TEST_RUNNER_B01_QA_EC20_SIZES=1500,3000,6000,17000 xcodebuild test \
+    -project MikaPlusPlayer.xcodeproj -scheme MikaPlusPlayer-macOS -destination 'platform=macOS' \
+    -derivedDataPath build/dd-test \
+    -only-testing:MikaPlusPlayerTests/B01LangsamTests/testEC20_GrosseSenderlisteBlockiertMainThread
+
+Ausgabe:
+B01QA|EC-20|sender=1500|bytes=203681|gesamt=2.43s|maxMainThreadBlockade=2.39s
+B01QA|EC-20|sender=3000|bytes=411811|gesamt=9.04s|maxMainThreadBlockade=9.02s
+B01QA|EC-20|sender=6000|bytes=828061|gesamt=35.36s|maxMainThreadBlockade=35.33s
+B01QA|EC-20|sender=17000|bytes=2382311|gesamt=284.95s|maxMainThreadBlockade=284.88s
+** TEST SUCCEEDED **

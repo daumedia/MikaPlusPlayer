@@ -1,0 +1,323 @@
+# B02 M3U-Import — Protokoll der Erfassungssonde (2026-09-16)
+# Code-Stand: c01f1cf + Reparatur B01 (eingefrorene Kopie), Kopie unter Bundle-ID lu.daumedia.MikaPlusPlayer.b02probe,
+# Datenbank der Probe-App auf Temp-Datei, Sparkle aus. Debug-Build, Apple M3 Max, macOS 27.0 (26A428).
+# Erfundene Daten und Zugangsdaten (qa-user / qa-pass-…), Mocks nur auf 127.0.0.1 (Ports wechseln je Lauf).
+# Zeilen 'B02PROBE|…' stammen aus den XCTest-Läufen im Test-Host der Mac-App. Temp-Pfade gekürzt.
+
+== Typen und Standard-Öffner (swift-Skript, nur gelesen: UTType, NSWorkspace) ==
+B02PROBE|UTI|allowedTypes=["public.m3u-playlist", "public.m3u-playlist", "public.plain-text"]|m3uDynamic=false|m3u8Dynamic=false
+B02PROBE|UTI|public.m3u-playlist|conformsTo public.text=true|plainText=true|supertypes=["public.content", "public.data", "public.item", "public.plain-text", "public.playlist", "public.text"]|ext=["m3u", "m3u8"]
+B02PROBE|UTI|m3u8=public.m3u-playlist|public.text=true|supertypes=["public.content", "public.data", "public.item", "public.plain-text", "public.playlist", "public.text"]
+B02PROBE|UTI|qa.m3u|typ=public.m3u-playlist|imDateidialogWaehlbar=true|vomDokumenttypErfasst=true|standardApp=/System/Applications/Music.app|mikaKandidaten=10
+B02PROBE|UTI|qa.m3u8|typ=public.m3u-playlist|imDateidialogWaehlbar=true|vomDokumenttypErfasst=true|standardApp=/System/Applications/Music.app|mikaKandidaten=10
+B02PROBE|UTI|qa.txt|typ=public.plain-text|imDateidialogWaehlbar=true|vomDokumenttypErfasst=true|standardApp=/System/Applications/TextEdit.app|mikaKandidaten=10
+B02PROBE|UTI|qa.csv|typ=public.comma-separated-values-text|imDateidialogWaehlbar=true|vomDokumenttypErfasst=true|standardApp=<installierte Drittanbieter-App>|mikaKandidaten=10
+B02PROBE|UTI|qa.json|typ=public.json|imDateidialogWaehlbar=false|vomDokumenttypErfasst=true|standardApp=<installierte Drittanbieter-App>|mikaKandidaten=10
+B02PROBE|UTI|qa.html|typ=public.html|imDateidialogWaehlbar=false|vomDokumenttypErfasst=true|standardApp=<installierte Drittanbieter-App>|mikaKandidaten=10
+B02PROBE|UTI|qa.swift|typ=public.swift-source|imDateidialogWaehlbar=true|vomDokumenttypErfasst=true|standardApp=<installierte Drittanbieter-App>|mikaKandidaten=10
+B02PROBE|UTI|qa.log|typ=com.apple.log|imDateidialogWaehlbar=true|vomDokumenttypErfasst=true|standardApp=/System/Applications/Utilities/Console.app|mikaKandidaten=10
+B02PROBE|UTI|qa.md|typ=net.daringfireball.markdown|imDateidialogWaehlbar=true|vomDokumenttypErfasst=true|standardApp=<installierte Drittanbieter-App>|mikaKandidaten=10
+B02PROBE|UTI|qa.pls|typ=public.pls-playlist|imDateidialogWaehlbar=false|vomDokumenttypErfasst=true|standardApp=/System/Applications/Music.app|mikaKandidaten=10
+B02PROBE|UTI|qa.xspf|typ=dyn.ah62d4rv4ge81u65uq2|imDateidialogWaehlbar=false|vomDokumenttypErfasst=false|standardApp=<installierte Drittanbieter-App>|mikaKandidaten=0
+B02PROBE|UTI|qa-ohne-endung|typ=public.data|imDateidialogWaehlbar=false|vomDokumenttypErfasst=false|standardApp=/System/Applications/TextEdit.app|mikaKandidaten=0
+
+== Lauf run1-parser-datei ==
+B02PROBE|F01|qa-liste.m3u|typ=public.m3u-playlist|OK playlist name="qa-liste" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F01|qa-liste.M3U8|typ=public.m3u-playlist|OK playlist name="qa-liste" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F01|qa-liste.txt|typ=public.plain-text|OK playlist name="qa-liste" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F01|notizen.txt|typ=public.plain-text|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|F01|daten.csv|typ=public.comma-separated-values-text|OK playlist name="daten" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F01|quelltext.swift|typ=public.swift-source|OK playlist name="quelltext" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F01|ohne-endung|typ=public.data|OK playlist name="ohne-endung" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F01|bild.png|typ=public.png|OK playlist name="bild" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F02|datei-0000|lesbar=false|FEHLER "Auf die ausgewählte Datei kann nicht zugegriffen werden."
+B02PROBE|F02|ordner-0000|FEHLER "Auf die ausgewählte Datei kann nicht zugegriffen werden."
+B02PROBE|F02|fehlt|FEHLER "Auf die ausgewählte Datei kann nicht zugegriffen werden."
+B02PROBE|F03|auf Datei|verweis.m3u|OK playlist name="verweis" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F03|ins Leere|ins-leere.m3u|FEHLER "Auf die ausgewählte Datei kann nicht zugegriffen werden."
+B02PROBE|F03|auf Ordner|ordner.m3u|FEHLER "Auf die ausgewählte Datei kann nicht zugegriffen werden."
+B02PROBE|F03|Kette|kette.m3u|OK playlist name="kette" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F04|startAccessingAufNormalerURL=true|bookmarkMitScope=ok|startAccessingAufBookmarkURL=true|OK playlist name="scope" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|F04|ordner-statt-datei|FEHLER "Auf die ausgewählte Datei kann nicht zugegriffen werden."
+B02PROBE|F04|sandboxEntitlement=nil|umgebung=APP_SANDBOX_CONTAINER_ID:nil
+B02PROBE|F05|fifo-Schreiber-nach-3s|gesamt=0.00s|maxMainThreadBlockade=0.00s|FEHLER "Auf die ausgewählte Datei kann nicht zugegriffen werden."
+B02PROBE|F06|iCloudDriveOrdnerVorhanden=true|nicht ausgefuehrt: keine Datei in iCloud Drive erzeugt, keine vorhandene gelesen (koennte Zugangsdaten enthalten)
+B02PROBE|F07|datei="liste.v2.m3u"|eingabeName=""|name="liste.v2"|sourceURL=nil|isRemote=false|lastRefreshed=nil
+B02PROBE|F07|datei=".m3u"|eingabeName=""|name=".m3u"|sourceURL=nil|isRemote=false|lastRefreshed=nil
+B02PROBE|F07|datei=".versteckt.m3u"|eingabeName=""|name=".versteckt"|sourceURL=nil|isRemote=false|lastRefreshed=nil
+B02PROBE|F07|datei="Sender & Ümlaut (Kopie).M3U8"|eingabeName=""|name="Sender & Ümlaut (Kopie)"|sourceURL=nil|isRemote=false|lastRefreshed=nil
+B02PROBE|F07|datei="liste.m3u"|eingabeName="   "|name="   "|sourceURL=nil|isRemote=false|lastRefreshed=nil
+B02PROBE|F07|datei="liste.m3u"|eingabeName="Eigener Name"|name="Eigener Name"|sourceURL=nil|isRemote=false|lastRefreshed=nil
+B02PROBE|F07|datei=<254 Zeichen>|eingabeName=""|name=<250 Zeichen>|sourceURL=nil|isRemote=false|lastRefreshed=nil
+B02PROBE|F08|OK playlist name="relativ" sourceURL=nil isRemote=false isXtream=false channelCount=1 lastRefreshed=nil sender={name="Absolut" gruppe=nil url=file://<tmp>/stream.ts}
+B02PROBE|F09|dateiBytes=52145128|ergebnis=OK|sender=1000|laengsterName=52018|gesamt=3.68s|maxMainThreadBlockade=3.68s|speicherVorher=136MB|nachher=256MB|storeBytes=53563392
+	 Executed 9 tests, with 0 failures (0 unexpected) in 5.226 (5.230) seconds
+B02PROBE|P01|ohne #EXTM3U|anzahl=1|{name="Ohne Kopf" url=http://127.0.0.1:9/a.m3u8 gruppe=nil tvg=nil logo=nil}
+B02PROBE|P01|#EXTM3U mit Attributen|anzahl=1|{name="Mit Kopf" url=http://127.0.0.1:9/b.m3u8 gruppe=nil tvg=nil logo=nil}
+B02PROBE|P01|#EXTM3U mitten in der Datei|anzahl=2|{name="Eins" url=http://h/1.ts gruppe=nil tvg=nil logo=nil} {name="Zwei" url=http://h/2.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P01|gar kein M3U (HTML)|anzahl=0|
+B02PROBE|P01|leer|anzahl=0|
+B02PROBE|P02|LF|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|CRLF|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|CR|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|gemischt|anzahl=2|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {name="B" url=http://h/b.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|Leerzeilen, Tabs, Leerzeichen am Rand|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|Leerzeile zwischen EXTINF und URL|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|U+2028 im Namen|anzahl=0|
+B02PROBE|P02|U+0085 im Namen|anzahl=0|
+B02PROBE|P02|VT und FF im Namen|anzahl=0|
+B02PROBE|P02|NUL im Namen|anzahl=1|{name="Vor\0Nach" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|Steuerzeichen ESC im Namen|anzahl=1|{name="Vor\u{1B}[31mRot" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P02|Bidi-Override im Namen|anzahl=1|{name="abc‮gnp.exe" skalare=["U+202E"] url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P04|utf8|bytes=71|OK playlist name="utf8" sourceURL=nil isRemote=false isXtream=false channelCount=1 lastRefreshed=nil sender={name="ORF Eins Ä" skalare=["U+00C4"] gruppe="Österreich" url=http://h/a.ts}
+B02PROBE|P04|utf8-bom-mit-EXTM3U|bytes=74|OK playlist name="utf8-bom-mit-EXTM3U" sourceURL=nil isRemote=false isXtream=false channelCount=1 lastRefreshed=nil sender={name="ORF Eins Ä" skalare=["U+00C4"] gruppe="Österreich" url=http://h/a.ts}
+B02PROBE|P04|utf8-bom-direkt-EXTINF|bytes=66|OK playlist name="utf8-bom-direkt-EXTINF" sourceURL=nil isRemote=false isXtream=false channelCount=1 lastRefreshed=nil sender={name="ORF Eins Ä" skalare=["U+00C4"] gruppe="Österreich" url=http://h/a.ts}
+B02PROBE|P04|latin1|bytes=69|OK playlist name="latin1" sourceURL=nil isRemote=false isXtream=false channelCount=1 lastRefreshed=nil sender={name="ORF Eins Ä" skalare=["U+00C4"] gruppe="Österreich" url=http://h/a.ts}
+B02PROBE|P04|utf16le-bom|bytes=140|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|P04|utf16be-bom|bytes=140|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|P04|utf8-mit-einem-ungueltigen-Byte|bytes=103|OK playlist name="utf8-mit-einem-ungueltigen-Byte" sourceURL=nil isRemote=false isXtream=false channelCount=2 lastRefreshed=nil sender={name="Kaputt ÿ" skalare=["U+00FF"] gruppe=nil url=http://h/b.ts} {name="Ãrger TV" skalare=["U+00C3", "U+0084"] gruppe="Ãsterreich" url=http://h/a.ts}
+B02PROBE|P04|windows1252-euro-und-ellipse|bytes=44|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|P04|leer|bytes=0|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|P04|nur-NUL|bytes=100|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|P05|Komma in group-title und Name|anzahl=1|{name="Das Erste, HD" url=http://h/a.m3u8 gruppe="News, Politik" tvg="ard.de" logo=http://x/logo.png}
+B02PROBE|P05|Komma in tvg-logo-URL|anzahl=1|{name="Name" url=http://h/a.ts gruppe=nil tvg=nil logo=http://x/l.png?a=1,2}
+B02PROBE|P05|Quotes im Namen|anzahl=1|{name="Sender \"Eins\", HD" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P05|Name leer nach Komma|anzahl=1|{name="stream-name.ts" url=http://h/stream-name.ts gruppe=nil tvg="x" logo=nil}
+B02PROBE|P05|Name nur Leerzeichen|anzahl=1|{name="letzter.m3u8" url=http://h/pfad/letzter.m3u8 gruppe=nil tvg=nil logo=nil}
+B02PROBE|P05|kein Komma|anzahl=1|{name="ohne-komma.ts" url=http://h/ohne-komma.ts gruppe=nil tvg="x" logo=nil}
+B02PROBE|P05|Dauer ohne Attribute, Name mit ="|anzahl=1|{name="tvg-id=\"fake\" Name" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P05|Attribute nach dem Komma|anzahl=1|{name="Name group-title=\"Nach Komma\"" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P05|URL mit Query und Fragment|anzahl=1|{name="Q" url=http://h/a.ts?token=abc&x=1#frag gruppe=nil tvg=nil logo=nil}
+B02PROBE|P06|ein offenes Quote vor dem Komma|anzahl=1|{name="a.ts" url=http://h/a.ts gruppe="News,Das Erste" tvg=nil logo=nil}
+B02PROBE|P06|Quote fehlt am Wertende|anzahl=1|{name="a.ts" url=http://h/a.ts gruppe=nil tvg="abc group-title=" logo=nil}
+B02PROBE|P06|drei Quotes|anzahl=1|{name="a.ts" url=http://h/a.ts gruppe=nil tvg="a" logo=nil}
+B02PROBE|P06|Quote nur im Namen|anzahl=1|{name="Ein \"Name, zwei" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P06|einfache Hochkommas|anzahl=1|{name="X\',Name" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P07|GROSS|anzahl=1|{name="Gross" url=http://h/a.ts gruppe="GRUPPE" tvg="up" logo=http://x/u.png}
+B02PROBE|P07|Gemischt|anzahl=1|{name="Mix" url=http://h/a.ts gruppe="Grp" tvg="mix" logo=nil}
+B02PROBE|P07|Leerzeichen um =|anzahl=1|{name="Sp" url=http://h/a.ts gruppe="G" tvg="sp" logo=nil}
+B02PROBE|P07|ohne Quotes|anzahl=1|{name="NoQuote" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P07|doppeltes Attribut|anzahl=1|{name="Doppelt" url=http://h/a.ts gruppe="Zweite" tvg=nil logo=nil}
+B02PROBE|P07|leere Werte|anzahl=1|{name="Leer" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P07|Werte mit Leerzeichen am Rand|anzahl=1|{name="Rand" url=http://h/a.ts gruppe=" News " tvg=" id " logo=nil}
+B02PROBE|P07|andere Attribute (tvg-name, tvg-chno, catchup)|anzahl=1|{name="Andere" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P07|tvg-logo ungültige URL|anzahl=1|{name="Logo" url=http://h/a.ts gruppe=nil tvg=nil logo=kein%20url%20mit%20leer%20zeichen}
+B02PROBE|P07|Tabs statt Leerzeichen|anzahl=1|{name="Tab" url=http://h/a.ts gruppe="TabG" tvg="tab" logo=nil}
+B02PROBE|P08|EXTGRP nach EXTINF ohne group-title|anzahl=1|{name="A" url=http://h/a.ts gruppe="Sport" tvg=nil logo=nil}
+B02PROBE|P08|EXTGRP vor EXTINF|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P08|EXTGRP bei vorhandenem group-title|anzahl=1|{name="A" url=http://h/a.ts gruppe="Titel" tvg=nil logo=nil}
+B02PROBE|P08|zwei EXTGRP|anzahl=1|{name="A" url=http://h/a.ts gruppe="Erste" tvg=nil logo=nil}
+B02PROBE|P08|EXTGRP leer|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P08|extgrp klein|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P08|EXTGRP gilt nicht für Folgesender|anzahl=2|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {name="B" url=http://h/b.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P09|einfache M3U nur mit URLs|anzahl=0|
+B02PROBE|P09|URL vor dem ersten EXTINF|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P09|zwei EXTINF hintereinander|anzahl=1|{name="Zweiter" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P09|EXTINF + Kommentar + EXTVLCOPT + URL|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P09|extinf klein|anzahl=0|
+B02PROBE|P09|#EXTINF ohne Doppelpunkt|anzahl=0|
+B02PROBE|P09|EXTINF am Dateiende ohne URL|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P09|zwei URLs nach einem EXTINF|anzahl=1|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P09|ungültige URL-Zeile verbraucht EXTINF|anzahl=0|
+B02PROBE|P09|gleicher Sender doppelt|anzahl=2|{name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil} {name="A" url=http://h/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P10|Dateiname|anzahl=0|
+B02PROBE|P10|Pfad|anzahl=0|
+B02PROBE|P10|Punktpfad|anzahl=0|
+B02PROBE|P10|schema-relativ|anzahl=0|
+B02PROBE|P10|Windows-Pfad|anzahl=1|{name="Win" url=C:%5CVideos%5Ca.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P10|Host:Port ohne Schema|anzahl=0|
+B02PROBE|P10|localhost:Port ohne Schema|anzahl=1|{name="LocalhostPort" url=localhost:8080/live/1.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|file|anzahl=1|{name="Datei" url=file:///etc/hosts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|file mit Home-Pfad|anzahl=1|{name="Home" url=file:///Users/qa/Movies/privat.mp4 gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|javascript|anzahl=1|{name="JS" url=javascript:alert(1) gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|data|anzahl=1|{name="Data" url=data:video/mp2t;base64,R0lGODlh gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|udp multicast|anzahl=1|{name="UDP" url=udp://@239.0.0.1:1234 gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|rtp|anzahl=1|{name="RTP" url=rtp://239.0.0.1:5000 gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|rtsp|anzahl=1|{name="RTSP" url=rtsp://127.0.0.1:554/cam gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|rtmp|anzahl=1|{name="RTMP" url=rtmp://127.0.0.1/live/x gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|smb|anzahl=1|{name="SMB" url=smb://nas.local/share/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|ftp|anzahl=1|{name="FTP" url=ftp://127.0.0.1/a.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|mailto|anzahl=1|{name="Mail" url=mailto:qa@example.invalid gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|App-Schema x-apple.systempreferences|anzahl=1|{name="Prefs" url=x-apple.systempreferences:com.apple.preference.security gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|vlc|anzahl=1|{name="VLC" url=vlc://quit gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|http mit Benutzerinfo|anzahl=1|{name="UserInfo" url=http://qa-user:qa-pass-123@127.0.0.1:9/live/1.ts gruppe=nil tvg=nil logo=nil}
+B02PROBE|P11|tvg-logo file|anzahl=1|{name="LogoFile" url=http://h/a.ts gruppe=nil tvg=nil logo=file:///etc/hosts}
+B02PROBE|P11|tvg-logo javascript|anzahl=1|{name="LogoJS" url=http://h/a.ts gruppe=nil tvg=nil logo=javascript:alert(1)}
+B02PROBE|P11|tvg-logo relativ|anzahl=1|{name="LogoRel" url=http://h/a.ts gruppe=nil tvg=nil logo=logos/a.png}
+B02PROBE|P12|Name 1 MB, Logo-URL 5 MB|eingabeBytes=6000063|anzahl=1|dauer=0.69s|nameZeichen=1000000|logoZeichen=5000025|gruppeZeichen=-1|urlZeichen=13
+B02PROBE|P12|1 MB Anführungszeichen|eingabeBytes=1000028|anzahl=1|dauer=0.13s|nameZeichen=1|logoZeichen=-1|gruppeZeichen=-1|urlZeichen=13
+B02PROBE|P12|1 MB a=a=a=|eingabeBytes=1000028|anzahl=1|dauer=0.27s|nameZeichen=1|logoZeichen=-1|gruppeZeichen=-1|urlZeichen=13
+B02PROBE|P12|URL-Zeile 2 MB|eingabeBytes=2000033|anzahl=1|dauer=0.09s|nameZeichen=8|logoZeichen=-1|gruppeZeichen=-1|urlZeichen=2000012
+B02PROBE|P12|Gruppe 1 MB|eingabeBytes=1000042|anzahl=1|dauer=0.12s|nameZeichen=1|logoZeichen=-1|gruppeZeichen=1000000|urlZeichen=13
+B02PROBE|P13|17000|bytes=2550298|anzahl=17000|parseDauer=0.31,0.30,0.31s
+B02PROBE|P14|50MB-Parser|bytes=46545568|anzahl=300000|dekodieren=0.00s|parseDauer=5.51s|speicherVorher=49MB|speicherNachher=419MB
+	 Executed 13 tests, with 0 failures (0 unexpected) in 8.240 (8.254) seconds
+	 Executed 22 tests, with 0 failures (0 unexpected) in 13.466 (13.485) seconds
+	 Executed 22 tests, with 0 failures (0 unexpected) in 13.466 (13.486) seconds
+
+== Lauf run2-url ==
+B02PROBE|U01|/200.m3u|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54664/200.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|dauer=0.03s|quelle=[1: GET /200.m3u]|ziel=[0: ]
+B02PROBE|U01|/203.m3u|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54664/203.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|dauer=0.00s|quelle=[1: GET /203.m3u]|ziel=[0: ]
+B02PROBE|U01|/204.m3u|FEHLER "Die Playlist enthält keine gültigen Sender."|dauer=0.00s|quelle=[1: GET /204.m3u]|ziel=[0: ]
+B02PROBE|U01|/300.m3u|FEHLER "Netzwerkfehler: HTTP 300"|dauer=0.00s|quelle=[1: GET /300.m3u]|ziel=[0: ]
+B02PROBE|U01|/304.m3u|FEHLER "Netzwerkfehler: HTTP 304"|dauer=0.00s|quelle=[1: GET /304.m3u]|ziel=[0: ]
+B02PROBE|U01|/301-gleicher-host|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54664/301-gleicher-host isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|dauer=0.01s|quelle=[2: GET /301-gleicher-host ; GET /200.m3u]|ziel=[0: ]
+B02PROBE|U01|/302-fremder-host|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54664/302-fremder-host isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|dauer=0.01s|quelle=[1: GET /302-fremder-host]|ziel=[1: GET /ziel.m3u]
+B02PROBE|U01|/307-fremder-host-mit-query|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54664/307-fremder-host-mit-query isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|dauer=0.01s|quelle=[1: GET /307-fremder-host-mit-query]|ziel=[1: GET /ziel.m3u?username=qa-user&password=qa-pass-u01]
+B02PROBE|U01|/302-nach-file|FEHLER "Netzwerkfehler: You do not have permission to access the requested resource."|dauer=0.00s|quelle=[1: GET /302-nach-file]|ziel=[0: ]
+B02PROBE|U01|/302-nach-https|FEHLER "Netzwerkfehler: Could not connect to the server."|dauer=0.00s|quelle=[1: GET /302-nach-https]|ziel=[0: ]
+B02PROBE|U01|/schleife|FEHLER "Netzwerkfehler: too many HTTP redirects"|dauer=0.05s|quelle=[21: GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife ; GET /schleife]|ziel=[0: ]
+B02PROBE|U01|/400.m3u|FEHLER "Netzwerkfehler: HTTP 400"|dauer=0.00s|quelle=[1: GET /400.m3u]|ziel=[0: ]
+B02PROBE|U01|/401.m3u|FEHLER "Netzwerkfehler: HTTP 401"|dauer=0.00s|quelle=[1: GET /401.m3u]|ziel=[0: ]
+B02PROBE|U01|/403.m3u|FEHLER "Netzwerkfehler: HTTP 403"|dauer=0.00s|quelle=[1: GET /403.m3u]|ziel=[0: ]
+B02PROBE|U01|/404.m3u|FEHLER "Netzwerkfehler: HTTP 404"|dauer=0.00s|quelle=[1: GET /404.m3u]|ziel=[0: ]
+B02PROBE|U01|/407.m3u|FEHLER "Netzwerkfehler: HTTP 407"|dauer=0.00s|quelle=[1: GET /407.m3u]|ziel=[0: ]
+B02PROBE|U01|/429.m3u|FEHLER "Netzwerkfehler: HTTP 429"|dauer=0.02s|quelle=[1: GET /429.m3u]|ziel=[0: ]
+B02PROBE|U01|/500.m3u|FEHLER "Netzwerkfehler: HTTP 500"|dauer=0.00s|quelle=[1: GET /500.m3u]|ziel=[0: ]
+B02PROBE|U01|/503.m3u|FEHLER "Netzwerkfehler: HTTP 503"|dauer=0.00s|quelle=[1: GET /503.m3u]|ziel=[0: ]
+B02PROBE|U01|playlistsGesamt=5
+B02PROBE|U02|contentType=audio/x-mpegurl|bodyBytes=136|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54666/a isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|U02|contentType=application/vnd.apple.mpegurl|bodyBytes=136|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54666/b isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|U02|contentType=text/html; charset=utf-8|bodyBytes=136|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54666/c isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|U02|contentType=application/octet-stream|bodyBytes=136|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54666/d isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|U02|contentType=image/png|bodyBytes=136|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54666/e isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}
+B02PROBE|U02|contentType=text/html|bodyBytes=64|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|U02|contentType=application/json|bodyBytes=24|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|U02|contentType=audio/x-mpegurl|bodyBytes=0|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|U02|contentType=text/plain; charset=iso-8859-1|bodyBytes=36|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54666/i isRemote=true isXtream=false channelCount=1 lastRefreshed=gesetzt sender={name="Österreich" skalare=["U+00D6"] gruppe=nil url=http://h/a.ts}
+B02PROBE|U02|contentType=text/plain; charset=utf-8|bodyBytes=36|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54666/j isRemote=true isXtream=false channelCount=1 lastRefreshed=gesetzt sender={name="Österreich" skalare=["U+00D6"] gruppe=nil url=http://h/a.ts}
+B02PROBE|U02|contentType=audio/x-mpegurl; charset=utf-16|bodyBytes=64|FEHLER "Die Playlist enthält keine gültigen Sender."
+B02PROBE|U03|eingabe="  http://127.0.0.1:54667/liste.m3u  "|name=""|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54667/liste.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /liste.m3u]
+B02PROBE|U03|eingabe="\n\thttp://127.0.0.1:54667/liste.m3u\n"|name=""|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54667/liste.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /liste.m3u]
+B02PROBE|U03|eingabe="HTTP://127.0.0.1:54667/gross.m3u"|name=""|OK playlist name="127.0.0.1" sourceURL=HTTP://127.0.0.1:54667/gross.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /gross.m3u]
+B02PROBE|U03|eingabe="127.0.0.1:54667/ohne-schema.m3u"|name=""|FEHLER "Die angegebene URL ist ungültig."|anfragen=[]
+B02PROBE|U03|eingabe="localhost:54667/ohne-schema.m3u"|name=""|FEHLER "Netzwerkfehler: unsupported URL"|anfragen=[]
+B02PROBE|U03|eingabe="example.invalid/liste.m3u"|name=""|FEHLER "Die angegebene URL ist ungültig."|anfragen=[]
+B02PROBE|U03|eingabe="   "|name=""|FEHLER "Die angegebene URL ist ungültig."|anfragen=[]
+B02PROBE|U03|eingabe="http://"|name=""|FEHLER "Netzwerkfehler: Could not connect to the server."|anfragen=[]
+B02PROBE|U03|eingabe="http:///liste.m3u"|name=""|FEHLER "Netzwerkfehler: Could not connect to the server."|anfragen=[]
+B02PROBE|U03|eingabe="http://127.0.0.1:54667/mit leerzeichen.m3u"|name=""|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54667/mit%20leerzeichen.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /mit%20leerzeichen.m3u]
+B02PROBE|U03|eingabe="http://127.0.0.1:54667/ümlaut.m3u"|name=""|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54667/%C3%BCmlaut.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /%C3%BCmlaut.m3u]
+B02PROBE|U03|eingabe="http://127.0.0.1:54667/liste.m3u#fragment"|name=""|OK playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54667/liste.m3u#fragment isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /liste.m3u]
+B02PROBE|U03|eingabe="ftp://127.0.0.1:54667/liste.m3u"|name=""|FEHLER "Netzwerkfehler: The request timed out."|anfragen=[]
+B02PROBE|U03|eingabe="javascript:alert(1)"|name=""|FEHLER "Netzwerkfehler: unsupported URL"|anfragen=[]
+B02PROBE|U03|eingabe="file://<tmp>/b02-…(116 Zeichen)"|name=""|OK playlist name="Playlist" sourceURL=file://<tmp>/b02-probe-u03-E266AEDA-72E1-46C7-8420-6FBC99120509/lokal.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[]
+B02PROBE|U03|eingabe="data:audio/x-mpegurl;base64,I0VYVE0zVQojRVhUSU5GOi0xIHR2Zy1p…(212 Zeichen)"|name=""|OK playlist name="Playlist" sourceURL=data:audio/x-mpegurl;base64,I0VYVE0zVQojRVhUSU5GOi0xIHR2Zy1pZD0iYSIgZ3JvdXAtdGl0bGU9Ik5ld3MiLEthbmFsIEEKaHR0cDovLzEyNy4wLjAuMTo5L2xpdmUvYS5tM3U4CiNFWFRJTkY6LTEsS2FuYWwgQgpodHRwOi8vMTI3LjAuMC4xOjkvbGl2ZS9iLnRzCg== isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[]
+B02PROBE|U03|eingabe="http://127.0.0.1:54667/liste.m3u"|name="   "|OK playlist name="   " sourceURL=http://127.0.0.1:54667/liste.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /liste.m3u]
+B02PROBE|U03|eingabe="http://127.0.0.1:54667/liste.m3u"|name="  Mein Name  "|OK playlist name="  Mein Name  " sourceURL=http://127.0.0.1:54667/liste.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /liste.m3u]
+B02PROBE|U03|eingabe="http://qa-user:qa-pass-u03@127.0.0.1:54667/liste.m3u"|name=""|OK playlist name="127.0.0.1" sourceURL=http://qa-user:qa-pass-u03@127.0.0.1:54667/liste.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /liste.m3u]
+B02PROBE|U03|eingabe="http://localhost:54667/liste.m3u"|name=""|OK playlist name="localhost" sourceURL=http://localhost:54667/liste.m3u isRemote=true isXtream=false channelCount=2 lastRefreshed=gesetzt sender={name="Kanal A" gruppe="News" url=http://127.0.0.1:9/live/a.m3u8} {name="Kanal B" gruppe=nil url=http://127.0.0.1:9/live/b.ts}|anfragen=[GET /liste.m3u]
+B02PROBE|U03|eingabe="http://[::1]:54667/liste.m3u"|name=""|FEHLER "Netzwerkfehler: Could not connect to the server."|anfragen=[]
+B02PROBE|U04|import|playlist name="127.0.0.1" sourceURL=http://127.0.0.1:54670/get.php?username=qa-user&password=qa-pass-b02u04-9205&type=m3u_plus&output=ts isRemote=true isXtream=false channelCount=3 lastRefreshed=gesetzt sender={name="Drei" gruppe=nil url=http://127.0.0.1:9/live/103.m3u8?token=qa-pass-b02u04-9205} {name="Eins" gruppe="QA" url=http://127.0.0.1:9/live/qa-user/qa-pass-b02u04-9205/101.ts} {name="Zwei" gruppe=nil url=http://127.0.0.1:9/qa-user/qa-pass-b02u04-9205/102}
+B02PROBE|U04|db|sourceURLMitPasswort=1|streamURLsMitPasswort=3/3|rohBytes=["b01-qa.store": 0, "b01-qa.store-wal": 4, "b01-qa.store-shm": 0]|abspielbarMitPasswort=3|schluesselbundEintrag=false|anfragen=[GET /get.php?username=qa-user&password=qa-pass-b02u04-9205&type=m3u_plus&output=ts]
+B02PROBE|U04|B01-Umstellung|CredentialMigrationResult(migratedPlaylists: 0, rewrittenChannels: 0, failedPlaylists: 0)|rohBytesDanach=["b01-qa.store-wal": 4, "b01-qa.store": 0, "b01-qa.store-shm": 0]|sourceURLDanach=true
+B02PROBE|U04|nachLoeschenOffen|zeilen=0|rohBytes=["b01-qa.store": 0, "b01-qa.store-shm": 0, "b01-qa.store-wal": 4]
+B02PROBE|U04|nachSchliessen|rohBytes=["b01-qa.store": 0, "b01-qa.store-shm": 0, "b01-qa.store-wal": 0]
+B02PROBE|U04b|/ohne-challenge.m3u|ergebnis=OK|meldungEnthaeltPasswort=false|sourceURLEnthaeltPasswort=true|quelle=[/ohne-challenge.m3u auth=nein enthaeltPasswort=false]|ziel=[]
+B02PROBE|U04b|/basic.m3u|ergebnis=OK|meldungEnthaeltPasswort=false|sourceURLEnthaeltPasswort=true|quelle=[/basic.m3u auth=nein enthaeltPasswort=false ; /basic.m3u auth=ja enthaeltPasswort=true]|ziel=[]
+B02PROBE|U04b|/basic-redirect|ergebnis=OK|meldungEnthaeltPasswort=false|sourceURLEnthaeltPasswort=true|quelle=[/basic-redirect auth=ja enthaeltPasswort=true]|ziel=[/ziel.m3u auth=nein enthaeltPasswort=false]
+B02PROBE|U05|cacheDB=<Caches>/lu.daumedia.MikaPlusPlayer.b02probe/Cache.db|urlCacheDisk=20000000|memory=512000
+B02PROBE|U05|/get.php|schluesselMitPasswortVorher=0|nachImport=1|antwortkoerperMitPasswort=1|cachedResponse=true
+B02PROBE|U05|/get.php|nachLoeschenDerPlaylist|schluesselMitPasswort=1
+B02PROBE|U05|/no-store.php|schluesselMitPasswortVorher=1|nachImport=1|antwortkoerperMitPasswort=1|cachedResponse=false
+B02PROBE|U05|/no-store.php|nachLoeschenDerPlaylist|schluesselMitPasswort=1
+B02PROBE|U05|nachAufraeumen|schluesselMitPasswort=0
+B02PROBE|U06|playlists=2|namen=["127.0.0.1", "127.0.0.1"]|sender=4
+B02PROBE|U07|eingabe=http://127.0.0.1:54675/404.m3u?username=qa-user&password=<marker>|meldung="Netzwerkfehler: HTTP 404"|enthaeltPasswort=false|enthaeltBenutzer=false|enthaeltAdresse=false
+B02PROBE|U07|eingabe=http://127.0.0.1:54675/schleife?password=<marker>|meldung="Netzwerkfehler: too many HTTP redirects"|enthaeltPasswort=false|enthaeltBenutzer=false|enthaeltAdresse=false
+B02PROBE|U07|eingabe=http://127.0.0.1:54675/leer?password=<marker>|meldung="Die Playlist enthält keine gültigen Sender."|enthaeltPasswort=false|enthaeltBenutzer=false|enthaeltAdresse=false
+B02PROBE|U07|eingabe=http://127.0.0.1:9/get.php?username=qa-user&password=<marker>|meldung="Netzwerkfehler: Could not connect to the server."|enthaeltPasswort=false|enthaeltBenutzer=false|enthaeltAdresse=false
+B02PROBE|U07|eingabe=http://qa-user:<marker>@b02-probe-nicht-vorhanden.invalid/get.php?password=<marker>|meldung="Netzwerkfehler: A server with the specified hostname could not be found."|enthaeltPasswort=false|enthaeltBenutzer=false|enthaeltAdresse=false
+B02PROBE|U07|eingabe=ftp://qa-user:<marker>@127.0.0.1:9/x.m3u|meldung="Netzwerkfehler: unknown error"|enthaeltPasswort=false|enthaeltBenutzer=false|enthaeltAdresse=false
+B02PROBE|U07|eingabe=qa-user:<marker>@ohne-schema/x.m3u|meldung="Netzwerkfehler: unsupported URL"|enthaeltPasswort=false|enthaeltBenutzer=false|enthaeltAdresse=false
+B02PROBE|U08|bytes=52145128|ergebnis=OK|sender=1000|laengsterName=52018|gesamt=3.48s|maxMainThreadBlockade=3.45s|speicherVorher=138MB|nachher=361MB
+	 Executed 9 tests, with 0 failures (0 unexpected) in 74.670 (74.673) seconds
+	 Executed 9 tests, with 0 failures (0 unexpected) in 74.670 (74.674) seconds
+	 Executed 9 tests, with 0 failures (0 unexpected) in 74.670 (74.675) seconds
+
+== Lauf run3-ui ==
+B02PROBE|UI01|reiterURL|texte=["AXStaticText:Playlist importieren", "AXStaticText:Quelle", "AXRadioButton:Xtream | 0", "AXRadioButton:URL | 1", "AXRadioButton:Datei | 0", "AXHeading:Name (optional)", "AXStaticText:z. B. Mein IPTV-Anbieter", "AXHeading:Playlist-URL", "AXStaticText:https://… .m3u8", "AXButton:Von URL importieren", "AXButton:Abbrechen"]
+B02PROBE|UI01|reiterURL|felder=["placeholder= wert=", "placeholder= wert="]
+B02PROBE|UI01|leer|buttonAktiv=false
+B02PROBE|UI01|nurLeerzeichen|buttonAktiv=true
+B02PROBE|UI01|nurLeerzeichen|alert=["AXSheet:alert", "AXStaticText:Fehler", "AXStaticText:Die angegebene URL ist ungültig.", "AXButton:OK"]
+B02PROBE|UI01|gueltig|buttonAktiv=true
+B02PROBE|UI01|reiterDatei|texte=["AXStaticText:Playlist importieren", "AXStaticText:Quelle", "AXRadioButton:Xtream | 0", "AXRadioButton:URL | 0", "AXRadioButton:Datei | 1", "AXHeading:Name (optional)", "AXStaticText:z. B. Mein IPTV-Anbieter", "AXHeading:Lokale Datei", "AXButton:Datei auswählen (.m3u/.m3u8)", "AXButton:Abbrechen"]|felder=1|buttonAktiv=true
+B02PROBE|UI01|zurueckURL|urlFeldWert=http://127.0.0.1:54677/liste.m3u
+B02PROBE|UI01|erfolg|sheetGeschlossen=true|playlists=1|texte=["AXButton:127.0.0.1, 2 Sender"]
+B02PROBE|UI02|waehrend|importiere=true|busy=true|urlButton=false|abbrechen=true
+B02PROBE|UI02|alert|texte=["AXSheet:alert", "AXStaticText:Fehler", "AXStaticText:Netzwerkfehler: HTTP 404", "AXButton:OK"]
+B02PROBE|UI02|nachOK|felder=["QA URL", "http://127.0.0.1:54678/fehlt.m3u"]|urlButton=true|sheetOffen=true|playlists=0
+B02PROBE|UI03|a-erfolgNachAbbrechen|playlistsDirekt=0|playlistsNach5s=1|anfragen=1
+B02PROBE|UI03|b-fehlerNachAbbrechen|anfragen=1|neueAlerts=1|verwaisteSheets=1|sheetAmFenster=false|playlists=1
+B02PROBE|UI03|b-erneutGeoeffnet|alertAmSheet=false
+B02PROBE|UI04|a-selberDurchlauf|anfragen=2|neuePlaylists=2
+B02PROBE|UI04|b-150ms|anfragen=1|neuePlaylists=1
+B02PROBE|UI05|aufnahmen=shots/mac-02-reiter-url.png,shots/mac-03-reiter-datei.png
+	 Executed 5 tests, with 0 failures (0 unexpected) in 41.998 (42.001) seconds
+	 Executed 5 tests, with 0 failures (0 unexpected) in 41.998 (42.002) seconds
+
+== Lauf run5-ui03 ==
+B02PROBE|UI03|a-erfolgNachAbbrechen|playlistsDirekt=0|playlistsNach5s=1|anfragen=1
+B02PROBE|UI03|b-fehlerNachAbbrechen|anfragen=1|neueAlerts=1|verwaisteSheets=1|sheetAmFenster=false|playlists=1
+B02PROBE|UI03|b-fenster|klasse=_NSAlertPanel|sichtbar=true|onScreen=true|frame=(400.0, 402.0, 260.0, 122.0)|titel=""|parent=SheetPresentationWindow|attachedSheet=nil|texte=["AXWindow:alert", "AXStaticText:Fehler", "AXStaticText:Netzwerkfehler: HTTP 500", "AXButton:OK"]
+B02PROBE|UI03|b-fenster|klasse=SheetPresentationWindow|sichtbar=true|onScreen=true|frame=(295.0, 234.0, 470.0, 457.0)|titel=""|parent=nil|attachedSheet=_NSAlertPanel|texte=["AXStaticText:Playlist importieren", "AXStaticText:Quelle", "AXRadioButton:Xtream | 0", "AXRadioButton:URL | 1", "AXRadioButton:Datei | 0", "AXHeading:Name (optional)", "AXStaticText:z. B. Mein IPTV-Anbieter", "AXHeading:Playlist-URL", "AXStaticText:https://… .m3u8", "AXTextField:http://127.0.0.1:54687/fehler.m3u", "AXButton:Von URL importieren", "AXButton:Abbrechen", "AXWindow:alert", "AXStaticText:Fehler", "AXStaticText:Netzwerkfehler: HTTP 500", "AXButton:OK"]
+B02PROBE|UI03|b-CGWindowList|verwaistesSheetOnScreen=[true]|alertOnScreen=[true]|hauptfensterOnScreen=true
+B02PROBE|UI03|b-nachWeiteren5s|sichtbareNeueAlerts=1
+B02PROBE|UI03|b-erneutGeoeffnet|alertAmSheet=false
+
+== Lauf run6-langsam ==
+B02PROBE|L01|haengt|dauer=60.05s|FEHLER "Netzwerkfehler: The request timed out."
+B02PROBE|L02|troepfelt-10x10s|bytes=2758|dauer=100.41s|ergebnis=OK|sender=20
+B02PROBE|L03|inMemory|sender=1500|bytes=218518|gesamt=2.37s|maxMainThreadBlockade=2.34s|playlistID=1500|beziehung=1500
+B02PROBE|L03|inMemory|sender=3000|bytes=441468|gesamt=9.35s|maxMainThreadBlockade=9.33s|playlistID=3000|beziehung=3000
+B02PROBE|L03|inMemory|sender=6000|bytes=887368|gesamt=36.31s|maxMainThreadBlockade=36.29s|playlistID=6000|beziehung=6000
+B02PROBE|L03|inMemory|sender=17000|bytes=2550298|gesamt=286.59s|maxMainThreadBlockade=286.58s|playlistID=17000|beziehung=17000
+B02PROBE|L04|storeDatei|sender=6000|bytes=887368|gesamt=35.76s|maxMainThreadBlockade=35.73s|playlistID=6000|beziehung=6000
+	 Executed 4 tests, with 0 failures (0 unexpected) in 533.985 (533.987) seconds
+	 Executed 4 tests, with 0 failures (0 unexpected) in 533.985 (533.988) seconds
+	 Executed 4 tests, with 0 failures (0 unexpected) in 533.985 (533.989) seconds
+
+== Lauf run7-kopf ==
+B02PROBE|U09|anfrage1|kopfzeilen=["accept", "accept-encoding", "accept-language", "connection", "host", "user-agent"]|user-agent=Mika+Player/2 CFNetwork/3896.100.1.1.1 Darwin/27.0.0|accept=*/*|accept-language=de-DE,de;q=0.9|cookieGesendet=false|referer=-
+B02PROBE|U09|anfrage2|kopfzeilen=["accept", "accept-encoding", "accept-language", "connection", "cookie", "host", "user-agent"]|user-agent=Mika+Player/2 CFNetwork/3896.100.1.1.1 Darwin/27.0.0|accept=*/*|accept-language=de-DE,de;q=0.9|cookieGesendet=true|referer=-
+B02PROBE|U09|cookieImSpeicher=1|ablauf=gesetzt
+B02PROBE|U09|cookieAufPlatte=<HTTPStorages>/lu.daumedia.MikaPlusPlayer.b02probe|dateienMitCookie=0
+
+== Öffnen mit der gebauten Probe-App (open -a, Fenster über CGWindowList, Playlists per sqlite3 in der Temp-DB) ==
+== open -a Probe (ohne Datei) ==
+pid=57582
+B02PROBE|D01|start-ohne-datei|fensterOnScreen=1 ["#2653 900x450 name=Playlists"]|playlists=0
+== open -a Probe qa-doppelklick.m3u (App läuft) ==
+pids=57582 
+B02PROBE|D02|m3u-bei-laufender-app|fensterOnScreen=2 ["#2658 900x450 name=Playlists", "#2653 900x450 name=Playlists"]|playlists=0
+B02PROBE|D03|m3u8-bei-laufender-app|fensterOnScreen=3 ["#2660 900x450 name=Playlists", "#2658 900x450 name=Playlists", "#2653 900x450 name=Playlists"]|playlists=0
+B02PROBE|D04|txt-bei-laufender-app|fensterOnScreen=4 ["#2663 900x450 name=Playlists", "#2660 900x450 name=Playlists", "#2658 900x450 name=Playlists", "#2653 900x450 name=Playlists"]|playlists=0
+beendet: 0 Prozesse übrig
+== open -a Probe qa-doppelklick.m3u (App läuft nicht) ==
+pid=59122
+B02PROBE|D05|kaltstart-mit-m3u|fensterOnScreen=3 ["#2675 900x450 name=Playlists", "#2674 900x450 name=Playlists", "#2673 900x450 name=Playlists"]|playlists=0
+beendet: 0 Prozesse übrig
+== Kaltstart erneut, gespeicherter Fensterzustand der Probe-Bundle-ID vorher entfernt ==
+# Hinweis: Der Fensterzustand liegt unter <tmp>/lu.daumedia.MikaPlusPlayer.b02probe.savedState, nicht unter
+# ~/Library/Saved Application State – das Entfernen griff hier noch nicht. D05 zeigt deshalb wiederhergestellte
+# Fenster aus den Läufen davor plus eines je Öffnen. Saubere Messung: D06–D08.
+pid=60593
+B02PROBE|D05|kaltstart-mit-m3u-ohne-fensterwiederherstellung|fensterOnScreen=4 ["#2694 900x450 name=Playlists", "#2693 900x450 name=Playlists", "#2692 900x450 name=Playlists", "#2691 900x450 name=Playlists"]|playlists=0
+beendet: 0 Prozesse übrig
+== Kaltstart mit m3u, gespeicherter Fensterzustand (<tmp>//…b02probe.savedState) vorher entfernt ==
+B02PROBE|D06|kaltstart-mit-m3u-sauber|fensterOnScreen=1 ["#2718 900x450 name=Playlists"]|playlists=0
+B02PROBE|D07|dieselbe-datei-nochmal|fensterOnScreen=2 ["#2723 900x450 name=Playlists", "#2718 900x450 name=Playlists"]|playlists=0
+beendet: 0 Prozesse übrig
+== Kaltstart ohne Datei, sauber ==
+B02PROBE|D08|kaltstart-ohne-datei-sauber|fensterOnScreen=1 ["#2738 900x450 name=Playlists"]|playlists=0
+beendet: 0 Prozesse übrig
+
+== Systemprotokoll: Fehler-Adressen von CFNetwork ==
+# (a) Test-Host unter xcodebuild (Debug, von Xcode gestartet), log show 14:48:50–14:49:05, Prozess MikaPlusPlayer:
+unifiedLogZeilen=1661 mitMarker(qa-pass-b02…)=5 private=0
+2026-09-16 14:48:58.344 E  MikaPlusPlayer[42806:c0445] [com.apple.CFNetwork:Default] Task <6ED7F407-74CD-4CCF-9A9F-CDF17DE3B6CC>.<58> finished with error [-1007] Error Domain=NSURLErrorDomain Code=-1007 "too many HTTP redirects" UserInfo={NSLocalizedDescription=too many HTTP redirects, NSErrorFailingURLStringKey=http://127.0.0.1
+2026-09-16 14:48:58.350 E  MikaPlusPlayer[42806:c0f73] [com.apple.CFNetwork:Default] Task <76090F7F-F2DA-49FA-ACA9-F011C7DCFE5E>.<60> finished with error [-1004] Error Domain=NSURLErrorDomain Code=-1004 "Could not connect to the server." UserInfo={_kCFStreamErrorCodeKey=61, NSUnderlyingError=0x7ac7917150 {Error Domain=kCFErrorDo
+# (b) eigenständiger Prozess (swiftc -O, nicht von Xcode gestartet), gleicher Aufruf wie PlaylistImporter.fetchText:
+unifiedLogZeilen=69 mitMarker=0 private=2
+2026-09-16 15:05:23.497 E  b02logprobe[91270:e7398] [com.apple.CFNetwork:Default] Task <2B0A1A0A-9CF6-4450-8E1A-CC6B0D26CD8A>.<1> finished with error [-1004] Error Domain=NSURLErrorDomain Code=-1004 UserInfo={_kCFStreamErrorCodeKey=61, NSUnderlyingError=0x7543048030 {Error Domain=kCFErrorDomainCFNetwork Code=-1004 UserInfo={_NSU

@@ -21,6 +21,9 @@ struct ImportPlaylistView: View {
     @State private var isImporting = false
     @State private var showingFileImporter = false
     @State private var errorMessage: String?
+    /// Laufender Import (alle Reiter); „Abbrechen" und das Schließen des Sheets brechen ihn ab
+    /// (B01 · BUG-11, B02 · BUG-08).
+    @State private var importTask: Task<Void, Never>?
 
     // Xtream-Codes-Felder
     @State private var xtreamHost = ""
@@ -30,7 +33,7 @@ struct ImportPlaylistView: View {
     // HLS-Endpunkt (HTTP 407) und liefern nur rohes .ts (-> VLCKit nötig).
     @State private var xtreamOutput: XtreamOutput = .mpegts
 
-    /// Erlaubte Dateitypen für den fileImporter (.m3u/.m3u8).
+    /// Erlaubte Dateitypen für den fileImporter (.m3u/.m3u8; Inhalt entscheidet, nicht die Endung).
     private var allowedTypes: [UTType] {
         var types: [UTType] = []
         if let m3u = UTType(filenameExtension: "m3u") { types.append(m3u) }
@@ -53,7 +56,7 @@ struct ImportPlaylistView: View {
 
                 switch source {
                 case .xtream:
-                    Section("Xtream-Codes-Zugang") {
+                    Section {
                         TextField("Host (z. B. http://dein-anbieter.tld)", text: $xtreamHost)
                             #if os(iOS)
                             .textInputAutocapitalization(.never)
@@ -66,6 +69,13 @@ struct ImportPlaylistView: View {
                             #endif
                             .autocorrectionDisabled()
                         SecureField("Passwort", text: $xtreamPassword)
+                    } header: {
+                        Text("Xtream-Codes-Zugang")
+                    } footer: {
+                        // B01 · BUG-02: ohne https gehen die Zugangsdaten im Klartext übers Netz.
+                        if !xtreamCredentials.usesHTTPS {
+                            Text("Ohne „https://“ gehen Benutzername und Passwort unverschlüsselt über das Netz.")
+                        }
                     }
                     Section {
                         Picker("Format", selection: $xtreamOutput) {
@@ -79,7 +89,7 @@ struct ImportPlaylistView: View {
                     }
                     Section {
                         Button {
-                            Task { await importFromXtream() }
+                            startXtreamImport()
                         } label: {
                             Label("Anmelden & importieren", systemImage: "person.badge.key")
                         }
@@ -94,7 +104,7 @@ struct ImportPlaylistView: View {
                             #endif
                             .autocorrectionDisabled()
                         Button {
-                            Task { await importFromURL() }
+                            startURLImport()
                         } label: {
                             Label("Von URL importieren", systemImage: "arrow.down.circle")
                         }
@@ -121,7 +131,10 @@ struct ImportPlaylistView: View {
             .navigationTitle("Playlist importieren")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") {
+                        importTask?.cancel()
+                        dismiss()
+                    }
                 }
             }
             .fileImporter(
@@ -138,6 +151,8 @@ struct ImportPlaylistView: View {
             }
         }
         .tint(.playerAccent)
+        // iOS: auch Wegwischen des Sheets bricht einen laufenden Import ab (B01 · BUG-11, B02 · BUG-08).
+        .onDisappear { importTask?.cancel() }
         #if os(macOS)
         .frame(minWidth: 420, minHeight: 360)
         #endif
@@ -149,53 +164,52 @@ struct ImportPlaylistView: View {
         XtreamCredentials(host: xtreamHost, username: xtreamUser, password: xtreamPassword)
     }
 
-    private func importFromXtream() async {
+    /// Startet den Xtream-Import.
+    private func startXtreamImport() {
+        guard !isImporting else { return }
         guard xtreamCredentials.isComplete else {
             errorMessage = "Bitte Host, Benutzername und Passwort ausfüllen."
             return
         }
-        isImporting = true
-        defer { isImporting = false }
-        let importer = PlaylistImporter(modelContext: modelContext)
-        do {
-            try await importer.importFromXtream(xtreamCredentials, output: xtreamOutput, name: name)
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        let credentials = xtreamCredentials, output = xtreamOutput, name = name
+        startImport { try await $0.importFromXtream(credentials, output: output, name: name) }
     }
 
-    private func importFromURL() async {
-        isImporting = true
-        defer { isImporting = false }
-        let importer = PlaylistImporter(modelContext: modelContext)
-        do {
-            try await importer.importFromURL(urlString, name: name)
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+    /// Startet den Import per URL (B02 · BUG-08, BUG-09: wie beim Xtream-Reiter).
+    private func startURLImport() {
+        let address = urlString, name = name
+        startImport { try await $0.importFromURL(address, name: name) }
     }
 
     private func handleFileResult(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-            Task { await importFromFile(url) }
+            let name = name.isEmpty ? nil : name
+            startImport { try await $0.importFromFile(url, name: name) }
         case .failure(let error):
             errorMessage = error.localizedDescription
         }
     }
 
-    private func importFromFile(_ url: URL) async {
+    /// Gemeinsamer Ablauf aller Reiter: `isImporting` wird **vor** dem Start der Aufgabe gesetzt, damit ein zweiter
+    /// Klick vor dem Neuzeichnen keinen zweiten Import auslöst (B01 · BUG-09, B02 · BUG-09). Die Aufgabe ist an das
+    /// Sheet gebunden: Nach „Abbrechen" wird nichts gespeichert und kein Fehler mehr angezeigt (B01 · BUG-11,
+    /// B02 · BUG-08).
+    private func startImport(_ operation: @escaping @MainActor (PlaylistImporter) async throws -> Void) {
+        guard !isImporting else { return }
         isImporting = true
-        defer { isImporting = false }
         let importer = PlaylistImporter(modelContext: modelContext)
-        do {
-            try await importer.importFromFile(url, name: name.isEmpty ? nil : name)
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
+        importTask = Task {
+            defer { isImporting = false }
+            do {
+                try await operation(importer)
+                guard !Task.isCancelled else { return }
+                dismiss()
+            } catch {
+                guard !Task.isCancelled, !(error is CancellationError) else { return }
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }

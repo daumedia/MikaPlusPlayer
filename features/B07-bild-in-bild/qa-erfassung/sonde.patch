@@ -1,0 +1,492 @@
+diff -ruN -x .DS_Store a/Sources/App/ContentView.swift b/Sources/App/ContentView.swift
+--- a/Sources/App/ContentView.swift	2026-09-15 23:47:42
++++ b/Sources/App/ContentView.swift	2026-09-15 23:47:42
+@@ -5,8 +5,14 @@
+ struct ContentView: View {
+     var body: some View {
+         TabView {
+-            NavigationStack {
+-                PlaylistsView()
++            Group {
++                if ProcessInfo.processInfo.environment["B07_URL"] != nil {
++                    B07ProbeRoot()
++                } else {
++                    NavigationStack {
++                        PlaylistsView()
++                    }
++                }
+             }
+             .tabItem {
+                 Label("Playlists", systemImage: "list.and.film")
+@@ -29,4 +35,47 @@
+ #Preview {
+     ContentView()
+         .modelContainer(for: [Playlist.self, Channel.self], inMemory: true)
++}
++
++
++/// B07-Sonde (nur Scratchpad-Kopie): legt einen Sender an und steuert Navigation/PiP zeitgesteuert.
++struct B07ProbeRoot: View {
++    @Environment(\.modelContext) private var context
++    @State private var path: [Channel] = []
++    @State private var channel: Channel?
++
++    var body: some View {
++        NavigationStack(path: $path) {
++            List {
++                if let channel { NavigationLink(channel.name, value: channel) }
++            }
++            .navigationTitle("B07-Sonde")
++            .navigationDestination(for: Channel.self) { PlayerView(channel: $0) }
++        }
++        .task {
++            let env = ProcessInfo.processInfo.environment
++            let url = URL(string: env["B07_URL"]!)!
++            let c = Channel(name: "B07 Testsender", streamURL: url)
++            context.insert(c)
++            channel = c
++            path = [c]
++            NSLog("B07 harness: pushed player for %@", url.absoluteString)
++            func after(_ key: String, _ action: @escaping () -> Void) {
++                guard let v = env[key], let secs = Double(v) else { return }
++                DispatchQueue.main.asyncAfter(deadline: .now() + secs) { action() }
++            }
++            after("B07_PIP_AFTER") { NotificationCenter.default.post(name: .init("b07.togglePiP"), object: nil) }
++            after("B07_POP_AFTER") { NSLog("B07 harness: pop"); path = [] }
++            after("B07_REPUSH_AFTER") { NSLog("B07 harness: repush"); path = [c] }
++            Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
++                #if os(macOS)
++                let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
++                let pip = info.filter { ($0[kCGWindowOwnerName as String] as? String ?? "").contains("Bild") }
++                NSLog("B07 harness: PiP-Systemfenster sichtbar=%d", pip.count)
++                #endif
++            }
++            after("B07_STOP_AFTER") { NSLog("B07 harness: stopPictureInPicture on first engine (alive=%d)", AVKitPlaybackEngine.probeFirst?.engine == nil ? 0 : 1); AVKitPlaybackEngine.probeFirst?.engine?.stopPictureInPicture() }
++            after("B07_PIP2_AFTER") { NotificationCenter.default.post(name: .init("b07.togglePiP"), object: nil) }
++        }
++    }
+ }
+diff -ruN -x .DS_Store a/Sources/App/MikaPlusPlayerApp.swift b/Sources/App/MikaPlusPlayerApp.swift
+--- a/Sources/App/MikaPlusPlayerApp.swift	2026-09-15 23:47:42
++++ b/Sources/App/MikaPlusPlayerApp.swift	2026-09-15 23:47:42
+@@ -6,7 +6,7 @@
+     /// Gemeinsamer SwiftData-Container für beide Plattformen.
+     let modelContainer: ModelContainer = {
+         let schema = Schema([Playlist.self, Channel.self])
+-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
++        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+         do {
+             return try ModelContainer(for: schema, configurations: [config])
+         } catch {
+diff -ruN -x .DS_Store a/Sources/Resources/Info.plist b/Sources/Resources/Info.plist
+--- a/Sources/Resources/Info.plist	2026-09-15 23:47:42
++++ b/Sources/Resources/Info.plist	2026-09-15 23:47:42
+@@ -4,6 +4,22 @@
+ <dict>
+ 	<key>CFBundleDevelopmentRegion</key>
+ 	<string>$(DEVELOPMENT_LANGUAGE)</string>
++	<key>CFBundleDisplayName</key>
++	<string>Mika+Player</string>
++	<key>CFBundleDocumentTypes</key>
++	<array>
++		<dict>
++			<key>CFBundleTypeName</key>
++			<string>M3U Playlist</string>
++			<key>LSHandlerRank</key>
++			<string>Default</string>
++			<key>LSItemContentTypes</key>
++			<array>
++				<string>public.m3u-playlist</string>
++				<string>public.text</string>
++			</array>
++		</dict>
++	</array>
+ 	<key>CFBundleExecutable</key>
+ 	<string>$(EXECUTABLE_NAME)</string>
+ 	<key>CFBundleIdentifier</key>
+@@ -12,39 +28,29 @@
+ 	<string>6.0</string>
+ 	<key>CFBundleName</key>
+ 	<string>Mika+Player</string>
+-	<key>CFBundleDisplayName</key>
+-	<string>Mika+Player</string>
+ 	<key>CFBundlePackageType</key>
+ 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+ 	<key>CFBundleShortVersionString</key>
+ 	<string>$(MARKETING_VERSION)</string>
+ 	<key>CFBundleVersion</key>
+ 	<string>$(CURRENT_PROJECT_VERSION)</string>
+-
+-	<!-- Sparkle Auto-Updater (nur macOS relevant; iOS ignoriert die Keys).
+-	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
+-	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
+-	<key>SUFeedURL</key>
+-	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
+-	<key>SUPublicEDKey</key>
+-	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
+-	<key>SUEnableAutomaticChecks</key>
+-	<true/>
+-
+-	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
+-	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den
+-	     App-Store-Review ggf. auf NSExceptionDomains einschränken. -->
+ 	<key>NSAppTransportSecurity</key>
+ 	<dict>
+ 		<key>NSAllowsArbitraryLoads</key>
+ 		<true/>
+ 	</dict>
+-
+-	<!-- Leerer Launch-Screen -> volle Bildschirmauflösung auf iOS (kein Letterbox). -->
++	<key>SUEnableAutomaticChecks</key>
++	<false/>
++	<key>SUFeedURL</key>
++	<string>http://127.0.0.1:9/appcast.xml</string>
++	<key>SUPublicEDKey</key>
++	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
++	<key>UIBackgroundModes</key>
++	<array>
++		<string>audio</string>
++	</array>
+ 	<key>UILaunchScreen</key>
+ 	<dict/>
+-
+-	<!-- Unterstützte Geräteorientierungen (iOS). -->
+ 	<key>UISupportedInterfaceOrientations</key>
+ 	<array>
+ 		<string>UIInterfaceOrientationPortrait</string>
+@@ -57,28 +63,6 @@
+ 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+ 		<string>UIInterfaceOrientationLandscapeLeft</string>
+ 		<string>UIInterfaceOrientationLandscapeRight</string>
+-	</array>
+-
+-	<!-- Audio-Wiedergabe im Hintergrund / bei gesperrtem Bildschirm (iOS). -->
+-	<key>UIBackgroundModes</key>
+-	<array>
+-		<string>audio</string>
+-	</array>
+-
+-	<!-- Importierbare Dokumenttypen: M3U/M3U8-Playlists. -->
+-	<key>CFBundleDocumentTypes</key>
+-	<array>
+-		<dict>
+-			<key>CFBundleTypeName</key>
+-			<string>M3U Playlist</string>
+-			<key>LSHandlerRank</key>
+-			<string>Default</string>
+-			<key>LSItemContentTypes</key>
+-			<array>
+-				<string>public.m3u-playlist</string>
+-				<string>public.text</string>
+-			</array>
+-		</dict>
+ 	</array>
+ </dict>
+ </plist>
+diff -ruN -x .DS_Store a/Sources/Services/AVKitPlaybackEngine.swift b/Sources/Services/AVKitPlaybackEngine.swift
+--- a/Sources/Services/AVKitPlaybackEngine.swift	2026-09-15 23:47:42
++++ b/Sources/Services/AVKitPlaybackEngine.swift	2026-09-15 23:47:42
+@@ -6,9 +6,12 @@
+ 
+ /// AVKit-basierte Engine. Spielt HLS (.m3u8) und gängige Container, aber KEINE
+ /// rohen MPEG-TS-Streams (.ts) – dafür siehe `VLCPlaybackEngine`.
++final class ProbeBox { weak var engine: AVKitPlaybackEngine?; init(_ e: AVKitPlaybackEngine) { engine = e } }
++
+ @MainActor
+ @Observable
+ final class AVKitPlaybackEngine: PlaybackEngine {
++    @ObservationIgnored static var probeFirst: ProbeBox?
+     private(set) var state: PlaybackState = .idle
+     private(set) var isPaused = false
+     private(set) var volume: Double = 1.0
+@@ -28,9 +31,24 @@
+     @ObservationIgnored private var statusObserver: AnyCancellable?
+     @ObservationIgnored private var errorObserver: AnyCancellable?
+ 
++    @ObservationIgnored private var probeTimer: Timer?
++    @ObservationIgnored let probeID = String(UUID().uuidString.prefix(4))
+     init() {
+         playerLayer.player = player
++        player.isMuted = true // Sonde: stumm (Nutzerwunsch)
++        NSLog("B07 [%@] engine init", probeID)
++        AVKitPlaybackEngine.probeFirst = AVKitPlaybackEngine.probeFirst ?? ProbeBox(self)
++        let id = probeID
++        weak var p = player
++        probeTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
++            MainActor.assumeIsolated {
++                guard let self else { NSLog("B07 [%@] tick: engine gone, player alive=%d rate=%.2f", id, p == nil ? 0 : 1, p?.rate ?? -1); return }
++                NSLog("B07 [%@] tick state=%@ isPaused=%d pipActive=%d rate=%.2f tcs=%d possible=%d muted=%d supported=%d ctrl=%d", id, "\(self.state)", self.isPaused ? 1 : 0, self.isPictureInPictureActive ? 1 : 0, self.player.rate, self.player.timeControlStatus.rawValue, (self.pipController?.isPictureInPicturePossible ?? false) ? 1 : 0, self.player.isMuted ? 1 : 0, AVPictureInPictureController.isPictureInPictureSupported() ? 1 : 0, self.pipController == nil ? 0 : 1)
++            }
++        }
+     }
++    var probePlayer: AVPlayer { player }
++    var probePiPController: AVPictureInPictureController? { pipController }
+ 
+     func load(_ url: URL) {
+         state = .loading
+@@ -69,6 +87,7 @@
+ 
+     func startPictureInPicture() {
+         setupPictureInPictureIfNeeded()
++        NSLog("B07 startPictureInPicture called, controller=%d possible=%d", pipController == nil ? 0 : 1, (pipController?.isPictureInPicturePossible ?? false) ? 1 : 0)
+         guard let pipController, pipController.isPictureInPicturePossible else { return }
+         pipController.startPictureInPicture()
+     }
+@@ -143,6 +162,7 @@
+     }
+ 
+     deinit {
++        NSLog("B07 engine deinit")
+         statusObserver?.cancel()
+         errorObserver?.cancel()
+     }
+@@ -158,15 +178,18 @@
+     }
+ 
+     func pictureInPictureControllerDidStartPictureInPicture(_ controller: AVPictureInPictureController) {
++        NSLog("B07 delegate didStart")
+         MainActor.assumeIsolated { engine?.isPictureInPictureActive = true }
+     }
+ 
+     func pictureInPictureControllerDidStopPictureInPicture(_ controller: AVPictureInPictureController) {
++        NSLog("B07 delegate didStop")
+         MainActor.assumeIsolated { engine?.isPictureInPictureActive = false }
+     }
+ 
+     func pictureInPictureController(_ controller: AVPictureInPictureController,
+                                     failedToStartPictureInPictureWithError error: Error) {
++        NSLog("B07 delegate failedToStart: %@", "\(error)")
+         MainActor.assumeIsolated { engine?.isPictureInPictureActive = false }
+     }
+ }
+diff -ruN -x .DS_Store a/Sources/Views/PlayerView.swift b/Sources/Views/PlayerView.swift
+--- a/Sources/Views/PlayerView.swift	2026-09-15 23:47:42
++++ b/Sources/Views/PlayerView.swift	2026-09-15 23:47:42
+@@ -72,11 +72,17 @@
+         .toolbar(macToolbarVisibility, for: .windowToolbar)
+         #endif
+         .onAppear {
++            NSLog("B07 PlayerView onAppear engine=%d supportsPiP=%d", engine == nil ? 0 : 1, engine?.supportsPictureInPicture == true ? 1 : 0)
+             startIfNeeded()
+             scheduleAutoHide()
+             keyboardFocused = true
+         }
++        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("b07.togglePiP"))) { _ in
++            NSLog("B07 harness: togglePiP via notification")
++            togglePiP()
++        }
+         .onDisappear {
++            NSLog("B07 PlayerView onDisappear pipActive=%d", engine?.isPictureInPictureActive == true ? 1 : 0)
+             autoHideTask?.cancel()
+             hudTask?.cancel()
+             resetOrientation()
+diff -ruN -x .DS_Store a/Tests/B07ProbeTests.swift b/Tests/B07ProbeTests.swift
+--- a/Tests/B07ProbeTests.swift	1970-01-01 01:00:00
++++ b/Tests/B07ProbeTests.swift	2026-09-15 23:47:42
+@@ -0,0 +1,163 @@
++import XCTest
++import SwiftUI
++import AVKit
++import CoreGraphics
++@testable import MikaPlusPlayer
++
++/// B07-Sonde (nur Scratchpad-Kopie): beobachtet das PiP-Verhalten der Engines auf macOS
++/// gegen einen lokalen HLS-Server (127.0.0.1:18907).
++@MainActor
++final class B07ProbeTests: XCTestCase {
++    let hls = URL(string: "http://127.0.0.1:18907/hls/live.m3u8")!
++    let ts = URL(string: "http://127.0.0.1:18907/stream.ts")!
++
++    func log(_ s: String) { NSLog("B07T %@", s) }
++
++    @discardableResult
++    func waitUntil(_ timeout: TimeInterval, _ cond: () -> Bool) -> Bool {
++        let end = Date().addingTimeInterval(timeout)
++        while Date() < end {
++            if cond() { return true }
++            RunLoop.main.run(until: Date().addingTimeInterval(0.1))
++        }
++        return cond()
++    }
++
++    func pump(_ secs: TimeInterval) { RunLoop.main.run(until: Date().addingTimeInterval(secs)) }
++
++    func foreignWindows() -> [String] {
++        let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
++        return info.compactMap { w in
++            let owner = w[kCGWindowOwnerName as String] as? String ?? "?"
++            let layer = w[kCGWindowLayer as String] as? Int ?? -1
++            let b = w[kCGWindowBounds as String] as? [String: Any] ?? [:]
++            let name = w[kCGWindowName as String] as? String ?? ""
++            return "\(owner)|layer=\(layer)|\(name)|\(b["Width"] ?? 0)x\(b["Height"] ?? 0)"
++        }
++    }
++
++    func host(_ engine: any PlaybackEngine) -> NSWindow {
++        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 640, height: 360),
++                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
++        window.isReleasedWhenClosed = false
++        window.contentView = NSHostingView(rootView: engine.makePlayerView().frame(width: 640, height: 360))
++        window.makeKeyAndOrderFront(nil)
++        NSApp.activate(ignoringOtherApps: true)
++        return window
++    }
++
++    func testA_FactoryAndSupport() {
++        let a = PlaybackEngineFactory.engine(for: hls)
++        let t = PlaybackEngineFactory.engine(for: ts)
++        let m3u = PlaybackEngineFactory.engine(for: URL(string: "http://127.0.0.1:18907/x.m3u")!)
++        let mp4 = PlaybackEngineFactory.engine(for: URL(string: "http://127.0.0.1:18907/x.mp4")!)
++        let noExt = PlaybackEngineFactory.engine(for: URL(string: "http://127.0.0.1:18907/live/u/p/101")!)
++        log("factory m3u8=\(type(of: a)) ts=\(type(of: t)) m3u=\(type(of: m3u)) mp4=\(type(of: mp4)) noExt=\(type(of: noExt))")
++        log("supports m3u8=\(a.supportsPictureInPicture) ts=\(t.supportsPictureInPicture) isSupportedSystem=\(AVPictureInPictureController.isPictureInPictureSupported())")
++        t.setAutomaticPictureInPicture(true)
++        t.togglePictureInPicture()
++        log("ts after toggle active=\(t.isPictureInPictureActive)")
++        XCTAssertFalse(t.supportsPictureInPicture)
++    }
++
++    func testB_StartBeforeReady() {
++        let engine = AVKitPlaybackEngine()
++        let window = host(engine)
++        engine.load(hls)
++        engine.startPictureInPicture()
++        log("B immediately after start (before ready): state=\(engine.state) active=\(engine.isPictureInPictureActive)")
++        pump(3)
++        log("B 3s later: state=\(engine.state) active=\(engine.isPictureInPictureActive) possible=\(engine.probePiPController?.isPictureInPicturePossible ?? false)")
++        engine.pause()
++        window.close()
++    }
++
++    func testC_StartStopAndAfterStop() {
++        let before = Set(foreignWindows())
++        let engine = AVKitPlaybackEngine()
++        let window = host(engine)
++        engine.load(hls)
++        XCTAssertTrue(waitUntil(15) { engine.state == .playing }, "not playing")
++        let possible = waitUntil(15) { engine.probePiPController?.isPictureInPicturePossible == true }
++        log("C playing, possible=\(possible) rate=\(engine.probePlayer.rate)")
++        engine.startPictureInPicture()
++        let active = waitUntil(15) { engine.isPictureInPictureActive }
++        pump(2)
++        let during = Set(foreignWindows()).subtracting(before)
++        log("C active=\(active) rate=\(engine.probePlayer.rate) isPaused=\(engine.isPaused) newWindows=\(during.sorted())")
++        // PiP-Fenster: Pause über den Player simulieren (entspricht dem Pause-Knopf im PiP-Fenster)
++        engine.probePlayer.pause()
++        pump(1)
++        log("C after player.pause() in PiP: engine.isPaused=\(engine.isPaused) rate=\(engine.probePlayer.rate)")
++        engine.probePlayer.play()
++        pump(1)
++        engine.togglePictureInPicture()
++        let stopped = waitUntil(10) { !engine.isPictureInPictureActive }
++        pump(2)
++        log("C after toggle(stop): stopped=\(stopped) rate=\(engine.probePlayer.rate) tcs=\(engine.probePlayer.timeControlStatus.rawValue) isPaused=\(engine.isPaused) windows=\(Set(foreignWindows()).subtracting(before).sorted())")
++        engine.pause()
++        window.close()
++    }
++
++    func testD_ReleaseEngineWhilePiPActive() {
++        let before = Set(foreignWindows())
++        weak var weakEngine: AVKitPlaybackEngine?
++        weak var weakPlayer: AVPlayer?
++        weak var weakController: AVPictureInPictureController?
++        var window: NSWindow?
++        do {
++            let engine = AVKitPlaybackEngine()
++            weakEngine = engine
++            weakPlayer = engine.probePlayer
++            window = host(engine)
++            engine.load(hls)
++            XCTAssertTrue(waitUntil(15) { engine.state == .playing })
++            waitUntil(15) { engine.probePiPController?.isPictureInPicturePossible == true }
++            weakController = engine.probePiPController
++            engine.startPictureInPicture()
++            XCTAssertTrue(waitUntil(15) { engine.isPictureInPictureActive })
++            pump(2)
++            log("D active before release, windows=\(Set(foreignWindows()).subtracting(before).sorted())")
++        }
++        // Wie beim Zurücknavigieren: Ansicht weg (onDisappear pausiert NICHT, weil PiP aktiv), Engine-Referenz fällt.
++        window?.contentView = nil
++        window?.close()
++        window = nil
++        pump(5)
++        log("D 5s after release: engine=\(weakEngine != nil) player=\(weakPlayer != nil) controller=\(weakController != nil) rate=\(weakPlayer?.rate ?? -1) windows=\(Set(foreignWindows()).subtracting(before).sorted())")
++        pump(5)
++        log("D 10s after release: engine=\(weakEngine != nil) player=\(weakPlayer != nil) controller=\(weakController != nil) rate=\(weakPlayer?.rate ?? -1) windows=\(Set(foreignWindows()).subtracting(before).sorted())")
++        weakPlayer?.pause()
++        weakController?.stopPictureInPicture()
++        pump(2)
++    }
++
++    func testE_TwoEnginesSecondStart() {
++        let a = AVKitPlaybackEngine(); let wa = host(a); a.load(hls)
++        let b = AVKitPlaybackEngine(); let wb = host(b); b.load(hls)
++        wb.setFrameOrigin(NSPoint(x: 800, y: 100))
++        XCTAssertTrue(waitUntil(15) { a.state == .playing && b.state == .playing })
++        waitUntil(15) { a.probePiPController?.isPictureInPicturePossible == true && b.probePiPController?.isPictureInPicturePossible == true }
++        a.startPictureInPicture()
++        XCTAssertTrue(waitUntil(15) { a.isPictureInPictureActive })
++        pump(1)
++        log("E A active=\(a.isPictureInPictureActive); B possible=\(b.probePiPController?.isPictureInPicturePossible ?? false)")
++        b.startPictureInPicture()
++        pump(5)
++        log("E after B start: A active=\(a.isPictureInPictureActive) rateA=\(a.probePlayer.rate) B active=\(b.isPictureInPictureActive) rateB=\(b.probePlayer.rate)")
++        a.stopPictureInPicture(); b.stopPictureInPicture()
++        pump(2)
++        a.pause(); b.pause(); wa.close(); wb.close()
++    }
++
++    func testF_LoadFailsThenStart() {
++        let engine = AVKitPlaybackEngine()
++        let window = host(engine)
++        engine.load(URL(string: "http://127.0.0.1:18907/missing.m3u8")!)
++        waitUntil(15) { if case .failed = engine.state { return true } else { return false } }
++        engine.startPictureInPicture()
++        pump(2)
++        log("F failed stream: state=\(engine.state) active=\(engine.isPictureInPictureActive) supports=\(engine.supportsPictureInPicture)")
++        window.close()
++    }
++}
+diff -ruN -x .DS_Store a/project.yml b/project.yml
+--- a/project.yml	2026-09-15 23:47:42
++++ b/project.yml	2026-09-15 23:47:42
+@@ -30,7 +30,7 @@
+     settings:
+       base:
+         PRODUCT_NAME: MikaPlusPlayer
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.b07probe
+         MARKETING_VERSION: "1.1"
+         CURRENT_PROJECT_VERSION: "2"
+         GENERATE_INFOPLIST_FILE: NO
+@@ -54,7 +54,7 @@
+         # iOS: Automatic. Simulator läuft ohne Team; fürs echte Gerät in Xcode
+         # unter "Signing & Capabilities" dein Team wählen.
+         CODE_SIGN_STYLE: Automatic
+-        DEVELOPMENT_TEAM: "CWJM4J4HFN"
++        DEVELOPMENT_TEAM: ""
+     dependencies:
+       - package: VLCKitSPM
+         product: VLCKitSPM
+@@ -69,7 +69,7 @@
+         # "Sign to Run Locally" (ad-hoc) -> kein Team nötig.
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+-        DEVELOPMENT_TEAM: "CWJM4J4HFN"
++        DEVELOPMENT_TEAM: ""
+         # Sandbox ist in den Entitlements deaktiviert (DMG-Distribution + Sparkle).
+         CODE_SIGN_ENTITLEMENTS: Sources/Resources/MikaPlusPlayer.entitlements
+     dependencies:
+@@ -90,10 +90,10 @@
+     settings:
+       base:
+         GENERATE_INFOPLIST_FILE: YES
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayerTests
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.b07probeTests
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+-        DEVELOPMENT_TEAM: "CWJM4J4HFN"
++        DEVELOPMENT_TEAM: ""
+         TEST_HOST: $(BUILT_PRODUCTS_DIR)/MikaPlusPlayer.app/Contents/MacOS/MikaPlusPlayer
+         BUNDLE_LOADER: $(TEST_HOST)
+ 

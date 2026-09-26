@@ -1,0 +1,6 @@
+2026-09-26T13:49:49Z [Debug] Suchfeld: "\'; drop table ZCHANNEL; --" → 1 Karten, "<script>alert(1)</script>" → 1 Karten, "../../etc/passwd" → 1 Karten, "%00" → 0 Karten, "😀🎬" → 0 Karten, "‮txet trevder" → 0 Karten, <10000 Zeichen> → 0 Karten, "" → 8 Karten, "a" → 7 Karten, "\n" → 0 Karten, "NULL" → 0 Karten, "1=1" → 0 Karten
+  Datenbank vor und nach allen Eingaben: 8 Sender
+  Logo-Schemata: Logo data, Logos|busy=false, Logo etc passwd, Logos|busy=false, Logo javascript, Logos|busy=true
+2026-09-26T14:06:12Z [Debug] Suchfeld: "\'; drop table ZCHANNEL; --" → 1 Karten, "<script>alert(1)</script>" → 1 Karten, "../../etc/passwd" → 1 Karten, "%00" → 0 Karten, "😀🎬" → 0 Karten, "‮txet trevder" → 0 Karten, <10000 Zeichen> → 0 Karten, "" → 8 Karten, "a" → 7 Karten, "\n" → 0 Karten, "NULL" → 0 Karten, "1=1" → 0 Karten
+  Datenbank vor und nach allen Eingaben: 8 Sender
+  Logo-Schemata: Logo data, Logos|busy=false, Logo etc passwd, Logos|busy=false, Logo javascript, Logos|busy=true

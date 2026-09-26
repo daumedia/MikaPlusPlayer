@@ -1,0 +1,17 @@
+AK-28|haengt|dauer=60.02s|Netzwerkfehler: The request timed out.
+AK-38|troepfelt-10x10s|bytes=1738|dauer=100.30s|OK (20 Sender)
+AK-12/EC-17|ftp|dauer=60.02s|Netzwerkfehler: The request timed out.|verbindungenAmZiel=1|anfragenAmZiel=0
+AK-40|inMemory|sender=1500|bytes=212688|gesamt=2.30s|maxMainThreadBlockade=2.27s|playlistID=1500|beziehung=1500|build=Debug|cpuKerne=16|last=4.7/5.6/6.7
+AK-40|inMemory|sender=3000|bytes=429818|gesamt=8.86s|maxMainThreadBlockade=8.84s|playlistID=3000|beziehung=3000|build=Debug|cpuKerne=16|last=5.7/5.8/6.8
+AK-40|inMemory|sender=6000|bytes=864068|gesamt=35.31s|maxMainThreadBlockade=35.29s|playlistID=6000|beziehung=6000|build=Debug|cpuKerne=16|last=6.2/5.9/6.8
+AK-40|storeDatei|sender=6000|bytes=864068|gesamt=35.46s|maxMainThreadBlockade=35.43s|playlistID=6000|beziehung=6000|build=Debug|cpuKerne=16|last=6.2/5.9/6.8
+AK-40|inMemory|sender=17000|bytes=2484318|gesamt=282.04s|maxMainThreadBlockade=282.02s|playlistID=17000|beziehung=17000|build=Debug|cpuKerne=16|last=5.3/5.4/6.3
+AK-40|wachstum 3000→6000 Faktor=3.98|build=Debug
+AK-40|parserAllein|sender=17000|bytes=2484318|dauer=0.32,0.31,0.32s|build=Debug
+AK-40|inMemory|sender=1500|bytes=212688|gesamt=2.32s|maxMainThreadBlockade=2.29s|playlistID=1500|beziehung=1500|build=Release|cpuKerne=16|last=3.9/4.8/5.8
+AK-40|inMemory|sender=3000|bytes=429818|gesamt=8.99s|maxMainThreadBlockade=8.97s|playlistID=3000|beziehung=3000|build=Release|cpuKerne=16|last=4.1/4.8/5.8
+AK-40|inMemory|sender=6000|bytes=864068|gesamt=35.22s|maxMainThreadBlockade=35.21s|playlistID=6000|beziehung=6000|build=Release|cpuKerne=16|last=3.3/4.5/5.7
+AK-40|storeDatei|sender=6000|bytes=864068|gesamt=35.80s|maxMainThreadBlockade=35.78s|playlistID=6000|beziehung=6000|build=Release|cpuKerne=16|last=3.5/4.4/5.6
+AK-40|inMemory|sender=17000|bytes=2484318|gesamt=282.54s|maxMainThreadBlockade=282.51s|playlistID=17000|beziehung=17000|build=Release|cpuKerne=16|last=5.5/4.7/5.4
+AK-40|wachstum 3000→6000 Faktor=3.92|build=Release
+AK-40|parserAllein|sender=17000|bytes=2484318|dauer=0.16,0.15,0.16s|build=Release

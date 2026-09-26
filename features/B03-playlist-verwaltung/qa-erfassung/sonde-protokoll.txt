@@ -1,0 +1,347 @@
+# B03 Playlist-Verwaltung — Protokoll der Erfassungssonde (2026-09-16)
+# Code-Stand: c01f1cf + Reparatur B01 (eingefrorene Kopie). Kopie unter Bundle-ID lu.daumedia.MikaPlusPlayer.b03probe,
+# eigenes DerivedData, Sparkle-Feed 127.0.0.1:9 und automatische Prüfung aus. Debug-Build, Apple M3 Max, macOS 27.
+# Datenbanken nur im Temp-Verzeichnis, Schlüsselbund nur Test-Dienst lu.daumedia.MikaPlusPlayer.xtream.tests.<UUID>.
+# Mock-Server 127.0.0.1 (MockXtreamServer aus B01), erfundene Zugangsdaten qa-user / qa-pass-…; Stream-Pfade /live/… antworten nie (stumm).
+# Zeilen 'B03PROBE|…' aus den Testläufen; ab Lauf test14b mit Zeitstempel (Sekunden mod 10000).
+# Aufrufe: xcodebuild test-without-building -scheme MikaPlusPlayer-macOS -only-testing:MikaPlusPlayerTests/B03ProbeTests/<test>
+#   Leistung 17.000: TEST_RUNNER_B03_SIZES=17000 TEST_RUNNER_B03_KIND=xtream; nur Löschen: zusätzlich TEST_RUNNER_B03_SKIP_REFRESH=1
+
+== Ergebnisse der xcodebuild-Läufe
+-- run1
+Test Case '-[MikaPlusPlayerTests.B01ReparaturTests testBUG01_AktualisierenLiestSchluesselbundUndBehaeltFavoriten]' passed (0.073 seconds).
+Test Case '-[MikaPlusPlayerTests.B01ReparaturTests testBUG01_AltbestandBleibtSpielbarUndWirdBeimAktualisierenUmgestellt]' passed (0.028 seconds).
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test01_M3UAktualisieren]' passed (1.227 seconds).
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test02_XtreamAktualisieren]' passed (1.244 seconds).
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test03_FehlerfaelleAlteListe]' passed (0.135 seconds).
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test09_ZweimalAktualisierenSelbePlaylist]' passed (3.264 seconds).
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test10_ZweiPlaylistsParallel]' passed (1.622 seconds).
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test11_LokaleDatei]' passed (0.018 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test07_AktualisierenUndLoeschenGleichzeitig_M3U
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test07_AktualisierenUndLoeschenGleichzeitig_M3U]' passed (2.200 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test08_AktualisierenUndLoeschenGleichzeitig_Xtream
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test08_AktualisierenUndLoeschenGleichzeitig_Xtream]' passed (2.142 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test08b_AltbestandAktualisierenUndLoeschen
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test08b_AltbestandAktualisierenUndLoeschen]' passed (2.237 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test12_GehalteneSenderNachLoeschen
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test12_GehalteneSenderNachLoeschen]' passed (0.070 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test12b_GehalteneSenderNachAktualisieren
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test12b_GehalteneSenderNachAktualisieren]' passed (0.080 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test13_MultiviewUndPlayerBeimLoeschen
+Swift/ContiguousArrayBuffer.swift:695: Fatal error: Index out of range
+2026-09-16 14:45:49.800976+0200 MikaPlusPlayer[37904:769812] Swift/ContiguousArrayBuffer.swift:695: Fatal error: Index out of range
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+** TEST EXECUTE FAILED **
+-- test06_LoeschenWasBleibt
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test06_LoeschenWasBleibt]' passed (10.368 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test13_MultiviewUndPlayerBeimLoeschen-2
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test13_MultiviewUndPlayerBeimLoeschen]' passed (5.387 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test13b_PlayerBeimLoeschen-2
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test13b_PlayerBeimLoeschen]' passed (4.786 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test06_LoeschenWasBleibt-2
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test06_LoeschenWasBleibt]' passed (10.424 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test14
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test14_OberflaecheUebersicht]' passed (71.360 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test14-2
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test14_OberflaecheUebersicht]' passed (139.265 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test14b
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test14b_SpinnerBeiZweiAktualisierungen]' passed (67.567 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test04-klein
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test04_LeistungAktualisierenUndLoeschen]' passed (88.861 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test15
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test15_SenderlisteOffenBeimLoeschen]' passed (3.345 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test04-17000
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test04_LeistungAktualisierenUndLoeschen]' passed (358.281 seconds).
+** TEST EXECUTE SUCCEEDED **
+-- test04-loeschen
+Test Case '-[MikaPlusPlayerTests.B03ProbeTests test04_LeistungAktualisierenUndLoeschen]' passed (83.637 seconds).
+** TEST EXECUTE SUCCEEDED **
+
+== Auszug: SwiftData-Systemmeldung beim gleichzeitigen Aktualisieren und Löschen (test07, eine von 7 gleichartigen Zeilen)
+MikaPlusPlayer[36909:766757] [PersistentModel] PersistentIdentifier PersistentIdentifier(id: SwiftData.PersistentIdentifier.ID(backing: SwiftData.PersistentIdentifier.PersistentIdentifierBacking.temporaryIdentifier(SwiftData.TemporaryPersistentIdentifierImplementation))) was remapped to a temporary identifier during save: PersistentIdentifier(id: SwiftData.PersistentIdentifier.ID(backing: SwiftData.PersistentIdentifier.PersistentIdentifierBacking.managedObjectID(0x7b185b4240 <x-coredata:///Channel/t22EB1984-AA19-4C5A-A34A-C7CB9EFC593E14>))). This is a fatal logic error in DefaultStore
+
+== Auszug: Absturz im ersten Lauf von test13 (B08-Randbeobachtung: session.clear() bei sichtbarem Multiview-Fenster im Raster)
+Swift/ContiguousArrayBuffer.swift:695: Fatal error: Index out of range
+Crash-Bericht, auslösender Thread: Array.subscript.getter <- closure in MultiviewScreen.gridLayout.getter (MultiviewScreen.swift:79) <- ForEachChild.updateValue() <- NSHostingView.beginTransaction()
+Der Lauf 1 von test13 hat Multiview-Teil vor dem Absturz vollständig protokolliert; Lauf 2 schließt das Fenster statt clear() und trennt den Player in test13b.
+
+== Hinweis zu test14 Lauf 1
+Das synthetische rightMouseUp nach dem Kontextmenü löste eine Navigation in die Senderliste aus; alle folgenden Schritte fanden die Karten nicht. Ungültig; Lauf 2 ohne rightMouseUp.
+Das Öffnen eines Kontextmenüs dauerte in der Sonde ~9 s (Abbruch der Menüverfolgung) — Artefakt der Sonde, nicht der App.
+
+== Hinweis zu test06 Lauf 1
+In Lauf 1 hatte die behaltene Playlist Y dieselben Sendernamen und Logo-Adressen wie die gelöschte Playlist X; die Bytezählung für X ist dort nicht trennbar. Maßgeblich ist Lauf 2 (Y mit eigenen Namen 'qa-b03-ychan-…').
+
+== B03PROBE-Zeilen (vollständig, chronologisch)
+B03PROBE|SETUP|-[B03ProbeTests test01_M3UAktualisieren]|mock=127.0.0.1:54648|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.4EFC30BE-34BA-4149-8428-B6C2885E6049|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T01|vorher|name=127.0.0.1|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Alpha", "Film HD", "Gamma", "Sport HD"]|createdAt=1789562681.073|lastRefreshed=1789562681.073|sourceURL=http://127.0.0.1:54648/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false|db=ZPLAYLIST=1|ZCHANNEL=7|ohneBeziehung=0|favoriten=4|channelCounts=127.0.0.1=7
+B03PROBE|T01|nachV2|name=127.0.0.1|channelCount=9|beziehung=9|dbPlaylistID=9|favoriten=["Alpha Neu", "Film 4K", "Film HD", "Film SD", "Sport HD", "sport hd"]|createdAt=1789562681.073|lastRefreshed=1789562682.240|sourceURL=http://127.0.0.1:54648/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false|db=ZPLAYLIST=1|ZCHANNEL=9|ohneBeziehung=0|favoriten=6|channelCounts=127.0.0.1=9|anfragen=["/list.m3u"]|gleicheIDs=0|gleichePIDs=0|createdAtGleich=true|lastRefreshedNeu=true|hasChanges=false|maxGap=0.00
+B03PROBE|T01|favoritenTabAbfrage|["Alpha Neu", "Film 4K", "Film HD", "Film SD", "Sport HD", "sport hd"]
+B03PROBE|T01|nachV3nurEinSender|name=127.0.0.1|channelCount=1|beziehung=1|dbPlaylistID=1|favoriten=[]|createdAt=1789562681.073|lastRefreshed=1789562682.260|sourceURL=http://127.0.0.1:54648/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false|db=ZPLAYLIST=1|ZCHANNEL=1|ohneBeziehung=0|favoriten=0|channelCounts=127.0.0.1=1
+B03PROBE|T01|nachV1zurueck|name=127.0.0.1|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=[]|createdAt=1789562681.073|lastRefreshed=1789562682.270|sourceURL=http://127.0.0.1:54648/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false|db=ZPLAYLIST=1|ZCHANNEL=7|ohneBeziehung=0|favoriten=0|channelCounts=127.0.0.1=7
+B03PROBE|T01|dublettenVorher|name=127.0.0.1|channelCount=3|beziehung=3|dbPlaylistID=3|favoriten=["Kanal X"]|createdAt=1789562681.073|lastRefreshed=1789562682.278|sourceURL=http://127.0.0.1:54648/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T01|dublettenNachher|name=127.0.0.1|channelCount=3|beziehung=3|dbPlaylistID=3|favoriten=["Kanal X", "Kanal X"]|createdAt=1789562681.073|lastRefreshed=1789562682.285|sourceURL=http://127.0.0.1:54648/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|SETUP|-[B03ProbeTests test02_XtreamAktualisieren]|mock=127.0.0.1:54649|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.4EFC30BE-34BA-4149-8428-B6C2885E6049|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T02|vorher|name=127.0.0.1|channelCount=5|beziehung=5|dbPlaylistID=5|favoriten=["Kanal A", "Kanal C", "Sport 1"]|createdAt=1789562682.310|lastRefreshed=1789562682.313|sourceURL=http://127.0.0.1:54649/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true|db=ZPLAYLIST=1|ZCHANNEL=5|ohneBeziehung=0|favoriten=3|channelCounts=127.0.0.1=5|stream=http://127.0.0.1:54649/live/101.ts
+B03PROBE|T02|nachher|name=127.0.0.1|channelCount=6|beziehung=6|dbPlaylistID=6|favoriten=["Kanal A (neu)", "Kanal C", "Sport 1", "Sport 1 4K", "Sport 1 HD"]|createdAt=1789562682.310|lastRefreshed=1789562683.441|sourceURL=http://127.0.0.1:54649/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true|db=ZPLAYLIST=1|ZCHANNEL=6|ohneBeziehung=0|favoriten=5|channelCounts=127.0.0.1=6|anfragen=["(anmeldung)[qa-user/qa-pass-b03]", "get_live_categories[qa-user/qa-pass-b03]", "get_live_streams[qa-user/qa-pass-b03]"]|gleicheIDs=0
+B03PROBE|T02|adressen|["Kanal A (neu)=http://127.0.0.1:54649/live/201.ts", "Kanal B=http://127.0.0.1:54649/live/102.ts", "Kanal C=http://127.0.0.1:54649/live/105.ts", "Sport 1 4K=http://127.0.0.1:54649/live/106.ts", "Sport 1 HD=http://127.0.0.1:54649/live/104.ts", "Sport 1=http://127.0.0.1:54649/live/103.ts"]
+B03PROBE|T02|gruppen|["Kanal A (neu)=Sport", "Kanal B=News", "Kanal C=News", "Sport 1 4K=Sport", "Sport 1 HD=Sport", "Sport 1=Sport"]
+B03PROBE|T02|schluesselbund|vorhanden=true|host=http://127.0.0.1:54649|passwortImStore=["b03.store-wal": 0, "b03.store-shm": 0, "b03.store": 0]
+B03PROBE|T02|xtreamOutput=ts|nachRefresh=ts|endung=["m3u8"]
+B03PROBE|T02|xtreamOutput=m3u8|nachRefresh=m3u8|endung=["m3u8"]
+B03PROBE|T02|xtreamOutput=|nachRefresh=|endung=["m3u8"]
+B03PROBE|T02|xtreamOutput=nil|nachRefresh=nil|endung=["m3u8"]
+B03PROBE|T02|xtreamOutput=mpegts|endung=["ts"]
+B03PROBE|SETUP|-[B03ProbeTests test03_FehlerfaelleAlteListe]|mock=127.0.0.1:54650|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.4EFC30BE-34BA-4149-8428-B6C2885E6049|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T03|ausgang|ZPLAYLIST=4|ZCHANNEL=22|ohneBeziehung=0|favoriten=2|channelCounts=M3U=7;Xtream=4;M3U weg=7;Xtream weg=4
+B03PROBE|T03|M3U-HTTP404|meldung=ImportError|Netzwerkfehler: HTTP 404|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=M3U|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Gamma"]|createdAt=1789562683.542|lastRefreshed=1789562683.542|sourceURL=http://127.0.0.1:54650/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T03|M3U-HTTP500|meldung=ImportError|Netzwerkfehler: HTTP 500|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=M3U|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Gamma"]|createdAt=1789562683.542|lastRefreshed=1789562683.542|sourceURL=http://127.0.0.1:54650/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T03|M3U-HTML-200|meldung=ImportError|Die Playlist enthält keine gültigen Sender.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=M3U|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Gamma"]|createdAt=1789562683.542|lastRefreshed=1789562683.542|sourceURL=http://127.0.0.1:54650/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T03|M3U-leer-200|meldung=ImportError|Die Playlist enthält keine gültigen Sender.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=M3U|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Gamma"]|createdAt=1789562683.542|lastRefreshed=1789562683.542|sourceURL=http://127.0.0.1:54650/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T03|M3U-nurKopfzeile|meldung=ImportError|Die Playlist enthält keine gültigen Sender.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=M3U|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Gamma"]|createdAt=1789562683.542|lastRefreshed=1789562683.542|sourceURL=http://127.0.0.1:54650/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T03|M3U-Host-weg|meldung=ImportError|Netzwerkfehler: Could not connect to the server.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=M3U weg|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=[]|createdAt=1789562683.561|lastRefreshed=1789562683.561|sourceURL=http://127.0.0.1:54651/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T03|Xtream-leer|meldung=ImportError|Die Playlist enthält keine gültigen Sender.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-HTTP500-streams|meldung=XtreamError|Netzwerkfehler: HTTP 500|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-Streams-Objekt|meldung=XtreamError|Netzwerkfehler: Unerwartete Serverantwort (The data couldn’t be read because it isn’t in the correct format.)|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-zuVieleSender|meldung=XtreamError|Die Senderliste ist zu groß (mehr als 2 Sender).|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-Host-weg|meldung=XtreamError|Netzwerkfehler: Could not connect to the server.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream weg|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=[]|createdAt=1789562683.574|lastRefreshed=1789562683.575|sourceURL=http://127.0.0.1:54651/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-Schluesselbund-fehlt|meldung=ResolveError|Die Zugangsdaten dieser Xtream-Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-auth0-Versuch1|meldung=XtreamError|Anmeldung fehlgeschlagen. Benutzername/Passwort prüfen.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-auth0-Versuch2|meldung=XtreamError|Anmeldung fehlgeschlagen. Benutzername/Passwort prüfen.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-auth0-Versuch3|meldung=XtreamError|Anmeldung fehlgeschlagen. Benutzername/Passwort prüfen.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|Xtream-auth0-Versuch4|meldung=XtreamError|Zu viele fehlgeschlagene Anmeldungen. Bitte in 30 Sekunden erneut versuchen.|dauer=0.00s|alteListeUnveraendert=true|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.558|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|T03|anfragenAnmeldungGesamt=8
+B03PROBE|T03|Xtream-OK-nachFehlern|meldung=KEIN FEHLER|dauer=0.01s|alteListeUnveraendert=false|dbGleich=true|hasChanges=false|zugangsdatenInMeldung=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562683.557|lastRefreshed=1789562683.657|sourceURL=http://127.0.0.1:54650/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true
+B03PROBE|SETUP|-[B03ProbeTests test09_ZweimalAktualisierenSelbePlaylist]|mock=127.0.0.1:54652|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.4EFC30BE-34BA-4149-8428-B6C2885E6049|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T09|m3u|ergebnis1=success()|ergebnis2=success()|anfragen=2|name=M3U|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Alpha"]|createdAt=1789562683.676|lastRefreshed=1789562685.720|sourceURL=http://127.0.0.1:54652/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false|db=ZPLAYLIST=1|ZCHANNEL=7|ohneBeziehung=0|favoriten=1|channelCounts=M3U=7
+B03PROBE|T09|xtream3x|ergebnisse=["success()", "success()", "success()"]|anfragen=9|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal unbekannte Kategorie"]|createdAt=1789562685.756|lastRefreshed=1789562686.798|sourceURL=http://127.0.0.1:54652/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true|db=ZPLAYLIST=2|ZCHANNEL=11|ohneBeziehung=0|favoriten=2|channelCounts=M3U=7;Xtream=4
+B03PROBE|SETUP|-[B03ProbeTests test10_ZweiPlaylistsParallel]|mock=127.0.0.1:54653|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.4EFC30BE-34BA-4149-8428-B6C2885E6049|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T10|m3u=success()|xtream=success()|dauer=1.54s|name=M3U|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Sport HD", "sport hd"]|createdAt=1789562686.956|lastRefreshed=1789562688.526|sourceURL=http://127.0.0.1:54653/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false|name=Xtream|channelCount=4|beziehung=4|dbPlaylistID=4|favoriten=["Kanal ohne Kategorie"]|createdAt=1789562686.984|lastRefreshed=1789562688.009|sourceURL=http://127.0.0.1:54653/player_api.php|xtreamOutput=mpegts|isRemote=true|isXtream=true|db=ZPLAYLIST=2|ZCHANNEL=11|ohneBeziehung=0|favoriten=3|channelCounts=M3U=7;Xtream=4
+B03PROBE|SETUP|-[B03ProbeTests test11_LokaleDatei]|mock=127.0.0.1:54654|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.4EFC30BE-34BA-4149-8428-B6C2885E6049|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T11|import|name=qa-b03-lokal|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Alpha"]|createdAt=1789562688.566|lastRefreshed=nil|sourceURL=nil|xtreamOutput=nil|isRemote=false|isXtream=false
+B03PROBE|T11|aktualisieren|meldung=kein Fehler|anfragen=0|idsGleich=true|name=qa-b03-lokal|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Alpha"]|createdAt=1789562688.566|lastRefreshed=nil|sourceURL=nil|xtreamOutput=nil|isRemote=false|isXtream=false
+B03PROBE|T11|nachDateiAenderung|name=qa-b03-lokal|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=["Alpha"]|createdAt=1789562688.566|lastRefreshed=nil|sourceURL=nil|xtreamOutput=nil|isRemote=false|isXtream=false
+B03PROBE|T11|geloescht|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|dateiNochDa=true
+B03PROBE|SETUP|-[B03ProbeTests test07_AktualisierenUndLoeschenGleichzeitig_M3U]|mock=127.0.0.1:54655|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.44267E31-A098-4B5D-B2CA-C0C7DDF710D9|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T07|start|ZPLAYLIST=1|ZCHANNEL=7|ohneBeziehung=0|favoriten=1|channelCounts=M3U=7
+B03PROBE|T07|loescheWaehrendAktualisieren
+B03PROBE|T07|geloescht|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL
+B03PROBE|T07|aktualisierenErgebnis|success()
+B03PROBE|T07|danach|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|hasChanges=false
+B03PROBE|T07|kontext|channels=0|favoritenTab=[]|playlists=0|ohnePlaylist=0
+B03PROBE|T07|nachSave|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL
+B03PROBE|SETUP|-[B03ProbeTests test08_AktualisierenUndLoeschenGleichzeitig_Xtream]|mock=127.0.0.1:54656|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.F310C421-925F-4D78-A4D8-1103FCC52AEF|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T08|start|ZPLAYLIST=1|ZCHANNEL=4|ohneBeziehung=0|favoriten=1|channelCounts=Xtream=4
+B03PROBE|T08|loescheWaehrendAktualisieren|anfragenBisher=["(anmeldung)", "get_live_categories", "get_live_streams", "(anmeldung)", "get_live_categories", "get_live_streams"]
+B03PROBE|T08|geloescht|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|schluesselbund=false
+B03PROBE|T08|aktualisierenErgebnis|success()
+B03PROBE|T08|danach|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|kontextChannels=0|favoritenTab=[]|schluesselbund=false
+B03PROBE|SETUP|-[B03ProbeTests test08b_AltbestandAktualisierenUndLoeschen]|mock=127.0.0.1:54657|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.3760B203-233A-42AE-8927-FE483B1065A6|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T08b|geloescht|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|schluesselbund=false
+B03PROBE|T08b|aktualisierenErgebnis|success()|ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|schluesselbundNachher=true
+B03PROBE|SETUP|-[B03ProbeTests test12_GehalteneSenderNachLoeschen]|mock=127.0.0.1:54658|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.C7853ED4-C128-4874-8B57-78F43EA3B26B|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T12|vorher|x=http://127.0.0.1:54658/live/qa-user/qa-pass-b03held/101.m3u8|m=http://127.0.0.1:9/a.m3u8
+B03PROBE|T12|geloescht
+B03PROBE|T12|xtream|isDeleted=false
+B03PROBE|T12|xtream|modelContextNil=true
+B03PROBE|T12|xtream|name=Kanal Int
+B03PROBE|T12|xtream|streamURL=http://127.0.0.1:54658/live/101.m3u8
+B03PROBE|T12|xtream|isFavorite=false
+B03PROBE|T12|xtream|playlistNil=false
+B03PROBE|T12|xtream|resolverFehler=Die Zugangsdaten dieser Xtream-Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren.
+B03PROBE|T12|m3u|isDeleted=false
+B03PROBE|T12|m3u|modelContextNil=true
+B03PROBE|T12|m3u|name=Alpha
+B03PROBE|T12|m3u|streamURL=http://127.0.0.1:9/a.m3u8
+B03PROBE|T12|m3u|isFavorite=false
+B03PROBE|T12|m3u|playlistNil=false
+B03PROBE|T12|m3u|resolver=http://127.0.0.1:9/a.m3u8
+B03PROBE|T12|playlistObjekt|isDeleted=false|name=Xtream|channelCount=4
+B03PROBE|SETUP|-[B03ProbeTests test12b_GehalteneSenderNachAktualisieren]|mock=127.0.0.1:54659|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.6801441A-54B8-40A2-91CE-4607FAAC1D71|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T12b|aktualisiert
+B03PROBE|T12b|xtream|isDeleted=false|modelContextNil=true
+B03PROBE|T12b|xtream|name=Kanal Int|playlistNil=true
+B03PROBE|T12b|xtream|resolver=http://127.0.0.1:54659/live/101.m3u8
+B03PROBE|T12b|xtream|nochInPlaylist=false
+B03PROBE|T12b|m3u|isDeleted=false|modelContextNil=true
+B03PROBE|T12b|m3u|name=Alpha|playlistNil=true
+B03PROBE|T12b|m3u|resolver=http://127.0.0.1:9/a.m3u8
+B03PROBE|T12b|m3u|nochInPlaylist=false
+B03PROBE|SETUP|-[B03ProbeTests test13_MultiviewUndPlayerBeimLoeschen]|mock=127.0.0.1:54660|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.2A9CFAAF-E872-42F5-A3D0-415439478003|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T13|multiview|slots=1|engineState=loading|liveAnfragen=["/live/qa-user/qa-pass-b03mv/101.m3u8"]
+B03PROBE|SHOT|mac-08-multiview-vor-loeschen|900x644
+B03PROBE|T13|multiview|geloescht|slots=1|slotChannelDeleted=false
+B03PROBE|T13|multiview|slotName=Kanal Int
+B03PROBE|T13|multiview|nachNeuzeichnen|slots=1|engineState=loading|isPaused=false
+B03PROBE|SHOT|mac-09-multiview-nach-loeschen|900x644
+B03PROBE|SETUP|-[B03ProbeTests test06_LoeschenWasBleibt]|mock=127.0.0.1:54661|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.B0F0EB3E-3EF2-4CB3-AD5D-92F4C7F0CF70|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T06|undoManager=nil|autosave=true
+B03PROBE|T06|vorher|db=ZPLAYLIST=3|ZCHANNEL=60|ohneBeziehung=0|favoriten=6|channelCounts=QA-B03-X-748427=20;QA-B03-Y-748427=20;QA-B03-M-748427=20|schluesselbund=X=true|Y=true|cacheDB=true|eintraegeM3UAdresse=["1"]|koerperMitSendernamen=["1"]|koerperAufPlatte=["0"]|URLCache.shared=true|xtreamEintraege=["0"]|freelist=["0"]|pageCount=["22"]|secureDelete=["2"]|journal=["wal"]
+B03PROBE|T06|vorher|roh|QA-B03-X-748427=b03.store:0,b03.store-shm:0,b03.store-wal:5 ; qa-b03-xchan-748427=b03.store:0,b03.store-shm:0,b03.store-wal:122 ; qa-b03-logo-748427=b03.store:0,b03.store-shm:0,b03.store-wal:122 ; qa-b03-mchan-748427=b03.store:0,b03.store-shm:0,b03.store-wal:40 ; qa-b03-stream-748427=b03.store:0,b03.store-shm:0,b03.store-wal:40 ; qa-b03-tok-748427=b03.store:0,b03.store-shm:0,b03.store-wal:1 ; qa-pass-b03del-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0
+B03PROBE|T06|nachLoeschen|db=ZPLAYLIST=1|ZCHANNEL=20|ohneBeziehung=0|favoriten=0|channelCounts=QA-B03-Y-748427=20|schluesselbund=X=false|Y=true|favoritenUebrig=0|hasChanges=false|cacheDB=true|eintraegeM3UAdresse=["1"]|koerperMitSendernamen=["1"]|koerperAufPlatte=["0"]|URLCache.shared=true|xtreamEintraege=["0"]|freelist=["3"]
+B03PROBE|T06|nachLoeschen|roh|QA-B03-X-748427=b03.store:0,b03.store-shm:0,b03.store-wal:5 ; qa-b03-xchan-748427=b03.store:0,b03.store-shm:0,b03.store-wal:192 ; qa-b03-logo-748427=b03.store:0,b03.store-shm:0,b03.store-wal:192 ; qa-b03-mchan-748427=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-stream-748427=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-tok-748427=b03.store:0,b03.store-shm:0,b03.store-wal:2 ; qa-pass-b03del-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0
+B03PROBE|T06|rueckgaengig|undoManager=false|canUndo=false
+B03PROBE|T06|nach3s|roh|QA-B03-X-748427=b03.store:0,b03.store-shm:0,b03.store-wal:5 ; qa-b03-xchan-748427=b03.store:0,b03.store-shm:0,b03.store-wal:192 ; qa-b03-logo-748427=b03.store:0,b03.store-shm:0,b03.store-wal:192 ; qa-b03-mchan-748427=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-stream-748427=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-tok-748427=b03.store:0,b03.store-shm:0,b03.store-wal:2 ; qa-pass-b03del-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0
+B03PROBE|T06|containerFreigegeben|dateien=["b03.store", "b03.store-shm", "b03.store-wal"]|roh|QA-B03-X-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-xchan-748427=b03.store:48,b03.store-shm:0,b03.store-wal:0 ; qa-b03-mchan-748427=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-stream-748427=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-tok-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-pass-b03del-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0
+B03PROBE|T06|neuGeoeffnet|playlists=1|channels=20
+B03PROBE|T06|nachNeustart|roh|QA-B03-X-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-xchan-748427=b03.store:48,b03.store-shm:0,b03.store-wal:0 ; qa-b03-mchan-748427=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-stream-748427=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-tok-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-pass-b03del-748427=b03.store:0,b03.store-shm:0,b03.store-wal:0|freelist=["3"]
+B03PROBE|=== Lauf 2: test13_MultiviewUndPlayerBeimLoeschen
+B03PROBE|SETUP|-[B03ProbeTests test13_MultiviewUndPlayerBeimLoeschen]|mock=127.0.0.1:54662|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.29418A98-0855-483E-AFF6-0B727151DC37|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T13|multiview|slots=1|engineState=loading|liveAnfragen=["/live/qa-user/qa-pass-b03mv/101.m3u8"]
+B03PROBE|SHOT|mac-08-multiview-vor-loeschen|900x644
+B03PROBE|T13|multiview|geloescht|slots=1|slotChannelDeleted=false
+B03PROBE|T13|multiview|slotName=Kanal Int
+B03PROBE|T13|multiview|nachNeuzeichnen|slots=1|engineState=loading|isPaused=false
+B03PROBE|SHOT|mac-09-multiview-nach-loeschen|900x644
+B03PROBE|T13|multiview|schliesseFensterImRaster
+B03PROBE|T13|multiview|fensterGeschlossen|slots=1|isPaused=false
+B03PROBE|=== Lauf 2: test13b_PlayerBeimLoeschen
+B03PROBE|SETUP|-[B03ProbeTests test13b_PlayerBeimLoeschen]|mock=127.0.0.1:54663|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.EC52E813-B0E5-4800-AEBC-0C33738C6E55|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T13|player|liveAnfragen=["/live/qa-user/qa-pass-b03pl/102.m3u8"]|fenstertitel=Kanal String
+B03PROBE|SHOT|mac-10-player-vor-loeschen|800x532
+B03PROBE|T13|player|geloescht|channelDeleted=false|name=Kanal String
+B03PROBE|T13|player|nachNeuzeichnen|fenstertitel=Kanal String|liveAnfragenOffen=1
+B03PROBE|SHOT|mac-11-player-nach-loeschen|820x552
+B03PROBE|T13|ende
+B03PROBE|=== Lauf 2: test06_LoeschenWasBleibt
+B03PROBE|SETUP|-[B03ProbeTests test06_LoeschenWasBleibt]|mock=127.0.0.1:54668|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.9D24A2AB-D336-45DC-864B-9792860D6F09|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|T06|undoManager=nil|autosave=true
+B03PROBE|T06|vorher|db=ZPLAYLIST=3|ZCHANNEL=60|ohneBeziehung=0|favoriten=6|channelCounts=QA-B03-X-644974=20;QA-B03-Y-644974=20;QA-B03-M-644974=20|schluesselbund=X=true|Y=true|cacheDB=true|eintraegeM3UAdresse=["1"]|koerperMitSendernamen=["1"]|koerperAufPlatte=["0"]|URLCache.shared=true|xtreamEintraege=["0"]|freelist=["0"]|pageCount=["22"]|secureDelete=["2"]|journal=["wal"]
+B03PROBE|T06|vorher|roh|QA-B03-X-644974=b03.store:0,b03.store-shm:0,b03.store-wal:5 ; qa-b03-xchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:80 ; qa-b03-logo-644974=b03.store:0,b03.store-shm:0,b03.store-wal:80 ; qa-b03-mchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:40 ; qa-b03-stream-644974=b03.store:0,b03.store-shm:0,b03.store-wal:40 ; qa-b03-tok-644974=b03.store:0,b03.store-shm:0,b03.store-wal:1 ; qa-pass-b03del-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-ychan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:42 ; QA-B03-M-644974=b03.store:0,b03.store-shm:0,b03.store-wal:1
+B03PROBE|T06|nachLoeschen|db=ZPLAYLIST=1|ZCHANNEL=20|ohneBeziehung=0|favoriten=0|channelCounts=QA-B03-Y-644974=20|schluesselbund=X=false|Y=true|favoritenUebrig=0|hasChanges=false|cacheDB=true|eintraegeM3UAdresse=["1"]|koerperMitSendernamen=["1"]|koerperAufPlatte=["0"]|URLCache.shared=true|xtreamEintraege=["0"]|freelist=["3"]
+B03PROBE|T06|nachLoeschen|roh|QA-B03-X-644974=b03.store:0,b03.store-shm:0,b03.store-wal:5 ; qa-b03-xchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:80 ; qa-b03-logo-644974=b03.store:0,b03.store-shm:0,b03.store-wal:80 ; qa-b03-mchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-stream-644974=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-tok-644974=b03.store:0,b03.store-shm:0,b03.store-wal:2 ; qa-pass-b03del-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-ychan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:115 ; QA-B03-M-644974=b03.store:0,b03.store-shm:0,b03.store-wal:2
+B03PROBE|T06|rueckgaengig|undoManager=false|canUndo=false
+B03PROBE|T06|nach3s|roh|QA-B03-X-644974=b03.store:0,b03.store-shm:0,b03.store-wal:5 ; qa-b03-xchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:80 ; qa-b03-logo-644974=b03.store:0,b03.store-shm:0,b03.store-wal:80 ; qa-b03-mchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-stream-644974=b03.store:0,b03.store-shm:0,b03.store-wal:106 ; qa-b03-tok-644974=b03.store:0,b03.store-shm:0,b03.store-wal:2 ; qa-pass-b03del-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-ychan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:115 ; QA-B03-M-644974=b03.store:0,b03.store-shm:0,b03.store-wal:2
+B03PROBE|T06|containerFreigegeben|dateien=["b03.store", "b03.store-shm", "b03.store-wal"]|roh|QA-B03-X-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-xchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-logo-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-mchan-644974=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-stream-644974=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-tok-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-pass-b03del-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-ychan-644974=b03.store:48,b03.store-shm:0,b03.store-wal:0 ; QA-B03-M-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0
+B03PROBE|T06|neuGeoeffnet|playlists=1|channels=20
+B03PROBE|T06|nachNeustart|roh|QA-B03-X-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-xchan-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-logo-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-mchan-644974=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-stream-644974=b03.store:26,b03.store-shm:0,b03.store-wal:0 ; qa-b03-tok-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-pass-b03del-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0 ; qa-b03-ychan-644974=b03.store:48,b03.store-shm:0,b03.store-wal:0 ; QA-B03-M-644974=b03.store:0,b03.store-shm:0,b03.store-wal:0|freelist=["3"]
+B03PROBE|=== Lauf 1: test14
+B03PROBE|SETUP|-[B03ProbeTests test14_OberflaecheUebersicht]|mock=127.0.0.1:54669|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.8F4A5F9A-F5F4-4D47-BFD7-4E6CA6C6E9CA|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|SHOT|mac-01-leer|760x672
+B03PROBE|T14|leer|texte=["MIKA+PLAYER · PLAYLISTS", "Add", "Playlists", "List With A Film Strip", "Keine Playlists", "Importiere eine M3U/M3U8-Playlist per URL oder Datei, um loszulegen.", "Playlist importieren"]
+B03PROBE|SHOT|mac-02-drei-playlists|760x672
+B03PROBE|T14|liste|texte=["MIKA+PLAYER · PLAYLISTS", "Add", "Playlists", "QA Xtream-Zugang, 4 Sender", "QA M3U-Liste, 7 Sender", "qa-b03-lokal, 7 Sender"]
+B03PROBE|T14|kontextmenue|qa-b03-lokal|punkt=(380.0, 369.5)|menues=1|eintraege=["Löschen"]
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA M3U-Liste
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA Xtream-Zugang
+B03PROBE|T14|spinner|vorher=7
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA M3U-Liste
+B03PROBE|T14|spinner|m3uLaeuft=7
+B03PROBE|SHOT|mac-03-spinner-m3u|760x724
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA Xtream-Zugang
+B03PROBE|T14|spinner|beideLaufen=7
+B03PROBE|SHOT|mac-04-spinner-beide-laufen|760x724
+B03PROBE|T14|spinner|m3uFertigXtreamLaeuft=7|xtreamLastRefreshed=1789562901.483|m3uLastRefreshed=1789562901.353
+B03PROBE|SHOT|mac-05-m3u-fertig-xtream-laeuft-ohne-spinner|760x724
+B03PROBE|T14|spinner|beideFertig=7|anfragenStreams=1
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA M3U-Liste
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA M3U-Liste
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA M3U-Liste
+B03PROBE|T14|mehrfach|m3uAnfragen=0|alert=false|name=QA M3U-Liste|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=[]|createdAt=1789562901.353|lastRefreshed=1789562901.353|sourceURL=http://127.0.0.1:54669/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA M3U-Liste
+B03PROBE|T14|fehler|sheet=false|texte=[]|fenster=["AppKitWindow:Playlists", "NSWindow:qa-b03-lokal"]
+B03PROBE|SHOT|mac-06-fehler-alert|760x724
+B03PROBE|T14|fehler|nachOK|sheet=false|name=QA M3U-Liste|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=[]|createdAt=1789562901.353|lastRefreshed=1789562901.353|sourceURL=http://127.0.0.1:54669/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T14|loeschen|vorher|ZPLAYLIST=3|ZCHANNEL=18|ohneBeziehung=0|favoriten=0|channelCounts=qa-b03-lokal=7;QA M3U-Liste=7;QA Xtream-Zugang=4
+B03PROBE|T14|kontextmenue|zeile nicht gefunden: QA Xtream-Zugang
+B03PROBE|T14|loeschen|sofort|sheet=false|ZPLAYLIST=3|ZCHANNEL=18|ohneBeziehung=0|favoriten=0|channelCounts=qa-b03-lokal=7;QA M3U-Liste=7;QA Xtream-Zugang=4|schluesselbund=true
+B03PROBE|SHOT|mac-07-nach-loeschen|760x724
+B03PROBE|T14|loeschen|texte=["Alle", "Doku", "Film", "News", "Sport", "MIKA+PLAYER · 7 SENDER", "qa-b03-lokal", "Alpha, News | 0", "Beta, News | 0", "Film HD, Film | 0", "Film SD, Film | 0", "Gamma, Doku | 0", "sport hd, Sport | 0", "Sport HD, Sport | 0", "0", "0"]|undoManager=false
+B03PROBE|T14|loeschen|undo:behandelt=false|ZPLAYLIST=3|ZCHANNEL=18|ohneBeziehung=0|favoriten=0|channelCounts=qa-b03-lokal=7;QA M3U-Liste=7;QA Xtream-Zugang=4
+B03PROBE|=== Lauf 2: test14
+B03PROBE|SETUP|-[B03ProbeTests test14_OberflaecheUebersicht]|mock=127.0.0.1:54682|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.CDB50334-0E46-4E52-A29A-57D546EAC527|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|SHOT|mac-01-leer|760x672
+B03PROBE|T14|leer|texte=["MIKA+PLAYER · PLAYLISTS", "Add", "Playlists", "List With A Film Strip", "Keine Playlists", "Importiere eine M3U/M3U8-Playlist per URL oder Datei, um loszulegen.", "Playlist importieren"]
+B03PROBE|SHOT|mac-02-drei-playlists|760x672
+B03PROBE|T14|liste|texte=["MIKA+PLAYER · PLAYLISTS", "Add", "Playlists", "QA Xtream-Zugang, 4 Sender", "QA M3U-Liste, 7 Sender", "qa-b03-lokal, 7 Sender"]
+B03PROBE|T14|kontextmenue|qa-b03-lokal|punkt=(380.0, 369.5)|menues=1|eintraege=["Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA M3U-Liste|punkt=(380.0, 448.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA Xtream-Zugang|punkt=(380.0, 527.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|spinner|vorher=0
+B03PROBE|T14|kontextmenue|QA M3U-Liste|punkt=(380.0, 448.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA M3U-Liste|ausgefuehrt=Aktualisieren
+B03PROBE|T14|spinner|m3uLaeuft=1
+B03PROBE|SHOT|mac-03-spinner-m3u|760x672
+B03PROBE|T14|kontextmenue|QA Xtream-Zugang|punkt=(380.0, 527.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA Xtream-Zugang|ausgefuehrt=Aktualisieren
+B03PROBE|T14|spinner|beideLaufen=1
+B03PROBE|SHOT|mac-04-spinner-beide-laufen|760x672
+B03PROBE|T14|spinner|m3uFertigXtreamLaeuft=1|xtreamLastRefreshed=1789563002.249|m3uLastRefreshed=1789563106.588
+B03PROBE|SHOT|mac-05-m3u-fertig-xtream-laeuft-ohne-spinner|760x672
+B03PROBE|T14|spinner|beideFertig=0|anfragenStreams=2
+B03PROBE|T14|kontextmenue|QA M3U-Liste|punkt=(380.0, 448.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA M3U-Liste|ausgefuehrt=Aktualisieren
+B03PROBE|T14|kontextmenue|QA M3U-Liste|punkt=(380.0, 448.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA M3U-Liste|ausgefuehrt=Aktualisieren
+B03PROBE|T14|kontextmenue|QA M3U-Liste|punkt=(380.0, 448.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA M3U-Liste|ausgefuehrt=Aktualisieren
+B03PROBE|T14|mehrfach|m3uAnfragen=3|alert=false|name=QA M3U-Liste|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=[]|createdAt=1789563002.137|lastRefreshed=1789563121.618|sourceURL=http://127.0.0.1:54682/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T14|kontextmenue|QA M3U-Liste|punkt=(380.0, 448.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA M3U-Liste|ausgefuehrt=Aktualisieren
+B03PROBE|T14|fehler|sheet=true|texte=["Fehler", "Netzwerkfehler: HTTP 404", "OK"]|fenster=["AppKitWindow:Playlists", "NSWindow:Playlists", "_NSAlertPanel:"]
+B03PROBE|SHOT|mac-06-fehler-alert|760x672
+B03PROBE|T14|fehler|nachOK|sheet=false|name=QA M3U-Liste|channelCount=7|beziehung=7|dbPlaylistID=7|favoriten=[]|createdAt=1789563002.137|lastRefreshed=1789563121.618|sourceURL=http://127.0.0.1:54682/list.m3u|xtreamOutput=nil|isRemote=true|isXtream=false
+B03PROBE|T14|loeschen|vorher|ZPLAYLIST=3|ZCHANNEL=18|ohneBeziehung=0|favoriten=0|channelCounts=qa-b03-lokal=7;QA M3U-Liste=7;QA Xtream-Zugang=4
+B03PROBE|T14|kontextmenue|QA Xtream-Zugang|punkt=(380.0, 527.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|T14|kontextmenue|QA Xtream-Zugang|ausgefuehrt=Löschen
+B03PROBE|T14|loeschen|sofort|sheet=false|ZPLAYLIST=2|ZCHANNEL=14|ohneBeziehung=0|favoriten=0|channelCounts=qa-b03-lokal=7;QA M3U-Liste=7|schluesselbund=false
+B03PROBE|SHOT|mac-07-nach-loeschen|760x672
+B03PROBE|T14|loeschen|texte=["MIKA+PLAYER · PLAYLISTS", "Add", "Playlists", "QA M3U-Liste, 7 Sender", "qa-b03-lokal, 7 Sender"]|undoManager=false
+B03PROBE|T14|loeschen|undo:behandelt=false|ZPLAYLIST=2|ZCHANNEL=14|ohneBeziehung=0|favoriten=0|channelCounts=qa-b03-lokal=7;QA M3U-Liste=7
+B03PROBE|=== Lauf 1: test14b
+B03PROBE|3181.91|SETUP|-[B03ProbeTests test14b_SpinnerBeiZweiAktualisierungen]|mock=127.0.0.1:54690|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.08C8B932-B199-4921-99EE-FC7AEE8E7A31|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|3192.02|T14|kontextmenue|QA M3U-Liste|punkt=(380.0, 288.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|3192.04|T14|kontextmenue|QA M3U-Liste|ausgefuehrt=Aktualisieren
+B03PROBE|3192.04|T14b|menueDauer=9.00s
+B03PROBE|3193.06|T14b|nurM3U|spinner=1|m3uLaeuft=true
+B03PROBE|3193.09|SHOT|mac-03-spinner-m3u|760x512
+B03PROBE|3198.57|T14|kontextmenue|QA Xtream-Zugang|punkt=(380.0, 367.5)|menues=1|eintraege=["Aktualisieren", "Löschen"]|nochUebersicht=true
+B03PROBE|3198.57|T14|kontextmenue|QA Xtream-Zugang|ausgefuehrt=Aktualisieren
+B03PROBE|3199.57|T14b|beide|spinner=1|m3uLaeuft=true|xtreamLaeuft=true
+B03PROBE|3199.59|SHOT|mac-04-spinner-beide-laufen|760x512
+B03PROBE|3217.90|T14b|m3uFertig|spinner=0|m3uLaeuft=false|xtreamLaeuft=true
+B03PROBE|3217.92|SHOT|mac-05-m3u-fertig-xtream-laeuft-ohne-spinner|760x512
+B03PROBE|3249.38|T14b|beideFertig|spinner=0|xtreamLaeuft=false
+B03PROBE|=== Lauf 1: test04 1000,2000,4000
+B03PROBE|3265.73|SETUP|-[B03ProbeTests test04_LeistungAktualisierenUndLoeschen]|mock=127.0.0.1:54701|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.57F943F0-EA9E-4B4B-9986-C060A2B4D2D6|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|3269.09|T04|m3u|sender=1000|import=1.17s|aktualisieren=1.17s|maxMainThreadBlockade=1.15s|speicherVorher=43MB|speicherNachher=49MB|favoriten=1->1|count=1000|db=ZPLAYLIST=1|ZCHANNEL=1000|ohneBeziehung=0|favoriten=1|channelCounts=Perf=1000
+B03PROBE|3269.95|T04|m3u|sender=1000|loeschen=0.55s|maxMainThreadBlockade=0.55s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|speicher=49MB
+B03PROBE|3279.71|T04|m3u|sender=2000|import=4.22s|aktualisieren=4.42s|maxMainThreadBlockade=4.39s|speicherVorher=52MB|speicherNachher=41MB|favoriten=2->2|count=2000|db=ZPLAYLIST=1|ZCHANNEL=2000|ohneBeziehung=0|favoriten=2|channelCounts=Perf=2000
+B03PROBE|3280.71|T04|m3u|sender=2000|loeschen=0.69s|maxMainThreadBlockade=0.69s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|speicher=41MB
+B03PROBE|3315.20|T04|m3u|sender=4000|import=16.53s|aktualisieren=16.52s|maxMainThreadBlockade=16.50s|speicherVorher=54MB|speicherNachher=42MB|favoriten=4->4|count=4000|db=ZPLAYLIST=1|ZCHANNEL=4000|ohneBeziehung=0|favoriten=4|channelCounts=Perf=4000
+B03PROBE|3320.72|T04|m3u|sender=4000|loeschen=5.20s|maxMainThreadBlockade=5.20s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|speicher=42MB
+B03PROBE|3323.10|T04|xtream|sender=1000|import=0.18s|aktualisieren=1.19s|maxMainThreadBlockade=1.14s|speicherVorher=46MB|speicherNachher=46MB|favoriten=1->1|count=1000|db=ZPLAYLIST=1|ZCHANNEL=1000|ohneBeziehung=0|favoriten=1|channelCounts=Perf=1000
+B03PROBE|3323.93|T04|xtream|sender=1000|loeschen=0.52s|maxMainThreadBlockade=0.52s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|speicher=47MB
+B03PROBE|3329.67|T04|xtream|sender=2000|import=0.25s|aktualisieren=4.35s|maxMainThreadBlockade=4.29s|speicherVorher=50MB|speicherNachher=50MB|favoriten=2->2|count=2000|db=ZPLAYLIST=1|ZCHANNEL=2000|ohneBeziehung=0|favoriten=2|channelCounts=Perf=2000
+B03PROBE|3331.59|T04|xtream|sender=2000|loeschen=1.61s|maxMainThreadBlockade=1.61s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|speicher=50MB
+B03PROBE|3350.07|T04|xtream|sender=4000|import=0.43s|aktualisieren=16.66s|maxMainThreadBlockade=16.60s|speicherVorher=56MB|speicherNachher=56MB|favoriten=4->4|count=4000|db=ZPLAYLIST=1|ZCHANNEL=4000|ohneBeziehung=0|favoriten=4|channelCounts=Perf=4000
+B03PROBE|3354.45|T04|xtream|sender=4000|loeschen=4.06s|maxMainThreadBlockade=4.06s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|speicher=59MB
+B03PROBE|=== Lauf 1: test15
+B03PROBE|3376.34|SETUP|-[B03ProbeTests test15_SenderlisteOffenBeimLoeschen]|mock=127.0.0.1:54707|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.7FEC22E3-BDBA-4759-B06B-9BB0ACB31272|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|3378.04|T15|vorher|texte=["Alle", "Doku", "Film", "News", "Sport", "MIKA+PLAYER · 7 SENDER", "QA M3U offen", "Alpha, News | 0", "Beta, News | 0", "Film HD, Film | 0", "Film SD, Film | 0", "Gamma, Doku | 0"]|titel=QA M3U offen
+B03PROBE|3378.07|SHOT|mac-12-senderliste-vor-loeschen|760x604
+B03PROBE|3379.59|T15|nachLoeschen|texte=["Alle", "Doku", "Film", "News", "Sport", "MIKA+PLAYER · 7 SENDER", "QA M3U offen", "Television With A Slash Through It", "Keine Sender", "Diese Playlist enthält keine Sender."]|titel=QA M3U offen
+B03PROBE|3379.60|SHOT|mac-13-senderliste-nach-loeschen|760x604
+B03PROBE|=== Lauf 2: test04 xtream 17000
+B03PROBE|3389.35|SETUP|-[B03ProbeTests test04_LeistungAktualisierenUndLoeschen]|mock=127.0.0.1:54709|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.1639F501-CDB3-4F82-9F1E-979E4D3307AF|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|3687.28|T04|xtream|sender=17000|import=2.39s|aktualisieren=292.43s|maxMainThreadBlockade=292.31s|speicherVorher=53MB|speicherNachher=86MB|favoriten=17->17|count=17000|db=ZPLAYLIST=1|ZCHANNEL=17000|ohneBeziehung=0|favoriten=17|channelCounts=Perf=17000
+B03PROBE|3747.47|T04|xtream|sender=17000|loeschen=59.87s|maxMainThreadBlockade=59.87s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL|speicher=59MB
+B03PROBE|=== Lauf 3: test04 xtream 4000,17000 ohne Aktualisieren (nur Löschen)
+B03PROBE|3777.44|SETUP|-[B03ProbeTests test04_LeistungAktualisierenUndLoeschen]|mock=127.0.0.1:54715|keychainDienst=lu.daumedia.MikaPlusPlayer.xtream.tests.BC96BED7-BC0D-461A-8652-8345E5BA31F2|bundle=lu.daumedia.MikaPlusPlayer.b03probe
+B03PROBE|3787.01|T04|xtream|sender=4000|ohneAktualisieren|loeschenDirektNachImport=8.00s|maxMainThreadBlockade=8.00s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL
+B03PROBE|3861.03|T04|xtream|sender=17000|ohneAktualisieren|loeschenDirektNachImport=69.81s|maxMainThreadBlockade=69.81s|db=ZPLAYLIST=0|ZCHANNEL=0|ohneBeziehung=0|favoriten=0|channelCounts=NULL

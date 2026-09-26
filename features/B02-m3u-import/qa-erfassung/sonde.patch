@@ -1,0 +1,1348 @@
+# B02-Erfassungssonde: Änderungen der Kopie gegenüber dem Stand c01f1cf + Reparatur B01 (nicht einchecken, nicht auf das Repo anwenden)
+# Zusätzlich außerhalb der Kopie: uti.swift, win.swift, b02logprobe.swift (siehe Ende)
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Sources/App/MikaPlusPlayerApp.swift b02probe/Sources/App/MikaPlusPlayerApp.swift
+--- snapshot-b01/Sources/App/MikaPlusPlayerApp.swift	2026-09-16 14:08:22
++++ b02probe/Sources/App/MikaPlusPlayerApp.swift	2026-09-16 14:38:57
+@@ -6,12 +6,12 @@
+     /// Gemeinsamer SwiftData-Container für beide Plattformen.
+     let modelContainer: ModelContainer = {
+         let schema = Schema([Playlist.self, Channel.self])
+-        // B01 · BUG-04: app-eigener Speicherort, Übernahme der alten default.store; Test-Host im Speicher.
+-        let config = AppPersistence.configuration(schema: schema)
++        // B02-PROBE: Temp-Store statt AppPersistence (Datenbank des Nutzers bleibt unberührt); Test-Host im Speicher.
++        let config = AppEnvironment.isRunningTests
++            ? ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
++            : ModelConfiguration(schema: schema, url: URL(fileURLWithPath: "<scratchpad>/b02run/apphost.store"))
+         do {
+             let container = try ModelContainer(for: schema, configurations: [config])
+-            // B01 · BUG-01/BUG-03: Zugangsdaten aus Altbeständen in den Schlüsselbund, alten HTTP-Cache leeren.
+-            AppPersistence.finishLaunch(container: container, storeURL: config.url)
+             return container
+         } catch {
+             fatalError("ModelContainer konnte nicht erstellt werden: \(error)")
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Sources/Resources/Info.plist b02probe/Sources/Resources/Info.plist
+--- snapshot-b01/Sources/Resources/Info.plist	2026-08-01 21:18:46
++++ b02probe/Sources/Resources/Info.plist	2026-09-16 14:38:57
+@@ -25,11 +25,11 @@
+ 	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
+ 	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
+ 	<key>SUFeedURL</key>
+-	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
++	<string>http://127.0.0.1:9/appcast.xml</string>
+ 	<key>SUPublicEDKey</key>
+ 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
+ 	<key>SUEnableAutomaticChecks</key>
+-	<true/>
++	<false/>
+ 
+ 	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
+ 	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/B02/B02FileProbeTests.swift b02probe/Tests/B02/B02FileProbeTests.swift
+--- snapshot-b01/Tests/B02/B02FileProbeTests.swift	1970-01-01 01:00:00
++++ b02probe/Tests/B02/B02FileProbeTests.swift	2026-09-16 14:45:09
+@@ -0,0 +1,208 @@
++import XCTest
++import SwiftData
++@testable import MikaPlusPlayer
++
++/// B02-PROBE · Datei-Import über `PlaylistImporter.importFromFile` (so ruft ihn der `fileImporter`-Callback auf).
++final class B02FileProbeTests: XCTestCase {
++    private static let small = Data("#EXTM3U\n#EXTINF:-1 group-title=\"News\",Kanal A\nhttp://127.0.0.1:9/live/a.m3u8\n#EXTINF:-1,Kanal B\nhttp://127.0.0.1:9/live/b.ts\n".utf8)
++
++    @MainActor func testF01_EndungenUndInhalte() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("f01")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let prose = Data("Einkaufsliste\nMilch, Brot\nhttp://example.invalid/kein-extinf\n".utf8)
++        let cases: [(String, Data)] = [
++            ("qa-liste.m3u", B02FileProbeTests.small),
++            ("qa-liste.M3U8", B02FileProbeTests.small),
++            ("qa-liste.txt", B02FileProbeTests.small),
++            ("notizen.txt", prose),
++            ("daten.csv", B02FileProbeTests.small),
++            ("quelltext.swift", B02FileProbeTests.small),
++            ("ohne-endung", B02FileProbeTests.small),
++            ("bild.png", Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) + B02FileProbeTests.small)
++        ]
++        for (name, data) in cases {
++            let url = dir.appendingPathComponent(name)
++            try data.write(to: url)
++            let type = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType?.identifier ?? "-"
++            let r = await B02.importFile(url, context: container.mainContext)
++            B02.log("F01|\(name)|typ=\(type)|\(B02.result(r))")
++        }
++    }
++
++    @MainActor func testF02_OhneLeserecht() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("f02")
++        defer {
++            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dir.appendingPathComponent("gesperrt-ordner").path)
++            try? FileManager.default.removeItem(at: dir)
++        }
++        let url = dir.appendingPathComponent("gesperrt.m3u")
++        try B02FileProbeTests.small.write(to: url)
++        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: url.path)
++        let r = await B02.importFile(url, context: container.mainContext)
++        B02.log("F02|datei-0000|lesbar=\(FileManager.default.isReadableFile(atPath: url.path))|\(B02.result(r))")
++        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
++
++        let lockedDir = dir.appendingPathComponent("gesperrt-ordner", isDirectory: true)
++        try FileManager.default.createDirectory(at: lockedDir, withIntermediateDirectories: true)
++        let inner = lockedDir.appendingPathComponent("innen.m3u")
++        try B02FileProbeTests.small.write(to: inner)
++        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: lockedDir.path)
++        let r2 = await B02.importFile(inner, context: container.mainContext)
++        B02.log("F02|ordner-0000|\(B02.result(r2))")
++
++        let missing = dir.appendingPathComponent("gibt-es-nicht.m3u")
++        let r3 = await B02.importFile(missing, context: container.mainContext)
++        B02.log("F02|fehlt|\(B02.result(r3))")
++    }
++
++    @MainActor func testF03_Symlinks() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("f03")
++        let other = B02.tempDir("f03-ziel")
++        defer { try? FileManager.default.removeItem(at: dir); try? FileManager.default.removeItem(at: other) }
++        let target = other.appendingPathComponent("echte-liste.txt")
++        try B02FileProbeTests.small.write(to: target)
++        let fm = FileManager.default
++        let link = dir.appendingPathComponent("verweis.m3u")
++        try fm.createSymbolicLink(at: link, withDestinationURL: target)
++        let dangling = dir.appendingPathComponent("ins-leere.m3u")
++        try fm.createSymbolicLink(atPath: dangling.path, withDestinationPath: other.appendingPathComponent("weg.m3u").path)
++        let toDir = dir.appendingPathComponent("ordner.m3u")
++        try fm.createSymbolicLink(at: toDir, withDestinationURL: other)
++        let chain = dir.appendingPathComponent("kette.m3u")
++        try fm.createSymbolicLink(at: chain, withDestinationURL: link)
++        for (label, url) in [("auf Datei", link), ("ins Leere", dangling), ("auf Ordner", toDir), ("Kette", chain)] {
++            let r = await B02.importFile(url, context: container.mainContext)
++            B02.log("F03|\(label)|\(url.lastPathComponent)|\(B02.result(r))")
++        }
++    }
++
++    @MainActor func testF04_SecurityScopeUndOrdner() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("f04")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let url = dir.appendingPathComponent("scope.m3u")
++        try B02FileProbeTests.small.write(to: url)
++        let scoped = url.startAccessingSecurityScopedResource()
++        if scoped { url.stopAccessingSecurityScopedResource() }
++        var bookmarkInfo = "-"
++        do {
++            let data = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
++            var stale = false
++            let resolved = try URL(resolvingBookmarkData: data, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &stale)
++            let s2 = resolved.startAccessingSecurityScopedResource()
++            if s2 { resolved.stopAccessingSecurityScopedResource() }
++            bookmarkInfo = "bookmarkMitScope=ok|startAccessingAufBookmarkURL=\(s2)"
++        } catch {
++            bookmarkInfo = "bookmarkMitScope=fehler(\((error as NSError).code))"
++        }
++        let r = await B02.importFile(url, context: container.mainContext)
++        B02.log("F04|startAccessingAufNormalerURL=\(scoped)|\(bookmarkInfo)|\(B02.result(r))")
++        let r2 = await B02.importFile(dir, context: container.mainContext)
++        B02.log("F04|ordner-statt-datei|\(B02.result(r2))")
++        B02.log("F04|sandboxEntitlement=\(Bundle.main.object(forInfoDictionaryKey: "com.apple.security.app-sandbox") as Any)|umgebung=APP_SANDBOX_CONTAINER_ID:\(ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] ?? "nil")")
++    }
++
++    /// Named Pipe: zeigt, dass die Datei synchron auf dem Main-Thread gelesen wird (Stellvertreter für langsame Volumes).
++    @MainActor func testF05_LangsameDateiBlockiertMainThread() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("f05")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let fifo = dir.appendingPathComponent("langsam.m3u")
++        XCTAssertEqual(mkfifo(fifo.path, 0o644), 0)
++        let payload = B02FileProbeTests.small
++        let path = fifo.path
++        Thread.detachNewThread {
++            Thread.sleep(forTimeInterval: 3)
++            let end = Date().addingTimeInterval(10)
++            var fd: Int32 = -1
++            while fd < 0 && Date() < end {
++                fd = open(path, O_WRONLY | O_NONBLOCK)
++                if fd < 0 { Thread.sleep(forTimeInterval: 0.05) }
++            }
++            guard fd >= 0 else { return }
++            _ = fcntl(fd, F_SETFL, 0)
++            payload.withUnsafeBytes { _ = write(fd, $0.baseAddress, $0.count) }
++            close(fd)
++        }
++        let watchdog = MainThreadWatchdog()
++        watchdog.start()
++        try await Task.sleep(nanoseconds: 200_000_000)
++        let start = Date()
++        let r = await B02.importFile(fifo, context: container.mainContext)
++        let elapsed = Date().timeIntervalSince(start)
++        try await Task.sleep(nanoseconds: 300_000_000)
++        let gap = watchdog.stop()
++        B02.log("F05|fifo-Schreiber-nach-3s|gesamt=\(B02.fmt(elapsed))s|maxMainThreadBlockade=\(B02.fmt(gap))s|\(B02.result(r))")
++    }
++
++    func testF06_iCloudOrdner() {
++        let home = FileManager.default.homeDirectoryForCurrentUser
++        let icloud = home.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
++        var isDir: ObjCBool = false
++        let exists = FileManager.default.fileExists(atPath: icloud.path, isDirectory: &isDir)
++        B02.log("F06|iCloudDriveOrdnerVorhanden=\(exists && isDir.boolValue)|nicht ausgefuehrt: keine Datei in iCloud Drive erzeugt, keine vorhandene gelesen (koennte Zugangsdaten enthalten)")
++    }
++
++    @MainActor func testF07_Dateinamen() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("f07")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let cases: [(String, String)] = [
++            ("liste.v2.m3u", ""),
++            (".m3u", ""),
++            (".versteckt.m3u", ""),
++            ("Sender & Ümlaut (Kopie).M3U8", ""),
++            ("liste.m3u", "   "),
++            ("liste.m3u", "Eigener Name"),
++            (String(repeating: "n", count: 250) + ".m3u", "")
++        ]
++        for (file, name) in cases {
++            let url = dir.appendingPathComponent(file)
++            try B02FileProbeTests.small.write(to: url)
++            let r = await B02.importFile(url, name: name, context: container.mainContext)
++            let shown = (try? r.get()).map { "name=\($0.name.count > 60 ? "<\($0.name.count) Zeichen>" : $0.name.debugDescription)|sourceURL=\($0.sourceURL?.absoluteString ?? "nil")|isRemote=\($0.isRemote)|lastRefreshed=\($0.lastRefreshed == nil ? "nil" : "gesetzt")" } ?? B02.result(r)
++            B02.log("F07|datei=\(file.count > 60 ? "<\(file.count) Zeichen>" : file.debugDescription)|eingabeName=\(name.debugDescription)|\(shown)")
++        }
++    }
++
++    @MainActor func testF08_RelativeAdressenInDatei() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("f08")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        try Data("x".utf8).write(to: dir.appendingPathComponent("stream.ts"))
++        let text = "#EXTM3U\n#EXTINF:-1,Relativ\nstream.ts\n#EXTINF:-1,Absolut\nfile://\(dir.appendingPathComponent("stream.ts").path)\n"
++        let url = dir.appendingPathComponent("relativ.m3u")
++        try Data(text.utf8).write(to: url)
++        let r = await B02.importFile(url, context: container.mainContext)
++        B02.log("F08|\(B02.result(r).replacingOccurrences(of: dir.path, with: "<tmp>"))")
++    }
++
++    /// 50-MB-Datei (1.000 Einträge mit ~52-KB-Namen), Temp-Store-Datei.
++    @MainActor func testF09_50MBDatei() async throws {
++        let dir = B02.tempDir("f09")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let (container, storeURL, storeDir) = try B01.tempFileContainer("b02f09")
++        defer { try? FileManager.default.removeItem(at: storeDir) }
++        let url = dir.appendingPathComponent("gross.m3u")
++        let data = B02.m3u(1_000, nameLength: 52_000)
++        try data.write(to: url)
++        let before = B02.footprintMB()
++        let watchdog = MainThreadWatchdog()
++        watchdog.start()
++        let start = Date()
++        let r = await B02.importFile(url, context: container.mainContext)
++        let elapsed = Date().timeIntervalSince(start)
++        try await Task.sleep(nanoseconds: 300_000_000)
++        let gap = watchdog.stop()
++        let after = B02.footprintMB()
++        var storeBytes = 0
++        for s in ["", "-wal", "-shm"] {
++            storeBytes += ((try? FileManager.default.attributesOfItem(atPath: storeURL.path + s))?[.size] as? Int) ?? 0
++        }
++        let p = try? r.get()
++        B02.log("F09|dateiBytes=\(data.count)|ergebnis=\(B02.message(r) ?? "OK")|sender=\(p?.channelCount ?? -1)|laengsterName=\(p?.channels.map(\.name.count).max() ?? -1)|gesamt=\(B02.fmt(elapsed))s|maxMainThreadBlockade=\(B02.fmt(gap))s|speicherVorher=\(Int(before))MB|nachher=\(Int(after))MB|storeBytes=\(storeBytes)")
++    }
++}
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/B02/B02KopfzeilenProbeTests.swift b02probe/Tests/B02/B02KopfzeilenProbeTests.swift
+--- snapshot-b01/Tests/B02/B02KopfzeilenProbeTests.swift	1970-01-01 01:00:00
++++ b02probe/Tests/B02/B02KopfzeilenProbeTests.swift	2026-09-16 14:58:37
+@@ -0,0 +1,37 @@
++import XCTest
++import SwiftData
++@testable import MikaPlusPlayer
++
++/// B02-PROBE · Was geht beim URL-Abruf an den Server (Kopfzeilen), und speichert die App Cookies des Servers?
++final class B02KopfzeilenProbeTests: B01MockTestCase {
++
++    @MainActor func testU09_KopfzeilenUndCookies() async throws {
++        let marker = "qa-cookie-b02u09-\(UInt32.random(in: 1000...9999))"
++        let body = Data("#EXTM3U\n#EXTINF:-1,Kopf\nhttp://127.0.0.1:9/live/1.ts\n".utf8)
++        mock.handler = { req in
++            .custom(status: 200, headers: ["Content-Type": "audio/x-mpegurl",
++                                           "Set-Cookie": "sitzung=\(marker); Max-Age=3600; Path=/"], body: body)
++        }
++        let container = try B01.inMemoryContainer()
++        _ = try await B02.importURL("http://\(mock.hostPort)/liste.m3u?password=qa-pass-u09", context: container.mainContext).get()
++        _ = try await B02.importURL("http://\(mock.hostPort)/liste.m3u?password=qa-pass-u09", context: container.mainContext).get()
++        for (i, r) in mock.requests.enumerated() {
++            let h = r.headers
++            B02.log("U09|anfrage\(i + 1)|kopfzeilen=\(h.keys.sorted())|user-agent=\(h["user-agent"] ?? "-")|accept=\(h["accept"] ?? "-")|accept-language=\(h["accept-language"] ?? "-")|cookieGesendet=\(h["cookie"]?.contains(marker) ?? false)|referer=\(h["referer"] ?? "-")")
++        }
++        let url = URL(string: "http://\(mock.hostPort)/")!
++        let stored = HTTPCookieStorage.shared.cookies(for: url)?.filter { $0.value == marker } ?? []
++        B02.log("U09|cookieImSpeicher=\(stored.count)|ablauf=\(stored.first?.expiresDate.map { _ in "gesetzt" } ?? "-")")
++        try await Task.sleep(nanoseconds: 1_500_000_000)
++        let storages = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/HTTPStorages/\(Bundle.main.bundleIdentifier ?? "-")")
++        var onDisk = 0
++        if let e = FileManager.default.enumerator(at: storages, includingPropertiesForKeys: nil) {
++            for case let f as URL in e {
++                if let d = try? Data(contentsOf: f), d.range(of: Data(marker.utf8)) != nil { onDisk += 1 }
++            }
++        }
++        B02.log("U09|cookieAufPlatte=<HTTPStorages>/\(Bundle.main.bundleIdentifier ?? "-")|dateienMitCookie=\(onDisk)")
++        for c in stored { HTTPCookieStorage.shared.deleteCookie(c) }
++        for req in mock.requests { if let u = URL(string: "http://\(mock.hostPort)\(req.target)") { URLCache.shared.removeCachedResponse(for: URLRequest(url: u)) } }
++    }
++}
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/B02/B02LangsamProbeTests.swift b02probe/Tests/B02/B02LangsamProbeTests.swift
+--- snapshot-b01/Tests/B02/B02LangsamProbeTests.swift	1970-01-01 01:00:00
++++ b02probe/Tests/B02/B02LangsamProbeTests.swift	2026-09-16 14:45:22
+@@ -0,0 +1,68 @@
++import XCTest
++import SwiftData
++@testable import MikaPlusPlayer
++
++/// B02-PROBE · langsame Fälle: Leerlauf, Tröpfeln ohne Gesamtfrist, 17.000 Sender.
++final class B02LangsamProbeTests: B01MockTestCase {
++
++    @MainActor func testL01_Leerlauf() async throws {
++        mock.handler = { _ in .hang }
++        let container = try B01.inMemoryContainer()
++        let start = Date()
++        let r = await B02.importURL("http://\(mock.hostPort)/haengt.m3u?password=qa-pass-l01", context: container.mainContext)
++        B02.log("L01|haengt|dauer=\(B02.fmt(Date().timeIntervalSince(start)))s|\(B02.result(r))")
++    }
++
++    /// Antwort tröpfelt in 10 Stücken alle 10 s (≈ 100 s gesamt) – länger als die 60-s-Leerlaufgrenze.
++    @MainActor func testL02_TroepfelnOhneGesamtfrist() async throws {
++        let body = B02.m3u(20)
++        mock.handler = { _ in .trickle(body: body, chunks: 10, interval: 10) }
++        let container = try B01.inMemoryContainer()
++        let start = Date()
++        let r = await B02.importURL("http://\(mock.hostPort)/troepfelt.m3u", context: container.mainContext)
++        B02.log("L02|troepfelt-10x10s|bytes=\(body.count)|dauer=\(B02.fmt(Date().timeIntervalSince(start)))s|ergebnis=\(B02.message(r) ?? "OK")|sender=\((try? r.get())?.channelCount ?? -1)")
++    }
++
++    /// Import per URL, In-Memory-Container wie die B01-Messung (EC-20). Größen per B02_SIZES.
++    @MainActor func testL03_GrosseListePerURL() async throws {
++        let sizes = (ProcessInfo.processInfo.environment["B02_SIZES"] ?? "").split(separator: ",").compactMap { Int($0) }
++        for n in (sizes.isEmpty ? [1_500, 3_000, 6_000, 17_000] : sizes) {
++            try await measure(n: n, fileStore: false)
++        }
++    }
++
++    /// Wie L03, aber mit Store-Datei. Größen per B02_FILESTORE_SIZES.
++    @MainActor func testL04_GrosseListePerURLMitStoreDatei() async throws {
++        let sizes = (ProcessInfo.processInfo.environment["B02_FILESTORE_SIZES"] ?? "").split(separator: ",").compactMap { Int($0) }
++        for n in (sizes.isEmpty ? [6_000] : sizes) {
++            try await measure(n: n, fileStore: true)
++        }
++    }
++
++    @MainActor private func measure(n: Int, fileStore: Bool) async throws {
++        let body = B02.m3u(n)
++        mock.handler = { _ in .raw(status: 200, contentType: "audio/x-mpegurl", body: body) }
++        let container: ModelContainer
++        var cleanup: URL?
++        if fileStore {
++            let (c, _, d) = try B01.tempFileContainer("b02l04-\(n)")
++            container = c; cleanup = d
++        } else {
++            container = try B01.inMemoryContainer()
++        }
++        defer { if let cleanup { try? FileManager.default.removeItem(at: cleanup) } }
++        let watchdog = MainThreadWatchdog()
++        watchdog.start()
++        try await Task.sleep(nanoseconds: 200_000_000)
++        let start = Date()
++        let r = await B02.importURL("http://\(mock.hostPort)/liste-\(n).m3u", context: container.mainContext)
++        let elapsed = Date().timeIntervalSince(start)
++        try await Task.sleep(nanoseconds: 300_000_000)
++        let gap = watchdog.stop()
++        let p = try r.get()
++        let pid = p.id
++        let stored = try container.mainContext.fetchCount(FetchDescriptor<Channel>(predicate: #Predicate { $0.playlistID == pid }))
++        B02.log("L0\(fileStore ? 4 : 3)|\(fileStore ? "storeDatei" : "inMemory")|sender=\(p.channelCount)|bytes=\(body.count)|gesamt=\(B02.fmt(elapsed))s|maxMainThreadBlockade=\(B02.fmt(gap))s|playlistID=\(stored)|beziehung=\(p.channels.count)")
++        mock.resetLog()
++    }
++}
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/B02/B02OberflaecheProbeTests.swift b02probe/Tests/B02/B02OberflaecheProbeTests.swift
+--- snapshot-b01/Tests/B02/B02OberflaecheProbeTests.swift	1970-01-01 01:00:00
++++ b02probe/Tests/B02/B02OberflaecheProbeTests.swift	2026-09-16 14:52:27
+@@ -0,0 +1,259 @@
++import XCTest
++import SwiftUI
++import SwiftData
++import AppKit
++@testable import MikaPlusPlayer
++
++/// B02-PROBE · Reiter „URL" und „Datei" des Import-Sheets, bedient in einem echten Fenster des Test-Hosts
++/// (synthetische Klicks, Feld-Editor, AppKit-Accessibility). Kein Ton, keine Tastaturereignisse, keine Wiedergabe.
++final class B02OberflaecheProbeTests: B01MockTestCase {
++    private var window: NSWindow?
++    private var container: ModelContainer?
++    private static let small = Data("#EXTM3U\n#EXTINF:-1 group-title=\"News\",Kanal A\nhttp://127.0.0.1:9/live/a.m3u8\n#EXTINF:-1,Kanal B\nhttp://127.0.0.1:9/live/b.ts\n".utf8)
++
++    override func tearDown() {
++        MainActor.assumeIsolated {
++            window?.attachedSheet?.attachedSheet?.close()
++            for win in NSApp.windows where win.isVisible && (String(describing: Swift.type(of: win)).contains("SheetPresentationWindow") || String(describing: Swift.type(of: win)).contains("AlertPanel")) {
++                win.close()
++            }
++            window?.close()
++            window = nil
++            container = nil
++        }
++        super.tearDown()
++    }
++
++    // MARK: - Hilfen (wie B01OberflaecheTests)
++
++    @MainActor private func openPlaylists() async throws -> NSWindow {
++        let c = try B01.inMemoryContainer()
++        container = c
++        let w = UIHarness.window(NavigationStack { PlaylistsView() }.modelContainer(c))
++        window = w
++        await UIHarness.spin(0.8)
++        AX.wake(w)
++        await UIHarness.spin(0.2)
++        return w
++    }
++
++    @MainActor private func openSheet(_ w: NSWindow, via label: String = "Playlist importieren") async throws -> NSWindow {
++        AX.wake(w)
++        let btn = try XCTUnwrap(AX.find(w, role: "AXButton", contains: label), "Button \(label)")
++        AX.click(btn, in: w)
++        let sheet = try await waitFor("Sheet") { w.attachedSheet }
++        AX.wake(sheet)
++        await UIHarness.spin(0.2)
++        return sheet
++    }
++
++    @MainActor private func tab(_ sheet: NSWindow, _ name: String) async throws {
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXRadioButton", contains: name), "Reiter \(name)"), in: sheet)
++        await UIHarness.spin(0.4)
++        AX.wake(sheet)
++    }
++
++    @MainActor private func waitFor<T>(_ what: String, timeout: TimeInterval = 5, _ probe: () -> T?) async throws -> T {
++        let end = Date().addingTimeInterval(timeout)
++        while Date() < end {
++            if let v = probe() { return v }
++            await UIHarness.spin(0.05)
++        }
++        throw NSError(domain: "B02UI", code: 1, userInfo: [NSLocalizedDescriptionKey: "Zeitüberschreitung: \(what)"])
++    }
++
++    @MainActor private func fields(_ sheet: NSWindow) -> [NSTextField] {
++        var list: [(Int, NSView)] = []
++        UIHarness.views(sheet.contentView!, into: &list)
++        return list.map(\.1).compactMap { $0 as? NSTextField }.filter { $0.isEditable }
++    }
++
++    @MainActor private func type(_ text: String, into field: NSTextField, in sheet: NSWindow) {
++        sheet.makeFirstResponder(field)
++        guard let editor = field.currentEditor() as? NSTextView else { return }
++        let all = NSRange(location: 0, length: (editor.string as NSString).length)
++        editor.insertText(text, replacementRange: all)
++    }
++
++    @MainActor private func fillURL(_ sheet: NSWindow, url: String, name: String = "") async {
++        let f = fields(sheet)   // Name, URL
++        if f.count >= 2 {
++            type(name, into: f[0], in: sheet)
++            type(url, into: f[1], in: sheet)
++        }
++        sheet.makeFirstResponder(nil)
++        await UIHarness.spin(0.3)
++        AX.wake(sheet)
++    }
++
++    @MainActor private func enabled(_ root: NSObject, button label: String) -> Bool? {
++        AX.find(root, role: "AXButton", contains: label).flatMap { AX.bool($0, "isAccessibilityEnabled") }
++    }
++
++    @MainActor private func hasText(_ root: NSObject, _ text: String) -> Bool {
++        AX.all(root).contains { AX.label($0).contains(text) }
++    }
++
++    @MainActor private func texts(_ root: NSObject) -> [String] {
++        AX.all(root).map { "\(AX.role($0)):\(AX.label($0))" }.filter { !$0.hasSuffix(":") }
++    }
++
++    @MainActor private func snapshot(_ w: NSWindow, _ name: String) {
++        let dir = B02.runDir.appendingPathComponent("shots", isDirectory: true)
++        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
++        guard let v = w.contentView, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) else { return }
++        v.cacheDisplay(in: v.bounds, to: rep)
++        try? rep.representation(using: .png, properties: [:])?.write(to: dir.appendingPathComponent(name))
++    }
++
++    @MainActor private func playlistCount() throws -> Int {
++        try container!.mainContext.fetchCount(FetchDescriptor<Playlist>())
++    }
++
++    // MARK: - Tests
++
++    /// Reiter URL/Datei: Felder, Beschriftungen, Button-Zustände, ungültige Eingabe, Erfolg schließt das Sheet.
++    @MainActor func testUI01_ReiterURLundDatei() async throws {
++        mock.handler = { _ in .raw(status: 200, contentType: "audio/x-mpegurl", body: B02OberflaecheProbeTests.small) }
++        let w = try await openPlaylists()
++        let sheet = try await openSheet(w)
++        try await tab(sheet, "URL")
++        B02.log("UI01|reiterURL|texte=\(texts(sheet))")
++        B02.log("UI01|reiterURL|felder=\(fields(sheet).map { "placeholder=\($0.placeholderString ?? "") wert=\($0.stringValue)" })")
++        B02.log("UI01|leer|buttonAktiv=\(enabled(sheet, button: "Von URL importieren").map(String.init) ?? "-")")
++        await fillURL(sheet, url: "   ")
++        B02.log("UI01|nurLeerzeichen|buttonAktiv=\(enabled(sheet, button: "Von URL importieren").map(String.init) ?? "-")")
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Von URL importieren")), in: sheet)
++        if let alert = try? await waitFor("Alert", timeout: 5, { sheet.attachedSheet }) {
++            B02.log("UI01|nurLeerzeichen|alert=\(texts(alert))")
++            AX.press(try XCTUnwrap(AX.find(alert, role: "AXButton", contains: "OK")))
++            _ = try? await waitFor("Alert zu") { sheet.attachedSheet == nil ? true : nil }
++        } else {
++            B02.log("UI01|nurLeerzeichen|keinAlert")
++        }
++        await fillURL(sheet, url: "http://\(mock.hostPort)/liste.m3u", name: "")
++        B02.log("UI01|gueltig|buttonAktiv=\(enabled(sheet, button: "Von URL importieren").map(String.init) ?? "-")")
++
++        // Datei-Reiter ansehen (Dateidialog wird nicht geöffnet)
++        try await tab(sheet, "Datei")
++        B02.log("UI01|reiterDatei|texte=\(texts(sheet))|felder=\(fields(sheet).count)|buttonAktiv=\(enabled(sheet, button: "Datei auswählen").map(String.init) ?? "-")")
++        try await tab(sheet, "URL")
++        B02.log("UI01|zurueckURL|urlFeldWert=\(fields(sheet).last?.stringValue ?? "-")")
++
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Von URL importieren")), in: sheet)
++        let closed = (try? await waitFor("Sheet schließt", timeout: 8) { w.attachedSheet == nil ? true : nil }) != nil
++        await UIHarness.spin(0.6)
++        AX.wake(w)
++        snapshot(w, "mac-01-playlist-nach-url-import.png")
++        B02.log("UI01|erfolg|sheetGeschlossen=\(closed)|playlists=\(try playlistCount())|texte=\(texts(w).filter { $0.contains("Sender") || $0.contains("127.0.0.1") })")
++    }
++
++    /// „Importiere…", deaktivierte Buttons, Fehler-Alert mit HTTP-Status; Eingaben bleiben.
++    @MainActor func testUI02_ImportZustandUndFehler() async throws {
++        mock.handler = { _ in .delayed(2, .raw(status: 404, contentType: "text/html", body: Data("nicht da".utf8))) }
++        let w = try await openPlaylists()
++        let sheet = try await openSheet(w)
++        try await tab(sheet, "URL")
++        await fillURL(sheet, url: "http://\(mock.hostPort)/fehlt.m3u", name: "QA URL")
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Von URL importieren")), in: sheet)
++        _ = try await waitFor("Importiere…") { AX.wake(sheet); return self.hasText(sheet, "Importiere…") ? true : nil }
++        B02.log("UI02|waehrend|importiere=\(hasText(sheet, "Importiere…"))|busy=\(AX.all(sheet).contains { AX.role($0) == "AXBusyIndicator" })|urlButton=\(enabled(sheet, button: "Von URL importieren").map(String.init) ?? "-")|abbrechen=\(enabled(sheet, button: "Abbrechen").map(String.init) ?? "-")")
++        let alert = try await waitFor("Alert", timeout: 8) { sheet.attachedSheet }
++        B02.log("UI02|alert|texte=\(texts(alert))")
++        AX.press(try XCTUnwrap(AX.find(alert, role: "AXButton", contains: "OK")))
++        _ = try await waitFor("Alert zu") { sheet.attachedSheet == nil ? true : nil }
++        AX.wake(sheet)
++        B02.log("UI02|nachOK|felder=\(fields(sheet).map(\.stringValue))|urlButton=\(enabled(sheet, button: "Von URL importieren").map(String.init) ?? "-")|sheetOffen=\(w.attachedSheet != nil)|playlists=\(try playlistCount())")
++    }
++
++    /// „Abbrechen" während eines URL-Imports: (a) späterer Erfolg, (b) späterer Fehler.
++    @MainActor func testUI03_AbbrechenWaehrendURLImport() async throws {
++        let w = try await openPlaylists()
++        mock.handler = { _ in .delayed(3, .raw(status: 200, contentType: "audio/x-mpegurl", body: B02OberflaecheProbeTests.small)) }
++        var sheet = try await openSheet(w)
++        try await tab(sheet, "URL")
++        await fillURL(sheet, url: "http://\(mock.hostPort)/spaet.m3u")
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Von URL importieren")), in: sheet)
++        await UIHarness.spin(0.5)
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Abbrechen")), in: sheet)
++        _ = try await waitFor("Sheet zu") { w.attachedSheet == nil ? true : nil }
++        let direkt = try playlistCount()
++        await UIHarness.spin(5)
++        B02.log("UI03|a-erfolgNachAbbrechen|playlistsDirekt=\(direkt)|playlistsNach5s=\(try playlistCount())|anfragen=\(mock.requests.count)")
++
++        mock.resetLog()
++        let alertsBefore = Set(NSApp.windows.filter { $0.isVisible && String(describing: Swift.type(of: $0)).contains("Alert") }.map(ObjectIdentifier.init))
++        mock.handler = { _ in .delayed(3, .raw(status: 500, contentType: "text/plain", body: Data())) }
++        sheet = try await openSheet(w, via: "Add")
++        try await tab(sheet, "URL")
++        await fillURL(sheet, url: "http://\(mock.hostPort)/fehler.m3u")
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Von URL importieren")), in: sheet)
++        await UIHarness.spin(0.5)
++        AX.click(try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Abbrechen")), in: sheet)
++        _ = try await waitFor("Sheet zu") { w.attachedSheet == nil ? true : nil }
++        await UIHarness.spin(5)
++        let newAlerts = NSApp.windows.filter { $0.isVisible && String(describing: Swift.type(of: $0)).contains("Alert") && !alertsBefore.contains(ObjectIdentifier($0)) }
++        let orphan = NSApp.windows.filter { $0.isVisible && String(describing: Swift.type(of: $0)).contains("SheetPresentationWindow") && $0.sheetParent == nil }
++        B02.log("UI03|b-fehlerNachAbbrechen|anfragen=\(mock.requests.count)|neueAlerts=\(newAlerts.count)|verwaisteSheets=\(orphan.count)|sheetAmFenster=\(w.attachedSheet != nil)|playlists=\(try playlistCount())")
++        for win in newAlerts + orphan {
++            AX.wake(win)
++            B02.log("UI03|b-fenster|klasse=\(String(describing: Swift.type(of: win)))|sichtbar=\(win.isVisible)|onScreen=\(win.occlusionState.contains(.visible))|frame=\(win.frame)|titel=\(win.title.debugDescription)|parent=\(win.sheetParent.map { String(describing: Swift.type(of: $0)) } ?? "nil")|attachedSheet=\(win.attachedSheet.map { String(describing: Swift.type(of: $0)) } ?? "nil")|texte=\(texts(win))")
++        }
++        if let first = orphan.first, let v = first.contentView, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) {
++            v.cacheDisplay(in: v.bounds, to: rep)
++            let dir = B02.runDir.appendingPathComponent("shots", isDirectory: true)
++            try? rep.representation(using: .png, properties: [:])?.write(to: dir.appendingPathComponent("mac-04-verwaistes-sheet-nach-abbrechen.png"))
++        }
++        let onScreen = (CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? [])
++            .filter { ($0[kCGWindowOwnerPID as String] as? Int32) == ProcessInfo.processInfo.processIdentifier }
++            .compactMap { $0[kCGWindowNumber as String] as? Int }
++        B02.log("UI03|b-CGWindowList|verwaistesSheetOnScreen=\(orphan.map { onScreen.contains($0.windowNumber) })|alertOnScreen=\(newAlerts.map { onScreen.contains($0.windowNumber) })|hauptfensterOnScreen=\(onScreen.contains(w.windowNumber))")
++        await UIHarness.spin(5)
++        let stillAlerts = NSApp.windows.filter { $0.isVisible && String(describing: Swift.type(of: $0)).contains("Alert") && !alertsBefore.contains(ObjectIdentifier($0)) }
++        B02.log("UI03|b-nachWeiteren5s|sichtbareNeueAlerts=\(stillAlerts.count)")
++        // Sheet erneut öffnen: steht ein Alert aus?
++        let again = try await openSheet(w, via: "Add")
++        await UIHarness.spin(0.5)
++        B02.log("UI03|b-erneutGeoeffnet|alertAmSheet=\(again.attachedSheet != nil)")
++    }
++
++    /// Doppelklick auf „Von URL importieren": (a) zwei Klicks im selben Durchlauf, (b) 150 ms Abstand.
++    @MainActor func testUI04_DoppelklickURL() async throws {
++        mock.handler = { _ in .delayed(1, .raw(status: 200, contentType: "audio/x-mpegurl", body: B02OberflaecheProbeTests.small)) }
++        let w = try await openPlaylists()
++        for variant in ["a-selberDurchlauf", "b-150ms"] {
++            mock.resetLog()
++            let before = try playlistCount()
++            let sheet = try await openSheet(w, via: before == 0 ? "Playlist importieren" : "Add")
++            try await tab(sheet, "URL")
++            await fillURL(sheet, url: "http://\(mock.hostPort)/doppelt.m3u")
++            let btn = try XCTUnwrap(AX.find(sheet, role: "AXButton", contains: "Von URL importieren"))
++            if variant.hasPrefix("a") {
++                AX.click(btn, in: sheet, twice: true)
++            } else {
++                AX.click(btn, in: sheet)
++                await UIHarness.spin(0.15)
++                AX.click(btn, in: sheet)
++            }
++            _ = try? await waitFor("Sheet schließt", timeout: 8) { w.attachedSheet == nil ? true : nil }
++            await UIHarness.spin(2.5)
++            B02.log("UI04|\(variant)|anfragen=\(mock.requests.count)|neuePlaylists=\(try playlistCount() - before)")
++        }
++    }
++
++    /// Fensteraufnahmen der Reiter (Ansicht direkt im Fenster, nicht als Sheet – `cacheDisplay` rendert Sheets unvollständig).
++    @MainActor func testUI05_Aufnahmen() async throws {
++        let c = try B01.inMemoryContainer()
++        container = c
++        let w = UIHarness.window(ImportPlaylistView().modelContainer(c), size: CGSize(width: 560, height: 420))
++        window = w
++        await UIHarness.spin(0.8)
++        AX.wake(w)
++        for (name, file) in [("URL", "mac-02-reiter-url.png"), ("Datei", "mac-03-reiter-datei.png")] {
++            AX.click(try XCTUnwrap(AX.find(w, role: "AXRadioButton", contains: name)), in: w)
++            await UIHarness.spin(0.6)
++            snapshot(w, file)
++        }
++        B02.log("UI05|aufnahmen=shots/mac-02-reiter-url.png,shots/mac-03-reiter-datei.png")
++    }
++}
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/B02/B02ParserProbeTests.swift b02probe/Tests/B02/B02ParserProbeTests.swift
+--- snapshot-b01/Tests/B02/B02ParserProbeTests.swift	1970-01-01 01:00:00
++++ b02probe/Tests/B02/B02ParserProbeTests.swift	2026-09-16 14:42:34
+@@ -0,0 +1,221 @@
++import XCTest
++import SwiftData
++@testable import MikaPlusPlayer
++
++/// B02-PROBE · Parser und Textdekodierung. Keine Assertions auf Wunschverhalten: protokolliert das Ist.
++final class B02ParserProbeTests: XCTestCase {
++    private let parser = M3UParser()
++
++    private func run(_ id: String, _ cases: [(String, String)]) {
++        for (label, text) in cases {
++            let r = parser.parse(text)
++            B02.log("\(id)|\(label)|anzahl=\(r.count)|\(B02.show(r))")
++        }
++    }
++
++    func testP01_KopfzeileFehlt() {
++        run("P01", [
++            ("ohne #EXTM3U", "#EXTINF:-1,Ohne Kopf\nhttp://127.0.0.1:9/a.m3u8"),
++            ("#EXTM3U mit Attributen", "#EXTM3U url-tvg=\"http://epg.example/g.xml\" x-tvg-url=\"x\"\n#EXTINF:-1,Mit Kopf\nhttp://127.0.0.1:9/b.m3u8"),
++            ("#EXTM3U mitten in der Datei", "#EXTINF:-1,Eins\nhttp://h/1.ts\n#EXTM3U\n#EXTINF:-1,Zwei\nhttp://h/2.ts"),
++            ("gar kein M3U (HTML)", "<html><body>Login</body></html>"),
++            ("leer", "")
++        ])
++    }
++
++    func testP02_Zeilenenden() {
++        run("P02", [
++            ("LF", "#EXTM3U\n#EXTINF:-1,A\nhttp://h/a.ts\n"),
++            ("CRLF", "#EXTM3U\r\n#EXTINF:-1,A\r\nhttp://h/a.ts\r\n"),
++            ("CR", "#EXTM3U\r#EXTINF:-1,A\rhttp://h/a.ts\r"),
++            ("gemischt", "#EXTM3U\r\n#EXTINF:-1,A\nhttp://h/a.ts\r#EXTINF:-1,B\r\nhttp://h/b.ts"),
++            ("Leerzeilen, Tabs, Leerzeichen am Rand", "\n\n  #EXTM3U  \n\t#EXTINF:-1,A\t\n\n\t http://h/a.ts \t\n"),
++            ("Leerzeile zwischen EXTINF und URL", "#EXTINF:-1,A\n\n\nhttp://h/a.ts"),
++            ("U+2028 im Namen", "#EXTINF:-1,Vor\u{2028}Nach\nhttp://h/a.ts"),
++            ("U+0085 im Namen", "#EXTINF:-1,Vor\u{0085}Nach\nhttp://h/a.ts"),
++            ("VT und FF im Namen", "#EXTINF:-1,Vor\u{000B}Nach\nhttp://h/a.ts"),
++            ("NUL im Namen", "#EXTINF:-1,Vor\u{0000}Nach\nhttp://h/a.ts"),
++            ("Steuerzeichen ESC im Namen", "#EXTINF:-1,Vor\u{001B}[31mRot\nhttp://h/a.ts"),
++            ("Bidi-Override im Namen", "#EXTINF:-1,abc\u{202E}gnp.exe\nhttp://h/a.ts")
++        ])
++    }
++
++    func testP05_KommasUndQuotes() {
++        run("P05", [
++            ("Komma in group-title und Name", "#EXTINF:-1 tvg-id=\"ard.de\" tvg-logo=\"http://x/logo.png\" group-title=\"News, Politik\",Das Erste, HD\nhttp://h/a.m3u8"),
++            ("Komma in tvg-logo-URL", "#EXTINF:-1 tvg-logo=\"http://x/l.png?a=1,2\",Name\nhttp://h/a.ts"),
++            ("Quotes im Namen", "#EXTINF:-1,Sender \"Eins\", HD\nhttp://h/a.ts"),
++            ("Name leer nach Komma", "#EXTINF:-1 tvg-id=\"x\",\nhttp://h/stream-name.ts"),
++            ("Name nur Leerzeichen", "#EXTINF:-1,   \nhttp://h/pfad/letzter.m3u8"),
++            ("kein Komma", "#EXTINF:-1 tvg-id=\"x\"\nhttp://h/ohne-komma.ts"),
++            ("Dauer ohne Attribute, Name mit =\"", "#EXTINF:0,tvg-id=\"fake\" Name\nhttp://h/a.ts"),
++            ("Attribute nach dem Komma", "#EXTINF:-1,Name group-title=\"Nach Komma\"\nhttp://h/a.ts"),
++            ("URL mit Query und Fragment", "#EXTINF:-1,Q\nhttp://h/a.ts?token=abc&x=1#frag")
++        ])
++    }
++
++    func testP06_UnbalancierteQuotes() {
++        run("P06", [
++            ("ein offenes Quote vor dem Komma", "#EXTINF:-1 group-title=\"News,Das Erste\nhttp://h/a.ts"),
++            ("Quote fehlt am Wertende", "#EXTINF:-1 tvg-id=\"abc group-title=\"News\",Name\nhttp://h/a.ts"),
++            ("drei Quotes", "#EXTINF:-1 tvg-id=\"a\" x=\",Name, mit Komma\nhttp://h/a.ts"),
++            ("Quote nur im Namen", "#EXTINF:-1,Ein \"Name, zwei\nhttp://h/a.ts"),
++            ("einfache Hochkommas", "#EXTINF:-1 tvg-id='single' group-title='Grp, X',Name\nhttp://h/a.ts")
++        ])
++    }
++
++    func testP07_AttributeGrossKlein() {
++        run("P07", [
++            ("GROSS", "#EXTINF:-1 TVG-ID=\"up\" TVG-LOGO=\"http://x/u.png\" GROUP-TITLE=\"GRUPPE\",Gross\nhttp://h/a.ts"),
++            ("Gemischt", "#EXTINF:-1 Tvg-Id=\"mix\" Group-Title=\"Grp\",Mix\nhttp://h/a.ts"),
++            ("Leerzeichen um =", "#EXTINF:-1 tvg-id = \"sp\" group-title =\"G\",Sp\nhttp://h/a.ts"),
++            ("ohne Quotes", "#EXTINF:-1 tvg-id=noquote group-title=News,NoQuote\nhttp://h/a.ts"),
++            ("doppeltes Attribut", "#EXTINF:-1 group-title=\"Erste\" group-title=\"Zweite\",Doppelt\nhttp://h/a.ts"),
++            ("leere Werte", "#EXTINF:-1 tvg-id=\"\" tvg-logo=\"\" group-title=\"\",Leer\nhttp://h/a.ts"),
++            ("Werte mit Leerzeichen am Rand", "#EXTINF:-1 tvg-id=\" id \" group-title=\" News \",Rand\nhttp://h/a.ts"),
++            ("andere Attribute (tvg-name, tvg-chno, catchup)", "#EXTINF:-1 tvg-name=\"Anderer Name\" tvg-chno=\"7\" catchup=\"default\",Andere\nhttp://h/a.ts"),
++            ("tvg-logo ungültige URL", "#EXTINF:-1 tvg-logo=\"kein url mit leer zeichen\",Logo\nhttp://h/a.ts"),
++            ("Tabs statt Leerzeichen", "#EXTINF:-1\ttvg-id=\"tab\"\tgroup-title=\"TabG\",Tab\nhttp://h/a.ts")
++        ])
++    }
++
++    func testP08_EXTGRP() {
++        run("P08", [
++            ("EXTGRP nach EXTINF ohne group-title", "#EXTINF:-1,A\n#EXTGRP:Sport\nhttp://h/a.ts"),
++            ("EXTGRP vor EXTINF", "#EXTGRP:Vorher\n#EXTINF:-1,A\nhttp://h/a.ts"),
++            ("EXTGRP bei vorhandenem group-title", "#EXTINF:-1 group-title=\"Titel\",A\n#EXTGRP:Grp\nhttp://h/a.ts"),
++            ("zwei EXTGRP", "#EXTINF:-1,A\n#EXTGRP:Erste\n#EXTGRP:Zweite\nhttp://h/a.ts"),
++            ("EXTGRP leer", "#EXTINF:-1,A\n#EXTGRP:   \nhttp://h/a.ts"),
++            ("extgrp klein", "#EXTINF:-1,A\n#extgrp:klein\nhttp://h/a.ts"),
++            ("EXTGRP gilt nicht für Folgesender", "#EXTGRP:Block\n#EXTINF:-1,A\nhttp://h/a.ts\n#EXTINF:-1,B\nhttp://h/b.ts")
++        ])
++    }
++
++    func testP09_ZeilenOhneEXTINF() {
++        run("P09", [
++            ("einfache M3U nur mit URLs", "#EXTM3U\nhttp://h/a.ts\nhttp://h/b.ts"),
++            ("URL vor dem ersten EXTINF", "http://h/vorher.ts\n#EXTINF:-1,A\nhttp://h/a.ts"),
++            ("zwei EXTINF hintereinander", "#EXTINF:-1,Erster\n#EXTINF:-1,Zweiter\nhttp://h/a.ts"),
++            ("EXTINF + Kommentar + EXTVLCOPT + URL", "#EXTINF:-1,A\n# Kommentar\n#EXTVLCOPT:http-user-agent=QA\n#KODIPROP:x=y\nhttp://h/a.ts"),
++            ("extinf klein", "#extinf:-1,Klein\nhttp://h/a.ts"),
++            ("#EXTINF ohne Doppelpunkt", "#EXTINF -1,OhneDoppelpunkt\nhttp://h/a.ts"),
++            ("EXTINF am Dateiende ohne URL", "#EXTINF:-1,A\nhttp://h/a.ts\n#EXTINF:-1,Rest"),
++            ("zwei URLs nach einem EXTINF", "#EXTINF:-1,A\nhttp://h/a.ts\nhttp://h/b.ts"),
++            ("ungültige URL-Zeile verbraucht EXTINF", "#EXTINF:-1,A\nkein url\nhttp://h/a.ts"),
++            ("gleicher Sender doppelt", "#EXTINF:-1,A\nhttp://h/a.ts\n#EXTINF:-1,A\nhttp://h/a.ts")
++        ])
++    }
++
++    func testP10_RelativeURLs() {
++        run("P10", [
++            ("Dateiname", "#EXTINF:-1,Rel\nstream.m3u8"),
++            ("Pfad", "#EXTINF:-1,Pfad\n/live/1.ts"),
++            ("Punktpfad", "#EXTINF:-1,Punkt\n../live/1.ts"),
++            ("schema-relativ", "#EXTINF:-1,SchemaRel\n//cdn.example/live/1.ts"),
++            ("Windows-Pfad", "#EXTINF:-1,Win\nC:\\Videos\\a.ts"),
++            ("Host:Port ohne Schema", "#EXTINF:-1,HostPort\n127.0.0.1:8080/live/1.ts"),
++            ("localhost:Port ohne Schema", "#EXTINF:-1,LocalhostPort\nlocalhost:8080/live/1.ts")
++        ])
++    }
++
++    func testP11_Schemata() {
++        run("P11", [
++            ("file", "#EXTINF:-1,Datei\nfile:///etc/hosts"),
++            ("file mit Home-Pfad", "#EXTINF:-1,Home\nfile:///Users/qa/Movies/privat.mp4"),
++            ("javascript", "#EXTINF:-1,JS\njavascript:alert(1)"),
++            ("data", "#EXTINF:-1,Data\ndata:video/mp2t;base64,R0lGODlh"),
++            ("udp multicast", "#EXTINF:-1,UDP\nudp://@239.0.0.1:1234"),
++            ("rtp", "#EXTINF:-1,RTP\nrtp://239.0.0.1:5000"),
++            ("rtsp", "#EXTINF:-1,RTSP\nrtsp://127.0.0.1:554/cam"),
++            ("rtmp", "#EXTINF:-1,RTMP\nrtmp://127.0.0.1/live/x"),
++            ("smb", "#EXTINF:-1,SMB\nsmb://nas.local/share/a.ts"),
++            ("ftp", "#EXTINF:-1,FTP\nftp://127.0.0.1/a.ts"),
++            ("mailto", "#EXTINF:-1,Mail\nmailto:qa@example.invalid"),
++            ("App-Schema x-apple.systempreferences", "#EXTINF:-1,Prefs\nx-apple.systempreferences:com.apple.preference.security"),
++            ("vlc", "#EXTINF:-1,VLC\nvlc://quit"),
++            ("http mit Benutzerinfo", "#EXTINF:-1,UserInfo\nhttp://qa-user:qa-pass-123@127.0.0.1:9/live/1.ts"),
++            ("tvg-logo file", "#EXTINF:-1 tvg-logo=\"file:///etc/hosts\",LogoFile\nhttp://h/a.ts"),
++            ("tvg-logo javascript", "#EXTINF:-1 tvg-logo=\"javascript:alert(1)\",LogoJS\nhttp://h/a.ts"),
++            ("tvg-logo relativ", "#EXTINF:-1 tvg-logo=\"logos/a.png\",LogoRel\nhttp://h/a.ts")
++        ])
++    }
++
++    func testP12_SehrLangeZeilen() {
++        let longName = String(repeating: "N", count: 1_000_000)
++        let longLogo = "http://logos.example/" + String(repeating: "l", count: 5_000_000) + ".png"
++        let cases: [(String, String)] = [
++            ("Name 1 MB, Logo-URL 5 MB", "#EXTINF:-1 tvg-logo=\"\(longLogo)\",\(longName)\nhttp://h/a.ts\n"),
++            ("1 MB Anführungszeichen", "#EXTINF:-1 " + String(repeating: "\"", count: 1_000_000) + ",X\nhttp://h/a.ts\n"),
++            ("1 MB a=a=a=", "#EXTINF:-1 " + String(repeating: "a=", count: 500_000) + ",X\nhttp://h/a.ts\n"),
++            ("URL-Zeile 2 MB", "#EXTINF:-1,LangeURL\nhttp://h/" + String(repeating: "u", count: 2_000_000) + ".ts\n"),
++            ("Gruppe 1 MB", "#EXTINF:-1 group-title=\"" + String(repeating: "g", count: 1_000_000) + "\",G\nhttp://h/a.ts\n")
++        ]
++        for (label, text) in cases {
++            let start = Date()
++            let r = parser.parse(text)
++            let t = Date().timeIntervalSince(start)
++            let c = r.first
++            B02.log("P12|\(label)|eingabeBytes=\(text.utf8.count)|anzahl=\(r.count)|dauer=\(B02.fmt(t))s|nameZeichen=\(c?.name.count ?? -1)|logoZeichen=\(c?.logoURL?.absoluteString.count ?? -1)|gruppeZeichen=\(c?.group?.count ?? -1)|urlZeichen=\(c?.streamURL.absoluteString.count ?? -1)")
++        }
++    }
++
++    func testP13_17000Eintraege() {
++        let data = B02.m3u(17_000)
++        let text = String(decoding: data, as: UTF8.self)
++        var times: [String] = []
++        var count = 0
++        for _ in 0..<3 {
++            let start = Date()
++            count = parser.parse(text).count
++            times.append(B02.fmt(Date().timeIntervalSince(start)))
++        }
++        B02.log("P13|17000|bytes=\(data.count)|anzahl=\(count)|parseDauer=\(times.joined(separator: ","))s")
++    }
++
++    func testP14_50MB_NurParser() {
++        let before = B02.footprintMB()
++        let data = B02.m3u(300_000)
++        let decodeStart = Date()
++        let text = String(data: data, encoding: .utf8) ?? ""
++        let decodeTime = Date().timeIntervalSince(decodeStart)
++        let start = Date()
++        let r = parser.parse(text)
++        let t = Date().timeIntervalSince(start)
++        let after = B02.footprintMB()
++        B02.log("P14|50MB-Parser|bytes=\(data.count)|anzahl=\(r.count)|dekodieren=\(B02.fmt(decodeTime))s|parseDauer=\(B02.fmt(t))s|speicherVorher=\(Int(before))MB|speicherNachher=\(Int(after))MB")
++    }
++
++    /// Kodierung über den echten Dateipfad (`importFromFile` → `decodeText` → Parser).
++    @MainActor func testP03_P04_KodierungUeberDatei() async throws {
++        let container = try B01.inMemoryContainer()
++        let dir = B02.tempDir("enc")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let body = "#EXTINF:-1 group-title=\"Österreich\",ORF Eins Ä\nhttp://h/a.ts\n"
++        func bom(_ b: [UInt8], _ d: Data?) -> Data { Data(b) + (d ?? Data()) }
++        var cases: [(String, Data)] = []
++        cases.append(("utf8", Data(("#EXTM3U\n" + body).utf8)))
++        cases.append(("utf8-bom-mit-EXTM3U", bom([0xEF, 0xBB, 0xBF], Data(("#EXTM3U\n" + body).utf8))))
++        cases.append(("utf8-bom-direkt-EXTINF", bom([0xEF, 0xBB, 0xBF], Data(body.utf8))))
++        cases.append(("latin1", ("#EXTM3U\n" + body).data(using: .isoLatin1)!))
++        cases.append(("utf16le-bom", bom([0xFF, 0xFE], ("#EXTM3U\n" + body).data(using: .utf16LittleEndian))))
++        cases.append(("utf16be-bom", bom([0xFE, 0xFF], ("#EXTM3U\n" + body).data(using: .utf16BigEndian))))
++        var mixed = Data("#EXTM3U\n#EXTINF:-1 group-title=\"Österreich\",Ärger TV\nhttp://h/a.ts\n#EXTINF:-1,Kaputt ".utf8)
++        mixed.append(0xFF)
++        mixed.append(Data("\nhttp://h/b.ts\n".utf8))
++        cases.append(("utf8-mit-einem-ungueltigen-Byte", mixed))
++        var cp1252 = Data("#EXTINF:-1,Preis ".utf8)
++        cp1252.append(0x80)
++        cp1252.append(Data(" Info".utf8))
++        cp1252.append(0x85)
++        cp1252.append(Data(" Ende\nhttp://h/a.ts\n".utf8))
++        cases.append(("windows1252-euro-und-ellipse", cp1252))
++        cases.append(("leer", Data()))
++        cases.append(("nur-NUL", Data(repeating: 0, count: 100)))
++        for (label, data) in cases {
++            let url = dir.appendingPathComponent("\(label).m3u")
++            try data.write(to: url)
++            let r = await B02.importFile(url, context: container.mainContext)
++            B02.log("P04|\(label)|bytes=\(data.count)|\(B02.result(r))")
++        }
++    }
++}
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/B02/B02ProbeSupport.swift b02probe/Tests/B02/B02ProbeSupport.swift
+--- snapshot-b01/Tests/B02/B02ProbeSupport.swift	1970-01-01 01:00:00
++++ b02probe/Tests/B02/B02ProbeSupport.swift	2026-09-16 14:41:33
+@@ -0,0 +1,83 @@
++import Foundation
++import SwiftData
++import XCTest
++@testable import MikaPlusPlayer
++
++/// B02-PROBE: TEMPORÄRE Verhaltenssonde für die Rückerfassung von B02 (M3U-Import).
++/// Läuft nur in der Scratchpad-Kopie, wird nicht eingecheckt. Erfundene Daten, nur Loopback-Mocks.
++enum B02 {
++    static let runDir = URL(fileURLWithPath: "<scratchpad>/b02run")
++
++    static func log(_ s: String) { print("B02PROBE|" + s) }
++
++    static func tempDir(_ label: String) -> URL {
++        let dir = FileManager.default.temporaryDirectory
++            .appendingPathComponent("b02-probe-\(label)-\(UUID().uuidString)", isDirectory: true)
++        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
++        return dir
++    }
++
++    /// physischer Speicher des Prozesses (phys_footprint) in MB
++    static func footprintMB() -> Double {
++        var info = task_vm_info_data_t()
++        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size)
++        let kr = withUnsafeMutablePointer(to: &info) {
++            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
++                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
++            }
++        }
++        return kr == KERN_SUCCESS ? Double(info.phys_footprint) / 1_048_576 : -1
++    }
++
++    static func fmt(_ t: TimeInterval) -> String { String(format: "%.2f", t) }
++
++    /// Kurzdarstellung geparster Sender
++    static func show(_ r: [ParsedChannel]) -> String {
++        r.map { c in
++            let nonASCII = c.name.unicodeScalars.filter { !$0.isASCII }.map { String(format: "U+%04X", $0.value) }
++            return "{name=\(c.name.debugDescription)\(nonASCII.isEmpty ? "" : " skalare=\(nonASCII)") url=\(c.streamURL.absoluteString) gruppe=\(c.group?.debugDescription ?? "nil") tvg=\(c.tvgID?.debugDescription ?? "nil") logo=\(c.logoURL?.absoluteString ?? "nil")}"
++        }.joined(separator: " ")
++    }
++
++    static func show(_ p: Playlist) -> String {
++        let chans = p.channels.sorted { $0.name < $1.name }.map { c -> String in
++            let nonASCII = c.name.unicodeScalars.filter { !$0.isASCII }.map { String(format: "U+%04X", $0.value) }
++            return "{name=\(c.name.debugDescription)\(nonASCII.isEmpty ? "" : " skalare=\(nonASCII)") gruppe=\(c.group?.debugDescription ?? "nil") url=\(c.streamURL.absoluteString)}"
++        }
++        return "playlist name=\(p.name.debugDescription) sourceURL=\(p.sourceURL?.absoluteString ?? "nil") isRemote=\(p.isRemote) isXtream=\(p.isXtream) channelCount=\(p.channelCount) lastRefreshed=\(p.lastRefreshed == nil ? "nil" : "gesetzt") sender=\(chans.joined(separator: " "))"
++    }
++
++    /// Import über den echten Pfad der App (`PlaylistImporter.importFromURL`), wie `ImportPlaylistView.importFromURL`.
++    @MainActor
++    static func importURL(_ s: String, name: String = "", context: ModelContext) async -> Result<Playlist, Error> {
++        do { return .success(try await PlaylistImporter(modelContext: context).importFromURL(s, name: name)) }
++        catch { return .failure(error) }
++    }
++
++    /// Import über den echten Pfad der App (`PlaylistImporter.importFromFile`), wie `ImportPlaylistView.importFromFile`
++    /// (die Ansicht reicht `name.isEmpty ? nil : name` weiter).
++    @MainActor
++    static func importFile(_ url: URL, name: String = "", context: ModelContext) async -> Result<Playlist, Error> {
++        do { return .success(try await PlaylistImporter(modelContext: context).importFromFile(url, name: name.isEmpty ? nil : name)) }
++        catch { return .failure(error) }
++    }
++
++    static func result(_ r: Result<Playlist, Error>) -> String {
++        switch r {
++        case .success(let p): return "OK " + show(p)
++        case .failure(let e): return "FEHLER \(e.localizedDescription.debugDescription)"
++        }
++    }
++
++    /// Realistische M3U mit `n` Einträgen.
++    static func m3u(_ n: Int, streamHost: String = "127.0.0.1:9", nameLength: Int = 0) -> Data {
++        var s = "#EXTM3U\n"
++        s.reserveCapacity(n * (160 + nameLength))
++        let pad = nameLength > 0 ? " " + String(repeating: "x", count: nameLength) : ""
++        for i in 0..<n {
++            s += "#EXTINF:-1 tvg-id=\"sender.\(i)\" tvg-logo=\"http://logos.example/\(i).png\" group-title=\"Gruppe \(i % 300)\",DE: Sender \(i) HD\(pad)\n"
++            s += "http://\(streamHost)/live/\(i).ts\n"
++        }
++        return Data(s.utf8)
++    }
++}
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/B02/B02URLProbeTests.swift b02probe/Tests/B02/B02URLProbeTests.swift
+--- snapshot-b01/Tests/B02/B02URLProbeTests.swift	1970-01-01 01:00:00
++++ b02probe/Tests/B02/B02URLProbeTests.swift	2026-09-16 14:43:59
+@@ -0,0 +1,315 @@
++import XCTest
++import SwiftData
++@testable import MikaPlusPlayer
++
++/// B02-PROBE · URL-Import gegen lokale Mocks auf 127.0.0.1. Protokolliert das Ist.
++final class B02URLProbeTests: B01MockTestCase {
++
++    private var base: String { "http://\(mock.hostPort)" }
++    private static let small = Data("#EXTM3U\n#EXTINF:-1 tvg-id=\"a\" group-title=\"News\",Kanal A\nhttp://127.0.0.1:9/live/a.m3u8\n#EXTINF:-1,Kanal B\nhttp://127.0.0.1:9/live/b.ts\n".utf8)
++
++    private func reqs(_ m: MockXtreamServer) -> String {
++        m.requests.map { "\($0.method) \($0.target)" }.joined(separator: " ; ")
++    }
++
++    @MainActor func testU01_HTTPStatusUndWeiterleitungen() async throws {
++        let target = MockXtreamServer(handler: { _ in .raw(status: 200, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small) })
++        try target.start()
++        defer { B01.removeCachedResponses(for: target); target.stop() }
++        let t = target.hostPort
++        mock.handler = { req in
++            switch req.path {
++            case "/200.m3u": return .raw(status: 200, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small)
++            case "/203.m3u": return .raw(status: 203, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small)
++            case "/204.m3u": return .raw(status: 204, contentType: "audio/x-mpegurl", body: Data())
++            case "/301-gleicher-host": return .redirect(location: "/200.m3u", status: 301)
++            case "/302-fremder-host": return .redirect(location: "http://\(t)/ziel.m3u", status: 302)
++            case "/307-fremder-host-mit-query": return .redirect(location: "http://\(t)/ziel.m3u?username=qa-user&password=qa-pass-u01", status: 307)
++            case "/302-nach-file": return .redirect(location: "file:///etc/hosts", status: 302)
++            case "/302-nach-https": return .redirect(location: "https://127.0.0.1:9/x.m3u", status: 302)
++            case "/schleife": return .redirect(location: "/schleife", status: 302)
++            case "/300.m3u", "/304.m3u", "/400.m3u", "/401.m3u", "/403.m3u", "/404.m3u", "/407.m3u", "/429.m3u", "/500.m3u", "/503.m3u":
++                return .raw(status: Int(req.path.dropFirst().prefix(3))!, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small)
++            default: return .raw(status: 404, contentType: "text/plain", body: Data())
++            }
++        }
++        let container = try B01.inMemoryContainer()
++        let paths = ["/200.m3u", "/203.m3u", "/204.m3u", "/300.m3u", "/304.m3u", "/301-gleicher-host", "/302-fremder-host", "/307-fremder-host-mit-query",
++                     "/302-nach-file", "/302-nach-https", "/schleife", "/400.m3u", "/401.m3u", "/403.m3u", "/404.m3u", "/407.m3u", "/429.m3u", "/500.m3u", "/503.m3u"]
++        for path in paths {
++            mock.resetLog(); target.resetLog()
++            let start = Date()
++            let r = await B02.importURL(base + path, context: container.mainContext)
++            B02.log("U01|\(path)|\(B02.result(r))|dauer=\(B02.fmt(Date().timeIntervalSince(start)))s|quelle=[\(mock.requests.count): \(reqs(mock))]|ziel=[\(target.requests.count): \(reqs(target))]")
++        }
++        B02.log("U01|playlistsGesamt=\(try container.mainContext.fetchCount(FetchDescriptor<Playlist>()))")
++    }
++
++    @MainActor func testU02_ContentTypeUndInhalt() async throws {
++        let html = Data("<!doctype html><html><body><h1>Captive Portal</h1></body></html>".utf8)
++        let json = Data("{\"user_info\":{\"auth\":0}}".utf8)
++        let cases: [(String, String, Data)] = [
++            ("/a", "audio/x-mpegurl", B02URLProbeTests.small),
++            ("/b", "application/vnd.apple.mpegurl", B02URLProbeTests.small),
++            ("/c", "text/html; charset=utf-8", B02URLProbeTests.small),
++            ("/d", "application/octet-stream", B02URLProbeTests.small),
++            ("/e", "image/png", B02URLProbeTests.small),
++            ("/f", "text/html", html),
++            ("/g", "application/json", json),
++            ("/h", "audio/x-mpegurl", Data()),
++            ("/i", "text/plain; charset=iso-8859-1", ("#EXTINF:-1,Österreich\nhttp://h/a.ts\n").data(using: .isoLatin1)!),
++            ("/j", "text/plain; charset=utf-8", ("#EXTINF:-1,Österreich\nhttp://h/a.ts\n").data(using: .isoLatin1)!),
++            ("/k", "audio/x-mpegurl; charset=utf-16", ("#EXTINF:-1,Utf16\nhttp://h/a.ts\n").data(using: .utf16)!)
++        ]
++        var table: [String: (String, Data)] = [:]
++        for (p, ct, b) in cases { table[p] = (ct, b) }
++        let frozen = table
++        mock.handler = { req in
++            if let (ct, b) = frozen[req.path] { return .raw(status: 200, contentType: ct, body: b) }
++            return .raw(status: 404, contentType: "text/plain", body: Data())
++        }
++        let container = try B01.inMemoryContainer()
++        for (p, ct, b) in cases {
++            let r = await B02.importURL(base + p, context: container.mainContext)
++            B02.log("U02|contentType=\(ct)|bodyBytes=\(b.count)|\(B02.result(r))")
++        }
++    }
++
++    @MainActor func testU03_Eingaben() async throws {
++        mock.handler = { req in .raw(status: 200, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small) }
++        let dir = B02.tempDir("u03")
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let local = dir.appendingPathComponent("lokal.m3u")
++        try B02URLProbeTests.small.write(to: local)
++        let dataURL = "data:audio/x-mpegurl;base64," + B02URLProbeTests.small.base64EncodedString()
++        let port = mock.port
++        let inputs: [(String, String)] = [
++            ("  \(base)/liste.m3u  ", ""),
++            ("\n\t\(base)/liste.m3u\n", ""),
++            ("HTTP://127.0.0.1:\(port)/gross.m3u", ""),
++            ("127.0.0.1:\(port)/ohne-schema.m3u", ""),
++            ("localhost:\(port)/ohne-schema.m3u", ""),
++            ("example.invalid/liste.m3u", ""),
++            ("   ", ""),
++            ("http://", ""),
++            ("http:///liste.m3u", ""),
++            ("\(base)/mit leerzeichen.m3u", ""),
++            ("\(base)/ümlaut.m3u", ""),
++            ("\(base)/liste.m3u#fragment", ""),
++            ("ftp://127.0.0.1:\(port)/liste.m3u", ""),
++            ("javascript:alert(1)", ""),
++            (local.absoluteString, ""),
++            (dataURL, ""),
++            ("\(base)/liste.m3u", "   "),
++            ("\(base)/liste.m3u", "  Mein Name  "),
++            ("http://qa-user:qa-pass-u03@127.0.0.1:\(port)/liste.m3u", ""),
++            ("http://localhost:\(port)/liste.m3u", ""),
++            ("http://[::1]:\(port)/liste.m3u", "")
++        ]
++        let container = try B01.inMemoryContainer()
++        for (input, name) in inputs {
++            mock.resetLog()
++            let r = await B02.importURL(input, name: name, context: container.mainContext)
++            let shown = input.count > 90 ? String(input.prefix(60)) + "…(\(input.count) Zeichen)" : input
++            B02.log("U03|eingabe=\(shown.debugDescription)|name=\(name.debugDescription)|\(B02.result(r))|anfragen=[\(reqs(mock))]")
++        }
++    }
++
++    /// Zugangsdaten in der eingegebenen URL (get.php-Link) und in den Stream-Adressen der Liste; Temp-Store-Datei.
++    @MainActor func testU04_ZugangsdatenInURLUndDatenbank() async throws {
++        let marker = "qa-pass-b02u04-\(UInt32.random(in: 1000...9999))"
++        let body = Data("""
++        #EXTM3U
++        #EXTINF:-1 tvg-id="eins" group-title="QA",Eins
++        http://127.0.0.1:9/live/qa-user/\(marker)/101.ts
++        #EXTINF:-1,Zwei
++        http://127.0.0.1:9/qa-user/\(marker)/102
++        #EXTINF:-1,Drei
++        http://127.0.0.1:9/live/103.m3u8?token=\(marker)
++
++        """.utf8)
++        mock.handler = { req in
++            req.path == "/get.php" ? .raw(status: 200, contentType: "audio/x-mpegurl", body: body)
++                                   : .raw(status: 404, contentType: "text/plain", body: Data())
++        }
++        var storeURL: URL!
++        var dir: URL!
++        do {
++            let (container, url, d) = try B01.tempFileContainer("b02u04")
++            storeURL = url; dir = d
++            let ctx = container.mainContext
++            let input = "\(base)/get.php?username=qa-user&password=\(marker)&type=m3u_plus&output=ts"
++            let playlist = try await B02.importURL(input, context: ctx).get()
++            let path = url.path
++            let srcRows = B01.sqliteCount(path, "select count(*) from ZPLAYLIST where instr(cast(ZSOURCEURL as text), '\(marker)') > 0") ?? -1
++            let chRows = B01.sqliteCount(path, "select count(*) from ZCHANNEL where instr(cast(ZSTREAMURL as text), '\(marker)') > 0") ?? -1
++            let raw = B01.rawOccurrences(of: marker, inFilesWithPrefix: url)
++            let playable = playlist.channels.compactMap { try? StreamURLResolver.playableURL(for: $0) }.filter { $0.absoluteString.contains(marker) }.count
++            let keychain = (try? XtreamCredentialStore.standard.load(for: playlist.id)) ?? nil
++            B02.log("U04|import|\(B02.show(playlist))")
++            B02.log("U04|db|sourceURLMitPasswort=\(srcRows)|streamURLsMitPasswort=\(chRows)/\(playlist.channelCount)|rohBytes=\(raw)|abspielbarMitPasswort=\(playable)|schluesselbundEintrag=\(keychain != nil)|anfragen=[\(reqs(mock))]")
++
++            // B01-Umstellung beim Start greift nur für isXtream
++            let probeStore = XtreamCredentialStore(service: "lu.daumedia.MikaPlusPlayer.b02probe.\(UUID().uuidString)")
++            defer { try? probeStore.deleteAll() }
++            let migration = AppPersistence.migrateCredentials(container: container, storeURL: url, store: probeStore)
++            let rawAfterMigration = B01.rawOccurrences(of: marker, inFilesWithPrefix: url)
++            B02.log("U04|B01-Umstellung|\(migration)|rohBytesDanach=\(rawAfterMigration)|sourceURLDanach=\(playlist.sourceURL?.absoluteString.contains(marker) ?? false)")
++
++            // Löschen über den App-Weg
++            try PlaylistImporter(modelContext: ctx).delete(playlist)
++            B02.log("U04|nachLoeschenOffen|zeilen=\(B01.sqliteCount(path, "select count(*) from ZCHANNEL") ?? -1)|rohBytes=\(B01.rawOccurrences(of: marker, inFilesWithPrefix: url))")
++        }
++        try await Task.sleep(nanoseconds: 1_500_000_000)
++        B02.log("U04|nachSchliessen|rohBytes=\(B01.rawOccurrences(of: marker, inFilesWithPrefix: storeURL))")
++        try? FileManager.default.removeItem(at: dir)
++    }
++
++    /// Benutzerinfo in der URL (`http://user:pass@host/…`) und Weiterleitung auf einen anderen Host.
++    @MainActor func testU04b_BenutzerinfoUndWeiterleitung() async throws {
++        let marker = "qa-pass-b02u04b-\(UInt32.random(in: 1000...9999))"
++        let target = MockXtreamServer(handler: { _ in .raw(status: 200, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small) })
++        try target.start()
++        defer { B01.removeCachedResponses(for: target); target.stop() }
++        let t = target.hostPort
++        mock.handler = { req in
++            let auth = req.headers["authorization"]
++            switch req.path {
++            case "/basic.m3u", "/basic-redirect":
++                guard auth != nil else {
++                    return .custom(status: 401, headers: ["WWW-Authenticate": "Basic realm=\"qa\"", "Content-Type": "text/plain"], body: Data("auth".utf8))
++                }
++                return req.path == "/basic.m3u"
++                    ? .raw(status: 200, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small)
++                    : .redirect(location: "http://\(t)/ziel.m3u", status: 302)
++            case "/ohne-challenge.m3u":
++                return .raw(status: 200, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small)
++            default:
++                return .raw(status: 404, contentType: "text/plain", body: Data())
++            }
++        }
++        func authInfo(_ m: MockXtreamServer) -> String {
++            m.requests.map { r in
++                let a = r.headers["authorization"]
++                let decoded = a.flatMap { $0.hasPrefix("Basic ") ? Data(base64Encoded: String($0.dropFirst(6))) : nil }.map { String(decoding: $0, as: UTF8.self) }
++                return "\(r.target) auth=\(a == nil ? "nein" : "ja") enthaeltPasswort=\(decoded?.contains(marker) ?? false)"
++            }.joined(separator: " ; ")
++        }
++        let container = try B01.inMemoryContainer()
++        for path in ["/ohne-challenge.m3u", "/basic.m3u", "/basic-redirect"] {
++            mock.resetLog(); target.resetLog()
++            let r = await B02.importURL("http://qa-user:\(marker)@\(mock.hostPort)\(path)", context: container.mainContext)
++            let src = (try? r.get())?.sourceURL?.absoluteString.contains(marker) ?? false
++            let msg = B02.message(r)
++            B02.log("U04b|\(path)|ergebnis=\(msg ?? "OK")|meldungEnthaeltPasswort=\(msg?.contains(marker) ?? false)|sourceURLEnthaeltPasswort=\(src)|quelle=[\(authInfo(mock))]|ziel=[\(authInfo(target))]")
++            if let u = URL(string: "http://qa-user:\(marker)@\(mock.hostPort)\(path)") { URLCache.shared.removeCachedResponse(for: URLRequest(url: u)) }
++        }
++    }
++
++    /// HTTP-Plattencache: Landet die URL mit Zugangsdaten samt Antwort in `~/Library/Caches/<Bundle-ID>/Cache.db`?
++    @MainActor func testU05_HTTPPlattencache() async throws {
++        let marker = "qa-pass-b02u05-\(UInt32.random(in: 1000...9999))"
++        let body = Data("#EXTM3U\n#EXTINF:-1,Cache\nhttp://127.0.0.1:9/live/qa-user/\(marker)/1.ts\n".utf8)
++        mock.handler = { req in
++            switch req.path {
++            case "/get.php": return .raw(status: 200, contentType: "audio/x-mpegurl", body: body)
++            case "/no-store.php": return .custom(status: 200, headers: ["Content-Type": "audio/x-mpegurl", "Cache-Control": "no-store"], body: body)
++            default: return .raw(status: 404, contentType: "text/plain", body: Data())
++            }
++        }
++        let db = B01.hostCacheDB.path
++        B02.log("U05|cacheDB=<Caches>/\(B01.hostCacheDB.deletingLastPathComponent().lastPathComponent)/Cache.db|urlCacheDisk=\(URLCache.shared.diskCapacity)|memory=\(URLCache.shared.memoryCapacity)")
++        let keySQL = "select count(*) from cfurl_cache_response where instr(request_key, '\(marker)') > 0"
++        let bodySQL = "select count(*) from cfurl_cache_receiver_data r join cfurl_cache_response c on c.entry_ID = r.entry_ID where instr(c.request_key, '\(marker)') > 0 and instr(cast(r.receiver_data as text), '\(marker)') > 0"
++        let container = try B01.inMemoryContainer()
++        let ctx = container.mainContext
++        var urls: [URL] = []
++        for path in ["/get.php", "/no-store.php"] {
++            let input = "\(base)\(path)?username=qa-user&password=\(marker)&type=m3u_plus"
++            urls.append(URL(string: input)!)
++            let before = B01.sqliteCount(db, keySQL) ?? 0
++            let p = try await B02.importURL(input, context: ctx).get()
++            try await Task.sleep(nanoseconds: 3_000_000_000)
++            let keys = B01.sqliteCount(db, keySQL) ?? -1
++            let bodies = B01.sqliteCount(db, bodySQL) ?? -1
++            let inMemory = URLCache.shared.cachedResponse(for: URLRequest(url: URL(string: input)!)) != nil
++            B02.log("U05|\(path)|schluesselMitPasswortVorher=\(before)|nachImport=\(keys)|antwortkoerperMitPasswort=\(bodies)|cachedResponse=\(inMemory)")
++            try PlaylistImporter(modelContext: ctx).delete(p)
++            try await Task.sleep(nanoseconds: 1_000_000_000)
++            B02.log("U05|\(path)|nachLoeschenDerPlaylist|schluesselMitPasswort=\(B01.sqliteCount(db, keySQL) ?? -1)")
++        }
++        // Aufräumen der eigenen Einträge (nur Probe-Bundle-ID) und Nachweis
++        for u in urls { URLCache.shared.removeCachedResponse(for: URLRequest(url: u)) }
++        var left = -1
++        for _ in 0..<40 {
++            left = B01.sqliteCount(db, keySQL) ?? -1
++            if left == 0 { break }
++            try await Task.sleep(nanoseconds: 250_000_000)
++        }
++        B02.log("U05|nachAufraeumen|schluesselMitPasswort=\(left)")
++    }
++
++    @MainActor func testU06_DoppelterImport() async throws {
++        mock.handler = { _ in .raw(status: 200, contentType: "audio/x-mpegurl", body: B02URLProbeTests.small) }
++        let container = try B01.inMemoryContainer()
++        _ = await B02.importURL("\(base)/liste.m3u", context: container.mainContext)
++        _ = await B02.importURL("\(base)/liste.m3u", context: container.mainContext)
++        let ps = try container.mainContext.fetch(FetchDescriptor<Playlist>())
++        B02.log("U06|playlists=\(ps.count)|namen=\(ps.map(\.name))|sender=\(try container.mainContext.fetchCount(FetchDescriptor<Channel>()))")
++    }
++
++    @MainActor func testU07_FehlermeldungenOhneZugangsdaten() async throws {
++        let marker = "qa-pass-b02u07-\(UInt32.random(in: 1000...9999))"
++        mock.handler = { req in
++            switch req.path {
++            case "/404.m3u": return .raw(status: 404, contentType: "text/html", body: Data("<h1>\(marker)</h1>".utf8))
++            case "/schleife": return .redirect(location: "/schleife?password=\(marker)", status: 302)
++            case "/leer": return .raw(status: 200, contentType: "text/plain", body: Data("nichts \(marker)".utf8))
++            default: return .raw(status: 404, contentType: "text/plain", body: Data())
++            }
++        }
++        let container = try B01.inMemoryContainer()
++        let inputs = [
++            "\(base)/404.m3u?username=qa-user&password=\(marker)",
++            "\(base)/schleife?password=\(marker)",
++            "\(base)/leer?password=\(marker)",
++            "http://127.0.0.1:9/get.php?username=qa-user&password=\(marker)",
++            "http://qa-user:\(marker)@b02-probe-nicht-vorhanden.invalid/get.php?password=\(marker)",
++            "ftp://qa-user:\(marker)@127.0.0.1:9/x.m3u",
++            "qa-user:\(marker)@ohne-schema/x.m3u"
++        ]
++        for input in inputs {
++            let r = await B02.importURL(input, context: container.mainContext)
++            let msg = B02.message(r) ?? "OK"
++            B02.log("U07|eingabe=\(input.replacingOccurrences(of: marker, with: "<marker>"))|meldung=\(msg.replacingOccurrences(of: marker, with: "<MARKER>").debugDescription)|enthaeltPasswort=\(msg.contains(marker))|enthaeltBenutzer=\(msg.contains("qa-user"))|enthaeltAdresse=\(msg.contains("127.0.0.1") || msg.contains(".invalid") || msg.contains("http"))")
++        }
++        for req in mock.requests { if let u = URL(string: "http://\(mock.hostPort)\(req.target)") { URLCache.shared.removeCachedResponse(for: URLRequest(url: u)) } }
++    }
++
++    /// 50-MB-Antwort (1.000 Einträge mit je ~50-KB-Namen): keine Größengrenze, Laufzeit, Main-Thread, Speicher.
++    @MainActor func testU08_50MBAntwort() async throws {
++        let body = B02.m3u(1_000, nameLength: 52_000)
++        mock.handler = { _ in .raw(status: 200, contentType: "audio/x-mpegurl", body: body) }
++        let container = try B01.inMemoryContainer()
++        let before = B02.footprintMB()
++        let watchdog = MainThreadWatchdog()
++        watchdog.start()
++        let start = Date()
++        let r = await B02.importURL("\(base)/gross.m3u", context: container.mainContext)
++        let elapsed = Date().timeIntervalSince(start)
++        try await Task.sleep(nanoseconds: 300_000_000)
++        let gap = watchdog.stop()
++        let after = B02.footprintMB()
++        let p = try? r.get()
++        let maxName = p?.channels.map(\.name.count).max() ?? -1
++        B02.log("U08|bytes=\(body.count)|ergebnis=\(B02.message(r) ?? "OK")|sender=\(p?.channelCount ?? -1)|laengsterName=\(maxName)|gesamt=\(B02.fmt(elapsed))s|maxMainThreadBlockade=\(B02.fmt(gap))s|speicherVorher=\(Int(before))MB|nachher=\(Int(after))MB")
++        mock.resetLog()
++    }
++}
++
++extension B02 {
++    static func message(_ r: Result<Playlist, Error>) -> String? {
++        if case .failure(let e) = r { return e.localizedDescription }
++        return nil
++    }
++}
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/Tests/Support/MockXtreamServer.swift b02probe/Tests/Support/MockXtreamServer.swift
+--- snapshot-b01/Tests/Support/MockXtreamServer.swift	2026-09-16 14:12:25
++++ b02probe/Tests/Support/MockXtreamServer.swift	2026-09-16 14:41:12
+@@ -68,6 +68,8 @@
+         case delayed(TimeInterval, Reply)
+         /// Antwort ohne `Content-Length`; der Body endet mit dem Schließen der Verbindung (Build B01, BUG-08)
+         case unsized(body: Data)
++        /// B02-PROBE: beliebige Kopfzeilen (z. B. WWW-Authenticate, Cache-Control)
++        case custom(status: Int, headers: [String: String], body: Data)
+ 
+         static func json(_ object: Any) -> Reply { .json(object, status: 200) }
+     }
+@@ -242,6 +244,8 @@
+             var data = Data("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n".utf8)
+             data.append(body)
+             conn.send(content: data, completion: .contentProcessed { [weak self] _ in self?.close(conn) })
++        case .custom(let status, let headers, let body):
++            send(conn, status: status, headers: headers, body: body)
+         case .redirect(let location, let status):
+             send(conn, status: status, headers: ["Location": location], body: Data())
+         case .trickle(let body, let chunks, let interval):
+diff -ruN -x build -x MikaPlusPlayer.xcodeproj -x .DS_Store snapshot-b01/project.yml b02probe/project.yml
+--- snapshot-b01/project.yml	2026-06-23 14:39:09
++++ b02probe/project.yml	2026-09-16 14:38:57
+@@ -30,7 +30,7 @@
+     settings:
+       base:
+         PRODUCT_NAME: MikaPlusPlayer
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b02probe
+         MARKETING_VERSION: "1.1"
+         CURRENT_PROJECT_VERSION: "2"
+         GENERATE_INFOPLIST_FILE: NO
+@@ -90,7 +90,7 @@
+     settings:
+       base:
+         GENERATE_INFOPLIST_FILE: YES
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayerTests
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b02probetests
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+         DEVELOPMENT_TEAM: "CWJM4J4HFN"
+--- /dev/null
++++ b02run/uti/uti.swift
++import Foundation
++import UniformTypeIdentifiers
++import AppKit
++var allowed: [UTType] = []
++if let m3u = UTType(filenameExtension: "m3u") { allowed.append(m3u) }
++if let m3u8 = UTType(filenameExtension: "m3u8") { allowed.append(m3u8) }
++allowed.append(.plainText)
++print("B02PROBE|UTI|allowedTypes=\(allowed.map(\.identifier))|m3uDynamic=\(UTType(filenameExtension: "m3u")!.isDynamic)|m3u8Dynamic=\(UTType(filenameExtension: "m3u8")!.isDynamic)")
++for id in ["public.m3u-playlist"] { if let t = UTType(id) { print("B02PROBE|UTI|\(id)|conformsTo public.text=\(t.conforms(to: .text))|plainText=\(t.conforms(to: .plainText))|supertypes=\(t.supertypes.map(\.identifier).sorted())|ext=\(t.tags[.filenameExtension] ?? [])") } }
++if let t = UTType(filenameExtension: "m3u8") { print("B02PROBE|UTI|m3u8=\(t.identifier)|public.text=\(t.conforms(to: .text))|supertypes=\(t.supertypes.map(\.identifier).sorted())") }
++let fm = FileManager.default
++for name in ["qa.m3u","qa.m3u8","qa.txt","qa.csv","qa.json","qa.html","qa.swift","qa.log","qa.md","qa.pls","qa.xspf","qa-ohne-endung"] {
++  let url = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent(name)
++  let t = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
++  let selectable = t.map { tt in allowed.contains { tt.conforms(to: $0) } } ?? false
++  let declared = t.map { tt in ["public.m3u-playlist","public.text"].contains { tt.conforms(to: UTType($0)!) } } ?? false
++  let app = NSWorkspace.shared.urlForApplication(toOpen: url)?.path ?? "-"
++  let apps = NSWorkspace.shared.urlsForApplications(toOpen: url).map(\.path).filter { $0.contains("MikaPlusPlayer") }
++  print("B02PROBE|UTI|\(name)|typ=\(t?.identifier ?? "-")|imDateidialogWaehlbar=\(selectable)|vomDokumenttypErfasst=\(declared)|standardApp=\(app)|mikaKandidaten=\(apps.count)")
++}
+--- /dev/null
++++ b02run/open/win.swift
++import Foundation
++import CoreGraphics
++let pid = Int32(CommandLine.arguments[1])!
++let list = (CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int32) == pid }
++let normal = list.filter { ($0[kCGWindowLayer as String] as? Int) == 0 }
++let desc = normal.map { w -> String in
++  let b = w[kCGWindowBounds as String] as? [String: Any] ?? [:]
++  return "#\(w[kCGWindowNumber as String] ?? "?") \(Int((b["Width"] as? Double) ?? 0))x\(Int((b["Height"] as? Double) ?? 0)) name=\((w[kCGWindowName as String] as? String) ?? "-")"
++}
++print("fensterOnScreen=\(normal.count) \(desc)")
+--- /dev/null
++++ b02run/logprobe/b02logprobe.swift
++import Foundation
++// Gleicher Aufruf wie PlaylistImporter.fetchText: URLSession.shared, reloadIgnoringLocalCacheData, Fehler-Adresse mit erfundenen Zugangsdaten.
++let marker = "qa-pass-b02log-\(Int.random(in: 1000...9999))"
++var request = URLRequest(url: URL(string: "http://127.0.0.1:9/get.php?username=qa-user&password=\(marker)")!)
++request.cachePolicy = .reloadIgnoringLocalCacheData
++let sem = DispatchSemaphore(value: 0)
++Task {
++    do { _ = try await URLSession.shared.data(for: request) } catch { print("fehler=\(error.localizedDescription)") }
++    sem.signal()
++}
++sem.wait()
++print("marker=\(marker)")

@@ -1,0 +1,24 @@
+2026-09-26T14:17:08Z tab-leiste=["Playlists:gewählt", "Favoriten:-"]
+2026-09-26T14:17:08Z ax-baum=
+AXWindow "Playlists | Playlists" 820x652
+ AXGroup "" 820x600
+  AXScrollArea "" 820x600
+   AXStaticText "MIKA+PLAYER · PLAYLISTS" 169x13
+   AXButton "Add" 32x17
+   AXStaticText "Playlists" 102x31
+   AXImage "List With A Film Strip" 52x37
+   AXStaticText "Keine Playlists" 94x16
+   AXStaticText "Importiere eine M3U/M3U8-Playlist per URL oder Datei, um loszulegen." 373x14
+   AXButton "Playlist importieren" 140x24
+ AXToolbar "" 820x52
+  AXGroup "" 159x52
+   AXTabGroup "Navigation Tab Bar" 150x36
+    AXRadioButton "Playlists | 1" 71x36
+    AXRadioButton "Favoriten | 0" 79x36
+ AXButton "" 16x16
+ AXButton "" 16x16
+  AXGroup "" 14x14
+ AXButton "" 16x16
+2026-09-26T14:17:08Z segmente=[["Playlists", "Favoriten"]]|symbol-tab-2=-
+2026-09-26T14:17:09Z nach-wahl-favoriten|titel=Favoriten|texte=["MIKA+PLAYER · FAVORITEN", "Favoriten", "Keine Favoriten", "Markiere Sender mit dem Stern, um sie hier zu sammeln."]
+2026-09-26T14:17:09Z subline-akzent-pixel=379

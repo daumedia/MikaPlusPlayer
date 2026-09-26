@@ -16,7 +16,8 @@ final class Playlist {
     var lastRefreshed: Date?
 
     /// True, wenn die Playlist über die Xtream-Codes-API (player_api.php) befüllt
-    /// wurde. Dann ist `sourceURL` die player_api-URL inkl. Zugangsdaten.
+    /// wurde. Dann ist `sourceURL` die player_api-URL **ohne** Zugangsdaten; diese liegen
+    /// im Schlüsselbund unter `id` (`XtreamCredentialStore`).
     var isXtream: Bool
     /// Gewähltes Xtream-Ausgabeformat ("m3u8"/"ts") – Basis für Stream-URLs beim Refresh.
     var xtreamOutput: String?

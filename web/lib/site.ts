@@ -5,6 +5,8 @@ export const REPO_OWNER = "daumedia";
 export const REPO_NAME = "MikaPlusPlayer";
 export const GITHUB_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}`;
 export const RELEASES_URL = `${GITHUB_URL}/releases`;
+/** GitHub redirects this to the page of the newest release, so it never goes stale. */
+export const LATEST_RELEASE_URL = `${RELEASES_URL}/latest`;
 export const ISSUES_URL = `${GITHUB_URL}/issues`;
 
 export const MIN_MACOS = "macOS 14 Sonoma";

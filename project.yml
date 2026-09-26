@@ -18,9 +18,12 @@ packages:
     url: https://github.com/tylerjonesio/vlckit-spm
     exactVersion: "3.6.0"
   # Sparkle: Auto-Updater (nur macOS), wie bei den anderen Mika+ Apps.
+  # B09 · BUG-14: exakt gepinnt (aufgelöste Version seit v1.1). Package.resolved liegt in der
+  # nicht versionierten .xcodeproj – ohne Pin löste ein frischer Klon die neueste 2.x auf.
+  # Anheben nur bewusst: Version hier ändern, generate_appcast/sign_update derselben Version nutzen.
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    from: "2.6.0"
+    exactVersion: "2.9.3"
 
 targetTemplates:
   AppBase:
@@ -32,7 +35,10 @@ targetTemplates:
         PRODUCT_NAME: MikaPlusPlayer
         PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
         MARKETING_VERSION: "1.1"
-        CURRENT_PROJECT_VERSION: "2"
+        # B09 · BUG-04: Build-Nummer (CFBundleVersion) – Sparkle vergleicht NUR diese.
+        # Muss bei jedem Release über der höchsten sparkle:version in appcast.xml liegen
+        # (v1.1 = 2); scripts/b09_release_check.sh bricht sonst ab.
+        CURRENT_PROJECT_VERSION: "3"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/Resources/Info.plist
         SWIFT_VERSION: "5.10"
@@ -72,6 +78,14 @@ targets:
         DEVELOPMENT_TEAM: "CWJM4J4HFN"
         # Sandbox ist in den Entitlements deaktiviert (DMG-Distribution + Sparkle).
         CODE_SIGN_ENTITLEMENTS: Sources/Resources/MikaPlusPlayer.entitlements
+      configs:
+        Release:
+          # B09 · BUG-02: Release mit Hardened Runtime und ohne Debug-Berechtigung.
+          # Ohne CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO bettet Xcode get-task-allow=true ein
+          # (jeder Nutzerprozess könnte sich anhängen und den Speicher lesen).
+          # Debug bleibt unverändert (Debugger, Test-Host).
+          ENABLE_HARDENED_RUNTIME: YES
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     dependencies:
       - package: VLCKitSPM
         product: VLCKitSPM

@@ -45,6 +45,9 @@ protocol PlaybackEngine: AnyObject, Observable {
     func load(_ url: URL)
     func play()
     func pause()
+    /// Beendet die Wiedergabe endgültig und schließt die Verbindung zum Anbieter (z. B. wenn die Playlist des
+    /// Senders gelöscht wird, B03 · BUG-05). Danach ist `isPaused` wahr; `load(_:)` startet neu.
+    func stop()
     /// Schaltet zwischen Wiedergabe und Pause um (anhand `isPaused`).
     func togglePlayPause()
     /// Schaltet die Stummschaltung um.
@@ -83,6 +86,9 @@ protocol PlaybackEngine: AnyObject, Observable {
 /// No-Op-Defaults für PiP: Engines ohne System-PiP (VLCKit, künftige) müssen
 /// nichts implementieren und melden automatisch „nicht unterstützt".
 extension PlaybackEngine {
+    /// Rückfall für Engines ohne eigenes `stop()`: anhalten.
+    func stop() { pause() }
+
     var supportsPictureInPicture: Bool { false }
     var isPictureInPictureActive: Bool { false }
     func startPictureInPicture() {}

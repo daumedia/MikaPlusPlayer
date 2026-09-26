@@ -1,0 +1,1056 @@
+# B05-Erfassungssonde: Änderungen der Kopie gegenüber dem Schnappschuss c01f1cf + Reparatur B01 (2026-09-16).
+# Nicht einchecken, nicht auf das Repository anwenden. <sonde> = Scratchpad-Kopie.
+--- snapshot-b01/project.yml	2026-06-23 14:39:09
++++ b05probe/project.yml	2026-09-16 14:43:59
+@@ -30,7 +30,7 @@
+     settings:
+       base:
+         PRODUCT_NAME: MikaPlusPlayer
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b05probe
+         MARKETING_VERSION: "1.1"
+         CURRENT_PROJECT_VERSION: "2"
+         GENERATE_INFOPLIST_FILE: NO
+@@ -90,7 +90,7 @@
+     settings:
+       base:
+         GENERATE_INFOPLIST_FILE: YES
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayerTests
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b05probetests
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+         DEVELOPMENT_TEAM: "CWJM4J4HFN"
+--- snapshot-b01/Sources/Resources/Info.plist	2026-08-01 21:18:46
++++ b05probe/Sources/Resources/Info.plist	2026-09-16 14:44:04
+@@ -25,11 +25,11 @@
+ 	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
+ 	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
+ 	<key>SUFeedURL</key>
+-	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
++	<string>http://127.0.0.1:9/appcast.xml</string>
+ 	<key>SUPublicEDKey</key>
+ 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
+ 	<key>SUEnableAutomaticChecks</key>
+-	<true/>
++	<false/>
+ 
+ 	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
+ 	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den
+--- /dev/null	2026-09-16 15:00:15
++++ b05probe/Tests/B05ProbeTests.swift	2026-09-16 14:57:50
+@@ -0,0 +1,1015 @@
++import XCTest
++import SwiftUI
++import SwiftData
++import AppKit
++import SQLite3
++@testable import MikaPlusPlayer
++
++/// TEMPORÄRE Verhaltenssonde für die B05-Rückerfassung (Favoriten).
++/// Läuft NUR in der Scratchpad-Kopie (eigene Bundle-ID), wird nicht eingecheckt.
++/// Alle Daten erfunden, Datenbanken nur im Sondenordner, Mock nur auf 127.0.0.1. Kein Ton.
++final class B05ProbeTests: B01MockTestCase {
++
++    static let root = "<sonde>"
++    static var data: URL { URL(fileURLWithPath: root + "/data") }
++    static var evidence: URL { URL(fileURLWithPath: root + "/evidence") }
++
++    nonisolated func p(_ s: String) { print("B05PROBE|\(s)") }
++
++    private var windows: [NSWindow] = []
++
++    override func tearDown() {
++        MainActor.assumeIsolated {
++            for w in windows { w.close() }
++            windows.removeAll()
++        }
++        super.tearDown()
++    }
++
++    // MARK: - Infrastruktur
++
++    @MainActor func fileContainer(_ name: String, fresh: Bool = true, dir: URL? = nil) throws -> (ModelContainer, URL) {
++        let url = (dir ?? Self.data).appendingPathComponent("\(name).store")
++        if fresh { for s in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + s) } }
++        let schema = Schema([Playlist.self, Channel.self])
++        return (try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)]), url)
++    }
++
++    nonisolated func sql(_ path: String, _ q: String) -> [[String]] {
++        var db: OpaquePointer?
++        guard sqlite3_open_v2(path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else { sqlite3_close(db); return [["open-fehler"]] }
++        defer { sqlite3_close(db) }
++        var st: OpaquePointer?
++        guard sqlite3_prepare_v2(db, q, -1, &st, nil) == SQLITE_OK else { return [["prepare-fehler: \(String(cString: sqlite3_errmsg(db)))"]] }
++        defer { sqlite3_finalize(st) }
++        var rows: [[String]] = []
++        var rc = sqlite3_step(st)
++        while rc == SQLITE_ROW {
++            var r: [String] = []
++            for i in 0..<sqlite3_column_count(st) {
++                if let c = sqlite3_column_text(st, i) { r.append(String(cString: c)) } else { r.append("NULL") }
++            }
++            rows.append(r)
++            rc = sqlite3_step(st)
++        }
++        if rc != SQLITE_DONE { rows.append(["step-fehler \(rc): \(String(cString: sqlite3_errmsg(db)))"]) }
++        return rows
++    }
++
++    struct E {
++        var name: String
++        var tvg: String? = nil
++        var url: String
++        var group: String? = nil
++    }
++
++    func m3u(_ es: [E]) -> String {
++        var s = "#EXTM3U\n"
++        for e in es {
++            var attrs = ""
++            if let t = e.tvg { attrs += " tvg-id=\"\(t)\"" }
++            if let g = e.group { attrs += " group-title=\"\(g)\"" }
++            s += "#EXTINF:-1\(attrs),\(e.name)\n\(e.url)\n"
++        }
++        return s
++    }
++
++    final class Routes: @unchecked Sendable {
++        private let lock = NSLock()
++        private var map: [String: (Int, Data)] = [:]
++        func set(_ path: String, _ status: Int, _ text: String) { lock.withLock { map[path] = (status, Data(text.utf8)) } }
++        func get(_ path: String) -> (Int, Data)? { lock.withLock { map[path] } }
++    }
++
++    let routes = Routes()
++
++    func installRoutes() {
++        let r = routes
++        mock.handler = { req in
++            if let (status, body) = r.get(req.path) {
++                return .raw(status: status, contentType: "audio/x-mpegurl", body: body)
++            }
++            return .raw(status: 404, contentType: "text/plain", body: Data())
++        }
++    }
++
++    func url(_ path: String) -> String { "http://\(mock.hostPort)\(path)" }
++
++    @MainActor func importM3U(_ ctx: ModelContext, path: String, name: String, _ es: [E]) async throws -> Playlist {
++        routes.set(path, 200, m3u(es))
++        return try await PlaylistImporter(modelContext: ctx).importFromURL(url(path), name: name)
++    }
++
++    @MainActor func refreshM3U(_ ctx: ModelContext, _ pl: Playlist, path: String, _ es: [E]) async throws {
++        routes.set(path, 200, m3u(es))
++        try await PlaylistImporter(modelContext: ctx).refresh(pl)
++    }
++
++    @MainActor func favNames(_ ctx: ModelContext) throws -> [String] {
++        try ctx.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true }))
++            .map { "\($0.name)@\($0.playlist?.name ?? "-")" }.sorted()
++    }
++
++    @MainActor func setFav(_ pl: Playlist, _ name: String, _ value: Bool = true, index: Int = 0, ctx: ModelContext) throws {
++        let matches = pl.channels.filter { $0.name == name }.sorted { $0.streamURL.absoluteString < $1.streamURL.absoluteString }
++        guard index < matches.count else { p("setFav|nicht gefunden|\(name)"); return }
++        matches[index].isFavorite = value
++        try ctx.save()
++    }
++
++    @MainActor func q(_ s: [String]) -> String { s.map { "\"\($0)\"" }.joined(separator: ", ") }
++
++    func ms(_ block: () throws -> Void) rethrows -> Double {
++        let t0 = DispatchTime.now().uptimeNanoseconds
++        try block()
++        return Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000
++    }
++
++    func spin(_ seconds: Double) { RunLoop.main.run(until: Date().addingTimeInterval(seconds)) }
++
++    final class Heartbeat {
++        var stamps: [Double] = []
++        var timer: Timer?
++        func start() {
++            stamps = [CACurrentMediaTime()]
++            timer = Timer(timeInterval: 0.005, repeats: true) { [weak self] _ in self?.stamps.append(CACurrentMediaTime()) }
++            RunLoop.main.add(timer!, forMode: .common)
++        }
++        func stopMaxGapMs() -> Double {
++            timer?.invalidate()
++            var maxGap = 0.0
++            if stamps.count > 1 { for i in 1..<stamps.count { maxGap = max(maxGap, stamps[i] - stamps[i - 1]) } }
++            return maxGap * 1000
++        }
++    }
++
++    // MARK: - Fenster
++
++    @MainActor func open<V: View>(_ view: V, _ c: ModelContainer, size: CGSize = CGSize(width: 760, height: 900), borderless: Bool = false) -> NSWindow {
++        let root = view.modelContainer(c).environment(MultiviewSession())
++        let w = NSWindow(contentRect: NSRect(origin: CGPoint(x: 60, y: 40), size: size),
++                         styleMask: borderless ? [.borderless] : [.titled, .closable, .resizable], backing: .buffered, defer: false)
++        w.isReleasedWhenClosed = false
++        let hv = NSHostingView(rootView: root)
++        hv.sizingOptions = []
++        w.contentView = hv
++        w.setContentSize(size)
++        w.makeKeyAndOrderFront(nil)
++        windows.append(w)
++        spin(0.8)
++        AX.wake(w)
++        spin(0.2)
++        return w
++    }
++
++    @MainActor func shot(_ w: NSWindow, _ name: String) {
++        guard let v = w.contentView, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) else { return }
++        v.cacheDisplay(in: v.bounds, to: rep)
++        if let data = rep.representation(using: .png, properties: [:]) {
++            try? data.write(to: Self.evidence.appendingPathComponent("\(name).png"))
++            p("screenshot|\(name).png|\(Int(v.bounds.width))x\(Int(v.bounds.height))")
++        }
++    }
++
++    /// Alle Beschriftungen im Fenster (jede Rolle), von oben nach unten.
++    @MainActor func texts(_ w: NSWindow) -> [(String, NSRect)] {
++        AX.wake(w)
++        return AX.all(w).filter { !AX.label($0).isEmpty && AX.role($0) != "AXWindow" }
++            .map { (AX.label($0), AX.frame($0)) }
++            .sorted { $0.1.midY > $1.1.midY }
++    }
++
++    /// Die Karte (NavigationLink) eines Senders. Im AX-Baum ist sie EIN Element mit dem Etikett „Name, Gruppe".
++    @MainActor func card(_ w: NSWindow, name: String, index: Int = 0) -> NSObject? {
++        AX.wake(w)
++        let cards = AX.all(w).filter { e in
++            let l = AX.text(e, "accessibilityLabel")
++            return (l == name || l.hasPrefix(name + ", ")) && AX.frame(e).width > 200
++        }.sorted { AX.frame($0).midY > AX.frame($1).midY }
++        return index < cards.count ? cards[index] : nil
++    }
++
++    @MainActor func cardNames(_ w: NSWindow) -> [String] {
++        AX.wake(w)
++        return AX.all(w).filter { AX.frame($0).width > 200 && AX.frame($0).height > 40 && AX.frame($0).height < 120 && !AX.text($0, "accessibilityLabel").isEmpty
++            && !["AXScrollArea", "AXGroup", "AXWindow", "AXToolbar"].contains(AX.role($0)) }
++            .sorted { AX.frame($0).midY > AX.frame($1).midY }
++            .map { AX.text($0, "accessibilityLabel") }
++    }
++
++    /// Bildschirmpunkt des Sterns: rechter Rand der Karte minus Innenabstand (14 pt) minus halbe Symbolbreite.
++    @MainActor func starPoint(_ w: NSWindow, name: String, index: Int = 0) -> NSPoint? {
++        guard let c = card(w, name: name, index: index) else { return nil }
++        let f = AX.frame(c)
++        return NSPoint(x: f.maxX - 24, y: f.midY)
++    }
++
++    @MainActor func clickScreen(_ pt: NSPoint, in window: NSWindow) {
++        let pWin = window.convertPoint(fromScreen: pt)
++        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
++            let ev = NSEvent.mouseEvent(with: type, location: pWin, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
++                                        windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
++            window.sendEvent(ev)
++        }
++    }
++
++    /// Klickt den Stern der Karte. Rückgabe: ob die Karte gefunden wurde.
++    @discardableResult
++    @MainActor func clickStar(_ w: NSWindow, name: String, index: Int = 0) -> Bool {
++        guard let pt = starPoint(w, name: name, index: index) else { p("clickStar|karte nicht gefunden|\(name)"); return false }
++        clickScreen(pt, in: w)
++        return true
++    }
++
++    /// Farbe des Sterns aus dem gerenderten Bild: „akzent" (rot), „grau" oder „?".
++    @MainActor func starColor(_ w: NSWindow, name: String, index: Int = 0) -> String {
++        guard let pt = starPoint(w, name: name, index: index), let v = w.contentView,
++              let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) else { return "?" }
++        v.cacheDisplay(in: v.bounds, to: rep)
++        let pWin = w.convertPoint(fromScreen: pt)
++        let pView = v.convert(pWin, from: nil)
++        let scale = CGFloat(rep.pixelsWide) / v.bounds.width
++        var red = 0, gray = 0
++        for dx in -10...10 {
++            for dy in -10...10 {
++                let x = Int((pView.x + CGFloat(dx)) * scale)
++                let yFlipped = v.isFlipped ? pView.y + CGFloat(dy) : v.bounds.height - (pView.y + CGFloat(dy))
++                let y = Int(yFlipped * scale)
++                guard x >= 0, y >= 0, x < rep.pixelsWide, y < rep.pixelsHigh, let col = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
++                let r = col.redComponent, g = col.greenComponent, b = col.blueComponent
++                if r - max(g, b) > 0.25 { red += 1 }
++                else if abs(r - g) < 0.06 && abs(g - b) < 0.06 && r < 0.8 && r > 0.3 { gray += 1 }
++            }
++        }
++        return red > 8 ? "akzent(\(red)px)" : (gray > 8 ? "grau(\(gray)px)" : "?(r\(red)/g\(gray))")
++    }
++
++    @MainActor func describe(_ e: NSObject?) -> String {
++        guard let e else { return "nil" }
++        let help = AX.text(e, "accessibilityHelp")
++        return "role=\(AX.role(e))|label=\(AX.text(e, "accessibilityLabel"))|title=\(AX.text(e, "accessibilityTitle"))|value=\(AX.text(e, "accessibilityValue"))|help=\(help)|frame=\(Int(AX.frame(e).width))x\(Int(AX.frame(e).height))"
++    }
++
++    @MainActor func alertWindows() -> [String] {
++        NSApp.windows.filter { $0.isVisible && ($0 is NSPanel || String(describing: type(of: $0)).contains("Alert") || $0.attachedSheet != nil) }
++            .map { String(describing: type(of: $0)) + ":" + $0.title }
++    }
++
++    // MARK: - 00 · Aufbau der Karte (AX-Baum)
++
++    @MainActor func test00_AXBaumDerKarte() async throws {
++        let (c, _) = try fileContainer("t00")
++        let ctx = c.mainContext
++        let pl = Playlist(name: "Sonde")
++        ctx.insert(pl)
++        let ch = Channel(name: "Das Erste HD", streamURL: URL(string: "http://127.0.0.1:9/b05/1.m3u8")!, group: "Vollprogramm",
++                         tvgID: "daserste.de", playlist: pl, playlistID: pl.id)
++        ctx.insert(ch)
++        pl.channelCount = 1
++        try ctx.save()
++        // zweiter Sender mit geladenem Logo (lokale Datei), damit kein Ladeindikator die Rolle bestimmt
++        let logo = Self.data.appendingPathComponent("logo.png")
++        let img = NSImage(size: NSSize(width: 32, height: 32), flipped: false) { r in NSColor.systemBlue.setFill(); r.fill(); return true }
++        if let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) { try rep.representation(using: .png, properties: [:])?.write(to: logo) }
++        let ch2 = Channel(name: "ZDF", streamURL: URL(string: "http://127.0.0.1:9/b05/2.m3u8")!, logoURL: logo, group: nil,
++                          tvgID: nil, playlist: pl, playlistID: pl.id)
++        ctx.insert(ch2)
++        pl.channelCount = 2
++        try ctx.save()
++        let w = open(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 760, height: 400))
++        spin(1.0)
++        AX.dump(w, "t00-vorher")
++        for n in ["Das Erste HD", "ZDF"] {
++            guard let k = card(w, name: n) else { p("t00|karte-fehlt|\(n)"); continue }
++            let actions = (AX.obj(k, "accessibilityCustomActions") as? [NSAccessibilityCustomAction])?.map(\.name) ?? []
++            p("t00|karte|\(n)|\(describe(k))|kinder=\(AX.kids(k).count)|customActions=\(actions)|farbe=\(starColor(w, name: n))")
++        }
++        clickStar(w, name: "Das Erste HD")
++        spin(0.6)
++        p("t00|nach-klick-stern|isFavorite=\(ch.isFavorite)|farbe=\(starColor(w, name: "Das Erste HD"))|karten=\(cardNames(w))")
++        AX.dump(w, "t00-nachher")
++        // Benutzerdefinierte Aktion „Favourite" (VoiceOver-Aktionen-Menü) ausführen
++        if let k = card(w, name: "ZDF"), let acts = AX.obj(k, "accessibilityCustomActions") as? [NSAccessibilityCustomAction],
++           let fav = acts.first(where: { $0.name == "Favourite" }) {
++            var ok = false
++            if let h = fav.handler { ok = h() } else if let t = fav.target as? NSObject, let sel = fav.selector { t.perform(sel, with: fav); ok = true }
++            spin(0.6)
++            let acts2 = (AX.obj(card(w, name: "ZDF")!, "accessibilityCustomActions") as? [NSAccessibilityCustomAction])?.map(\.name) ?? []
++            p("t00|custom-action-favourite|ok=\(ok)|zdfFavorit=\(ch2.isFavorite)|aktionenDanach=\(acts2)|karte=\(describe(card(w, name: "ZDF")))|farbe=\(starColor(w, name: "ZDF"))")
++            shot(w, "mac-00-karte-stern-per-aktion")
++        }
++    }
++
++    // MARK: - 10 · Stern umschalten, sofort gespeichert, keine Navigation
++
++    @MainActor func test10_SternUmschaltenUndSpeichern() async throws {
++        let (c, url) = try fileContainer("t10")
++        let ctx = c.mainContext
++        let pl = Playlist(name: "Sonde A")
++        ctx.insert(pl)
++        for (i, n) in ["Das Erste HD", "ZDF", "arte"].enumerated() {
++            let ch = Channel(name: n, streamURL: URL(string: "http://127.0.0.1:9/b05/\(i).m3u8")!, group: "Vollprogramm",
++                             tvgID: nil, playlist: pl, playlistID: pl.id)
++            ctx.insert(ch)
++        }
++        pl.channelCount = 3
++        try ctx.save()
++        let zdf = try XCTUnwrap(pl.channels.first { $0.name == "ZDF" })
++
++        let w = open(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 760, height: 520))
++        shot(w, "mac-01-senderliste-ohne-favorit")
++        func dbValue() -> String { sql(url.path, "SELECT ZISFAVORITE FROM ZCHANNEL WHERE ZNAME='ZDF'").first?.first ?? "?" }
++        p("t10|start|isFavorite=\(zdf.isFavorite)|db=\(dbValue())|stern=\(starColor(w, name: "ZDF"))")
++
++        // (1) Mausklick auf den Stern
++        clickStar(w, name: "ZDF")
++        p("t10|nach-klick-synchron|isFavorite=\(zdf.isFavorite)|hasChanges=\(ctx.hasChanges)|db=\(dbValue())")
++        spin(0.6)
++        p("t10|nach-klick|isFavorite=\(zdf.isFavorite)|db=\(dbValue())|stern=\(starColor(w, name: "ZDF"))|karten=\(cardNames(w))|kopfzeileNoch=\(texts(w).map(\.0).contains { $0.contains("SENDER") })")
++        shot(w, "mac-02-senderliste-zdf-favorit")
++
++        // (2) Zweiter Klick: zurück
++        clickStar(w, name: "ZDF")
++        spin(0.6)
++        p("t10|zweiter-klick|isFavorite=\(zdf.isFavorite)|db=\(dbValue())|stern=\(starColor(w, name: "ZDF"))")
++
++        // (3) Schneller Doppelklick auf den Stern
++        if let pt = starPoint(w, name: "ZDF") { clickScreen(pt, in: w); clickScreen(pt, in: w) }
++        spin(0.6)
++        p("t10|doppelklick|isFavorite=\(zdf.isFavorite)|db=\(dbValue())")
++
++        // (4) AX-Druck auf die Karte (VoiceOver „Drücken"): Stern oder Player?
++        if let k = card(w, name: "Das Erste HD") {
++            p("t10|ax-karte|\(describe(k))")
++            AX.press(k)
++            spin(1.5)
++            p("t10|ax-druck-karte|dasErsteFavorit=\(pl.channels.first { $0.name == "Das Erste HD" }?.isFavorite ?? false)|texte=\(q(texts(w).map(\.0)))")
++            shot(w, "mac-02b-ax-druck-karte")
++        }
++    }
++
++    @MainActor func test10b_KlickAufKarteOeffnetPlayer() async throws {
++        let (c, _) = try fileContainer("t10b")
++        let ctx = c.mainContext
++        let pl = Playlist(name: "Sonde B")
++        ctx.insert(pl)
++        ctx.insert(Channel(name: "arte", streamURL: URL(string: "http://127.0.0.1:9/b05/arte.m3u8")!, group: "Kultur", playlist: pl, playlistID: pl.id))
++        pl.channelCount = 1
++        try ctx.save()
++        let w = open(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 760, height: 420))
++        if let k = card(w, name: "arte") {
++            let f = AX.frame(k)
++            clickScreen(NSPoint(x: f.minX + 120, y: f.midY), in: w)  // auf den Namen
++            spin(2.0)
++            p("t10b|klick-name|arteFavorit=\(pl.channels.first?.isFavorite ?? false)|texte=\(q(texts(w).map(\.0)))")
++        }
++    }
++
++    // MARK: - 11 · Favoriten-Tab: leer, Inhalt über Playlists, gleichnamige Sender, Entfernen im Tab
++
++    @MainActor func test11_FavoritenTab() async throws {
++        let (c, url) = try fileContainer("t11")
++        let ctx = c.mainContext
++        let w = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 760, height: 620))
++        p("t11|leer|texte=\(q(texts(w).map(\.0)))|titel=\(w.title)")
++        shot(w, "mac-03-favoriten-leer")
++
++        // Playlists ohne Favoriten: weiter leer
++        let a = Playlist(name: "Anbieter A"); ctx.insert(a)
++        let b = Playlist(name: "Anbieter B"); ctx.insert(b)
++        func add(_ pl: Playlist, _ name: String, _ group: String?, _ tvg: String?, _ n: Int) -> Channel {
++            let ch = Channel(name: name, streamURL: URL(string: "http://127.0.0.1:9/b05/\(pl.name.suffix(1))/\(n).m3u8")!,
++                             group: group, tvgID: tvg, playlist: pl, playlistID: pl.id)
++            ctx.insert(ch)
++            return ch
++        }
++        let a1 = add(a, "Das Erste HD", "Deutschland", "daserste.de", 1)
++        let a2 = add(a, "KiKA", "Kinder", "kika.de", 2)
++        _ = add(a, "ZDF", "Deutschland", "zdf.de", 3)
++        let b1 = add(b, "Das Erste HD", "Deutschland", "daserste.de", 1)
++        let b2 = add(b, "3sat", nil, nil, 2)
++        a.channelCount = 3; b.channelCount = 2
++        try ctx.save()
++        spin(0.5)
++        p("t11|playlists-ohne-favoriten|texte=\(q(texts(w).map(\.0)))")
++
++        // Favoriten in beiden Playlists, außerhalb des Tabs gesetzt (wie aus der Senderliste)
++        for ch in [a1, a2, b1, b2] { ch.isFavorite = true }
++        try ctx.save()
++        spin(0.8)
++        p("t11|vier-favoriten|texte-von-oben=\(q(texts(w).map(\.0)))")
++        shot(w, "mac-04-favoriten-zwei-playlists-gleichnamig")
++        AX.dump(w, "t11-vier")
++
++        p("t11|karten=\(cardNames(w))")
++        // Entfernen im Tab: oberen der beiden gleichnamigen Sender
++        clickStar(w, name: "Das Erste HD", index: 0)
++        spin(0.8)
++        let rows = sql(url.path, "SELECT c.ZNAME, p.ZNAME, c.ZISFAVORITE FROM ZCHANNEL c JOIN ZPLAYLIST p ON c.ZPLAYLIST = p.Z_PK ORDER BY p.ZNAME, c.ZNAME")
++        p("t11|nach-entfernen-im-tab|karten=\(cardNames(w))|db=\(rows.map { $0.joined(separator: "/") })|a1=\(a1.isFavorite)|b1=\(b1.isFavorite)")
++        shot(w, "mac-05-favoriten-nach-entfernen")
++
++        // Live: Stern außerhalb des Tabs wieder setzen
++        a1.isFavorite = true
++        try ctx.save()
++        spin(0.8)
++        p("t11|live-wieder-gesetzt|karten=\(cardNames(w))")
++
++        // Klick auf eine Karte im Tab öffnet den Player
++        if let k = card(w, name: "3sat") {
++            let f = AX.frame(k)
++            clickScreen(NSPoint(x: f.minX + 120, y: f.midY), in: w)
++            spin(2.0)
++            p("t11|klick-karte|texte=\(q(texts(w).map(\.0)))")
++            shot(w, "mac-05b-favoriten-klick-karte-player")
++        }
++    }
++
++    // MARK: - 12 · Sortierung im Tab
++
++    static let sortNames = [
++        "ARD", "ard alpha", "arte", "Ärger TV", "Zebra", "zdf", "Sport 2", "Sport 10", "1LIVE", "100% Hits",
++        "Écran Plus", "ecran basic", "Straße TV", "Strasse 2", "Österreich 1", "Ö3", "#Hash TV", " Leerzeichen vorn",
++        "Ελληνικά", "Первый канал", "😀 Emoji TV", "İstanbul TV", "istanbul 2", "ﬁlm ligature", "film normal", "Oe24 TV",
++    ]
++
++    func genericSort<V: Comparable>(_ kp: KeyPath<Channel, V>) -> SortDescriptor<Channel> { SortDescriptor(kp) }
++
++    @MainActor func test12_SortierungImTab() async throws {
++        let (c, _) = try fileContainer("t12")
++        let ctx = c.mainContext
++        let pl = Playlist(name: "Sortierung"); ctx.insert(pl)
++        for (i, n) in Self.sortNames.enumerated() {
++            let ch = Channel(name: n, streamURL: URL(string: "http://127.0.0.1:9/b05/s\(i).m3u8")!, isFavorite: true, playlist: pl, playlistID: pl.id)
++            ctx.insert(ch)
++        }
++        for i in 0..<3 {
++            ctx.insert(Channel(name: "Kein Favorit \(i)", streamURL: URL(string: "http://127.0.0.1:9/b05/n\(i).m3u8")!, playlist: pl, playlistID: pl.id))
++        }
++        pl.channelCount = Self.sortNames.count + 3
++        try ctx.save()
++
++        let pred = #Predicate<Channel> { $0.isFavorite == true }
++        let variants: [(String, SortDescriptor<Channel>)] = [
++            ("generisch-Comparable", genericSort(\Channel.name)),
++            ("SortDescriptor(\\.name)", SortDescriptor(\Channel.name)),
++            ("localizedStandard", SortDescriptor(\Channel.name, comparator: .localizedStandard)),
++            ("localized", SortDescriptor(\Channel.name, comparator: .localized)),
++            ("lexical", SortDescriptor(\Channel.name, comparator: .lexical)),
++        ]
++        for (label, sd) in variants {
++            p("t12|sql-marker|\(label)")
++            let names = try ctx.fetch(FetchDescriptor(predicate: pred, sortBy: [sd])).map(\.name)
++            p("t12|abfrage|\(label)|\(q(names))")
++        }
++
++        p("t12|sql-marker|ansicht")
++        let w = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 700, height: 2600), borderless: true)
++        spin(1.0)
++        let set = Set(Self.sortNames)
++        let shown = cardNames(w).map { $0.components(separatedBy: ", ").first ?? $0 }.filter { set.contains($0) }
++        p("t12|ansicht|anzahl=\(shown.count)|\(q(shown))")
++        p("t12|sql-marker|ende")
++    }
++
++    // MARK: - 20 · Aktualisieren (M3U): tvg-id, Name, Umbenennung, Wegfall, Dubletten
++
++    @MainActor func test20_AktualisierenM3U() async throws {
++        installRoutes()
++        let c = try B01.inMemoryContainer()
++        let ctx = c.mainContext
++        let path = "/b05/liste.m3u"
++        func u(_ n: Int) -> String { "http://127.0.0.1:9/b05/stream\(n).m3u8" }
++
++        // Stufe 1: Ausgangsliste
++        let v1: [E] = [
++            E(name: "Alpha", tvg: "alpha.de", url: u(1)),
++            E(name: "Beta", tvg: "beta.de", url: u(2)),
++            E(name: "Gamma", tvg: "gamma.de", url: u(3)),
++            E(name: "Sport1", url: u(4)),
++            E(name: "München TV", url: u(5)),
++            E(name: "Straße TV", url: u(6)),
++            E(name: "İstanbul TV", url: u(7)),
++            E(name: "Café Kanal", url: u(8)),
++            E(name: "Kanal  Zwei", url: u(9)),
++            E(name: "ARD", tvg: "ard.de", url: u(10)),
++            E(name: "Tagesschau24", url: u(11)),
++            E(name: "Phoenix", tvg: "phoenix.de", url: u(12)),
++            E(name: "KiKA", tvg: "kika.de", url: u(13)),
++            E(name: "ZDF HD", tvg: "zdf.de", url: u(14)),
++            E(name: "ZDF SD", tvg: "zdf.de", url: u(15)),
++            E(name: "ZDF FHD", tvg: "zdf.de", url: u(16)),
++            E(name: "News", url: u(17)),
++            E(name: "News", url: u(18)),
++            E(name: "NEWS", url: u(19)),
++            E(name: "Leer-ID A", tvg: " ", url: u(20)),
++            E(name: "Leer-ID B", tvg: " ", url: u(21)),
++        ]
++        let pl = try await importM3U(ctx, path: path, name: "Anbieter M3U", v1)
++        p("t20|import|sender=\(pl.channelCount)")
++        for n in ["Beta", "Sport1", "München TV", "Straße TV", "İstanbul TV", "Café Kanal", "Kanal  Zwei", "ARD", "Tagesschau24", "Phoenix", "KiKA", "ZDF HD", "Leer-ID A"] {
++            try setFav(pl, n, ctx: ctx)
++        }
++        try setFav(pl, "News", index: 0, ctx: ctx)
++        p("t20|stufe1-favoriten|anzahl=\(try favNames(ctx).count)|\(q(try favNames(ctx)))")
++        p("t20|stufe1-schluessel|\(q(pl.channels.filter(\.isFavorite).map(\.favoriteKey).sorted()))")
++
++        // Stufe 2: gleiche Liste, umgekehrte Reihenfolge, neue Stream-Adressen
++        let v2 = v1.reversed().enumerated().map { (i, e) -> E in var e = e; e.url = u(100 + i); return e }
++        try await refreshM3U(ctx, pl, path: path, Array(v2))
++        p("t20|stufe2-umsortiert|anzahl=\(try favNames(ctx).count)|\(q(try favNames(ctx)))")
++
++        // Stufe 3: Abwandlungen
++        let v3: [E] = [
++            E(name: "Alpha", tvg: "alpha.de", url: u(201)),
++            E(name: "Beta HD", tvg: "beta.de", url: u(202)),                 // umbenannt, gleiche tvg-id
++            E(name: "Gamma", tvg: "gamma.de", url: u(203)),
++            E(name: "SPORT1", url: u(204)),                                  // nur Groß/Klein
++            E(name: "MÜNCHEN TV", url: u(205)),                              // Groß mit Umlaut
++            E(name: "STRASSE TV", url: u(206)),                              // ß → SS
++            E(name: "ISTANBUL TV", url: u(207)),                             // İ → I
++            E(name: "Cafe\u{0301} Kanal", url: u(208)),                      // NFD statt NFC
++            E(name: "Kanal Zwei", url: u(209)),                              // doppeltes Leerzeichen entfernt
++            E(name: "ARD", tvg: "ARD.de", url: u(210)),                      // tvg-id Groß/Klein
++            E(name: "Tagesschau24", tvg: "tagesschau24.de", url: u(211)),    // tvg-id neu hinzugekommen
++            E(name: "Phoenix", url: u(212)),                                 // tvg-id entfernt
++            // KiKA fehlt (entfällt)
++            E(name: "ZDF HD", tvg: "zdf.de", url: u(214)),
++            E(name: "ZDF SD", tvg: "zdf.de", url: u(215)),
++            E(name: "ZDF FHD", tvg: "zdf.de", url: u(216)),
++            E(name: "News", url: u(217)),
++            E(name: "News", url: u(218)),
++            E(name: "NEWS", url: u(219)),
++            E(name: "Leer-ID A", tvg: " ", url: u(220)),
++            E(name: "Leer-ID B", tvg: " ", url: u(221)),
++            E(name: "Sport1 HD", url: u(222)),                               // neuer Name, anderer Sender
++        ]
++        try await refreshM3U(ctx, pl, path: path, v3)
++        p("t20|stufe3-abgewandelt|anzahl=\(try favNames(ctx).count)|\(q(try favNames(ctx)))")
++
++        // Stufe 4: KiKA kommt zurück, Rest wie Stufe 3
++        try await refreshM3U(ctx, pl, path: path, v3 + [E(name: "KiKA", tvg: "kika.de", url: u(213))])
++        p("t20|stufe4-kika-zurueck|kikaFavorit=\(pl.channels.first { $0.name == "KiKA" }?.isFavorite ?? false)|anzahl=\(try favNames(ctx).count)")
++
++        // Stufe 5: Nutzer entfernt die Stern-Dubletten, behält je einen; danach Aktualisieren
++        try setFav(pl, "ZDF SD", false, ctx: ctx)
++        try setFav(pl, "ZDF FHD", false, ctx: ctx)
++        try setFav(pl, "News", false, index: 1, ctx: ctx)
++        try setFav(pl, "NEWS", false, ctx: ctx)
++        try setFav(pl, "Leer-ID B", false, ctx: ctx)
++        p("t20|stufe5-vor-aktualisieren|anzahl=\(try favNames(ctx).count)|\(q(try favNames(ctx)))")
++        try await refreshM3U(ctx, pl, path: path, v3 + [E(name: "KiKA", tvg: "kika.de", url: u(213))])
++        p("t20|stufe5-nach-aktualisieren|anzahl=\(try favNames(ctx).count)|\(q(try favNames(ctx)))")
++
++        // Stufe 6: nur „ZDF SD" markiert (HD entfernt) → Aktualisieren
++        for n in ["ZDF HD", "ZDF FHD"] { try setFav(pl, n, false, ctx: ctx) }
++        try setFav(pl, "ZDF SD", true, ctx: ctx)
++        try await refreshM3U(ctx, pl, path: path, v3)
++        p("t20|stufe6-nur-sd|zdf=\(q(pl.channels.filter { $0.name.hasPrefix("ZDF") && $0.isFavorite }.map(\.name).sorted()))")
++
++        // Stufe 7: Fehlschläge lassen Favoriten unverändert
++        let beforeFail = try favNames(ctx)
++        let beforeIDs = Set(pl.channels.map(\.id))
++        routes.set(path, 500, "")
++        do { try await PlaylistImporter(modelContext: ctx).refresh(pl); p("t20|stufe7-http500|kein Fehler") }
++        catch { p("t20|stufe7-http500|fehler=\(error.localizedDescription)|favoritenGleich=\(try favNames(ctx) == beforeFail)|senderObjekteGleich=\(Set(pl.channels.map(\.id)) == beforeIDs)") }
++        routes.set(path, 200, "#EXTM3U\n")
++        do { try await PlaylistImporter(modelContext: ctx).refresh(pl); p("t20|stufe7-leer|kein Fehler") }
++        catch { p("t20|stufe7-leer|fehler=\(error.localizedDescription)|favoritenGleich=\(try favNames(ctx) == beforeFail)|senderObjekteGleich=\(Set(pl.channels.map(\.id)) == beforeIDs)") }
++
++        // Stufe 8: Liste ohne einen einzigen passenden Sender → alle Favoriten weg, kein Hinweis
++        try await refreshM3U(ctx, pl, path: path, [E(name: "Völlig neu", url: u(300))])
++        p("t20|stufe8-nichts-passt|anzahl=\(try favNames(ctx).count)|sender=\(pl.channelCount)")
++    }
++
++    // MARK: - 21 · Aktualisieren (Xtream): epg_channel_id, HD/FHD/SD, leere Namen
++
++    @MainActor func test21_AktualisierenXtream() async throws {
++        let c = try B01.inMemoryContainer()
++        let ctx = c.mainContext
++        let s1: [[String: Any]] = [
++            ["name": "DE: ZDF HD", "stream_id": 1, "epg_channel_id": "ZDF.de", "category_id": "1"],
++            ["name": "DE: ZDF FHD", "stream_id": 2, "epg_channel_id": "ZDF.de", "category_id": "1"],
++            ["name": "DE: ZDF SD", "stream_id": 3, "epg_channel_id": "ZDF.de", "category_id": "1"],
++            ["name": "DE: ARD HD", "stream_id": 4, "epg_channel_id": "ARD.de", "category_id": "1"],
++            ["name": "", "stream_id": 5, "epg_channel_id": NSNull(), "category_id": "2"],
++            ["name": "", "stream_id": 6, "epg_channel_id": "", "category_id": "2"],
++            ["name": "DE: Sky Sport 1", "stream_id": 7, "epg_channel_id": "", "category_id": "2"],
++            ["name": "DE: KiKA", "stream_id": 8, "epg_channel_id": "kika.de", "category_id": "1"],
++        ]
++        mock.handler = MockXtreamServer.panel(streams: s1)
++        let pl = try await B01.importXtream(host: mock.hostPort, pass: "qa-pass-b05", context: ctx).get()
++        p("t21|import|sender=\(pl.channelCount)|tvg=\(q(pl.channels.sorted { $0.streamURL.absoluteString < $1.streamURL.absoluteString }.map { "\($0.name)→\($0.favoriteKey)" }))")
++        try setFav(pl, "DE: ZDF HD", ctx: ctx)
++        try setFav(pl, "", index: 0, ctx: ctx)
++        try setFav(pl, "DE: Sky Sport 1", ctx: ctx)
++        try setFav(pl, "DE: KiKA", ctx: ctx)
++        p("t21|vorher|anzahl=\(try favNames(ctx).count)|\(q(try favNames(ctx)))")
++
++        let s2: [[String: Any]] = [
++            ["name": "DE: KiKA", "stream_id": 108, "epg_channel_id": "KiKA.de", "category_id": "1"],
++            ["name": "DE | Sky Sport 1", "stream_id": 107, "epg_channel_id": "", "category_id": "2"],
++            ["name": "", "stream_id": 106, "epg_channel_id": "", "category_id": "2"],
++            ["name": "", "stream_id": 105, "epg_channel_id": NSNull(), "category_id": "2"],
++            ["name": "DE: ARD HD", "stream_id": 104, "epg_channel_id": "ARD.de", "category_id": "1"],
++            ["name": "DE: ZDF SD", "stream_id": 103, "epg_channel_id": "ZDF.de", "category_id": "1"],
++            ["name": "DE: ZDF FHD", "stream_id": 102, "epg_channel_id": "ZDF.de", "category_id": "1"],
++            ["name": "DE: ZDF HD", "stream_id": 101, "epg_channel_id": "ZDF.de", "category_id": "1"],
++        ]
++        mock.handler = MockXtreamServer.panel(streams: s2)
++        try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(pl)
++        p("t21|nachher|anzahl=\(try favNames(ctx).count)|\(q(try favNames(ctx)))")
++    }
++
++    // MARK: - 22 · Zwei Playlists mit gleicher tvg-id
++
++    @MainActor func test22_ZweiPlaylistsGleicheTvgID() async throws {
++        installRoutes()
++        let c = try B01.inMemoryContainer()
++        let ctx = c.mainContext
++        let la: [E] = [E(name: "Das Erste HD", tvg: "daserste.de", url: "http://127.0.0.1:9/a/1.m3u8"),
++                       E(name: "ZDF", tvg: "zdf.de", url: "http://127.0.0.1:9/a/2.m3u8")]
++        let lb: [E] = [E(name: "Das Erste", tvg: "daserste.de", url: "http://127.0.0.1:9/b/1.m3u8"),
++                       E(name: "ZDF", tvg: "zdf.de", url: "http://127.0.0.1:9/b/2.m3u8")]
++        let a = try await importM3U(ctx, path: "/b05/a.m3u", name: "Anbieter A", la)
++        let b = try await importM3U(ctx, path: "/b05/b.m3u", name: "Anbieter B", lb)
++        try setFav(a, "Das Erste HD", ctx: ctx)
++        let aFavID = a.channels.first { $0.isFavorite }?.id
++        p("t22|start|\(q(try favNames(ctx)))")
++        try await refreshM3U(ctx, b, path: "/b05/b.m3u", lb)
++        p("t22|nach-aktualisieren-B|\(q(try favNames(ctx)))|A-Objekt-unveraendert=\(a.channels.first { $0.isFavorite }?.id == aFavID)")
++        try setFav(b, "ZDF", ctx: ctx)
++        try await refreshM3U(ctx, a, path: "/b05/a.m3u", la)
++        p("t22|B-ZDF-markiert-dann-A-aktualisiert|\(q(try favNames(ctx)))")
++        try await refreshM3U(ctx, a, path: "/b05/a.m3u", [la[1]])
++        p("t22|A-ohne-DasErste|\(q(try favNames(ctx)))")
++    }
++
++    // MARK: - 23 · Lokale Datei: kein Aktualisieren
++
++    @MainActor func test23_LokaleDatei() async throws {
++        let c = try B01.inMemoryContainer()
++        let ctx = c.mainContext
++        let file = Self.data.appendingPathComponent("t23.m3u")
++        try m3u([E(name: "Datei Eins", tvg: "eins.de", url: "http://127.0.0.1:9/f/1.m3u8"),
++                 E(name: "Datei Zwei", url: "http://127.0.0.1:9/f/2.m3u8")]).write(to: file, atomically: true, encoding: .utf8)
++        let pl = try await PlaylistImporter(modelContext: ctx).importFromFile(file)
++        try setFav(pl, "Datei Zwei", ctx: ctx)
++        let ids = Set(pl.channels.map(\.id))
++        try await PlaylistImporter(modelContext: ctx).refresh(pl)
++        p("t23|lokal|isRemote=\(pl.isRemote)|nachRefresh=\(q(try favNames(ctx)))|objekteGleich=\(Set(pl.channels.map(\.id)) == ids)")
++    }
++
++    // MARK: - 30 · Playlist löschen
++
++    @MainActor func test30_PlaylistLoeschen() async throws {
++        installRoutes()
++        let (c, url) = try fileContainer("t30")
++        let ctx = c.mainContext
++        let la: [E] = [E(name: "B05MARKER Glaube TV", url: "http://127.0.0.1:9/a/1.m3u8", group: "Religion"),
++                       E(name: "B05MARKER Partei TV", url: "http://127.0.0.1:9/a/2.m3u8", group: "Politik"),
++                       E(name: "Neutral A", url: "http://127.0.0.1:9/a/3.m3u8")]
++        let a = try await importM3U(ctx, path: "/b05/a.m3u", name: "Anbieter A", la)
++        let b = try await importM3U(ctx, path: "/b05/b.m3u", name: "Anbieter B", [E(name: "Neutral B", url: "http://127.0.0.1:9/b/1.m3u8")])
++        try setFav(a, "B05MARKER Glaube TV", ctx: ctx)
++        try setFav(a, "B05MARKER Partei TV", ctx: ctx)
++        try setFav(b, "Neutral B", ctx: ctx)
++        let w = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 760, height: 520))
++        p("t30|vorher|karten=\(q(cardNames(w)))")
++        shot(w, "mac-06-favoriten-vor-loeschen")
++        p("t30|rohbytes-vorher|\(B01.rawOccurrences(of: "B05MARKER", inFilesWithPrefix: url))")
++
++        // wie PlaylistsView.delete (dort mit try?)
++        try PlaylistImporter(modelContext: ctx).delete(a)
++        spin(0.8)
++        p("t30|nachher|karten=\(q(cardNames(w)))|texte=\(q(texts(w).map(\.0)))|alerts=\(alertWindows())|favoriten=\(q(try favNames(ctx)))")
++        shot(w, "mac-07-favoriten-nach-loeschen")
++        p("t30|rohbytes-nach-loeschen|\(B01.rawOccurrences(of: "B05MARKER", inFilesWithPrefix: url))|zeilen=\(sql(url.path, "SELECT COUNT(*) FROM ZCHANNEL WHERE ZNAME LIKE 'B05MARKER%'"))")
++
++        // Neu importieren: Favoriten kommen nicht zurück
++        let a2 = try await importM3U(ctx, path: "/b05/a.m3u", name: "Anbieter A", la)
++        p("t30|neu-importiert|favoritenA=\(a2.channels.filter(\.isFavorite).count)|alle=\(q(try favNames(ctx)))")
++        p("t30|rohbytes-nach-neuimport|\(B01.rawOccurrences(of: "B05MARKER", inFilesWithPrefix: url))")
++    }
++
++    @MainActor func test31_LoeschenRestbytes() async throws {
++        installRoutes()
++        let (c, url) = try fileContainer("t31")
++        let ctx = c.mainContext
++        var es: [E] = (0..<300).map { E(name: "Füllsender \($0)", url: "http://127.0.0.1:9/f/\($0).m3u8", group: "Füllgruppe") }
++        es.insert(E(name: "B05REST Glaube TV", url: "http://127.0.0.1:9/r/1.m3u8", group: "Religion"), at: 150)
++        let a = try await importM3U(ctx, path: "/b05/r.m3u", name: "Anbieter Rest", es)
++        try setFav(a, "B05REST Glaube TV", ctx: ctx)
++        p("t31|vorher|\(B01.rawOccurrences(of: "B05REST", inFilesWithPrefix: url))")
++        try PlaylistImporter(modelContext: ctx).delete(a)
++        spin(0.5)
++        p("t31|nach-loeschen|\(B01.rawOccurrences(of: "B05REST", inFilesWithPrefix: url))|zeilen=\(sql(url.path, "SELECT COUNT(*) FROM ZCHANNEL"))")
++    }
++
++    // MARK: - 40 · Speicherfehler beim Umschalten (Datenträger voll)
++
++    @MainActor func test40_SpeicherfehlerBeimUmschalten() async throws {
++        let vol = URL(fileURLWithPath: Self.root + "/data/voll")
++        guard FileManager.default.fileExists(atPath: vol.appendingPathComponent(".b05-mounted").path) else {
++            p("t40|volume nicht eingehängt – übersprungen"); return
++        }
++        try? FileManager.default.removeItem(at: vol.appendingPathComponent("filler"))
++        let (c, url) = try fileContainer("t40", dir: vol)
++        let ctx = c.mainContext
++        p("t40|autosave=\(ctx.autosaveEnabled)")
++        let pl = Playlist(name: "Voll"); ctx.insert(pl)
++        for (i, n) in ["Voll Eins", "Voll Zwei", "Voll Drei"].enumerated() {
++            ctx.insert(Channel(name: n, streamURL: URL(string: "http://127.0.0.1:9/v/\(i).m3u8")!, playlist: pl, playlistID: pl.id))
++        }
++        pl.channelCount = 3
++        try ctx.save()
++        func db(_ name: String) -> String { sql(url.path, "SELECT ZISFAVORITE FROM ZCHANNEL WHERE ZNAME='\(name)'").first?.first ?? "?" }
++
++        let list = open(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 700, height: 420))
++        let favs = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 700, height: 420))
++        favs.setFrameOrigin(NSPoint(x: 780, y: 40))
++
++        func fill() -> Int {
++            let fd = Darwin.open(vol.appendingPathComponent("filler").path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
++            var total = 0
++            for size in [1 << 20, 65_536, 4_096, 512, 1] {
++                let buf = [UInt8](repeating: 0, count: size)
++                while true {
++                    let n = buf.withUnsafeBytes { Darwin.write(fd, $0.baseAddress, size) }
++                    if n <= 0 { break }
++                    total += n
++                }
++            }
++            Darwin.close(fd)
++            return total
++        }
++        let filled = fill()
++        let free = (try? vol.resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity) ?? -1
++        p("t40|volume-gefuellt|bytes=\(filled)|frei=\(free)")
++
++        // Stern drücken wie der Nutzer
++        clickStar(list, name: "Voll Zwei")
++        spin(0.8)
++        let favTexts = cardNames(favs)
++        p("t40|nach-druck-voll|isFavorite=\(pl.channels.first { $0.name == "Voll Zwei" }!.isFavorite)|hasChanges=\(ctx.hasChanges)|db=\(db("Voll Zwei"))|stern=\(starColor(list, name: "Voll Zwei"))|tabZeigt=\(favTexts.contains { $0.hasPrefix("Voll Zwei") })|alerts=\(alertWindows())")
++        shot(list, "mac-08-speicher-voll-stern-gefuellt")
++        shot(favs, "mac-09-speicher-voll-favoriten-tab")
++
++        // Was try? verschluckt:
++        do { try ctx.save(); p("t40|expliziter-save|ok") }
++        catch { let ns = error as NSError; p("t40|expliziter-save|fehler=\(ns.domain) \(ns.code)|\(ns.localizedDescription)|sqlite=\(ns.userInfo["NSSQLiteErrorDomain"] ?? "-")") }
++
++        // „Neustart" bei weiterhin vollem Datenträger: neuer Container auf dieselbe Datei
++        do {
++            let schema = Schema([Playlist.self, Channel.self])
++            let c2 = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
++            let n2 = try c2.mainContext.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true })).map(\.name)
++            p("t40|neuer-container-voll|favoriten=\(q(n2))")
++        } catch { p("t40|neuer-container-voll|fehler=\(error.localizedDescription)") }
++
++        // Autosave, solange voll
++        spin(3.0)
++        p("t40|nach-3s-voll|db=\(db("Voll Zwei"))|hasChanges=\(ctx.hasChanges)")
++
++        // Platz freigeben, warten (Autosave?), dann weiteren Stern drücken
++        try? FileManager.default.removeItem(at: vol.appendingPathComponent("filler"))
++        spin(3.0)
++        p("t40|platz-frei-3s|db=\(db("Voll Zwei"))|hasChanges=\(ctx.hasChanges)")
++        clickStar(list, name: "Voll Drei")
++        spin(0.8)
++        p("t40|platz-frei-weiterer-stern|dbZwei=\(db("Voll Zwei"))|dbDrei=\(db("Voll Drei"))|hasChanges=\(ctx.hasChanges)")
++
++        // Entfernen im Tab bei vollem Datenträger: Karte verschwindet, kommt nach Neustart zurück
++        _ = fill()
++        clickStar(favs, name: "Voll Drei")
++        spin(0.8)
++        p("t40|entfernen-im-tab-voll|tabZeigt=\(cardNames(favs).contains { $0.hasPrefix("Voll Drei") })|isFavorite=\(pl.channels.first { $0.name == "Voll Drei" }!.isFavorite)|db=\(db("Voll Drei"))|alerts=\(alertWindows())")
++        do {
++            let schema = Schema([Playlist.self, Channel.self])
++            let c3 = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
++            p("t40|neuer-container-nach-entfernen|favoriten=\(q(try c3.mainContext.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true })).map(\.name)))")
++        } catch { p("t40|neuer-container-nach-entfernen|fehler=\(error.localizedDescription)") }
++        try? FileManager.default.removeItem(at: vol.appendingPathComponent("filler"))
++        spin(0.5)
++    }
++
++    // MARK: - 50 · Leistung: 17.000 / 34.000 Sender, 50 / 100 Favoriten
++
++    static let genres = ["Sport", "News", "Kino", "Doku", "Kinder", "Musik", "Serie", "Anime", "Reise", "Kochen", "Natur", "Talk",
++                         "Comedy", "Krimi", "Wetter", "Auto", "Tech", "Mode", "Kunst", "Gesundheit", "Religion", "Politik", "Wissen", "Jagd", "Fußball"]
++    static let prefixes = ["DE", "AT", "CH", "UK", "FR", "IT", "ES", "PL", "TR", "NL", "US", "AR"]
++
++    @MainActor func seedLarge(_ ctx: ModelContext, name: String, count: Int, favEvery: Int, offset: Int) throws -> Playlist {
++        let pl = Playlist(name: name)
++        ctx.insert(pl)
++        var batch: [Channel] = []
++        for i in 0..<count {
++            let pre = Self.prefixes[i % Self.prefixes.count]
++            let genre = Self.genres[(i / 12) % Self.genres.count]
++            let ch = Channel(name: "\(pre): \(genre) \(i % 100) \(["HD", "FHD", "SD", "4K"][i % 4])",
++                             streamURL: URL(string: "http://127.0.0.1:9/live/\(offset + i).ts")!,
++                             logoURL: nil, group: "\(pre) | \(genre)", tvgID: "\(genre.lowercased()).\(i % 100).\(pre.lowercased())",
++                             isFavorite: i % favEvery == 0, playlistID: pl.id)
++            ctx.insert(ch)
++            batch.append(ch)
++            if batch.count == 5_000 { pl.channels.append(contentsOf: batch); batch.removeAll(); try ctx.save() }
++        }
++        pl.channels.append(contentsOf: batch)
++        pl.channelCount = count
++        try ctx.save()
++        return pl
++    }
++
++    @MainActor func test50_Leistung() async throws {
++        let (c0, url) = try fileContainer("perf")
++        let t = try ms {
++            _ = try seedLarge(c0.mainContext, name: "Groß 1", count: 17_000, favEvery: 340, offset: 0)
++        }
++        p("t50|anlegen-17000|ms=\(Int(t))")
++
++        let favPred = #Predicate<Channel> { $0.isFavorite == true }
++        func measure(_ label: String) throws {
++            let schema = Schema([Playlist.self, Channel.self])
++            let c = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
++            let ctx = c.mainContext
++            var n = 0
++            let cold = try ms { n = try ctx.fetch(FetchDescriptor(predicate: favPred, sortBy: [genericSort(\Channel.name)])).count }
++            var warm: [Double] = []
++            for _ in 0..<4 { warm.append(try ms { _ = try ctx.fetch(FetchDescriptor(predicate: favPred, sortBy: [genericSort(\Channel.name)])) }) }
++            var cnt = 0
++            let countMs = try ms { cnt = try ctx.fetchCount(FetchDescriptor(predicate: favPred)) }
++            let total = try ctx.fetchCount(FetchDescriptor<Channel>())
++            p("t50|abfrage|\(label)|sender=\(total)|favoriten=\(n)|count=\(cnt)|kaltMs=\(String(format: "%.1f", cold))|warmMs=\(warm.map { String(format: "%.1f", $0) }.joined(separator: ","))|countMs=\(String(format: "%.1f", countMs))")
++
++            // Schlüssel merken wie in refresh()
++            let pls = try ctx.fetch(FetchDescriptor<Playlist>(sortBy: [SortDescriptor(\.name)]))
++            if let big = pls.first {
++                var keys = Set<String>()
++                let km = ms { keys = Set(big.channels.filter(\.isFavorite).map(\.favoriteKey)) }
++                let km2 = ms { keys = Set(big.channels.filter(\.isFavorite).map(\.favoriteKey)) }
++                p("t50|refresh-schluessel-merken|\(label)|playlist=\(big.name)|schluessel=\(keys.count)|kaltMs=\(Int(km))|warmMs=\(Int(km2))")
++            }
++        }
++        try measure("17000")
++
++        // Anzeige: Favoriten-Tab öffnen, im Tab entfernen; Senderliste + Tab gleichzeitig, Stern in der Liste
++        let schema = Schema([Playlist.self, Channel.self])
++        let c = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
++        let ctx = c.mainContext
++        let hb = Heartbeat(); hb.start()
++        let w = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 760, height: 900))
++        spin(0.5)
++        p("t50|tab-oeffnen|maxBlockMs=\(Int(hb.stopMaxGapMs()))|karten=\(cardNames(w).count)")
++        let firstFav = try XCTUnwrap(try ctx.fetch(FetchDescriptor(predicate: favPred, sortBy: [genericSort(\Channel.name)])).first)
++        let hb2 = Heartbeat(); hb2.start()
++        var syncMs = 0.0
++        syncMs = ms { clickStar(w, name: firstFav.name) }
++        spin(1.0)
++        p("t50|im-tab-entfernen|syncMs=\(Int(syncMs))|maxBlockMs=\(Int(hb2.stopMaxGapMs()))|favoriten=\(try ctx.fetchCount(FetchDescriptor(predicate: favPred)))")
++        firstFav.isFavorite = true
++        try ctx.save()
++        spin(0.5)
++
++        let pl = try XCTUnwrap(try ctx.fetch(FetchDescriptor<Playlist>()).first)
++        let list = open(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 760, height: 900))
++        spin(1.0)
++        let listNames = cardNames(list).map { String($0.split(separator: ",").first ?? "") }.filter { $0.contains(": ") }
++        if let target = listNames.first(where: { n in !(pl.channels.first { $0.name == n }?.isFavorite ?? true) }) ?? listNames.first {
++            for round in 0..<2 {
++                let hb3 = Heartbeat(); hb3.start()
++                var sMs = 0.0
++                sMs = ms { clickStar(list, name: target) }
++                spin(1.0)
++                p("t50|stern-in-liste-mit-offenem-tab|runde=\(round)|ziel=\(target)|syncMs=\(Int(sMs))|maxBlockMs=\(Int(hb3.stopMaxGapMs()))")
++            }
++            w.close()
++            spin(0.5)
++            for round in 0..<2 {
++                let hb4 = Heartbeat(); hb4.start()
++                var sMs = 0.0
++                sMs = ms { clickStar(list, name: target) }
++                spin(1.0)
++                p("t50|stern-in-liste-ohne-tab|runde=\(round)|ziel=\(target)|syncMs=\(Int(sMs))|maxBlockMs=\(Int(hb4.stopMaxGapMs()))")
++            }
++        }
++        list.close()
++        spin(0.3)
++
++        // 34.000 Sender, 100 Favoriten
++        _ = try seedLarge(c0.mainContext, name: "Groß 2", count: 17_000, favEvery: 340, offset: 17_000)
++        try measure("34000")
++    }
++
++    // MARK: - 60 · Kein Protokoll beim Umschalten
++
++    @MainActor func test60_KeinProtokoll() async throws {
++        let (c, _) = try fileContainer("t60")
++        let ctx = c.mainContext
++        let pl = Playlist(name: "B05LOGPLAYLIST"); ctx.insert(pl)
++        let ch = Channel(name: "B05LOGMARKER Kanal", streamURL: URL(string: "http://127.0.0.1:9/l/1.m3u8")!, tvgID: "b05logmarker.tvg",
++                         playlist: pl, playlistID: pl.id)
++        ctx.insert(ch)
++        pl.channelCount = 1
++        try ctx.save()
++        let w = open(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 700, height: 360))
++        let fw = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 700, height: 360))
++        for i in 0..<4 {
++            clickStar(w, name: "B05LOGMARKER Kanal")
++            spin(1.0)
++            p("t60|druck-\(i)|isFavorite=\(ch.isFavorite)|tab=\(cardNames(fw).contains { $0.hasPrefix("B05LOGMARKER Kanal") })")
++        }
++    }
++
++    // MARK: - 80 · Aktualisieren, während der Tab bzw. ein Player aus dem Tab offen ist
++
++    @MainActor func test80a_TabOffenWaehrendAktualisieren() async throws {
++        installRoutes()
++        let (c, _) = try fileContainer("t80a")
++        let ctx = c.mainContext
++        let es: [E] = [E(name: "ZDF HD", tvg: "zdf.de", url: "http://127.0.0.1:9/z/1.m3u8", group: "Deutschland"),
++                       E(name: "ZDF SD", tvg: "zdf.de", url: "http://127.0.0.1:9/z/2.m3u8", group: "Deutschland"),
++                       E(name: "arte", url: "http://127.0.0.1:9/z/3.m3u8", group: "Kultur")]
++        let pl = try await importM3U(ctx, path: "/b05/z.m3u", name: "Anbieter Z", es)
++        try setFav(pl, "ZDF HD", ctx: ctx)
++        try setFav(pl, "arte", ctx: ctx)
++        let w = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 760, height: 520))
++        p("t80a|vorher|karten=\(q(cardNames(w)))")
++        shot(w, "mac-10-favoriten-vor-aktualisieren")
++        try await refreshM3U(ctx, pl, path: "/b05/z.m3u", es)
++        spin(1.0)
++        p("t80a|nachher|karten=\(q(cardNames(w)))")
++        shot(w, "mac-11-favoriten-nach-aktualisieren-dublette")
++    }
++
++    @MainActor func test80b_PlayerAusTabWaehrendAktualisieren() async throws {
++        installRoutes()
++        let (c, _) = try fileContainer("t80b")
++        let ctx = c.mainContext
++        let es: [E] = [E(name: "arte", url: "http://127.0.0.1:9/p/1.m3u8", group: "Kultur")]
++        let pl = try await importM3U(ctx, path: "/b05/p.m3u", name: "Anbieter P", es)
++        try setFav(pl, "arte", ctx: ctx)
++        let w = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 760, height: 520))
++        if let k = card(w, name: "arte") {
++            let f = AX.frame(k)
++            clickScreen(NSPoint(x: f.minX + 120, y: f.midY), in: w)
++        }
++        spin(1.5)
++        p("t80b|player-offen|texte=\(q(texts(w).map(\.0)))")
++        p("t80b|aktualisiere-jetzt")
++        try await refreshM3U(ctx, pl, path: "/b05/p.m3u", es)
++        spin(2.0)
++        p("t80b|nach-aktualisieren|prozess-lebt|texte=\(q(texts(w).map(\.0)))")
++        shot(w, "mac-12-player-aus-tab-nach-aktualisieren")
++    }
++
++    // MARK: - 90 · Logo-Anfragen beim Öffnen des Tabs
++
++    @MainActor func test90_LogoAnfragenImTab() async throws {
++        let (c, _) = try fileContainer("t90")
++        let ctx = c.mainContext
++        let png: Data = {
++            let img = NSImage(size: NSSize(width: 16, height: 16), flipped: false) { r in NSColor.systemGreen.setFill(); r.fill(); return true }
++            return NSBitmapImageRep(data: img.tiffRepresentation!)!.representation(using: .png, properties: [:])!
++        }()
++        mock.handler = { _ in .raw(status: 200, contentType: "image/png", body: png) }
++        let pl = Playlist(name: "Logos"); ctx.insert(pl)
++        let favs: Set<Int> = [3, 11, 17]
++        for i in 0..<20 {
++            ctx.insert(Channel(name: "Logo Sender \(String(format: "%02d", i))", streamURL: URL(string: "http://127.0.0.1:9/l/\(i).m3u8")!,
++                               logoURL: URL(string: "http://\(mock.hostPort)/logos/sender-\(i).png"), group: i == 11 ? "Religion" : "Allgemein",
++                               isFavorite: favs.contains(i), playlist: pl, playlistID: pl.id))
++        }
++        pl.channelCount = 20
++        try ctx.save()
++        mock.resetLog()
++        let w = open(NavigationStack { FavoritesView() }, c, size: CGSize(width: 760, height: 620))
++        spin(2.0)
++        let reqs = mock.requests
++        p("t90|tab-geoeffnet|anfragen=\(reqs.count)|pfade=\(q(reqs.map(\.path).sorted()))")
++        if let r = reqs.first { p("t90|kopfzeilen|user-agent=\(r.headers["user-agent"] ?? "-")|accept-language=\(r.headers["accept-language"] ?? "-")|cookie=\(r.headers["cookie"] ?? "-")|referer=\(r.headers["referer"] ?? "-")") }
++        shot(w, "mac-13-favoriten-mit-logos")
++    }
++
++    // MARK: - 70 · Speicherort, Backup-Ausschluss, Dateirechte
++
++    @MainActor func test70_Speicherort() async throws {
++        let realSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
++        p("t70|app-pfad-macos|\(AppPersistence.storeURL(applicationSupport: realSupport, bundleID: "lu.daumedia.MikaPlusPlayer").path)")
++        let support = Self.data.appendingPathComponent("t70-support", isDirectory: true)
++        try? FileManager.default.removeItem(at: support)
++        try FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
++        let (storeURL, outcome) = AppPersistence.prepareStore(applicationSupport: support, bundleID: "lu.daumedia.MikaPlusPlayer")
++        let schema = Schema([Playlist.self, Channel.self])
++        let c = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: storeURL)])
++        let pl = Playlist(name: "Ort"); c.mainContext.insert(pl)
++        c.mainContext.insert(Channel(name: "Ort Favorit", streamURL: URL(string: "http://127.0.0.1:9/o.m3u8")!, isFavorite: true, playlist: pl, playlistID: pl.id))
++        try c.mainContext.save()
++        for f in [storeURL.path, storeURL.path + "-wal", storeURL.path + "-shm", storeURL.deletingLastPathComponent().path] {
++            let attrs = try? FileManager.default.attributesOfItem(atPath: f)
++            let perm = (attrs?[.posixPermissions] as? NSNumber).map { String($0.intValue, radix: 8) } ?? "-"
++            let excluded = (try? URL(fileURLWithPath: f).resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup) ?? nil
++            p("t70|datei|\(f.replacingOccurrences(of: Self.root, with: "<sonde>"))|rechte=\(perm)|isExcludedFromBackup=\(excluded.map { String($0) } ?? "nil")")
++        }
++        p("t70|outcome=\(outcome)")
++    }
++}

@@ -23,10 +23,10 @@ final class XtreamCodesTests: XCTestCase {
         )
     }
 
-    /// https wird auf http herabgestuft (IPTV-Panels liefern meist nur HTTP).
-    func testDowngradesHTTPS() {
+    /// Ein ausdrücklich eingegebenes https bleibt erhalten (B01 · BUG-02; vorher: Herabstufen auf http).
+    func testKeepsHTTPS() {
         let creds = XtreamCredentials(host: "https://example.com", username: "u", password: "p")
-        XCTAssertEqual(creds.playlistURL(output: .hls)?.scheme, "http")
+        XCTAssertEqual(creds.playlistURL(output: .hls)?.scheme, "https")
     }
 
     /// Leerer Host -> nil; Vollständigkeitsprüfung.

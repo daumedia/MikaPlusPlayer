@@ -1,0 +1,59 @@
+# Letzter Gesamtlauf B08 (Kopie qa1-b08, Debug, dd/), 2026-09-26, gefiltert
+# xcodebuild test-without-building -scheme MikaPlusPlayer-macOS -destination 'platform=macOS' -only-testing:MikaPlusPlayerTests/B08AbsturzTests … /B08HauptfensterTests /B08NeustartTests /B08OberflaecheTests /B08SessionTests /B08NachtragTests
+# Umgebung: TEST_RUNNER_B08_AKTIVIEREN=<Anforderungsdatei> (Helfer holt den Test-Host per AXFrontmost nach vorn)
+# Übersprungen = nur mit Umgebungsvariable (Absturzfälle, Neustart, AK-29-Tasten, BF-101), separat ausgeführt
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_FokusMitVierFensterSchliessen]' skipped (1.378 seconds).
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_RasterXVonVierAufDrei]' skipped (1.015 seconds).
+Test Case '-[B08AbsturzTests testAK23_Gegenprobe_RasterXVonZweiAufEins]' skipped (0.712 seconds).
+Test Case '-[B08AbsturzTests testAK23_RasterMitEinemFensterSchliessen]' skipped (0.916 seconds).
+Test Case '-[B08AbsturzTests testAK23_RasterMitVierFensterSchliessen]' skipped (0.917 seconds).
+Test Case '-[B08AbsturzTests testAK23_RasterXVonDreiAufZwei]' skipped (0.918 seconds).
+Test Case '-[B08AbsturzTests testAK23_RasterXVonEinsAufNull]' skipped (0.815 seconds).
+Test Case '-[B08AbsturzTests testEC15_BeendenBeiOffenemRaster]' skipped (0.917 seconds).
+Executed 8 tests, with 8 tests skipped and 0 failures (0 unexpected) in 7.589 (7.593) seconds
+Test Case '-[B08HauptfensterTests testAK01_AK21_EchteHauptfensterTeilenEinMultiview]' passed (13.054 seconds).
+Executed 1 test, with 0 failures (0 unexpected) in 13.054 (13.055) seconds
+Test Case '-[B08NachtragTests testAK06_AK07_PlusOhneZugangsdatenUndDoppelterSender]' passed (13.613 seconds).
+Test Case '-[B08NachtragTests testAK14_AK15_AK16_KlicksBeiAktiverApp]' passed (29.363 seconds).
+Test Case '-[B08NachtragTests testBF101_VierVLCKachelnAbbauenUndSofortNeu]' skipped (0.891 seconds).
+Test Case '-[B08NachtragTests testCR_AK11_AK19_RasterVorneEntfernenVLCBilder]' passed (9.567 seconds).
+Executed 4 tests, with 1 test skipped and 0 failures (0 unexpected) in 53.435 (53.437) seconds
+Test Case '-[B08NeustartTests testAK02_AK24_EC09_NeustartGroesseBleibtBelegungNicht]' skipped (0.969 seconds).
+Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.969 (0.970) seconds
+Test Case '-[B08OberflaecheTests testAK01_AK02_AK09_PlusFuegtHinzuUndOeffnetFensterMenueintrag]' passed (11.815 seconds).
+Test Case '-[B08OberflaecheTests testAK04_AK05_AK21_EC06_VollInAllenFensternKlickAufGrauOeffnetPlayer]' passed (11.900 seconds).
+Test Case '-[B08OberflaecheTests testAK08_AK19_LeerzustandUndLetztesXLaesstFensterOffen]' passed (4.720 seconds).
+Test Case '-[B08OberflaecheTests testAK10_FokusLayoutGeometrieUndEtiketten]' passed (6.805 seconds).
+Test Case '-[B08OberflaecheTests testAK11_AK12_AK13_RasterUmschalterUndEinzelnerStreamImRaster]' passed (13.986 seconds).
+Test Case '-[B08OberflaecheTests testAK12_LayoutBleibtUeberSchliessenUndOeffnen]' passed (3.493 seconds).
+Test Case '-[B08OberflaecheTests testAK14_AK15_FokuswechselVLCHauptbildSchwarzHLSKorrekt]' passed (53.755 seconds).
+Test Case '-[B08OberflaecheTests testAK16_XDesGrossenStreamsVerdeckt]' passed (10.451 seconds).
+Test Case '-[B08OberflaecheTests testAK18_PlayerUndMultiviewHabenBeideTon]' passed (4.163 seconds).
+Test Case '-[B08OberflaecheTests testAK20_AK21_SchliessenLeertFuerAlleFenster]' passed (7.749 seconds).
+Test Case '-[B08OberflaecheTests testAK22_EC07_MinimiertUndOhneListenfensterLaeuftWeiter]' passed (14.090 seconds).
+Test Case '-[B08OberflaecheTests testAK25_AK26_AK32_FehlerKachelnZeigenKeineAdresse]' passed (20.754 seconds).
+Test Case '-[B08OberflaecheTests testAK29_KeineTastatursteuerungWarntonAbgefangen]' skipped (0.916 seconds).
+Test Case '-[B08OberflaecheTests testEC10_EC11_KleinesFensterUndLangerName]' passed (4.577 seconds).
+Executed 14 tests, with 1 test skipped and 0 failures (0 unexpected) in 169.174 (169.182) seconds
+Test Case '-[B08SessionTests testAK03_EC01_EC03_ErsterMitTonWeitereStummGemischt]' passed (1.555 seconds).
+Test Case '-[B08SessionTests testAK04_FuenfterSenderKommtNichtHinzuKeineVerbindung]' passed (3.928 seconds).
+Test Case '-[B08SessionTests testAK06_GleicherSenderZweimalZweiKachelnZweiVerbindungen]' passed (3.928 seconds).
+Test Case '-[B08SessionTests testAK07_OhneZugangsdatenKeineKachelKeineAnfrage]' passed (2.581 seconds).
+Test Case '-[B08SessionTests testAK14_AK17_EC02_FokusWandertUndEntfernenFuehrtNach]' passed (1.400 seconds).
+Test Case '-[B08SessionTests testAK19_EC05_EntfernenGibtFreiUndSchliesstVerbindung]' passed (51.768 seconds).
+Test Case '-[B08SessionTests testAK20_ClearGibtAlleEnginesUndVerbindungenFrei]' passed (9.265 seconds).
+Test Case '-[B08SessionTests testAK24_AK34_NichtsInDatenbankEinstellungenSchluesselbund]' passed (3.913 seconds).
+Test Case '-[B08SessionTests testAK25_AK26_FehlerJeKachel]' passed (46.191 seconds).
+Test Case '-[B08SessionTests testAK27_EC14_Angriff8_LoeschenLaesstKachelnMitZugangsdatenLaufen]' passed (7.168 seconds).
+Test Case '-[B08SessionTests testAK28_AktualisierenAlteAdresseUndZweiteKachel]' passed (5.107 seconds).
+Test Case '-[B08SessionTests testAK30_NKachelnNVerbindungenMitZugangsdaten]' passed (10.973 seconds).
+Test Case '-[B08SessionTests testAK31_AnbieterlimitEinsDreiKachelnLadenEndlos]' passed (16.097 seconds).
+Test Case '-[B08SessionTests testAngriff1_FremdeIDsUndFremdeZuordnung]' passed (1.990 seconds).
+Test Case '-[B08SessionTests testAngriff3_ZehnMalHinzufuegenUndFuenfZyklen]' passed (9.377 seconds).
+Test Case '-[B08SessionTests testAngriff5_PayloadDerKachelnAmAnbieter]' passed (6.051 seconds).
+Test Case '-[B08SessionTests testAngriff7_EingabenSendernamenUndAdressen]' passed (6.727 seconds).
+Test Case '-[B08SessionTests testEC04_PauseOhneFreigabeHaeltVerbindung]' passed (8.369 seconds).
+Executed 18 tests, with 0 failures (0 unexpected) in 196.388 (196.399) seconds
+Executed 46 tests, with 11 tests skipped and 0 failures (0 unexpected) in 440.609 (440.639) seconds
+Executed 46 tests, with 11 tests skipped and 0 failures (0 unexpected) in 440.609 (440.641) seconds
+** TEST EXECUTE SUCCEEDED **

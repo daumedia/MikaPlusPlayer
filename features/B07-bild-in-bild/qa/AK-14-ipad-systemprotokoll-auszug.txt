@@ -1,0 +1,8 @@
+2026-09-26 16:20:18.614 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.avkit:AVKit] -[AVPictureInPicturePlatformAdapter stopPictureInPictureAndRestoreUserInterface:] shouldRestore NO
+2026-09-26 16:20:18.615 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.pegasus:Common] -[PGPictureInPictureProxy stopPictureInPictureAndRestoreUserInterface:] 0x10165de00
+2026-09-26 16:20:18.615 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.pegasus:Common] -[PGPictureInPictureProxy _setActivationState:reason:] 0x10165de00 3 -> 4 reason: _stopPictureInPictureAnimated
+2026-09-26 16:20:18.615 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.pegasus:Common] -[PGPictureInPictureProxy (0x10165de00) _updateIsInterruptedIfNeededForReason:initiatedByRemoteObject:] Did update _i
+2026-09-26 16:20:18.617 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.avkit:AVKit] -[AVPlayerController dealloc] 968 0x1079fea00
+2026-09-26 16:20:18.633 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.coremedia:] <<<< AVPlayerItem >>>> -[AVPlayerItem dealloc]: <I/YRX.01|0x105f01160> currentItem KVO
+2026-09-26 16:20:18.633 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.coremedia:] <<<< AVPlayer >>>> -[AVPlayer dealloc]: AVPlayer [0x105f02530] P/NT releasing figPlayer 0x116ef9960
+2026-09-26 16:20:18.634 Df MikaPlusPlayer[53439:6ecd8a] [com.apple.coremedia:] <<<< AVPlayer >>>> -[AVPlayer dealloc]: AVPlayer [0x1078a48c0] P/XT releasing figPlayer 0x0

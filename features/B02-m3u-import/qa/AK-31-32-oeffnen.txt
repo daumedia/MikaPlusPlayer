@@ -1,0 +1,46 @@
+AK-31|testHost|qa-oeffnen.m3u|dispatchStatus=0
+AK-31|testHost|qa-oeffnen.m3u|neueFenster=1|titel=["Playlists"]|texte=[["AXWindow:Playlists | Playlists", "AXStaticText:Playlists", "AXStaticText:Keine Playlists", "AXStaticText:Importiere eine M3U/M3U8-Playlist per URL oder Datei, um loszulegen.", "AXButton:Playlist importieren", "AXRadioButton:Playlists | 1"]]
+AK-31|testHost|qa-oeffnen.m3u8|dispatchStatus=0
+AK-31|testHost|qa-oeffnen.m3u8|neueFenster=1|titel=["Playlists"]|texte=[["AXWindow:Playlists | Playlists", "AXStaticText:Playlists", "AXStaticText:Keine Playlists", "AXStaticText:Importiere eine M3U/M3U8-Playlist per URL oder Datei, um loszulegen.", "AXButton:Playlist importieren", "AXRadioButton:Playlists | 1"]]
+AK-31|testHost|qa-oeffnen.txt|dispatchStatus=0
+AK-31|testHost|qa-oeffnen.txt|neueFenster=1|titel=["Playlists"]|texte=[["AXWindow:Playlists | Playlists", "AXStaticText:Playlists", "AXStaticText:Keine Playlists", "AXStaticText:Importiere eine M3U/M3U8-Playlist per URL oder Datei, um loszulegen.", "AXButton:Playlist importieren", "AXRadioButton:Playlists | 1"]]
+AK-31d/AK-32|m3u|typ=public.m3u-playlist|standardApp=Music.app|mikaPlusPlayerKandidaten=18
+AK-31d/AK-32|m3u8|typ=public.m3u-playlist|standardApp=Music.app|mikaPlusPlayerKandidaten=18
+AK-31d/AK-32|txt|typ=public.plain-text|standardApp=TextEdit.app|mikaPlusPlayerKandidaten=12
+AK-31d/AK-32|json|typ=public.json|standardApp=Xcode.app|mikaPlusPlayerKandidaten=18
+AK-31d/AK-32|html|typ=public.html|standardApp=<Drittanbieter-App>|mikaPlusPlayerKandidaten=16
+AK-31d/AK-32|csv|typ=public.comma-separated-values-text|standardApp=Numbers.app|mikaPlusPlayerKandidaten=14
+AK-31d/AK-32|swift|typ=public.swift-source|standardApp=Xcode.app|mikaPlusPlayerKandidaten=15
+AK-31d/AK-32|md|typ=net.daringfireball.markdown|standardApp=Xcode.app|mikaPlusPlayerKandidaten=14
+AK-31d/AK-32|log|typ=com.apple.log|standardApp=Console.app|mikaPlusPlayerKandidaten=12
+AK-31d/AK-32|pls|typ=public.pls-playlist|standardApp=Music.app|mikaPlusPlayerKandidaten=18
+AK-31d/AK-32|xspf|typ=dyn.ah62d4rv4ge81u65uq2|standardApp=<Drittanbieter-App>|mikaPlusPlayerKandidaten=0
+AK-31d/AK-32|(ohne Endung)|typ=public.data|standardApp=TextEdit.app|mikaPlusPlayerKandidaten=0
+
+# Probe-Kopie der Debug-App (build/dd-qa-b02), Bundle-ID lu.daumedia.MikaPlusPlayer.b02qa, Sparkle-Prüfung aus (SUEnableAutomaticChecks=false, SUFeedURL auf Port 9),
+# gestartet mit open --env XCTestSessionIdentifier=b02qa-probe → Datenbank im Speicher (Beleg: vorab angelegte leere Store-Datei der Probe blieb 0 Byte).
+# Fenster über CGWindowListCopyWindowInfo (Ebene 0, auf dem Bildschirm, nur Geometrie). Danach alle Probe-Spuren entfernt, lsregister -u.
+== (a) Kaltstart mit qa-doppelklick.m3u (open -a, App läuft nicht; Datenbank im Speicher über XCTestSessionIdentifier)
+pid=<pid>
+envGesetzt=1 storeDateiBytes=0
+D01|kaltstart-mit-m3u|fensterOnScreen=1 ["#6379 900x450"]
+== (b) App läuft: m3u8, txt, m3u erneut öffnen
+D02|qa-doppelklick.m3u8-bei-laufender-app|pids=<1 Prozess> |fensterOnScreen=2 ["#6384 900x450", "#6379 900x450"]
+D02|qa-doppelklick.txt-bei-laufender-app|pids=<1 Prozess> |fensterOnScreen=3 ["#6385 900x450", "#6384 900x450", "#6379 900x450"]
+D02|qa-doppelklick.m3u-bei-laufender-app|pids=<1 Prozess> |fensterOnScreen=4 ["#6386 900x450", "#6385 900x450", "#6384 900x450", "#6379 900x450"]
+storeDateiBytes=0
+== EC-22: Beenden (SIGTERM) und Neustart ohne Datei
+nachBeenden prozesse=0
+D03|neustart-ohne-datei|pid=<pid>|fensterOnScreen=1 ["#6400 900x450"]
+== Gegenprobe: Kaltstart ohne Datei mit -F (ohne Wiederherstellung)
+D04|kaltstart-ohne-datei-F|pid=<pid>|fensterOnScreen=1 ["#6410 900x450"]
+storeDateiBytes=0 prozesseUebrig=0
+== EC-22 Wiederholung: 4 Fenster, 20 s warten (Zustand sichern lassen), SIGTERM, Neustart ohne Datei
+D05|vorBeenden|fensterOnScreen=4 ["#6428 900x450", "#6427 900x450", "#6426 900x450", "#6420 900x450"]
+D06|neustart-ohne-datei-nach-20s|fensterOnScreen=1 ["#6442 900x450"]
+prozesseUebrig=0
+== EC-22 dritter Versuch: normales Beenden über NSRunningApplication.terminate()
+D07|vorBeenden|fensterOnScreen=3 ["#6458 900x450", "#6457 900x450", "#6452 900x450"]
+laufend=1 terminate=true beendet=true 
+D08|neustart-ohne-datei-nach-normalem-beenden|fensterOnScreen=1 ["#6477 900x450"]
+prozesseUebrig=0

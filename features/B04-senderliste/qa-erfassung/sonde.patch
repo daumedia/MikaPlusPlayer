@@ -1,0 +1,1261 @@
+# B04-Erfassungssonde: Änderungen der Kopie gegenüber main@c01f1cf (nicht einchecken, nicht anwenden auf das Repo)
+--- a/project.yml
++++ b/project.yml
+@@ -30,7 +30,7 @@
+     settings:
+       base:
+         PRODUCT_NAME: MikaPlusPlayer
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b04probe
+         MARKETING_VERSION: "1.1"
+         CURRENT_PROJECT_VERSION: "2"
+         GENERATE_INFOPLIST_FILE: NO
+@@ -90,7 +90,7 @@
+     settings:
+       base:
+         GENERATE_INFOPLIST_FILE: YES
+-        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayerTests
++        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.b04probetests
+         CODE_SIGN_STYLE: Manual
+         CODE_SIGN_IDENTITY: "-"
+         DEVELOPMENT_TEAM: "CWJM4J4HFN"
+--- a/Sources/App/MikaPlusPlayerApp.swift
++++ b/Sources/App/MikaPlusPlayerApp.swift
+@@ -6,13 +6,9 @@
+     /// Gemeinsamer SwiftData-Container für beide Plattformen.
+     let modelContainer: ModelContainer = {
+         let schema = Schema([Playlist.self, Channel.self])
+-        // B01 · BUG-04: app-eigener Speicherort, Übernahme der alten default.store; Test-Host im Speicher.
+-        let config = AppPersistence.configuration(schema: schema)
++        let config = ModelConfiguration(schema: schema, url: URL(fileURLWithPath: "<sonde>/apphost.store")) // B04-PROBE
+         do {
+-            let container = try ModelContainer(for: schema, configurations: [config])
+-            // B01 · BUG-01/BUG-03: Zugangsdaten aus Altbeständen in den Schlüsselbund, alten HTTP-Cache leeren.
+-            AppPersistence.finishLaunch(container: container, storeURL: config.url)
+-            return container
++            return try ModelContainer(for: schema, configurations: [config])
+         } catch {
+             fatalError("ModelContainer konnte nicht erstellt werden: \(error)")
+         }
+--- a/Sources/Resources/Info.plist
++++ b/Sources/Resources/Info.plist
+@@ -25,11 +25,11 @@
+ 	     SUFeedURL: appcast.xml im GitHub-Repo. SUPublicEDKey: familienweiter
+ 	     EdDSA-Public-Key (Private Key liegt in der Keychain). -->
+ 	<key>SUFeedURL</key>
+-	<string>https://raw.githubusercontent.com/daumedia/MikaPlusPlayer/main/appcast.xml</string>
++	<string>http://127.0.0.1:9/appcast.xml</string>
+ 	<key>SUPublicEDKey</key>
+ 	<string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
+ 	<key>SUEnableAutomaticChecks</key>
+-	<true/>
++	<false/>
+ 
+ 	<!-- App Transport Security: IPTV-Streams laufen häufig über reines HTTP.
+ 	     NSAllowsArbitraryLoads erlaubt unverschlüsselte Verbindungen. Für den
+--- a/Sources/Views/ChannelListView.swift
++++ b/Sources/Views/ChannelListView.swift
+@@ -81,7 +81,7 @@
+ }
+ 
+ /// DB-gestützte, gefilterte + sortierte Senderliste als Karten.
+-private struct ChannelResultsList: View {
++struct ChannelResultsList: View { // B04-PROBE: private entfernt
+     @Query private var channels: [Channel]
+     private let searchText: String
+ 
+--- /dev/null
++++ b/Tests/B04ProbeTests.swift
+@@ -0,0 +1,1029 @@
++import XCTest
++import SwiftData
++import SwiftUI
++import AppKit
++@testable import MikaPlusPlayer
++
++/// TEMPORAERE Verhaltenssonde fuer die B04-Rueckerfassung (Senderliste).
++/// Laeuft NUR in der Scratchpad-Kopie, wird nicht eingecheckt.
++@MainActor
++final class B04ProbeTests: XCTestCase {
++
++    static let base = URL(fileURLWithPath: "<sonde>")
++    static let mock = "http://127.0.0.1:18790"
++    static let mock2 = "http://localhost:18791"
++
++    nonisolated func p(_ s: String) { print("B04PROBE|\(s)") }
++
++    // MARK: - Infrastruktur
++
++    func makeContainer(_ name: String, fresh: Bool) throws -> ModelContainer {
++        let url = Self.base.appendingPathComponent("\(name).store")
++        if fresh {
++            for suffix in ["", "-wal", "-shm"] {
++                try? FileManager.default.removeItem(at: URL(fileURLWithPath: url.path + suffix))
++            }
++        }
++        let schema = Schema([Playlist.self, Channel.self])
++        return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
++    }
++
++    /// Spiegelt exakt den Predicate/Sort aus `ChannelResultsList.init`.
++    func resultsDescriptor(_ playlistID: UUID, _ searchText: String, _ group: String?) -> FetchDescriptor<Channel> {
++        let s = searchText
++        let g = group
++        let predicate = #Predicate<Channel> { ch in
++            ch.playlistID == playlistID
++                && (s.isEmpty || ch.name.localizedStandardContains(s))
++                && (g == nil || ch.group == g)
++        }
++        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.name, comparator: .localized)])
++    }
++
++    /// Spiegelt exakt `ChannelListView.loadGroups()`.
++    func groupsMirror(_ ctx: ModelContext, _ pid: UUID) -> [String] {
++        var descriptor = FetchDescriptor<Channel>(predicate: #Predicate { $0.playlistID == pid })
++        descriptor.propertiesToFetch = [\.group]
++        let fetched = (try? ctx.fetch(descriptor)) ?? []
++        let names = fetched.compactMap { $0.group?.trimmingCharacters(in: .whitespaces) }
++            .filter { !$0.isEmpty }
++        return Array(Set(names)).sorted()
++    }
++
++    @discardableResult
++    func seed(_ ctx: ModelContext, name: String, items: [(String, String?, String?)]) -> Playlist {
++        let pl = Playlist(name: name)
++        ctx.insert(pl)
++        for it in items {
++            let ch = Channel(
++                name: it.0,
++                streamURL: URL(string: "http://127.0.0.1:9/live/x.ts")!,
++                logoURL: it.2.flatMap { URL(string: $0) },
++                group: it.1,
++                playlist: pl,
++                playlistID: pl.id
++            )
++            ctx.insert(ch)
++            pl.channels.append(ch)
++        }
++        pl.channelCount = pl.channels.count
++        try! ctx.save()
++        return pl
++    }
++
++    /// Wie `seed`, aber ohne `playlist.channels.append` (setzt nur die Rueckbeziehung).
++    /// Erzeugt dieselben Datenbankzeilen, ohne das quadratische Verhalten des Relationship-Setters.
++    @discardableResult
++    func seedFast(_ ctx: ModelContext, name: String, items: [(String, String?, String?)]) -> Playlist {
++        let pl = Playlist(name: name)
++        ctx.insert(pl)
++        for it in items {
++            let ch = Channel(
++                name: it.0,
++                streamURL: URL(string: "http://127.0.0.1:9/live/x.ts")!,
++                logoURL: it.2.flatMap { URL(string: $0) },
++                group: it.1,
++                playlist: pl,
++                playlistID: pl.id
++            )
++            ctx.insert(ch)
++        }
++        pl.channelCount = items.count
++        try! ctx.save()
++        return pl
++    }
++
++    /// Misst den echten `attach`-Pfad (mit Relationship-Append) fuer wachsende Groessen.
++    func test29_AttachScaling() throws {
++        for n in [500, 1000, 2000, 4000] {
++            let c = try makeContainer("scale", fresh: true)
++            let ctx = c.mainContext
++            let t = ms { _ = seed(ctx, name: "Scale \(n)", items: perfItems(n, offset: 0)) }
++            p("attachScaling|n=\(n)|ms=\(String(format: "%.0f", t))|msProSender=\(String(format: "%.2f", t / Double(n)))")
++        }
++    }
++
++    func ms(_ block: () throws -> Void) rethrows -> Double {
++        let t0 = DispatchTime.now().uptimeNanoseconds
++        try block()
++        return Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000
++    }
++
++    func footprintMB() -> Double {
++        var info = task_vm_info_data_t()
++        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
++        let kr = withUnsafeMutablePointer(to: &info) {
++            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
++                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
++            }
++        }
++        return kr == KERN_SUCCESS ? Double(info.phys_footprint) / 1_048_576 : -1
++    }
++
++    func spin(_ seconds: Double) {
++        RunLoop.main.run(until: Date().addingTimeInterval(seconds))
++    }
++
++    // MARK: - Fensterhilfen
++
++    func host<V: View>(_ view: V, _ container: ModelContainer, width: CGFloat, height: CGFloat, borderless: Bool = false) -> (NSWindow, NSView) {
++        let root = AnyView(view.modelContainer(container).environment(MultiviewSession()))
++        let hv = NSHostingView(rootView: root)
++        hv.sizingOptions = []
++        let w = NSWindow(contentRect: NSRect(x: 60, y: 60, width: width, height: height),
++                         styleMask: [.titled, .resizable],
++                         backing: .buffered, defer: false)
++        if borderless {
++            // Einbetten statt contentView: verhindert, dass die Hosting-View die Fenstergroesse bestimmt.
++            let holder = NSView(frame: NSRect(x: 0, y: 0, width: width, height: height))
++            hv.frame = holder.bounds
++            hv.autoresizingMask = [.width, .height]
++            holder.addSubview(hv)
++            w.contentView = holder
++        } else {
++            w.contentView = hv
++        }
++        w.setContentSize(NSSize(width: width, height: height))
++        w.isReleasedWhenClosed = false
++        w.level = .floating
++        w.orderFrontRegardless()
++        hv.layoutSubtreeIfNeeded()
++        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
++        w.contentMinSize = NSSize(width: width, height: height)
++        w.contentMaxSize = NSSize(width: width, height: height)
++        w.setContentSize(NSSize(width: width, height: height))
++        w.setFrameOrigin(NSPoint(x: 40, y: 40))
++        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
++        p("fenster|sichtbar=\(w.occlusionState.contains(.visible))|isVisible=\(w.isVisible)|groesse=\(Int(w.frame.width))x\(Int(w.frame.height))|hosting=\(Int(hv.frame.width))x\(Int(hv.frame.height))")
++        return (w, hv)
++    }
++
++    func axLines(_ root: Any, maxDepth: Int = 60) -> [String] {
++        var out: [String] = []
++        func walk(_ el: Any, _ d: Int) {
++            guard d < maxDepth else { return }
++            let o = el as AnyObject
++            let role = (o.accessibilityRole?() as NSAccessibility.Role??)??.rawValue ?? "?"
++            var parts: [String] = []
++            if let l = (o.accessibilityLabel?() as String??) ?? nil, !l.isEmpty { parts.append("L:\(l)") }
++            if let t = (o.accessibilityTitle?() as String??) ?? nil, !t.isEmpty { parts.append("T:\(t)") }
++            if let v = (o.accessibilityValue?() as Any??) ?? nil {
++                let s = "\(v)"
++                if !s.isEmpty && s != "<null>" { parts.append("V:\(s)") }
++            }
++            out.append("\(String(repeating: " ", count: d))\(role) \(parts.joined(separator: " "))")
++            let children = ((o.accessibilityChildren?() as [Any]??) ?? nil) ?? []
++            for c in children { walk(c, d + 1) }
++        }
++        walk(root, 0)
++        return out
++    }
++
++    func axElements(_ root: Any, maxDepth: Int = 60) -> [(role: String, text: String, el: AnyObject)] {
++        var out: [(String, String, AnyObject)] = []
++        func walk(_ el: Any, _ d: Int) {
++            guard d < maxDepth else { return }
++            let o = el as AnyObject
++            let role = (o.accessibilityRole?() as NSAccessibility.Role??)??.rawValue ?? "?"
++            var text = ""
++            if let l = (o.accessibilityLabel?() as String??) ?? nil, !l.isEmpty { text = l }
++            if text.isEmpty, let t = (o.accessibilityTitle?() as String??) ?? nil, !t.isEmpty { text = t }
++            if text.isEmpty, let v = (o.accessibilityValue?() as Any??) ?? nil {
++                let sv = "\(v)"
++                if sv != "<null>" { text = sv }
++            }
++            if text.isEmpty, let d = (o.accessibilityValueDescription?() as String??) ?? nil { text = d }
++            out.append((role, text, o))
++            let children = ((o.accessibilityChildren?() as [Any]??) ?? nil) ?? []
++            for c in children { walk(c, d + 1) }
++        }
++        walk(root, 0)
++        return out
++    }
++
++    func press(_ label: String, in root: Any) -> Bool {
++        for e in axElements(root) where e.text == label && e.role == "AXButton" {
++            _ = e.el.accessibilityPerformPress?()
++            return true
++        }
++        return false
++    }
++
++    func findScrollViews(_ v: NSView) -> [NSScrollView] {
++        var out: [NSScrollView] = []
++        if let s = v as? NSScrollView { out.append(s) }
++        for sub in v.subviews { out += findScrollViews(sub) }
++        return out
++    }
++
++    func verticalScrollView(_ hv: NSView) -> NSScrollView? {
++        findScrollViews(hv)
++            .filter { ($0.documentView?.bounds.height ?? 0) > $0.contentSize.height + 10 }
++            .max { ($0.documentView?.bounds.height ?? 0) < ($1.documentView?.bounds.height ?? 0) }
++    }
++
++    func searchField(_ w: NSWindow) -> NSSearchField? {
++        if let items = w.toolbar?.items {
++            for it in items {
++                if let sf = (it as? NSSearchToolbarItem)?.searchField { return sf }
++                if let sf = it.view as? NSSearchField { return sf }
++                if let found = it.view.flatMap({ firstSearchField($0) }) { return found }
++            }
++        }
++        if let root = w.contentView?.superview ?? w.contentView { return firstSearchField(root) }
++        return nil
++    }
++
++    func firstSearchField(_ v: NSView) -> NSSearchField? {
++        if let s = v as? NSSearchField { return s }
++        for sub in v.subviews { if let f = firstSearchField(sub) { return f } }
++        return nil
++    }
++
++    func type(_ text: String, into sf: NSSearchField) {
++        sf.stringValue = text
++        if let editor = sf.currentEditor() { editor.string = text }
++        sf.delegate?.controlTextDidChange?(Notification(name: NSControl.textDidChangeNotification, object: sf))
++        NotificationCenter.default.post(name: NSControl.textDidChangeNotification, object: sf)
++    }
++
++    /// Misst die laengste Blockade des Main-Thread waehrend `seconds`.
++    final class Heartbeat {
++        var stamps: [Double] = []
++        var timer: Timer?
++        func start() {
++            stamps = [CACurrentMediaTime()]
++            timer = Timer(timeInterval: 0.005, repeats: true) { [weak self] _ in
++                self?.stamps.append(CACurrentMediaTime())
++            }
++            RunLoop.main.add(timer!, forMode: .common)
++        }
++        func stopMaxGapMs() -> Double {
++            timer?.invalidate()
++            var maxGap = 0.0
++            for i in 1..<max(stamps.count, 2) where i < stamps.count {
++                maxGap = max(maxGap, stamps[i] - stamps[i - 1])
++            }
++            return maxGap * 1000
++        }
++    }
++
++    // MARK: - 10 · Suche: Semantik und Sortierung
++
++    static let semanticNames = [
++        "ARD", "ard alpha", "ZDFneo", "BR München HD", "MÜNCHEN TV", "Straße TV", "Strasse 2",
++        "Écran Plus", "ecran basic", "Sport 2", "Sport 10", "1LIVE", "3sat", "Ärger TV", "Zebra",
++        "arte", "#Hash TV", " Leerzeichen vorn", "100% Hits", "under_score", "Stern*Kanal",
++        "Frage?TV", "Back\\slash", "O'Reilly TV", "Quote \"TV\"", "ＡＲＤ Fullwidth", "İstanbul TV",
++        "istanbul 2", "Ελληνικά", "Первый канал", "قناة الاولى", "😀 Emoji TV", "ﬁlm ligature",
++        "film normal", "Œuvre", "oeuvre", "Ølstrup", "Å TV", "Łódź TV", "lodz tv", "Sport  2",
++    ]
++
++    func test10_SearchSemanticsAndSort() throws {
++        let c = try makeContainer("semantics", fresh: true)
++        let ctx = c.mainContext
++        let pl = seed(ctx, name: "Semantik", items: Self.semanticNames.map { ($0, nil, nil) })
++        let other = seed(ctx, name: "Andere Playlist", items: [("ARD in anderer Playlist", nil, nil)])
++        p("setup|semantik=\(pl.channelCount)|andere=\(other.channelCount)")
++
++        var searches = ["", "ard", "ARD", "Ard", "münchen", "munchen", "MUNCHEN", "muenchen",
++                        "strasse", "straße", "STRASSE", "ecran", "ÉCRAN", " ard", "ard ", " ",
++                        "  ", "%", "_", "*", "?", "\\", "'", "\"", "ＡＲＤ", "istanbul", "İstanbul",
++                        "ελλ", "ΕΛΛ", "первый", "😀", "fi", "ﬁ", "film", "oe", "œ", "ø", "o",
++                        "lodz", "łódź", "10", "sport 2", "sport  2", "#", "hits", "zdf"]
++        searches.append(String(repeating: "a", count: 10_000))
++        for s in searches {
++            var names: [String] = []
++            let t = try ms { names = try ctx.fetch(resultsDescriptor(pl.id, s, nil)).map(\.name) }
++            let mem = Self.semanticNames.filter { s.isEmpty || $0.localizedStandardContains(s) }
++            let dbSet = Set(names), memSet = Set(mem)
++            let label = s.count > 40 ? "<\(s.count) Zeichen>" : s.debugDescription
++            p("search|\(label)|db=\(names.count)|\(names.prefix(8).map { $0.debugDescription }.joined(separator: ","))|memGleich=\(dbSet == memSet)|nurSpeicher=\(memSet.subtracting(dbSet).sorted())|nurDB=\(dbSet.subtracting(memSet).sorted())|ms=\(String(format: "%.1f", t))")
++        }
++
++        let dbSorted = try ctx.fetch(resultsDescriptor(pl.id, "", nil)).map(\.name)
++        p("sort|db|\(dbSorted.map { $0.debugDescription }.joined(separator: " "))")
++        p("sort|localizedCompare|\(Self.semanticNames.sorted { $0.localizedCompare($1) == .orderedAscending }.map { $0.debugDescription }.joined(separator: " "))")
++        p("sort|localizedStandard|\(Self.semanticNames.sorted { $0.localizedStandardCompare($1) == .orderedAscending }.map { $0.debugDescription }.joined(separator: " "))")
++        p("sort|swiftLess|\(Self.semanticNames.sorted().map { $0.debugDescription }.joined(separator: " "))")
++    }
++
++    // MARK: - 20 · Gruppen auf Datenebene
++
++    func test20_GroupsData() throws {
++        let c = try makeContainer("groups", fresh: true)
++        let ctx = c.mainContext
++        let groups: [String?] = ["Sport", " Sport", "Sport ", "sport", "SPORT", "News", "News\n",
++                                 "\tTab", "", "   ", nil, "Österreich", "Zebra", "kids", "Ärger",
++                                 "10 Musik", "2 Musik", "Ünter"]
++        var items: [(String, String?, String?)] = []
++        for (i, g) in groups.enumerated() {
++            items.append(("K\(String(format: "%02d", i))a Sender", g, nil))
++            items.append(("K\(String(format: "%02d", i))b Sender", g, nil))
++        }
++        let pl = seed(ctx, name: "Gruppen", items: items)
++        let chips = groupsMirror(ctx, pl.id)
++        p("chips|anzahl=\(chips.count)|\(chips.map { $0.debugDescription }.joined(separator: " "))")
++        for chip in chips {
++            let hits = try ctx.fetch(resultsDescriptor(pl.id, "", chip)).count
++            let exact = items.filter { $0.1 == chip }.count
++            let trimmed = items.filter { ($0.1?.trimmingCharacters(in: .whitespaces) ?? "") == chip }.count
++            p("chipTreffer|\(chip.debugDescription)|gefiltert=\(hits)|exaktGespeichert=\(exact)|nachTrimmen=\(trimmed)")
++        }
++        let ohneGruppe = try ctx.fetch(resultsDescriptor(pl.id, "", nil)).count
++        p("alle|\(ohneGruppe)")
++        let kombi = try ctx.fetch(resultsDescriptor(pl.id, "K00", "Sport")).map(\.name)
++        p("suche+gruppe|K00+Sport|\(kombi)")
++        let kombi2 = try ctx.fetch(resultsDescriptor(pl.id, "K01", "Sport")).map(\.name)
++        p("suche+gruppe|K01(gehoert zu ' Sport')+Sport|\(kombi2)")
++
++        // Eine Gruppe + Sender ohne Gruppe -> Leiste sichtbar?
++        let pl2 = seed(ctx, name: "EineGruppe", items: [("A", "Sport", nil), ("B", nil, nil), ("C", "", nil), ("D", "  ", nil)])
++        p("chipsEineGruppe|\(groupsMirror(ctx, pl2.id))|leisteSichtbar=\(groupsMirror(ctx, pl2.id).count > 1)")
++        let pl3 = seed(ctx, name: "KeineGruppe", items: [("A", nil, nil), ("B", nil, nil)])
++        p("chipsKeineGruppe|\(groupsMirror(ctx, pl3.id))")
++    }
++
++    // MARK: - 21 · Oberflaeche: Chips, Leerzustaende, Suchfeld
++
++    @Observable final class NavModel {
++        var path: [Playlist] = []
++    }
++
++    struct ProbeRoot: View {
++        @Bindable var model: NavModel
++        var body: some View {
++            NavigationStack(path: $model.path) {
++                Text("Wurzel")
++                    .navigationDestination(for: Playlist.self) { ChannelListView(playlist: $0) }
++            }
++        }
++    }
++
++    func test21_ChannelListUI() throws {
++        let c = try makeContainer("ui", fresh: true)
++        let ctx = c.mainContext
++        let pl = seed(ctx, name: "UI Playlist", items: [
++            ("Sport Eins", "Sport", nil), ("Sport Zwei", " Sport", nil), ("Sport Drei", "Sport ", nil),
++            ("News Eins", "News", nil), ("News Zwei", "News", nil), ("Ohne Gruppe", nil, nil),
++            ("Kino Eins", "Kino", nil), ("Leere Gruppe", "   ", nil),
++        ])
++        let leer = seed(ctx, name: "Leere Playlist", items: [])
++
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 1000, height: 800)
++        spin(0.5)
++        model.path = [pl]
++        spin(1.5)
++        schritt("ui-01-nachPush", w, hv)
++        let sf = searchField(w)
++        p("ui|suchfeldGefunden=\(sf != nil)|toolbarItems=\(w.toolbar?.items.count ?? -1)")
++
++        // Chip "Sport" -> nur exakte Gruppe "Sport"
++        p("ui|pressSport=\(press("Sport", in: hv))")
++        spin(1.0)
++        schritt("ui-02-sport", w, hv)
++
++        // erneut tippen -> Auswahl aufheben
++        p("ui|pressSportErneut=\(press("Sport", in: hv))")
++        spin(1.0)
++        schritt("ui-03-sport-erneut", w, hv)
++
++        // Chip einer nur durch Trimmen entstandenen Gruppe: "Kino" existiert exakt, "Sport " nicht als Chip
++        p("ui|pressKino=\(press("Kino", in: hv))")
++        spin(1.0)
++        schritt("ui-04-kino", w, hv)
++        _ = press("Alle", in: hv)
++        spin(0.6)
++
++        // Suche
++        if let sf {
++            type("zzz-kein-treffer", into: sf)
++            spin(1.2)
++            schritt("ui-05-suche-ohne-treffer", w, hv)
++            type("sport", into: sf)
++            spin(1.2)
++            schritt("ui-06-suche-sport", w, hv)
++            type("", into: sf)
++            spin(0.8)
++        }
++
++        // leere Playlist
++        model.path = []
++        spin(0.5)
++        model.path = [leer]
++        spin(1.2)
++        schritt("ui-07-leere-playlist", w, hv)
++        p("ui|leerePlaylistChips|" + axElements(hv).filter { $0.role == "AXButton" }.map(\.text).joined(separator: " | "))
++
++        // Wechsel zurueck: bleibt eine Auswahl erhalten?
++        model.path = []
++        spin(0.4)
++        model.path = [pl]
++        spin(1.2)
++        schritt("ui-08-erneut-geoeffnet", w, hv)
++        w.orderOut(nil)
++    }
++
++    // MARK: - 30 · Grosse Datenbestaende anlegen
++
++    static let countries = ["DE", "AT", "CH", "UK", "FR", "IT", "ES", "TR", "PL", "NL", "AR", "US"]
++    static let genres = ["Sport", "News", "Kino", "Kids", "Doku", "Musik", "Serien", "Regional",
++                         "Radio", "Religion", "Shopping", "Wetter", "Comedy", "Action", "Drama",
++                         "Natur", "Reisen", "Kochen", "Wissen", "Geschichte", "Auto", "Fußball",
++                         "Tennis", "Formel", "Anime"]
++    static let quality = ["HD", "FHD", "SD", "4K", "HEVC"]
++
++    func perfItems(_ count: Int, offset: Int) -> [(String, String?, String?)] {
++        (0..<count).map { i in
++            let ci = (i + offset) % Self.countries.count
++            let gi = ((i + offset) / 7) % Self.genres.count
++            let name = "\(Self.countries[ci]): \(Self.genres[gi]) \((i % 97) + 1) \(Self.quality[i % 5])"
++            let group = "\(Self.countries[ci]) | \(Self.genres[gi])"
++            return (name, group, "http://127.0.0.1:9/logo/\(i).png")
++        }
++    }
++
++    func test30_SeedLargeStores() throws {
++        for (store, lists) in [("perf1", 1), ("perf2", 2)] {
++            let c = try makeContainer(store, fresh: true)
++            let ctx = c.mainContext
++            var ids: [String] = []
++            for k in 0..<lists {
++                var pl: Playlist!
++                let t = ms { pl = seedFast(ctx, name: "Perf \(k)", items: perfItems(17_000, offset: k * 3)) }
++                ids.append(pl.id.uuidString)
++                p("seed|\(store)|liste\(k)|17000 Sender|ms=\(String(format: "%.0f", t))")
++            }
++            try ids.joined(separator: "\n").write(to: Self.base.appendingPathComponent("\(store).ids"), atomically: true, encoding: .utf8)
++            let size = (try? FileManager.default.attributesOfItem(atPath: Self.base.appendingPathComponent("\(store).store").path)[.size] as? Int) ?? 0
++            p("seed|\(store)|dateiBytes=\(size ?? 0)|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        }
++    }
++
++    // MARK: - 31 · Abfragedauer bei 17.000 Sendern
++
++    func test31_QueryPerformance() throws {
++        for store in ["perf1", "perf2"] {
++            let idText = try String(contentsOf: Self.base.appendingPathComponent("\(store).ids"), encoding: .utf8)
++            let ids = idText.split(separator: "\n").map(String.init)
++            let pid = UUID(uuidString: ids[0])!
++            let c = try makeContainer(store, fresh: false)
++            let ctx = c.mainContext
++            let total = try ctx.fetchCount(FetchDescriptor<Channel>())
++            p("perf|\(store)|senderGesamt=\(total)|listen=\(ids.count)")
++
++            let cases: [(String, String, String?)] = [
++                ("alle", "", nil),
++                ("suche-sport", "Sport", nil),
++                ("suche-fussball", "fußball", nil),
++                ("suche-selten", "Anime 97 4K", nil),
++                ("suche-ohne-treffer", "zzzqqq", nil),
++                ("suche-ein-zeichen", "a", nil),
++                ("gruppe", "", "DE | Sport"),
++                ("gruppe+suche", "HD", "DE | Sport"),
++                ("suche-lang-10000", String(repeating: "a", count: 10_000), nil),
++            ]
++            for (label, s, g) in cases {
++                var count = 0
++                let cold = try ms { count = try ctx.fetch(resultsDescriptor(pid, s, g)).count }
++                var warm: [Double] = []
++                for _ in 0..<4 {
++                    warm.append(try ms { _ = try ctx.fetch(resultsDescriptor(pid, s, g)) })
++                }
++                p("query|\(store)|\(label)|treffer=\(count)|kaltMs=\(String(format: "%.1f", cold))|warmMs=\(warm.map { String(format: "%.1f", $0) }.joined(separator: ","))")
++            }
++            var groups: [String] = []
++            let gCold = ms { groups = groupsMirror(ctx, pid) }
++            var gWarm: [Double] = []
++            for _ in 0..<3 { gWarm.append(ms { _ = groupsMirror(ctx, pid) }) }
++            p("query|\(store)|loadGroups|gruppen=\(groups.count)|kaltMs=\(String(format: "%.1f", gCold))|warmMs=\(gWarm.map { String(format: "%.1f", $0) }.joined(separator: ","))")
++            p("query|\(store)|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        }
++    }
++
++    // MARK: - 32 · Anzeige- und Tippdauer bei 17.000 Sendern
++
++    func test32_RenderPerformance() throws {
++        let idText = try String(contentsOf: Self.base.appendingPathComponent("perf1.ids"), encoding: .utf8)
++        let pid = UUID(uuidString: idText.split(separator: "\n").map(String.init)[0])!
++        let c = try makeContainer("perf1", fresh: false)
++        let ctx = c.mainContext
++        let pl = try ctx.fetch(FetchDescriptor<Playlist>(predicate: #Predicate { $0.id == pid })).first!
++        p("render|playlist=\(pl.name)|channelCount=\(pl.channelCount)")
++
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 1100, height: 850)
++        spin(0.6)
++
++        let hb = Heartbeat()
++        hb.start()
++        let t0 = CACurrentMediaTime()
++        model.path = [pl]
++        spin(6.0)
++        let gap = hb.stopMaxGapMs()
++        p("render|ersteAnzeige|maxBlockadeMs=\(String(format: "%.0f", gap))|gesamtSekunden=\(String(format: "%.1f", CACurrentMediaTime() - t0))|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        let rows = axElements(hv).filter { $0.role == "AXButton" }.count
++        p("render|axButtons=\(rows)")
++
++        guard let sf = searchField(w) else {
++            p("render|KEIN Suchfeld gefunden – Tippmessung faellt aus")
++            w.orderOut(nil)
++            return
++        }
++        var typed = ""
++        for ch in "Fußball 12" {
++            typed.append(ch)
++            let hb2 = Heartbeat()
++            hb2.start()
++            type(typed, into: sf)
++            spin(1.2)
++            p("render|tippen|\(typed.debugDescription)|maxBlockadeMs=\(String(format: "%.0f", hb2.stopMaxGapMs()))")
++        }
++        let hb3 = Heartbeat()
++        hb3.start()
++        type("", into: sf)
++        spin(2.0)
++        p("render|tippen|zurueckAufLeer|maxBlockadeMs=\(String(format: "%.0f", hb3.stopMaxGapMs()))|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        w.orderOut(nil)
++    }
++
++
++    @Observable final class SearchModel {
++        var text = ""
++        var group: String?
++    }
++
++    /// Nachbau des Update-Pfads von ChannelListView: bei jeder Aenderung entsteht eine neue ChannelResultsList mit neuer @Query.
++    struct SearchProbeRoot: View {
++        let playlistID: UUID
++        @Bindable var model: SearchModel
++        var body: some View {
++            NavigationStack {
++                ScrollView {
++                    VStack(alignment: .leading, spacing: PlayerTheme.sectionSpacing) {
++                        ChannelResultsList(playlistID: playlistID, searchText: model.text, group: model.group)
++                    }
++                }
++                .navigationDestination(for: Channel.self) { PlayerView(channel: $0) }
++            }
++        }
++    }
++
++    func test33_RenderPerformanceRealWindow() throws {
++        let idText = try String(contentsOf: Self.base.appendingPathComponent("perf1.ids"), encoding: .utf8)
++        let pid = UUID(uuidString: idText.split(separator: "\n").map(String.init)[0])!
++        let c = try makeContainer("perf1", fresh: false)
++        let ctx = c.mainContext
++        let pl = try ctx.fetch(FetchDescriptor<Playlist>(predicate: #Predicate { $0.id == pid })).first!
++
++        for round in 1...2 {
++            let model = NavModel()
++            let (w, hv) = host(ProbeRoot(model: model), c, width: 1100, height: 850, borderless: true)
++            spin(0.5)
++            let hb = Heartbeat()
++            hb.start()
++            model.path = [pl]
++            spin(5.0)
++            p("render2|runde\(round)|oeffnen|maxBlockadeMs=\(String(format: "%.0f", hb.stopMaxGapMs()))|speicherMB=\(String(format: "%.0f", footprintMB()))")
++            let hb2 = Heartbeat()
++            hb2.start()
++            model.path = []
++            spin(2.0)
++            p("render2|runde\(round)|verlassen|maxBlockadeMs=\(String(format: "%.0f", hb2.stopMaxGapMs()))")
++            w.orderOut(nil)
++            if round == 1 {
++                let wid = w.windowNumber
++                _ = wid
++            }
++        }
++
++        let sm = SearchModel()
++        let (w2, _) = host(SearchProbeRoot(playlistID: pid, model: sm), c, width: 1100, height: 850, borderless: true)
++        spin(4.0)
++        var typed = ""
++        for ch in "Fußball 12" {
++            typed.append(ch)
++            let hb = Heartbeat()
++            hb.start()
++            sm.text = typed
++            spin(0.8)
++            p("render2|tippen|\(typed.debugDescription)|maxBlockadeMs=\(String(format: "%.0f", hb.stopMaxGapMs()))")
++        }
++        for (label, text, group) in [("leeren", "", nil as String?), ("gruppe", "", "DE | Sport"), ("gruppe-weg", "", nil), ("ein-zeichen-a", "a", nil), ("leeren2", "", nil)] {
++            let hb = Heartbeat()
++            hb.start()
++            sm.text = text
++            sm.group = group
++            spin(1.5)
++            p("render2|\(label)|maxBlockadeMs=\(String(format: "%.0f", hb.stopMaxGapMs()))")
++        }
++        // schnelles Tippen: 8 Zeichen im Abstand von 100 ms
++        let hbFast = Heartbeat()
++        hbFast.start()
++        var t2 = ""
++        let t0 = CACurrentMediaTime()
++        for ch in "Doku 5 H" {
++            t2.append(ch)
++            sm.text = t2
++            spin(0.1)
++        }
++        spin(1.0)
++        p("render2|schnellTippen100ms|maxBlockadeMs=\(String(format: "%.0f", hbFast.stopMaxGapMs()))|dauerS=\(String(format: "%.2f", CACurrentMediaTime() - t0))|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        w2.orderOut(nil)
++    }
++
++    // MARK: - 40 · Logos: welche Hosts, welche Antworten
++
++    func logoItems() -> [(String, String?, String?)] {
++        [
++            ("L00 klein mit max-age", "Logos", "\(Self.mock)/logo/a.png"),
++            ("L01 zweiter Host", "Logos", "\(Self.mock2)/logo/b.png"),
++            ("L02 ohne Cache-Header", "Logos", "\(Self.mock)/nocache/c.png"),
++            ("L03 no-store", "Logos", "\(Self.mock)/nostore/d.png"),
++            ("L04 HTML-Antwort", "Logos", "\(Self.mock)/html"),
++            ("L05 HTML als image/png", "Logos", "\(Self.mock)/pngtype-html"),
++            ("L06 JSON-Antwort", "Logos", "\(Self.mock)/json"),
++            ("L07 404", "Logos", "\(Self.mock)/404"),
++            ("L08 Weiterleitung fremder Host", "Logos", "\(Self.mock)/redirect?to=http://localhost:18791/logo/ziel.png"),
++            ("L09 Weiterleitungsschleife", "Logos", "\(Self.mock)/redirect-loop"),
++            ("L10 12000x12000", "Logos", "\(Self.mock)/bigdim.png"),
++            ("L11 27 MB", "Logos", "\(Self.mock)/bigfile.png"),
++            ("L12 https auf geschlossenen Port", "Logos", "https://127.0.0.1:18799/logo.png"),
++            ("L13 langsam 20 s", "Logos", "\(Self.mock)/slow/x.png?d=20"),
++            ("L14 troepfelt", "Logos", "\(Self.mock)/trickle?s=150"),
++            ("L15 ohne Logo", "Logos", nil),
++            ("L16 file-URL", "Logos", "file:///System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns"),
++            ("L17 data-URL", "Logos", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="),
++        ]
++    }
++
++
++    func rollen(_ hv: NSView) -> String {
++        var hist: [String: Int] = [:]
++        for e in axElements(hv) { hist[e.role, default: 0] += 1 }
++        return hist.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: " ")
++    }
++
++    func schritt(_ name: String, _ w: NSWindow, _ hv: NSView) {
++        p("schritt|\(name)|" + rollen(hv) + "|texte=" + axElements(hv).filter { $0.role == "AXStaticText" }.map(\.text).joined(separator: " / ") + "|chips=" + axElements(hv).filter { $0.role == "AXButton" && !$0.text.isEmpty }.map(\.text).joined(separator: " / "))
++        snapshot(w, name: name)
++        windowImage(w, name: "w-" + name)
++    }
++
++
++    func viewHistogram(_ v: NSView) -> String {
++        var hist: [String: Int] = [:]
++        func walk(_ x: NSView) {
++            hist[String(describing: Swift.type(of: x)), default: 0] += 1
++            for sub in x.subviews { walk(sub) }
++        }
++        walk(v)
++        return hist.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: " ")
++    }
++
++    func progressIndicators(_ v: NSView) -> [NSView] {
++        var out: [NSView] = []
++        func walk(_ x: NSView) {
++            if String(describing: Swift.type(of: x)).contains("Progress") || x is NSProgressIndicator { out.append(x) }
++            for sub in x.subviews { walk(sub) }
++        }
++        walk(v)
++        return out
++    }
++
++    func windowImage(_ w: NSWindow, name: String) {
++        guard let img = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(w.windowNumber), [.boundsIgnoreFraming, .nominalResolution]) else {
++            p("windowImage|\(name)|nil")
++            return
++        }
++        let rep = NSBitmapImageRep(cgImage: img)
++        if let data = rep.representation(using: .png, properties: [:]) {
++            try? data.write(to: Self.base.appendingPathComponent("evidence/\(name).png"))
++            p("windowImage|\(name)|\(img.width)x\(img.height)|bytes=\(data.count)")
++        }
++    }
++
++    func rowState(_ hv: NSView) -> [String] {
++        ["ladeindikatoren=\(progressIndicators(hv).count)", "views: " + viewHistogram(hv)]
++    }
++
++    func spinnerRows(_ hv: NSView, _ w: NSWindow) -> String {
++        progressIndicators(hv).filter { $0 is NSProgressIndicator }.map { v -> String in
++            let r = v.convert(v.bounds, to: nil)
++            return "y=\(Int(w.contentLayoutRect.height - r.midY))"
++        }.joined(separator: ",")
++    }
++
++
++    /// Stoesst das Realisieren der LazyVStack-Zeilen an (im Test-Fenster ohne Nutzerinteraktion noetig).
++    func nudge(_ hv: NSView) {
++        let all = findScrollViews(hv)
++        p("nudge|scrollViews=\(all.map { "\(Int($0.documentView?.bounds.height ?? -1))/\(Int($0.contentSize.height))" })")
++        guard let sv = verticalScrollView(hv) else { p("nudge|kein vertikaler ScrollView"); return }
++        let doc = sv.documentView?.bounds.height ?? 0
++        var y: CGFloat = 0
++        while y < doc {
++            sv.contentView.scroll(to: NSPoint(x: 0, y: y))
++            sv.reflectScrolledClipView(sv.contentView)
++            RunLoop.main.run(until: Date().addingTimeInterval(0.4))
++            y += max(36, sv.contentSize.height * 0.8)
++        }
++        sv.contentView.scroll(to: .zero)
++        sv.reflectScrolledClipView(sv.contentView)
++        p("nudge|durchgescrollt|doc=\(Int(doc))|t=\(now())")
++    }
++
++    func now() -> String { String(format: "%.1f", Date().timeIntervalSince1970) }
++
++    func logoScenario(_ store: String, _ items: [(String, String?, String?)], height: CGFloat, stages: [Double], leaveAfter: Double?) throws {
++        let c = try makeContainer(store, fresh: true)
++        let ctx = c.mainContext
++        let pl = seed(ctx, name: store, items: items)
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 900, height: height)
++        spin(0.5)
++        p("\(store)|MARK|push|t=\(now())|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        model.path = [pl]
++        spin(0.8)
++        nudge(hv)
++        var elapsed = 0.8
++        for st in stages {
++            spin(st - elapsed)
++            elapsed = st
++            p("\(store)|nach\(Int(st))s|t=\(now())|spinner=\(spinnerRows(hv, w))|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        }
++        if let leave = leaveAfter {
++            model.path = []
++            p("\(store)|MARK|liste-verlassen|t=\(now())")
++            spin(leave)
++            p("\(store)|MARK|nach-verlassen|t=\(now())|speicherMB=\(String(format: "%.0f", footprintMB()))")
++        }
++        w.orderOut(nil)
++    }
++
++    /// Schnelle Antworten: welche Hosts, welche Kopfzeilen, was bei Nicht-Bildern und Weiterleitungen.
++    func test40a_LogoResponses() throws {
++        let items: [(String, String?, String?)] = [
++            ("A00 max-age", "Logos", "\(Self.mock)/logo/a.png"),
++            ("A01 zweiter Host", "Logos", "\(Self.mock2)/logo/b.png"),
++            ("A02 ohne Cache-Header", "Logos", "\(Self.mock)/nocache/c.png"),
++            ("A03 no-store", "Logos", "\(Self.mock)/nostore/d.png"),
++            ("A04 HTML", "Logos", "\(Self.mock)/html"),
++            ("A05 HTML als image/png", "Logos", "\(Self.mock)/pngtype-html"),
++            ("A06 JSON", "Logos", "\(Self.mock)/json"),
++            ("A07 404", "Logos", "\(Self.mock)/404"),
++            ("A08 Weiterleitung", "Logos", "\(Self.mock)/redirect?to=http://localhost:18791/logo/ziel.png"),
++            ("A09 ohne Logo", "Logos", nil),
++            ("A10 file-URL", "Logos", "file:///System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns"),
++            ("A11 https geschlossen", "Logos", "https://127.0.0.1:18799/logo.png"),
++        ]
++        try logoScenario("logosA", items, height: 500, stages: [6, 12], leaveAfter: 2)
++    }
++
++
++    /// Einzelzeilen: bleibt ein Ladeindikator stehen oder nicht?
++    func test40d_LogoSingleRows() throws {
++        let cases: [(String, String?)] = [
++            ("ohne-logo", nil),
++            ("https-geschlossen", "https://127.0.0.1:18799/logo.png"),
++            ("http-geschlossen", "http://127.0.0.1:9/logo.png"),
++            ("file-url", "file:///System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns"),
++            ("html", "\(Self.mock)/html?single=1"),
++            ("404", "\(Self.mock)/404?single=1"),
++            ("png-ok", "\(Self.mock)/nocache/single.png"),
++            ("unbekannter-host", "http://logo-host.invalid/x.png"),
++        ]
++        for (label, url) in cases {
++            let c = try makeContainer("single", fresh: true)
++            let ctx = c.mainContext
++            let pl = seed(ctx, name: label, items: [("Z \(label)", "G", url), ("Y fueller", "G", "\(Self.mock)/nocache/fueller.png")])
++            let model = NavModel()
++            let (w, hv) = host(ProbeRoot(model: model), c, width: 900, height: 400)
++            model.path = [pl]
++            spin(1.0)
++            nudge(hv)
++            spin(5.0)
++            let spinners = progressIndicators(hv).filter { $0 is NSProgressIndicator }.count
++            p("single|\(label)|spinnerNach6s=\(spinners)")
++            model.path = []
++            spin(0.3)
++            w.orderOut(nil)
++        }
++    }
++
++
++    /// Fenster-Aufnahme (nur das Testfenster) fuer den sichtbaren Zustand der Logos und Chips.
++    func test45_LogoScreenshot() throws {
++        let c = try makeContainer("shot", fresh: true)
++        let ctx = c.mainContext
++        let items: [(String, String?, String?)] = [
++            ("S1 ohne Logo", "Sport", nil),
++            ("S2 Port geschlossen", " Sport", "http://127.0.0.1:9/logo.png"),
++            ("S3 Host unbekannt", "News", "http://logo-host.invalid/x.png"),
++            ("S4 Antwort 404", "News", "\(Self.mock)/404?shot=1"),
++            ("S5 Antwort HTML", "Kino", "\(Self.mock)/html?shot=1"),
++            ("S6 PNG ok", "Kino", "\(Self.mock)/nocache/shot.png"),
++            ("S7 Weiterleitungsschleife", "Kino", "\(Self.mock)/redirect-loop?shot=1"),
++            ("S8 langsam 25 s", "Kino", "\(Self.mock)/slow/shot.png?d=25"),
++        ]
++        let pl = seed(ctx, name: "Aufnahme", items: items)
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 760, height: 980, borderless: true)
++        model.path = [pl]
++        spin(1.0)
++        nudge(hv)
++        spin(8.0)
++        let winFile = Self.base.appendingPathComponent("evidence/win.txt")
++        try "\(w.windowNumber) shot-1".write(to: winFile, atomically: true, encoding: .utf8)
++        p("shot|fenster=\(w.windowNumber)|t=\(now())")
++        spin(4.0)
++        _ = press("Sport", in: hv)
++        spin(1.5)
++        try "\(w.windowNumber) shot-2-sport".write(to: winFile, atomically: true, encoding: .utf8)
++        spin(4.0)
++        try? FileManager.default.removeItem(at: winFile)
++        w.orderOut(nil)
++    }
++
++    /// Grosse Bilder: Speicher.
++    func test40b_LogoBig() throws {
++        let items: [(String, String?, String?)] = [
++            ("B00 12000x12000", "Logos", "\(Self.mock)/bigdim.png"),
++            ("B01 27 MB", "Logos", "\(Self.mock)/bigfile.png"),
++            ("B02 Schleife", "Logos", "\(Self.mock)/redirect-loop"),
++        ]
++        try logoScenario("logosB", items, height: 250, stages: [4, 10, 20], leaveAfter: 3)
++    }
++
++    /// Langsame Hosts: Spinner-Dauer und Abbruch beim Verlassen.
++    func test40c_LogoSlow() throws {
++        let items: [(String, String?, String?)] = [
++            ("C00 langsam 20 s", "Logos", "\(Self.mock)/slow/c00.png?d=20"),
++            ("C01 troepfelt", "Logos", "\(Self.mock)/trickle?s=200"),
++            ("C02 langsam 90 s", "Logos", "\(Self.mock)/slow/c02.png?d=90"),
++        ]
++        try logoScenario("logosC", items, height: 250, stages: [4, 25, 70], leaveAfter: 5)
++    }
++
++    func snapshot(_ w: NSWindow, name: String) {
++        guard let hv = w.contentView else { return }
++        let rect = hv.bounds
++        guard let rep = hv.bitmapImageRepForCachingDisplay(in: rect) else { return }
++        hv.cacheDisplay(in: rect, to: rep)
++        if let data = rep.representation(using: .png, properties: [:]) {
++            try? data.write(to: Self.base.appendingPathComponent("evidence/\(name).png"))
++            p("snapshot|\(name)|bytes=\(data.count)")
++        }
++    }
++
++    // MARK: - 41 · Zweiter Aufbau: Cache?
++
++    func test41_LogoCacheSecondRender() throws {
++        let c = try makeContainer("logosA", fresh: false)
++        let ctx = c.mainContext
++        guard let pl = try ctx.fetch(FetchDescriptor<Playlist>()).first(where: { $0.name == "logosA" }) else {
++            p("cache|keine Playlist gefunden"); return
++        }
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 900, height: 900)
++        spin(0.4)
++        p("cache|zweiterAufbau|start|t=\(now())")
++        model.path = [pl]
++        spin(0.8)
++        nudge(hv)
++        spin(6.0)
++        p("cache|t=\(now())|spinner=\(spinnerRows(hv, w))")
++        w.orderOut(nil)
++        // Plattencache pruefen
++        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
++        p("cache|cachesVerzeichnis=\(caches.path)")
++        let db = caches.appendingPathComponent("Cache.db")
++        p("cache|CacheDbVorhanden=\(FileManager.default.fileExists(atPath: db.path))")
++        if let urlCache = URLCache.shared as URLCache? {
++            p("cache|URLCache|speicherBelegt=\(urlCache.currentMemoryUsage)|platteBelegt=\(urlCache.currentDiskUsage)|speicherLimit=\(urlCache.memoryCapacity)|platteLimit=\(urlCache.diskCapacity)")
++        }
++    }
++
++    // MARK: - 42 · Lazy-Laden und Abbruch beim Scrollen
++
++    func test42_LazyLoadingAndCancel() throws {
++        let c = try makeContainer("lazy", fresh: true)
++        let ctx = c.mainContext
++        let items: [(String, String?, String?)] = (0..<2000).map { i in
++            ("Sender \(String(format: "%04d", i))", "Alle", "\(Self.mock)/slow/\(i).png?d=8")
++        }
++        let pl = seed(ctx, name: "Lazy", items: items)
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 900, height: 700, borderless: true)
++        spin(0.4)
++        p("lazy|MARK|render-start|t=\(now())")
++        model.path = [pl]
++        spin(2.0)
++        p("lazy|MARK|nach-2s|t=\(now())")
++        guard let sv = verticalScrollView(hv) else {
++            p("lazy|KEIN vertikaler ScrollView gefunden")
++            spin(12.0)
++            w.orderOut(nil)
++            return
++        }
++        let docHeight = sv.documentView?.bounds.height ?? 0
++        p("lazy|scrollView|dokumentHoehe=\(Int(docHeight))|sichtbar=\(Int(sv.contentSize.height))")
++        sv.contentView.scroll(to: NSPoint(x: 0, y: docHeight * 0.5))
++        sv.reflectScrolledClipView(sv.contentView)
++        spin(1.0)
++        p("lazy|MARK|nach-scroll-mitte|t=\(now())")
++        sv.contentView.scroll(to: NSPoint(x: 0, y: max(0, docHeight - sv.contentSize.height)))
++        sv.reflectScrolledClipView(sv.contentView)
++        spin(1.0)
++        p("lazy|MARK|nach-scroll-ende|t=\(now())")
++        spin(12.0)
++        p("lazy|MARK|nach-warten|t=\(now())")
++        model.path = []
++        spin(1.0)
++        p("lazy|MARK|liste-verlassen|t=\(now())")
++        spin(10.0)
++        p("lazy|MARK|ende|t=\(now())")
++        w.orderOut(nil)
++    }
++
++    // MARK: - 50 · Suchtext im Systemprotokoll
++
++    func test50_SearchTextInLog() throws {
++        let c = try makeContainer("semantics", fresh: false)
++        let ctx = c.mainContext
++        guard let pl = try ctx.fetch(FetchDescriptor<Playlist>()).first(where: { $0.name == "Semantik" }) else { return }
++        let marker = "QAMARKER4711SUCHE"
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 900, height: 700)
++        spin(0.4)
++        model.path = [pl]
++        spin(1.0)
++        if let sf = searchField(w) {
++            type(marker, into: sf)
++            spin(2.0)
++            p("log|suchfeldBenutzt=true")
++        } else {
++            _ = try ctx.fetch(resultsDescriptor(pl.id, marker, nil))
++            p("log|nurFetch=true")
++        }
++        _ = hv
++        w.orderOut(nil)
++        p("log|fertig")
++    }
++
++    // MARK: - 60 · Refresh waehrend die Liste offen ist
++
++    func test60_RefreshWhileVisible() throws {
++        let c = try makeContainer("refresh", fresh: true)
++        let ctx = c.mainContext
++        let url = "\(Self.mock)/m3ufile/r.m3u"
++        let importer = PlaylistImporter(modelContext: ctx)
++        var pl: Playlist?
++        var done = false
++        Task { @MainActor in
++            pl = try? await importer.importFromURL(url, name: "Refresh")
++            done = true
++        }
++        while !done { spin(0.2) }
++        guard let pl else { p("refresh|Import fehlgeschlagen"); return }
++        p("refresh|importiert|\(pl.channelCount) Sender|gruppen=\(groupsMirror(ctx, pl.id))")
++
++        let model = NavModel()
++        let (w, hv) = host(ProbeRoot(model: model), c, width: 1000, height: 800)
++        spin(0.4)
++        model.path = [pl]
++        spin(1.5)
++        p("refresh|vorher|" + axElements(hv).filter { $0.role == "AXButton" || $0.role == "AXStaticText" }.map { "\($0.role):\($0.text)" }.joined(separator: " | "))
++        p("refresh|pressKino=\(press("Kino", in: hv))")
++        spin(1.0)
++        p("refresh|kinoGewaehlt|" + axElements(hv).filter { $0.role == "AXStaticText" }.map(\.text).joined(separator: " | "))
++
++        // v2 einspielen (Kino weg, Doku neu) und refreshen, waehrend die Liste offen ist
++        let v2 = """
++        #EXTM3U
++        #EXTINF:-1 tvg-id="s1" group-title="Sport",Sport Eins v2
++        http://127.0.0.1:9/s1.ts
++        #EXTINF:-1 tvg-id="n1" group-title="News",News Eins v2
++        http://127.0.0.1:9/n1.ts
++        #EXTINF:-1 tvg-id="d1" group-title="Doku",Doku Eins v2
++        http://127.0.0.1:9/d1.ts
++        """
++        try v2.write(to: Self.base.appendingPathComponent("m3u/r.m3u"), atomically: true, encoding: .utf8)
++        var refreshed = false
++        var refreshError: String?
++        Task { @MainActor in
++            do { try await importer.refresh(pl) } catch { refreshError = error.localizedDescription }
++            refreshed = true
++        }
++        var waited = 0.0
++        while !refreshed && waited < 20 { spin(0.2); waited += 0.2 }
++        p("refresh|durchgefuehrt=\(refreshed)|fehler=\(refreshError ?? "-")|neueGruppenInDB=\(groupsMirror(ctx, pl.id))|channelCount=\(pl.channelCount)")
++        spin(2.0)
++        p("refresh|nachher|" + axElements(hv).filter { $0.role == "AXButton" || $0.role == "AXStaticText" }.map { "\($0.role):\($0.text)" }.joined(separator: " | "))
++        _ = press("Alle", in: hv)
++        spin(1.5)
++        p("refresh|nachAlle|" + axElements(hv).filter { $0.role == "AXStaticText" }.map(\.text).joined(separator: " | "))
++        w.orderOut(nil)
++    }
++}
+--- /dev/null
++++ b/mock_logos.py
+@@ -0,0 +1,160 @@
++#!/usr/bin/env python3
++"""B04-Sonde: lokaler Logo-Host. Protokolliert jede Anfrage (JSON-Zeilen) inkl. Kopfzeilen
++und ob der Client die Verbindung vor der Antwort geschlossen hat. Nur 127.0.0.1."""
++import json, os, socket, struct, sys, threading, time, zlib
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++from urllib.parse import urlparse, parse_qs
++
++LOG = sys.argv[1]
++PORTS = [int(p) for p in sys.argv[2:]] or [18790, 18791]
++lock = threading.Lock()
++
++
++def log(ev):
++    ev["t"] = round(time.time(), 3)
++    with lock:
++        with open(LOG, "a") as f:
++            f.write(json.dumps(ev) + "\n")
++
++
++def png(w, h, rgb=(40, 120, 200), noise=False):
++    if noise:
++        raw = bytearray()
++        for _ in range(h):
++            raw += b"\x00" + os.urandom(w * 3)
++        comp = zlib.compress(bytes(raw), 1)
++    else:
++        row = b"\x00" + bytes(rgb) * w
++        c = zlib.compressobj(9)
++        parts = [c.compress(row) for _ in range(h)]
++        parts.append(c.flush())
++        comp = b"".join(parts)
++
++    def chunk(t, d):
++        return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
++
++    return (b"\x89PNG\r\n\x1a\n"
++            + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
++            + chunk(b"IDAT", comp) + chunk(b"IEND", b""))
++
++
++SMALL = png(64, 64, (220, 60, 60))
++BIG_DIM = png(12000, 12000, (60, 160, 60))   # kleine Datei, ~576 MB dekodiert
++BIG_FILE = png(3000, 3000, noise=True)       # ~27 MB Uebertragung
++
++
++class H(BaseHTTPRequestHandler):
++    protocol_version = "HTTP/1.1"
++
++    def log_message(self, *a):
++        pass
++
++    def client_closed(self):
++        try:
++            self.connection.setblocking(False)
++            d = self.connection.recv(1, socket.MSG_PEEK)
++            self.connection.setblocking(True)
++            return d == b""
++        except BlockingIOError:
++            self.connection.setblocking(True)
++            return False
++        except OSError:
++            return True
++
++    def wait(self, seconds):
++        end = time.time() + seconds
++        while time.time() < end:
++            if self.client_closed():
++                return False
++            time.sleep(0.05)
++        return True
++
++    def send(self, code, body, ctype="image/png", extra=None):
++        self.send_response(code)
++        self.send_header("Content-Type", ctype)
++        self.send_header("Content-Length", str(len(body)))
++        for k, v in (extra or {}).items():
++            self.send_header(k, v)
++        self.end_headers()
++        try:
++            self.wfile.write(body)
++            return True
++        except OSError:
++            return False
++
++    def do_GET(self):
++        u = urlparse(self.path)
++        q = parse_qs(u.query)
++        ev = {"port": self.server.server_address[1], "path": self.path,
++              "headers": dict(self.headers.items())}
++        p = u.path
++        result = "ok"
++        if p.startswith("/logo/"):
++            ok = self.send(200, SMALL, extra={"Cache-Control": "public, max-age=86400"})
++        elif p.startswith("/nocache/"):
++            ok = self.send(200, SMALL)
++        elif p.startswith("/nostore/"):
++            ok = self.send(200, SMALL, extra={"Cache-Control": "no-store"})
++        elif p.startswith("/html"):
++            ok = self.send(200, b"<html><body>kein Bild</body></html>", "text/html; charset=utf-8")
++        elif p.startswith("/pngtype-html"):
++            ok = self.send(200, b"<html><body>kein Bild</body></html>", "image/png")
++        elif p.startswith("/json"):
++            ok = self.send(200, b'{"x":1}', "application/json")
++        elif p.startswith("/404"):
++            ok = self.send(404, b"not found", "text/plain")
++        elif p.startswith("/redirect-loop"):
++            ok = self.send(302, b"", "text/plain", {"Location": self.path})
++        elif p.startswith("/redirect"):
++            target = q.get("to", ["http://localhost:18791/logo/redirected.png"])[0]
++            ok = self.send(302, b"", "text/plain", {"Location": target})
++        elif p.startswith("/bigdim"):
++            ok = self.send(200, BIG_DIM, extra={"Cache-Control": "public, max-age=86400"})
++        elif p.startswith("/bigfile"):
++            ok = self.send(200, BIG_FILE, extra={"Cache-Control": "public, max-age=86400"})
++        elif p.startswith("/m3ufile/"):
++            fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), "m3u", os.path.basename(p))
++            body = open(fn, "rb").read() if os.path.exists(fn) else b""
++            ok = self.send(200 if body else 404, body, "audio/x-mpegurl")
++        elif p.startswith("/slow/"):
++            delay = float(q.get("d", ["5"])[0])
++            log(dict(ev, event="slow-start"))
++            if not self.wait(delay):
++                log(dict(ev, event="closed-before-response", after=delay))
++                return
++            ok = self.send(200, SMALL)
++            result = "slow-done"
++        elif p.startswith("/trickle"):
++            total = int(q.get("s", ["300"])[0])
++            log(dict(ev, event="trickle-start"))
++            self.send_response(200)
++            self.send_header("Content-Type", "image/png")
++            self.send_header("Content-Length", str(len(SMALL)))
++            self.end_headers()
++            sent, start, ok = 0, time.time(), True
++            while time.time() - start < total and sent < len(SMALL):
++                try:
++                    self.wfile.write(SMALL[sent:sent + 1])
++                    self.wfile.flush()
++                except OSError:
++                    ok = False
++                    break
++                sent += 1
++                if not self.wait(10):
++                    ok = False
++                    break
++            log(dict(ev, event="trickle-end", sent=sent,
++                     seconds=round(time.time() - start, 1), ok=ok))
++            return
++        else:
++            ok = self.send(404, b"unknown", "text/plain")
++        log(dict(ev, event=result, delivered=ok))
++
++
++for port in PORTS:
++    s = ThreadingHTTPServer(("127.0.0.1", port), H)
++    s.daemon_threads = True
++    threading.Thread(target=s.serve_forever, daemon=True).start()
++print("listening", PORTS, "bigdim", len(BIG_DIM), "bigfile", len(BIG_FILE), flush=True)
++while True:
++    time.sleep(3600)

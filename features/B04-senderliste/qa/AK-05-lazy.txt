@@ -1,0 +1,2 @@
+2026-09-26T13:40:41Z [Debug] AK-05 2.000 Sender: nach Öffnen 17 Karten / 17 Logo-Anfragen, nach Scrollen zur Mitte 43 Anfragen (Dokumenthöhe 172100 pt)
+2026-09-26T13:57:30Z [Debug] AK-05 2.000 Sender: nach Öffnen 17 Karten / 17 Logo-Anfragen, nach Scrollen zur Mitte 43 Anfragen (Dokumenthöhe 172100 pt)

@@ -1,0 +1,28 @@
+B07 QA Durchlauf 1 · Release-Build mit Hardened Runtime (2026-09-26 16:29–16:33)
+Build: xcodebuild -configuration Release (Kopie, eigene Bundle-ID), Signatur:
+Identifier=lu.daumedia.qa1b07.MikaPlusPlayer
+CodeDirectory v=20500 size=4354 flags=0x10002(adhoc,runtime) hashes=125+7 location=embedded
+Signature=adhoc
+TeamIdentifier=not set
+Entitlements:
+{
+  "com.apple.security.app-sandbox" => false
+  "com.apple.security.cs.disable-library-validation" => true
+}
+Start: direkt, env XCTestBundlePath=<nicht vorhanden> (→ Datenbank nur im Speicher, eigener Schlüsselbund-Dienst), HOME/CFFIXED_USER_HOME = leeres QA-Home im Scratchpad, -SUEnableAutomaticChecks NO
+Bedienung: osascript/JXA über System Events (nur dieser Prozess): + → URL → http://127.0.0.1:18917/list.m3u → Von URL importieren → Playlist → Sender „QA Geheimsender“ (/live/qa-user/qa-pass-123/401.m3u8) → Knopf pip.enter (AXPress, Hilfe 'Bild-in-Bild')
+
+16:32:46 PiP-Knopf gedrückt
+Fensterliste danach: PIP id=3307 owner=Bild-in-Bild layer=19 514x270 name='Bild-in-Bild' · APP id=3115 owner=Mika+Player layer=0 900x450 name='QA Geheimsender'
+16:32:59 'Back' (AXPress) mit aktivem PiP → Fensterliste 16:33:05/10/15/20: PIP-Fenster id=3307 weiter sichtbar; Segmentabrufe je 5 s: 6/5/6/6 (je Segment zwei Abrufe ~100 ms versetzt, eine gemeinsame Verbindung)
+
+Systemprotokoll des Prozesses (log show --predicate processID == …, --info --debug, 16:29:xx–16:33:30): 13799 Zeilen
+  Treffer 'qa-pass-123': 0
+  Treffer 'qa-user': 0
+  Treffer '/live/': 0
+  Treffer 'Geheimsender': 0
+  Treffer '127.0.0.1:18917': 0
+  Treffer 'url hash': 4
+  Treffer '<private>': 475
+  Beispiel Netzwerkzeile: [com.apple.network:connection] [C1 725B0AC0-975F-4223-9153-71D1C0508578 IPv4#cc7014ac:18917 tcp, url hash: 64e41cbb, definite, attribution: developer,
+stdout/stderr der App: 1 Zeilen, Treffer Zugangsdaten: 0

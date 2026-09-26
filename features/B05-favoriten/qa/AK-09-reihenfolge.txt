@@ -1,0 +1,4 @@
+2026-09-26T14:17:19Z vor-aktualisieren|sql ORDER BY ZNAME, Z_PK=[["1", "Anbieter A"], ["3", "Anbieter B"]]
+2026-09-26T14:17:20Z oben entfernt → A=false B=true
+2026-09-26T14:17:21Z nach-aktualisieren-A|sql=[["3", "Anbieter B"], ["5", "Anbieter A"]]
+2026-09-26T14:17:21Z oben entfernt nach Aktualisieren von A → B=false

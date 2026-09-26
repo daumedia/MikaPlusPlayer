@@ -1,0 +1,11 @@
+EC-13|Name 1 MB + Logo 5 MB|eingabeBytes=6000050|anzahl=1|dauer=0.68s|name=1000000|logo=5000013|gruppe=-1|url=13|build=Debug
+EC-13|Stream-Adresse 2 MB|eingabeBytes=2000025|anzahl=1|dauer=0.09s|name=4|logo=-1|gruppe=-1|url=2000009|build=Debug
+EC-13|Gruppe 1 MB|eingabeBytes=1000041|anzahl=1|dauer=0.13s|name=1|logo=-1|gruppe=1000000|url=13|build=Debug
+EC-13|1 MB Anführungszeichen|eingabeBytes=1000027|anzahl=1|dauer=0.13s|name=1|logo=-1|gruppe=-1|url=13|build=Debug
+EC-13|500.000 × a=|eingabeBytes=1000027|anzahl=1|dauer=0.25s|name=1|logo=-1|gruppe=-1|url=13|build=Debug
+EC-14|bytes=45380568|anzahl=300000|dekodieren=0.00s|parser=5.57s|speicherVorher=266MB|nachher=518MB|build=Debug
+AK-37|URL|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=3.61s|maxMainThreadBlockade=3.56s|speicherVorher=403MB|nachher=652MB|build=Debug
+AK-37|Datei|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=3.49s|maxMainThreadBlockade=3.49s|speicherVorher=601MB|nachher=655MB|build=Debug
+EC-14|bytes=45380568|anzahl=300000|dekodieren=0.00s|parser=2.73s|speicherVorher=161MB|nachher=431MB|build=Release
+AK-37|URL|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=1.76s|maxMainThreadBlockade=1.73s|speicherVorher=389MB|nachher=648MB|build=Release
+AK-37|Datei|bytes=52062788|ergebnis=OK|sender=1000|laengsterName=52004|gesamt=1.79s|maxMainThreadBlockade=1.79s|speicherVorher=641MB|nachher=699MB|build=Release

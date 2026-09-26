@@ -6,6 +6,7 @@ import SwiftData
 final class Channel {
     var id: UUID
     var name: String
+    /// Bei Xtream-Sendern ohne Zugangsdaten. Zum Abspielen immer `StreamURLResolver` benutzen.
     var streamURL: URL
     var logoURL: URL?
     /// `group-title` aus dem #EXTINF-Tag, z. B. "Sport", "News".
@@ -45,7 +46,11 @@ final class Channel {
 
     /// Schlüssel, über den ein Channel beim Refresh wiedererkannt wird:
     /// bevorzugt die `tvg-id`, sonst der (kleingeschriebene) Name.
-    var favoriteKey: String {
+    /// Der Schlüssel entscheidet nur, **ob** ein neuer Sender Favorit werden darf; wie viele und welche,
+    /// entscheidet `FavoriteCarryOver` (B03 · BUG-02).
+    var favoriteKey: String { Self.favoriteKey(name: name, tvgID: tvgID) }
+
+    static func favoriteKey(name: String, tvgID: String?) -> String {
         if let tvgID, !tvgID.isEmpty { return "id:\(tvgID)" }
         return "name:\(name.lowercased())"
     }

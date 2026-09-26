@@ -1,0 +1,100 @@
+B06-QA · Sample des hängenden Test-Hosts (PID 66470) am 2026-09-26 11:09, Lauf run-final.log,
+aufgehängt beim Erzeugen eines VLCMediaPlayer in B06EngineZustandTests.testAK10 (gestartet 11:02:56, danach 6 min ohne Fortschritt).
+Alle beteiligten Threads: Hauptthread wartet auf die libVLC-Konfigurations-rwlock, vier libVLC-Threads ebenso,
+vier VLCEventsHandler-releaseQueue-Threads hängen in -[VLCMediaPlayer dealloc] -> libvlc_media_player_destroy -> pthread_join.
+
+    1710 Thread_854835   DispatchQueue_1: com.apple.main-thread  (serial)
+    + 1710 completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)  (in libswift_Concurrency.dylib) + 1  [0x2be752d41]
+    +   1710 partial apply for specialized thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)  (in MikaPlusPlayerTests) + 1  [0x10cc6b8e1]  /<compiler-generated>:0
+    +     1710 specialized thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)  (in MikaPlusPlayerTests) + 1  [0x10cc6ad1d]  /<compiler-generated>:0
+    +       1710 partial apply for thunk for @escaping @isolated(any) @callee_guaranteed @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cc6b7a9]  /<compiler-generated>:0
+    +         1710 thunk for @escaping @isolated(any) @callee_guaranteed @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cc6a855]  /<compiler-generated>:0
+    +           1710 partial apply for thunk for @escaping @callee_guaranteed @Sendable @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cc6b651]  /<compiler-generated>:0
+    +             1710 thunk for @escaping @callee_guaranteed @Sendable @async () -> ()  (in MikaPlusPlayerTests) + 1  [0x10cc6a785]  /<compiler-generated>:0
+    +               1710 partial apply for @objc closure #1 in B06EngineZustandTests.testAK10_VLCHTTPFehlerUndHostWegOhneMeldung()  (in MikaPlusPlayerTests) + 1  [0x10cf84ec1]  /<compiler-generated>:0
+    +                 1710 @objc closure #1 in B06EngineZustandTests.testAK10_VLCHTTPFehlerUndHostWegOhneMeldung()  (in MikaPlusPlayerTests) + 1  [0x10cf84ced]  /<compiler-generated>:0
+    +                   1710 B06EngineZustandTests.testAK10_VLCHTTPFehlerUndHostWegOhneMeldung()  (in MikaPlusPlayerTests) + 1080  [0x10cf822c8]  B06EngineZustandTests.swift:215
+    +                     1710 B06EngineZustandTests.start(_:forceAVKit:)  (in MikaPlusPlayerTests) + 1480  [0x10cf70ec0]  B06EngineZustandTests.swift:23
+    +                       1710 B06TestCase.mutedEngine(for:)  (in MikaPlusPlayerTests) + 52  [0x10d00571c]  B06Support.swift:884
+    +                         1710 static PlaybackEngineFactory.engine(for:)  (in MikaPlusPlayer.debug.dylib) + 164  [0x1010a24cc]  PlaybackEngine.swift:104
+    +                           1710 static PlaybackEngineFactory.makeVLCEngine()  (in MikaPlusPlayer.debug.dylib) + 32  [0x1010a261c]  PlaybackEngine.swift:114
+    +                             1710 VLCPlaybackEngine.__allocating_init()  (in MikaPlusPlayer.debug.dylib) + 28  [0x1010fa638]  VLCPlaybackEngine.swift:0
+    +                               1710 @objc VLCPlaybackEngine.init()  (in MikaPlusPlayer.debug.dylib) + 20  [0x1010fa8dc]  /<compiler-generated>:0
+    +                                 1710 VLCPlaybackEngine.init()  (in MikaPlusPlayer.debug.dylib) + 252  [0x1010fa740]  VLCPlaybackEngine.swift:30
+    +                                   1710 VLCMediaPlayer.__allocating_init()  (in MikaPlusPlayer.debug.dylib) + 32  [0x1010fa500]  NSObject.h:0
+    +                                     1710 @nonobjc VLCMediaPlayer.init()  (in MikaPlusPlayer.debug.dylib) + 16  [0x1010fc320]  /<compiler-generated>:0
+    +                                       1710 config_GetFloat  (in VLCKit) + 92  [0x1060a5ef4]  core.c:138
+    +                                         1710 _pthread_rwlock_lock_slow  (in libsystem_pthread.dylib) + 652  [0x191e52580]
+    +                                           1710 _pthread_rwlock_lock_wait  (in libsystem_pthread.dylib) + 72  [0x191e54400]
+    +                                             1710 __psynch_rw_rdlock  (in libsystem_kernel.dylib) + 8  [0x191e16280]
+    1710 Thread_858372: com.apple.NSEventThread
+
+    1710 Thread_1104919
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1710 config_GetPsz  (in VLCKit) + 84  [0x1060a5fac]  core.c:172
+    +     1710 _pthread_rwlock_lock_slow  (in libsystem_pthread.dylib) + 652  [0x191e52580]
+    +       1710 _pthread_rwlock_lock_wait  (in libsystem_pthread.dylib) + 72  [0x191e54400]
+    +         1710 __psynch_rw_rdlock  (in libsystem_kernel.dylib) + 8  [0x191e16280]
+    1710 Thread_1104932
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1710 config_PutPsz  (in VLCKit) + 196  [0x1060a60fc]  core.c:208
+    +     1710 _pthread_rwlock_lock_slow  (in libsystem_pthread.dylib) + 652  [0x191e52580]
+    +       1710 _pthread_rwlock_lock_wait  (in libsystem_pthread.dylib) + 80  [0x191e54408]
+    +         1710 __psynch_rw_wrlock  (in libsystem_kernel.dylib) + 8  [0x191e16228]
+    1710 Thread_1104944
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1710 config_PutPsz  (in VLCKit) + 196  [0x1060a60fc]  core.c:208
+    +     1710 _pthread_rwlock_lock_slow  (in libsystem_pthread.dylib) + 652  [0x191e52580]
+    +       1710 _pthread_rwlock_lock_wait  (in libsystem_pthread.dylib) + 80  [0x191e54408]
+    +         1710 __psynch_rw_wrlock  (in libsystem_kernel.dylib) + 8  [0x191e16228]
+    1710 Thread_1104954
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1710 vlc_cond_timedwait  (in VLCKit) + 164  [0x10610a36c]  thread.c:291
+    +     1710 _pthread_cond_wait  (in libsystem_pthread.dylib) + 1024  [0x191e561fc]
+    +       1710 __psynch_cvwait  (in libsystem_kernel.dylib) + 8  [0x191e1450c]
+    1710 Thread_1104955
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1710 vlc_cond_timedwait  (in VLCKit) + 164  [0x10610a36c]  thread.c:291
+    +     1710 _pthread_cond_wait  (in libsystem_pthread.dylib) + 1024  [0x191e561fc]
+    +       1710 __psynch_cvwait  (in libsystem_kernel.dylib) + 8  [0x191e1450c]
+    1710 Thread_1104960
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1710 vlc_cond_timedwait  (in VLCKit) + 164  [0x10610a36c]  thread.c:291
+    +     1710 _pthread_cond_wait  (in libsystem_pthread.dylib) + 1024  [0x191e561fc]
+    +       1710 __psynch_cvwait  (in libsystem_kernel.dylib) + 8  [0x191e1450c]
+    1710 Thread_1104967
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1710 config_PutPsz  (in VLCKit) + 196  [0x1060a60fc]  core.c:208
+    +     1710 _pthread_rwlock_lock_slow  (in libsystem_pthread.dylib) + 652  [0x191e52580]
+    +       1710 _pthread_rwlock_lock_wait  (in libsystem_pthread.dylib) + 80  [0x191e54408]
+    +         1710 __psynch_rw_wrlock  (in libsystem_kernel.dylib) + 8  [0x191e16228]
+    1710 Thread_1104980
+    + 1710 thread_start  (in libsystem_pthread.dylib) + 8  [0x191e50cec]
+    +   1709 vlc_cond_timedwait  (in VLCKit) + 164  [0x10610a36c]  thread.c:291
+    +   ! 1709 _pthread_cond_wait  (in libsystem_pthread.dylib) + 1024  [0x191e561fc]
+    +   !   1709 __psynch_cvwait  (in libsystem_kernel.dylib) + 8  [0x191e1450c]
+    +   1 mdate  (in VLCKit) + 28  [0x10610a3bc]  thread.c:546
+    +     1 pthread_once  (in libsystem_pthread.dylib) + 68  [0x191e51c08]
+    1710 Thread_1119612   DispatchQueue_20152: handler.releaseQueue  (serial)
+
+    1710 Thread_1119612   DispatchQueue_20152: handler.releaseQueue  (serial)
+    + 1710 start_wqthread  (in libsystem_pthread.dylib) + 8  [0x191e50ce0]
+    +   1710 _pthread_wqthread  (in libsystem_pthread.dylib) + 292  [0x191e51f9c]
+    +     1710 _dispatch_workloop_worker_thread  (in libdispatch.dylib) + 720  [0x191ca785c]
+    +       1710 _dispatch_root_queue_drain_deferred_wlh  (in libdispatch.dylib) + 284  [0x191ca7f58]
+    +         1710 _dispatch_lane_invoke  (in libdispatch.dylib) + 392  [0x191c9dabc]
+    +           1710 _dispatch_lane_serial_drain  (in libdispatch.dylib) + 744  [0x191c9cfc0]
+    +             1710 _dispatch_client_callout  (in libdispatch.dylib) + 16  [0x191cae5a0]
+    +               1710 _dispatch_call_block_and_release  (in libdispatch.dylib) + 32  [0x191c94a34]
+    +                 1710 __32-[VLCEventsHandler handleEvent:]_block_invoke_2  (in VLCKit) + 44  [0x106083518]  VLCEventsHandler.m:64
+    +                   1710 -[VLCMediaPlayer dealloc]  (in VLCKit) + 120  [0x10607bf40]  VLCMediaPlayer.m:435
+    +                     1710 _objc_rootDealloc  (in libobjc.A.dylib) + 72  [0x1919d5ba8]
+    +                       1710 objc_destructInstance_nonnull_realized(objc_object*)  (in libobjc.A.dylib) + 76  [0x1919f80a4]
+    +                         1710 object_cxxDestructFromClass(objc_object*, objc_class*)  (in libobjc.A.dylib) + 116  [0x1919de278]
+    +                           1710 -[VLCMediaPlayer .cxx_destruct]  (in VLCKit) + 96  [0x10607eb40]  VLCMediaPlayer.m:306
+    +                             1710 libvlc_media_player_destroy  (in VLCKit) + 232  [0x106090270]  media_player.c:915
+    +                               1710 _pthread_join  (in libsystem_pthread.dylib) + 620  [0x191e5803c]
+    +                                 1710 __ulock_wait  (in libsystem_kernel.dylib) + 8  [0x191e12af4]
+    1710 Thread_1119614   DispatchQueue_20198: handler.releaseQueue  (serial)
+    + 1710 start_wqthread  (in libsystem_pthread.dylib) + 8  [0x191e50ce0]
+    +   1710 _pthread_wqthread  (in libsystem_pthread.dylib) + 292  [0x191e51f9c]

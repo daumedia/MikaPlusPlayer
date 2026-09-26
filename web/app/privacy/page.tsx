@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/metadata";
 import { GITHUB_URL, ISSUES_URL } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const generateMetadata = pageMetadata({
+  path: "/privacy",
   title: "Privacy",
   description:
     "What Mika+Player stores, what it sends, and to whom. No accounts, no telemetry, no analytics.",
-  alternates: { canonical: "/privacy" },
-};
+});
 
 const LAST_UPDATED = "30 July 2026";
 

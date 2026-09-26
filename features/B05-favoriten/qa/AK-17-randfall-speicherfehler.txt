@@ -1,0 +1,2 @@
+2026-09-26T14:15:07Z tab vorher=["ZDF HD, Deutschland"]|meldung=The operation couldn’t be completed. (NSSQLiteErrorDomain error 13.)|tab danach=["ZDF HD, Deutschland", "ZDF SD, Deutschland"]|kontext-favoriten=["ZDF HD@QA Voll Aktualisieren", "ZDF SD@QA Voll Aktualisieren"]|dieselben objekte=false|hasChanges=true|datei (neustart)=["ZDF HD@QA Voll Aktualisieren"]
+2026-09-26T14:15:08Z nach platz + nächstem stern|datei=["ZDF HD@QA Voll Aktualisieren", "ZDF SD@QA Voll Aktualisieren", "arte@QA Voll Aktualisieren"]|sender in datei=3

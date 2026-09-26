@@ -1,0 +1,48 @@
+Release klein Wed Sep 16 22:30:51 CEST 2026 22:30  up 14:27, 1 user, load averages: 15.37 8.56 9.06
+2026-09-16T20:30:55Z|Release|start|groessen=[1000, 2000, 4000]|arten=["m3u", "xtream"]|kerne=16|speicher=36MB
+2026-09-16T20:30:58Z|Release|m3u|sender=1000|import=1.12s|aktualisieren=1.21s|mainThreadBlockade=1.19s|speicher=44→49MB|favoriten=1→1|ZPLAYLIST=1|ZCHANNEL=1000|ohnePlaylist=0|favoriten=1
+2026-09-16T20:30:59Z|Release|m3u|sender=1000|loeschenNachAktualisieren=0.62s|mainThreadBlockade=0.62s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:31:02Z|Release|m3u|sender=1000|loeschenNachNeustart=0.22s|mainThreadBlockade=0.22s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:31:11Z|Release|m3u|sender=2000|import=4.05s|aktualisieren=4.25s|mainThreadBlockade=4.23s|speicher=52→42MB|favoriten=2→2|ZPLAYLIST=1|ZCHANNEL=2000|ohnePlaylist=0|favoriten=2
+2026-09-16T20:31:12Z|Release|m3u|sender=2000|loeschenNachAktualisieren=0.47s|mainThreadBlockade=0.47s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:31:18Z|Release|m3u|sender=2000|loeschenNachNeustart=0.68s|mainThreadBlockade=0.68s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:31:50Z|Release|m3u|sender=4000|import=15.60s|aktualisieren=16.05s|mainThreadBlockade=16.03s|speicher=47→43MB|favoriten=4→4|ZPLAYLIST=1|ZCHANNEL=4000|ohnePlaylist=0|favoriten=4
+2026-09-16T20:31:57Z|Release|m3u|sender=4000|loeschenNachAktualisieren=6.30s|mainThreadBlockade=6.30s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:31:59Z|Release|xtream|sender=1000|import=0.12s|aktualisieren=1.23s|mainThreadBlockade=1.19s|speicher=47→47MB|favoriten=1→1|ZPLAYLIST=1|ZCHANNEL=1000|ohnePlaylist=0|favoriten=1
+2026-09-16T20:32:00Z|Release|xtream|sender=1000|loeschenNachAktualisieren=0.51s|mainThreadBlockade=0.51s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:32:02Z|Release|xtream|sender=1000|loeschenNachNeustart=0.59s|mainThreadBlockade=0.59s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:32:07Z|Release|xtream|sender=2000|import=0.24s|aktualisieren=4.40s|mainThreadBlockade=4.35s|speicher=52→53MB|favoriten=2→2|ZPLAYLIST=1|ZCHANNEL=2000|ohnePlaylist=0|favoriten=2
+2026-09-16T20:32:09Z|Release|xtream|sender=2000|loeschenNachAktualisieren=1.78s|mainThreadBlockade=1.78s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:32:11Z|Release|xtream|sender=2000|loeschenNachNeustart=0.27s|mainThreadBlockade=0.27s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:32:29Z|Release|xtream|sender=4000|import=0.42s|aktualisieren=15.94s|mainThreadBlockade=15.86s|speicher=57→64MB|favoriten=4→4|ZPLAYLIST=1|ZCHANNEL=4000|ohnePlaylist=0|favoriten=4
+2026-09-16T20:32:35Z|Release|xtream|sender=4000|loeschenNachAktualisieren=6.39s|mainThreadBlockade=6.39s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:32:35Z|Release|m3u|wachstum 1000→2000 Sender: Blockade ×3.56 (linear ×2.00, quadratisch ×4.00)
+2026-09-16T20:32:35Z|Release|xtream|wachstum 1000→2000 Sender: Blockade ×3.67 (linear ×2.00, quadratisch ×4.00)
+Release 17000 Wed Sep 16 22:32:36 CEST 2026 22:32  up 14:28, 1 user, load averages: 7.99 7.85 8.72
+2026-09-16T20:32:38Z|Release|start|groessen=[17000]|arten=["xtream"]|kerne=16|speicher=36MB
+2026-09-16T20:37:21Z|Release|xtream|sender=17000|import=2.17s|aktualisieren=280.48s|mainThreadBlockade=280.38s|speicher=54→86MB|favoriten=17→17|ZPLAYLIST=1|ZCHANNEL=17000|ohnePlaylist=0|favoriten=17
+2026-09-16T20:39:34Z|Release|xtream|sender=17000|loeschenNachAktualisieren=132.60s|mainThreadBlockade=132.60s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:40:19Z|Release|xtream|sender=17000|loeschenNachNeustart=41.31s|mainThreadBlockade=41.31s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+Ende Release Wed Sep 16 22:40:20 CEST 2026 22:40  up 14:36, 1 user, load averages: 3.53 5.84 7.50
+Debug 17000 Wed Sep 16 22:40:34 CEST 2026 22:40  up 14:36, 1 user, load averages: 3.74 5.76 7.45
+2026-09-16T20:40:36Z|Debug|start|groessen=[17000]|arten=["xtream"]|kerne=16|speicher=36MB
+2026-09-16T20:45:23Z|Debug|xtream|sender=17000|import=2.19s|aktualisieren=284.30s|mainThreadBlockade=284.15s|speicher=53→82MB|favoriten=17→17|ZPLAYLIST=1|ZCHANNEL=17000|ohnePlaylist=0|favoriten=17
+2026-09-16T20:47:26Z|Debug|xtream|sender=17000|loeschenNachAktualisieren=122.51s|mainThreadBlockade=122.51s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:49:29Z|Debug|xtream|sender=17000|loeschenNachNeustart=118.51s|mainThreadBlockade=118.51s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+Ende Debug 17000 Wed Sep 16 22:49:29 CEST 2026 22:49  up 14:45, 1 user, load averages: 4.70 5.56 6.59
+Debug Gesamtlauf B03 (Standardgrößen) Wed Sep 16 22:49:37 CEST 2026 22:49  up 14:45, 1 user, load averages: 4.56 5.52 6.57
+2026-09-16T20:49:53Z|Debug|start|groessen=[1000, 2000]|arten=["m3u", "xtream"]|kerne=16|speicher=47MB
+2026-09-16T20:49:56Z|Debug|m3u|sender=1000|import=1.07s|aktualisieren=1.22s|mainThreadBlockade=1.19s|speicher=60→65MB|favoriten=1→1|ZPLAYLIST=1|ZCHANNEL=1000|ohnePlaylist=0|favoriten=1
+2026-09-16T20:49:57Z|Debug|m3u|sender=1000|loeschenNachAktualisieren=0.20s|mainThreadBlockade=0.20s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:49:59Z|Debug|m3u|sender=1000|loeschenNachNeustart=0.12s|mainThreadBlockade=0.12s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:50:08Z|Debug|m3u|sender=2000|import=4.06s|aktualisieren=4.36s|mainThreadBlockade=4.33s|speicher=65→47MB|favoriten=2→2|ZPLAYLIST=1|ZCHANNEL=2000|ohnePlaylist=0|favoriten=2
+2026-09-16T20:50:10Z|Debug|m3u|sender=2000|loeschenNachAktualisieren=0.81s|mainThreadBlockade=0.81s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:50:16Z|Debug|m3u|sender=2000|loeschenNachNeustart=0.69s|mainThreadBlockade=0.69s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:50:18Z|Debug|xtream|sender=1000|import=0.13s|aktualisieren=1.23s|mainThreadBlockade=1.18s|speicher=50→51MB|favoriten=1→1|ZPLAYLIST=1|ZCHANNEL=1000|ohnePlaylist=0|favoriten=1
+2026-09-16T20:50:19Z|Debug|xtream|sender=1000|loeschenNachAktualisieren=0.49s|mainThreadBlockade=0.49s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:50:21Z|Debug|xtream|sender=1000|loeschenNachNeustart=0.44s|mainThreadBlockade=0.44s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:50:26Z|Debug|xtream|sender=2000|import=0.24s|aktualisieren=4.36s|mainThreadBlockade=4.31s|speicher=54→57MB|favoriten=2→2|ZPLAYLIST=1|ZCHANNEL=2000|ohnePlaylist=0|favoriten=2
+2026-09-16T20:50:27Z|Debug|xtream|sender=2000|loeschenNachAktualisieren=0.25s|mainThreadBlockade=0.25s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:50:30Z|Debug|xtream|sender=2000|loeschenNachNeustart=1.80s|mainThreadBlockade=1.80s|ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0
+2026-09-16T20:50:30Z|Debug|m3u|wachstum 1000→2000 Sender: Blockade ×3.64 (linear ×2.00, quadratisch ×4.00)
+2026-09-16T20:50:30Z|Debug|xtream|wachstum 1000→2000 Sender: Blockade ×3.66 (linear ×2.00, quadratisch ×4.00)

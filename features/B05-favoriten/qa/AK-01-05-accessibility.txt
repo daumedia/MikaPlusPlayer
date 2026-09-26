@@ -1,0 +1,5 @@
+2026-09-26T14:16:46Z AK-01|liste|role=AXBusyIndicator|label=ZDF, Vollprogramm|title=|value=0|help=Zu Multiview hinzufügen|roleDescription=busy indicator|selected=false|actions=["Rectangle Split Two By Two", "Favourite"]
+2026-09-26T14:16:46Z AK-01|tab|role=AXBusyIndicator|label=ZDF, Vollprogramm|title=|value=0|help=Zu Multiview hinzufügen|roleDescription=busy indicator|selected=false|actions=["Rectangle Split Two By Two", "Favourite"]
+2026-09-26T14:17:03Z AK-05|vorher|role=AXBusyIndicator|label=ZDF, Vollprogramm|title=|value=0|help=Zu Multiview hinzufügen|roleDescription=busy indicator|selected=false|actions=["Rectangle Split Two By Two", "Favourite"]|kinder=0
+2026-09-26T14:17:03Z AK-05|nach-aktion-favourite|role=AXBusyIndicator|label=ZDF, Vollprogramm|title=|value=0|help=Zu Multiview hinzufügen|roleDescription=busy indicator|selected=false|actions=["Rectangle Split Two By Two", "Favourite"]|isFavorite=true
+2026-09-26T14:17:03Z AK-05|leerzustand-texte|["MIKA+PLAYER · FAVORITEN", "Favoriten", "Favourite", "Keine Favoriten", "Markiere Sender mit dem Stern, um sie hier zu sammeln."]

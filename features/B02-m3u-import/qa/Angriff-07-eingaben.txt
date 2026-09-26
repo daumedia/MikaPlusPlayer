@@ -1,0 +1,19 @@
+Angriff-07|url=""(0)→Die angegebene URL ist ungültig.
+Angriff-07|url="x"(1)→Die angegebene URL ist ungültig.
+Angriff-07|url="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"(10000)→Die angegebene URL ist ungültig.
+Angriff-07|url="📺😀 Ümläut"(9)→Die angegebene URL ist ungültig.
+Angriff-07|url="\'; drop table ZPLAYLIST; --"(27)→Die angegebene URL ist ungültig.
+Angriff-07|url="<script>alert(1)</script>"(25)→Die angegebene URL ist ungültig.
+Angriff-07|url="../../etc/passwd"(16)→Die angegebene URL ist ungültig.
+Angriff-07|url="%00%0d%0a"(9)→Die angegebene URL ist ungültig.
+Angriff-07|url="\0"(1)→Die angegebene URL ist ungültig.
+Angriff-07|name=""(0)→ABWEICHEND 127.0.0.1
+Angriff-07|name="x"(1)→exakt
+Angriff-07|name="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"(10000)→exakt
+Angriff-07|name="📺😀 Ümläut"(9)→exakt
+Angriff-07|name="\'; drop table ZPLAYLIST; --"(27)→exakt
+Angriff-07|name="<script>alert(1)</script>"(25)→exakt
+Angriff-07|name="../../etc/passwd"(16)→exakt
+Angriff-07|name="%00%0d%0a"(9)→exakt
+Angriff-07|name="\0"(1)→exakt
+Angriff-07|sendernamen=9|sqlUnveraendert=true|script=true|playlistsGesamt=10

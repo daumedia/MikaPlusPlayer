@@ -3,7 +3,7 @@ import Foundation
 /// Plattformunabhängiges, kontextfreies Ergebnis des Parsers.
 /// Bewusst KEIN SwiftData-`@Model`, damit der Parser ohne `ModelContext`
 /// testbar bleibt und nicht an einen Thread/Actor gebunden ist.
-struct ParsedChannel: Equatable {
+struct ParsedChannel: Equatable, Sendable {
     var name: String
     var streamURL: URL
     var logoURL: URL?
@@ -19,7 +19,31 @@ struct ParsedChannel: Equatable {
 ///
 /// Wichtig: Der Anzeigename ist alles nach dem **ersten Komma außerhalb von
 /// Anführungszeichen** – im Beispiel also `Das Erste, HD` (inkl. des zweiten Kommas).
-struct M3UParser {
+///
+/// Listen sind unvertraute Eingaben (B02 · BUG-03, BUG-05): Name, Gruppe und tvg-ID werden gekürzt,
+/// überlange Adressen verworfen, und übernommen werden nur Stream-Adressen mit einem Wiedergabe-Schema
+/// und Logo-Adressen über HTTP(S).
+struct M3UParser: Sendable {
+    struct Limits: Sendable {
+        /// Längere Namen, Gruppen und tvg-IDs werden gekürzt (wie `XtreamClient.Limits`).
+        var maxTextLength = 512
+        /// Längere Stream-Adressen: Eintrag wird verworfen.
+        var maxStreamURLLength = 4_096
+        /// Längere Logo-Adressen werden verworfen (der Sender bleibt).
+        var maxLogoURLLength = 2_048
+        /// Höchstzahl Einträge; der Parser hört danach auf. `nil` = ohne Grenze (nur für Messungen).
+        var maxChannels: Int?
+
+        static let standard = Limits()
+    }
+
+    /// Schemata, die eine Wiedergabe-Engine (AVKit, VLCKit) als Stream öffnet. Alles andere (`file:`, `smb:`,
+    /// `javascript:`, `data:`, `vlc:`, `ftp:` …) wird verworfen.
+    static let streamSchemes: Set<String> = ["http", "https", "rtsp", "rtsps", "rtmp", "rtmps", "rtp", "udp", "mms", "mmsh"]
+    /// Logos lädt die Senderliste nur über HTTP(S).
+    static let logoSchemes: Set<String> = ["http", "https"]
+
+    var limits: Limits = .standard
 
     func parse(_ text: String) -> [ParsedChannel] {
         var channels: [ParsedChannel] = []
@@ -27,6 +51,7 @@ struct M3UParser {
         var pending: PendingChannel?
 
         for rawLine in text.split(whereSeparator: \.isNewline) {
+            if let maximum = limits.maxChannels, channels.count > maximum { break }
             let line = rawLine.trimmingCharacters(in: .whitespaces)
             if line.isEmpty { continue }
 
@@ -45,19 +70,32 @@ struct M3UParser {
                 // URL-Zeile: schließt den zuletzt gelesenen #EXTINF-Eintrag ab.
                 guard let meta = pending else { continue }
                 pending = nil
-                guard let url = URL(string: line), url.scheme != nil else { continue }
+                guard line.utf8.count <= limits.maxStreamURLLength,
+                      let url = URL(string: line),
+                      let scheme = url.scheme?.lowercased(), Self.streamSchemes.contains(scheme) else { continue }
                 channels.append(
                     ParsedChannel(
-                        name: meta.name.isEmpty ? url.lastPathComponent : meta.name,
+                        name: clipped(meta.name.isEmpty ? url.lastPathComponent : meta.name),
                         streamURL: url,
-                        logoURL: meta.logo.flatMap { URL(string: $0) },
-                        group: meta.group,
-                        tvgID: meta.tvgID
+                        logoURL: meta.logo.flatMap(logoURL),
+                        group: meta.group.map(clipped),
+                        tvgID: meta.tvgID.map(clipped)
                     )
                 )
             }
         }
         return channels
+    }
+
+    private func clipped(_ text: String) -> String {
+        text.count > limits.maxTextLength ? String(text.prefix(limits.maxTextLength)) : text
+    }
+
+    private func logoURL(_ raw: String) -> URL? {
+        guard raw.utf8.count <= limits.maxLogoURLLength,
+              let url = URL(string: raw),
+              let scheme = url.scheme?.lowercased(), Self.logoSchemes.contains(scheme) else { return nil }
+        return url
     }
 
     // MARK: - #EXTINF-Zerlegung

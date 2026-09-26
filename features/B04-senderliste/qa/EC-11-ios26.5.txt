@@ -1,0 +1,8 @@
+# iOS 26.5 Simulator (iPhone 17, eigenes Gerät „QA-B04 iPhone 17 iOS26“), gleicher Test, gleiche Datenbank.
+2026-09-26T14:25:29Z [iOS-26.5-Simulator] EC-11|bildschirm=402x874|navigationsleisten=["QA iOS@62-116"]|suchfeld=nicht gefunden|chips=["Alle@y=126", "Kino@y=126", "News@y=126", "Sport@y=126"]|titelImInhalt=true
+2026-09-26T14:25:29Z [iOS-26.5-Simulator] EC-11|buttons=["Playlists", "Favoriten", "Playlists", "Alle", "Kino", "News", "Sport", "Kino Kanal 0, Kino", "Kino Kanal 1, Kino", "Kino Kanal 2, Kino", "Kino Kanal 3, Kino", "Kino Kanal 4, Kino", "Kino Kanal 5, Kino", "Kino Kanal 6, Kino", "Kino Kanal 7, Kino", "Kino Kanal 8, Kino", "Kino Kanal 9, Kino", "News Kanal 0, News", "News Kanal 1, News", "News Kanal 2, News", "News Kanal 3, News", "News Kanal 4, News", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite", "Favourite"]
+2026-09-26T14:25:36Z [iOS-26.5-Simulator] AK-01|ios|suchfeldBeimOeffnen=false|nachHerunterziehen=Sender suchen@y=117..161|navigationsleisten=["QA iOS@62-176"]
+2026-09-26T14:25:37Z [iOS-26.5-Simulator] EC-11|multiviewButtons=[]
+2026-09-26T14:25:39Z [iOS-26.5-Simulator] AK-13|ios|chipSport|sportKarten=10|kinoKarten=0|kopf=true
+2026-09-26T14:25:39Z [iOS-26.5-Simulator] AK-22|ios|ladeindikatoren=20
+2026-09-26T14:25:43Z [iOS-26.5-Simulator] AK-04|ios|playerGeoeffnet=true|texte=["Sport Kanal 0", "Wiedergabe fehlgeschlagen", "Could not connect to the server."]
