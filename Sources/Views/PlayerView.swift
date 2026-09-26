@@ -80,6 +80,9 @@ struct PlayerView: View {
             scheduleAutoHide()
             keyboardFocused = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: PlaylistEvents.willDelete)) { note in
+            handlePlaylistDeletion(PlaylistEvents.ids(in: note))
+        }
         .onDisappear {
             autoHideTask?.cancel()
             hudTask?.cancel()
@@ -419,6 +422,16 @@ struct PlayerView: View {
     #endif
 
     // MARK: - Wiedergabe
+
+    /// B03 · BUG-05: Die Playlist des Senders wird gelöscht → Wiedergabe und Verbindung (bei Xtream mit
+    /// Zugangsdaten im Pfad) beenden und das statt eines Engine-Fehlers anzeigen. „Erneut versuchen" meldet danach
+    /// dasselbe, ohne den Anbieter anzufragen.
+    private func handlePlaylistDeletion(_ ids: Set<UUID>) {
+        guard let playlistID = channel.playlistID ?? channel.playlist?.id, ids.contains(playlistID) else { return }
+        engine?.stop()
+        engine = nil
+        resolveError = StreamURLResolver.ResolveError.playlistDeleted.localizedDescription
+    }
 
     private func startIfNeeded() {
         if engine == nil {

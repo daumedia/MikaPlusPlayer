@@ -5,15 +5,15 @@ Stand: 2026-09-26 · Stack-Profil: `swiftui-ios` + `swiftui-macos` · Bestandspr
 | ID | Feature | Prio | Status | Abhängig von | Zuletzt |
 |---|---|---|---|---|---|
 | B01 | Xtream-Codes-Login | P0 | review | — | 2026-09-16 · QA 2: production-ready ja, offen nur mittel/niedrig (BF-40, BF-43–BF-46); nicht ausgeliefert |
-| B02 | M3U-Import | P0 | building | — | 2026-09-26 · QA 1: hoch (BF-64, BF-65); Reparatur gemeinsam mit B03 · Reparatur-Workflow läuft |
-| B03 | Playlist-Verwaltung | P0 | building | B01, B02 | 2026-09-16 · QA 1: hoch (BF-52), Reparatur nach QA von B02 (gemeinsamer Importpfad) · Reparatur-Workflow läuft |
-| B04 | Senderliste | P0 | building | B03 | 2026-09-26 · QA 1: production-ready ja, höchster Grad mittel (BF-73–BF-86) · Reparatur-Workflow läuft |
-| B05 | Favoriten | P1 | building | B03, B04 | 2026-09-26 · QA 1: production-ready ja, höchster Grad mittel (BF-87–BF-95, dazu BF-53, BF-59) · Reparatur-Workflow läuft |
-| B06 | Wiedergabe | P0 | building | B04 | 2026-09-26 · QA 1: hoch (BF-96–BF-98, alle drei gegengeprüft ✅) · Reparatur-Workflow läuft |
-| B07 | Bild-in-Bild | P1 | building | B06 | 2026-09-26 · QA 1: hoch (BF-105, gegengeprüft ✅) · Reparatur-Workflow läuft |
-| B08 | Multiview | P1 | building | B04, B06 | 2026-09-26 · QA 1: **kritisch** (BF-111 Absturz, seit v1.1) + hoch (BF-112, BF-113), alle gegengeprüft ✅ · Reparatur-Workflow läuft |
+| B02 | M3U-Import | P0 | building | — | 2026-09-26 · QA 1: hoch; Reparatur gemeinsam mit B03 geschrieben, kompiliert (macOS+iOS), aber **nicht verifiziert und nicht gereviewt** (Workflow angehalten); QA 2 offen |
+| B03 | Playlist-Verwaltung | P0 | building | B01, B02 | 2026-09-26 · QA 1: hoch; Reparatur gemeinsam mit B02 geschrieben, kompiliert (macOS+iOS), aber **nicht verifiziert und nicht gereviewt** (Workflow angehalten); QA 2 offen |
+| B04 | Senderliste | P0 | review | B03 | 2026-09-26 · QA 1: production-ready ja, höchster Grad mittel (BF-73–BF-86); Reparatur nicht begonnen |
+| B05 | Favoriten | P1 | review | B03, B04 | 2026-09-26 · QA 1: production-ready ja, höchster Grad mittel (BF-87–BF-95); Teile über B02+B03 mitrepariert (unverifiziert) |
+| B06 | Wiedergabe | P0 | review | B04 | 2026-09-26 · QA 1: hoch (BF-96–BF-98, gegengeprüft ✅); Reparatur nicht begonnen |
+| B07 | Bild-in-Bild | P1 | review | B06 | 2026-09-26 · QA 1: hoch (BF-105, gegengeprüft ✅); Reparatur nicht begonnen |
+| B08 | Multiview | P1 | review | B04, B06 | 2026-09-26 · QA 1: **kritisch** (BF-111 Absturz seit v1.1) + hoch (BF-112, BF-113), gegengeprüft ✅; Reparatur nicht begonnen |
 | B09 | Auto-Update | P1 | review | — | 2026-09-16 · QA 2: production-ready nein — kritisch nur noch BF-01 (Nutzer/GitHub); code-seitig 8 behoben, 6 neu mittel/niedrig |
-| B10 | Website | P2 | building | B09 | 2026-09-26 · Reparatur Teil 1 fertig (7 BUGs); Teil 2 im Reparatur-Workflow (zuletzt) |
+| B10 | Website | P2 | building | B09 | 2026-09-26 · QA 1: hoch; Reparatur Teil 1 fertig (7 BUGs), Teil 2 (Datenschutz, Aussagen) offen; QA 2 offen |
 
 ## Reihenfolge der Rückerfassung
 

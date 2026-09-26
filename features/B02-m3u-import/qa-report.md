@@ -206,6 +206,19 @@ aus einem `get.php`-Link bis zu 17.001 Kopien.
 Stream-Adressen wie bei Xtream in den Schlüsselbund verlagern, oder den Backup-Ausschluss und die Begründung an den
 tatsächlichen Inhalt anpassen.
 
+**Behoben 2026-09-26:** Zugangsdaten aus M3U-Adressen (Query `username`/`password`, Benutzerinfo `user:pass@`) liegen
+je Playlist im Schlüsselbund (`M3USecret` im Dienst von `XtreamCredentialStore`, Konto = `Playlist.id`, mit der
+eingegebenen Adresse für den Abruf). `Playlist.sourceURL` und jede Stream-Adresse tragen an diesen Stellen Platzhalter
+(`Services/M3UCredentials.swift`: jeder Pfadabschnitt und Query-Wert gleich dem Passwort, der Benutzername direkt davor
+bzw. in `username`/`user`, die Benutzerinfo). `StreamURLResolver` setzt sie erst beim Abspielen ein; `refresh` ruft die
+Adresse aus dem Schlüsselbund ab; `AppPersistence.migrateCredentials` stellt vorhandene Datenbanken beim Start um
+(Schlüsselbund, Platzhalter, dieselben Sender-Objekte, Verdichten), Altbestand zusätzlich beim Aktualisieren. Die
+Begründung für den fehlenden Backup-Ausschluss trifft damit auch für M3U zu. Nachweis:
+`B02SicherheitTests.testAK34_ZugangsdatenAusM3ULinkImSchluesselbund` (0/1 bzw. 0/3 Zeilen mit Passwort, 0 Bytes,
+1 Eintrag, 3/3 Adressen abspielbar wie in der Liste), `testAK34_BenutzerinfoImSchluesselbund`,
+`B02ReparaturTests.testBUG01_*` (Zerlegen/Wiederherstellen, Aktualisieren, fehlender Eintrag, Umstellung Temp-Datenbank
+und v1.1-Vorlage). Nicht erfasst: `token=` und andere Parameter (→ spec.md OF-10).
+
 ### BUG-02 · M3U-Abruf schreibt Adresse samt Zugangsdaten und Antwort in den HTTP-Plattencache; Löschen entfernt sie nicht — mittel
 
 **Betrifft:** AK-35, AK-42 (Angriff 8), FB-02
@@ -226,6 +239,15 @@ verhindert nur das Lesen); `Sources/Services/AppPersistence.swift:361-366`
 **Vorschlag:** Für M3U-Abrufe eine eigene Session ohne `urlCache` (und ohne gemeinsamen Cookie-/Zugangsdatenspeicher)
 verwenden, wie B01 sie mit `XtreamHTTPLoader` gebaut hat.
 
+**Behoben 2026-09-26:** M3U-Abrufe (Import und Aktualisieren) laufen über denselben Loader wie Xtream
+(`Services/PlaylistHTTPLoader.swift`, vormals `XtreamHTTPLoader`: `ephemeral`, `urlCache = nil`, kein
+`URLCredentialStorage`); Weiterleitungen folgen wie bisher (AK-11), Basic-Auth nie an ein anderes Ziel (AK-14).
+Cookies leben nur im Arbeitsspeicher dieser Session (AK-36 bleibt erfüllt) und werden beim Löschen für den Host
+entfernt. Das einmalige Leeren läuft mit neuem Merker `B02.legacyHTTPCachePurged` noch einmal; `delete` entfernt
+zusätzlich einen etwaigen Alt-Eintrag der Adresse. Nachweis: `testAK35_KeinPlattencacheFuerM3UAbrufe` (0 Einträge,
+0 Bytes – auch nach erneutem Import), `testAK42_LoeschenLaesstKeineZugangsdatenZurueck`,
+`B02URLImportTests.testAK36_…`, `B03LoeschenTests.testAK33_…`.
+
 ### BUG-03 · Keine Größen-, Längen-, Mengen- oder Gesamtzeitgrenze für unvertraute Listen — mittel
 
 **Betrifft:** AK-37, AK-38, EC-13, EC-14, FB-03
@@ -243,6 +265,14 @@ brauchen im Parser +252 MB.
 `Sources/Services/M3UParser.swift` (keine Kürzung)
 **Vorschlag:** Grenzen für Bytes (auch Datei), Senderzahl, Feldlängen und Gesamtdauer analog zu
 `XtreamClient.Limits` einziehen.
+
+**Behoben 2026-09-26:** `PlaylistImporter.M3ULimits` (analog `XtreamClient.Limits`): 64 MB je Antwort und Datei
+(Datei vor dem Lesen geprüft), 100.000 Sender (Parser hört danach auf), 180 s Gesamtfrist, 60 s Leerlauf (unverändert)
+und ab 20 s ein Mindestdurchsatz von 2 KiB/s; der Parser kürzt Name, Gruppe und tvg-ID auf 512 Zeichen und verwirft
+Stream-Adressen über 4.096 und Logo-Adressen über 2.048 Zeichen. Nachweis: `testAK37_GrosseAntwortUndDateiMitGrenze`
+(längster Name 512), `B02LangsamTests.testAK12_AK28_AK38_EC17_…` (Tröpfeln endet vor 60 s mit „Der Server liefert
+die Playlist zu langsam."; Leerlauf weiter 60 s), `B02ParserTests.testEC13_…`, `B02ReparaturTests.testBUG03_…`
+(Größe URL/Datei, Menge, Frist). Werte → spec.md OF-11.
 
 ### BUG-04 · Der Import friert die Oberfläche ein; 17.000 Sender ≈ 282 s, auch im Release-Build — hoch
 
@@ -263,6 +293,13 @@ Datei-Lesen laufen ebenfalls synchron auf dem Main-Thread (3.000 Sender: 9,23 s,
 **Vorschlag:** Denselben Weg wie B01 · BUG-12 gehen: eigener `ModelContext` abseits des Main-Actors, Beziehung
 blockweise per `append(contentsOf:)`, Lesen der Datei außerhalb des Main-Threads.
 
+**Behoben 2026-09-26:** Abruf, Datei-Lesen, Parsen und Aufbereiten laufen abseits des Main-Actors
+(`nonisolated` in `PlaylistImporter`), gespeichert wird über `PlaylistStore` (eigener `ModelContext`, Beziehung
+blockweise per `append(contentsOf:)`) – derselbe Weg wie Xtream. 17.000 Sender per URL: 2,36 s gesamt (Store-Datei
+2,45 s), längste Main-Thread-Blockade 0,00 s (vorher 282 s); per Datei 2,42 s / 0,00 s. Nachweis:
+`B02LangsamTests.testAK40_…` (Standard 1.500/3.000/6.000 und `TEST_RUNNER_B02_QA_SIZES=17000`),
+`B02ReparaturTests.testBUG04_DateiImportBlockiertDenMainThreadNicht`.
+
 ### BUG-05 · Stream- und Logo-Adressen werden ohne Schema-Prüfung übernommen — mittel
 
 **Betrifft:** AK-39, FB-05
@@ -277,6 +314,12 @@ rtp, rtsp, smb, udp, vlc, x-apple.systempreferences`. Verworfen wird nur eine Ad
 bzw. Anzeigen passiert, entscheiden B06/B08 (VLCKit) und B04 (`AsyncImage`).
 **Ort:** `Sources/Services/M3UParser.swift:48` (`url.scheme != nil`), `:53` (Logo ungeprüft)
 **Vorschlag:** Erlaubte Schemata für Stream- und Logo-Adressen festlegen und im Parser prüfen.
+
+**Behoben 2026-09-26:** `M3UParser` übernimmt nur Stream-Adressen mit `http`, `https`, `rtsp`, `rtsps`, `rtmp`, `rtmps`,
+`rtp`, `udp`, `mms`, `mmsh` und Logos über `http`/`https`; alles andere (`file:`, `smb:`, `javascript:`, `data:`, `vlc:`,
+`ftp:`, relative Logos …) fällt weg – auch in lokalen Dateien. Nachweis: `testAK39_NurErlaubteSchemataWerdenGespeichert`
+(Schemata in der DB: http, rtmp, rtp, rtsp, udp; keine Logos), `B02ParserTests.testEC10_…`, `testEC11_…`,
+`B02DateiImportTests.testEC10_…`. Auswahl → spec.md OF-12.
 
 ### BUG-06 · „Öffnen mit" importiert nicht; jedes Öffnen erzeugt ein leeres Fenster — mittel
 
@@ -297,6 +340,14 @@ ohnehin Music.app (`.m3u`/`.m3u8`) bzw. TextEdit.app (`.txt`). iOS-Build: Warnun
 **Vorschlag:** Entweder einen Handler bauen (`onOpenURL` → Import, ohne neues Fenster) oder Registrierung und
 Website-Aussage entfernen.
 
+**Behoben 2026-09-26:** `Views/PlaylistDocumentHandler.swift` (`onOpenURL`) importiert übergebene Dateien über
+`importFromFile` (macOS „Öffnen mit"/Doppelklick, iOS „Öffnen in"); die Hauptszene nimmt Ereignisse im offenen Fenster
+entgegen (`handlesExternalEvents(preferring:allowing:)`, Multiview-Fenster ausgenommen), statt je Ereignis ein leeres
+Fenster zu erzeugen. `LSSupportsOpeningDocumentsInPlace = YES` (Datei wird an Ort und Stelle gelesen; beseitigt die
+iOS-Build-Warnung aus EC-23). Nachweis: `B02OberflaecheTests.testAK31_OeffnenEreignisImportiertImOffenenFenster`
+(höchstens 1 neues Fenster, 3 importierte Playlists sichtbar). Ob der Finder-Doppelklick Mika+Player oder Music.app
+öffnet, entscheidet LaunchServices (→ spec.md OF-13, Website B10).
+
 ### BUG-07 · Mika+Player meldet sich als Öffner für alle Text-Typen — niedrig
 
 **Betrifft:** AK-32, FB-07
@@ -307,6 +358,11 @@ von LaunchServices lesen (`NSWorkspace.urlsForApplications(toOpen:)`).
 Liste, nicht bei `xspf` und bei Dateien ohne Endung. Öffnen bewirkt nur ein leeres Fenster (BUG-06).
 **Ort:** `Sources/Resources/Info.plist:87` (`public.text`), Rang `Default` (`:83`)
 **Vorschlag:** `public.text` entfernen, Rang `Alternate` erwägen.
+
+**Behoben 2026-09-26:** `Info.plist`: `CFBundleDocumentTypes` nur noch `public.m3u-playlist` (deckt `.m3u` und `.m3u8`),
+`public.text` entfernt, Rolle `Viewer`. Nachweis: `testAK31d_AK32_OeffnerRegistrierung` prüft die Dokumenttypen des
+gebauten Bundles (m3u, m3u8 ja; txt, json, html, csv, swift, md, log, pls, xspf, ohne Endung nein). LaunchServices
+listet ältere gebaute Kopien in anderen Build-Ordnern weiter, bis sie neu registriert oder gelöscht werden.
 
 ### BUG-08 · „Abbrechen" bricht URL- und Datei-Import nicht ab; ein späterer Fehler erscheint in einem losgelösten Fenster — mittel
 
@@ -328,6 +384,12 @@ erst nach dem Import an, die Playlist mit 3.000 Sendern ist angelegt. Das Sheet 
 **Vorschlag:** URL- und Datei-Import wie `startXtreamImport` als gebundene, abbrechbare Aufgabe führen und nach Abbruch
 weder speichern noch `errorMessage` setzen; für die Datei setzt das BUG-04 voraus.
 
+**Behoben 2026-09-26:** `ImportPlaylistView.startImport` führt URL-, Datei- und Xtream-Import als eine gebundene
+Aufgabe; „Abbrechen" und das Schließen des Sheets brechen sie ab, danach wird nichts gespeichert und kein Fehler mehr
+angezeigt (`PlaylistStore.create` prüft den Abbruch je Block und räumt auf). Nachweis:
+`testAK29_EC21_AbbrechenBrichtURLImportAb` (0 Playlists nach 4 s, kein losgelöstes Fenster),
+`testAK16_AK27_AK29_DateiImportUeberDialog` (40.000-Sender-Datei, „Abbrechen" nach 0,5 s → keine zweite Playlist).
+
 ### BUG-09 · Zwei Klicks auf „Von URL importieren" vor dem Neuzeichnen starten zwei Importe — niedrig
 
 **Betrifft:** AK-30, FB-09
@@ -339,6 +401,10 @@ weder speichern noch `errorMessage` setzen; für die Datei setzt das BUG-04 vora
 **Tatsächlich:** 2 Anfragen, 2 gleiche Playlists. Mit 150 ms Abstand bleibt es bei 1/1.
 **Ort:** `Sources/Views/ImportPlaylistView.swift:105-110` (Aufgabe starten), `:193` (`isImporting` erst in der Aufgabe)
 **Vorschlag:** `isImporting` vor dem Start der Aufgabe setzen und doppelten Start abweisen (Muster `startXtreamImport`).
+
+**Behoben 2026-09-26:** `isImporting` wird in `startImport` vor dem Start der Aufgabe gesetzt, ein zweiter Start
+wird abgewiesen (Muster aus B01 · BUG-09, jetzt für alle Reiter). Nachweis:
+`testAK30_DoppelklickAufVonURLImportierenEinImport` (1 Anfrage, 1 Playlist).
 
 ## Hinweise (kein Kriterium durchgefallen)
 

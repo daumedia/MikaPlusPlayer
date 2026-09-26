@@ -162,6 +162,13 @@ Sender mit passendem Schlüssel)
 **Warum mittel, nicht hoch:** Kein markierter Sender geht verloren und der Tab bleibt benutzbar; falsch sind die zusätzlichen
 Favoriten. Gleicher Grad wie BF-53 für dieselbe Ursache.
 
+**Behoben 2026-09-26 (Reparatur B02/B03, gemeinsam mit B03 · BUG-02):** `FavoriteCarryOver` – je Schlüssel
+höchstens so viele Favoriten wie vorher, bevorzugt derselbe Sender (gleiche Stream-Adresse), dann gleicher Name, dann der
+erste Kandidat; entfernte Sterne kommen nicht zurück. Nachweis: `B05AktualisierenTests.testAK15_EC01_EC03_…M3U`
+(3 → 3, entfernte bleiben entfernt, nur „ZDF SD" → nur „ZDF SD"), `testAK15_EC02_…Xtream` (2 → 2),
+`testAK19_…` (Tab ohne zusätzliche Karte), `B05TabTests.testEC01_…` (eine Karte). Die Befund-Semantik der übrigen Tests
+bleibt: BUG-05 (OF-03) weiter mit `XCTExpectFailure`.
+
 ### BUG-02 · Speicherfehler beim Umschalten wird verschluckt — mittel
 
 **Betrifft:** AK-27 (FB-02)
@@ -293,6 +300,13 @@ Kategorien berühren, überleben das Löschen (Katalog 1.2, 5.2).
 **Vorschlag:** wie BF-59 — nach dem Löschen einer Playlist `PRAGMA secure_delete = ON` bzw. `VACUUM` + `wal_checkpoint(TRUNCATE)`.
 **Test:** `B05LoeschenTests.testAK28_NamenGeloeschterFavoritenInDatenbankdateien` (`XCTExpectFailure`, nicht strikt)
 
+**Behoben 2026-09-26 (Reparatur B02/B03, gleiche Ursache wie B03 · BUG-07 / BF-59):** Nach jedem Löschen verdichtet
+`PlaylistStore.compact` die Datei (`VACUUM`, `wal_checkpoint(TRUNCATE)`); die Namen stehen dann weder im -wal noch in
+freien Seiten. Nachweis: `B05LoeschenTests.testAK28_NamenGeloeschterFavoritenInDatenbankdateien` (0 Vorkommen offen und
+nach Neustart; die nicht strikte Fehlererwartung ist durch eine feste Prüfung ersetzt). Nicht im Fehlerauftrag genannt,
+aber durch dieselbe Reparatur behoben; der Test musste angepasst werden, weil er „solange die App läuft, steht der Name
+im -wal" als Ist festschrieb.
+
 ### BUG-11 · Scheitert das Speichern beim Aktualisieren, zeigt die App trotzdem den neuen Stand — mittel
 
 **Betrifft:** Randfall zu AK-17 (dort nur HTTP-Fehler, leere Liste, fehlende Zugangsdaten aufgezählt); verwandt mit B03 EC-03 (dort
@@ -311,6 +325,13 @@ schreibt den ungespeicherten Aktualisierungsstand nachträglich mit — ohne das
 **Vorschlag:** Im Fehlerfall `modelContext.rollback()` und eine eigene Meldung („Die Playlist konnte nicht gespeichert werden …“);
 besser in einem eigenen Kontext aktualisieren und erst nach erfolgreichem Speichern sichtbar machen (vgl. BF-52).
 **Test:** `B05AktualisierenTests.testAK17_Randfall_SpeicherfehlerBeimAktualisieren` (braucht `TEST_RUNNER_B05_FULL_VOLUME`)
+
+**Behoben 2026-09-26 (Reparatur B02/B03):** Aktualisieren ersetzt in einem eigenen Kontext in **einem**
+Speichervorgang (`PlaylistStore.replaceChannels`); scheitert er, wird dort zurückgerollt, der Kontext der Ansicht bleibt
+unberührt (kein ungespeicherter Stand, den ein späteres Speichern mitschreiben könnte), und die Meldung lautet „Die
+Playlist konnte nicht gespeichert werden. Die bisherige Senderliste bleibt erhalten. …" statt des SQLite-Texts.
+Nachweis: `B05AktualisierenTests.testAK17_Randfall_SpeicherfehlerBeimAktualisieren` mit
+`TEST_RUNNER_B05_FULL_VOLUME` (Abbild 40 MB, vollgeschrieben), siehe build-bericht.md.
 
 ## Hinweise (kein Kriterium durchgefallen)
 

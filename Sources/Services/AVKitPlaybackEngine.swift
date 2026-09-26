@@ -44,6 +44,17 @@ final class AVKitPlaybackEngine: PlaybackEngine {
 
     func play() { player.play(); isPaused = false }
     func pause() { player.pause(); isPaused = true }
+
+    /// Hält an und gibt das Element frei – das beendet auch das Nachladen und die Verbindung (B03 · BUG-05).
+    func stop() {
+        stopPictureInPicture()
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+        statusObserver?.cancel()
+        errorObserver?.cancel()
+        isPaused = true
+        state = .idle
+    }
     func togglePlayPause() { isPaused ? play() : pause() }
 
     func setVolume(_ value: Double) {

@@ -213,21 +213,25 @@ final class B02ParserTests: XCTestCase {
         for rel in ["stream.m3u8", "/live/1.ts", "../live/1.ts", "//cdn.example/1.ts", "127.0.0.1:8080/live/1.ts"] {
             XCTAssertEqual(parse("#EXTINF:-1,R\n\(rel)").count, 0, rel)
         }
+        // Seit BUG-05 nur Wiedergabe-Schemata: „C:" (Windows-Pfad) und „localhost:" (Host ohne Schema) fallen weg.
         let win = parse("#EXTINF:-1,Win\nC:\\Videos\\a.ts")
-        XCTAssertEqual(win.first?.streamURL.absoluteString, "C:%5CVideos%5Ca.ts")
-        XCTAssertEqual(win.first?.streamURL.scheme, "C")
+        XCTAssertEqual(win.count, 0)
         let lh = parse("#EXTINF:-1,LH\nlocalhost:8080/live/1.ts")
-        XCTAssertEqual(lh.first?.streamURL.scheme, "localhost")
+        XCTAssertEqual(lh.count, 0)
         B02.log("EC-10|\(show(win + lh))")
     }
 
     /// EC-11: Logo-Adresse mit Leerzeichen → prozentkodiert relativ; relative Logo-Pfade bleiben relativ.
     func testEC11_LogoAdressen() {
+        // Seit BUG-05 nur HTTP(S)-Logos: Adressen ohne Schema und relative Pfade werden verworfen, der Sender bleibt.
         let leer = parse("#EXTINF:-1 tvg-logo=\"kein url mit leer zeichen\",Logo\nhttp://h/a.ts")
-        XCTAssertEqual(leer.first?.logoURL?.absoluteString, "kein%20url%20mit%20leer%20zeichen")
-        XCTAssertNil(leer.first?.logoURL?.scheme)
+        XCTAssertEqual(leer.count, 1)
+        XCTAssertNil(leer.first?.logoURL)
         let rel = parse("#EXTINF:-1 tvg-logo=\"logos/a.png\",Rel\nhttp://h/a.ts")
-        XCTAssertEqual(rel.first?.logoURL?.absoluteString, "logos/a.png")
+        XCTAssertEqual(rel.count, 1)
+        XCTAssertNil(rel.first?.logoURL)
+        let ok = parse("#EXTINF:-1 tvg-logo=\"https://h/logo.png\",Ok\nhttp://h/a.ts")
+        XCTAssertEqual(ok.first?.logoURL?.absoluteString, "https://h/logo.png")
     }
 
     /// EC-12: derselbe Sender zweimal → zwei Sender.
@@ -236,21 +240,23 @@ final class B02ParserTests: XCTestCase {
     }
 
     /// EC-13 (FB-03): sehr lange Zeilen werden ungekürzt übernommen; Laufzeit je Fall.
-    func testEC13_SehrLangeZeilenUngekuerzt() {
+    func testEC13_SehrLangeZeilenWerdenBegrenzt() {
         func timed(_ label: String, _ s: String) -> [ParsedChannel] {
             let t = Date()
             let r = parse(s)
             B02.evidence("AK-37-EC-13-grenzen.txt", "EC-13|\(label)|eingabeBytes=\(s.utf8.count)|anzahl=\(r.count)|dauer=\(B02.f2(Date().timeIntervalSince(t)))s|name=\(r.first?.name.count ?? -1)|logo=\(r.first?.logoURL?.absoluteString.count ?? -1)|gruppe=\(r.first?.group?.count ?? -1)|url=\(r.first?.streamURL.absoluteString.count ?? -1)|build=\(B02.buildConfiguration)")
             return r
         }
+        // Seit BUG-03: Name, Gruppe und tvg-ID auf 512 Zeichen gekürzt, Logo-Adressen über 2.048 und Stream-Adressen über
+        // 4.096 Zeichen verworfen (bei der Stream-Adresse fällt der Eintrag weg).
         let mb = 1_000_000
         let a = timed("Name 1 MB + Logo 5 MB", "#EXTINF:-1 tvg-logo=\"http://x/\(String(repeating: "l", count: 5 * mb)).png\",\(String(repeating: "N", count: mb))\nhttp://h/a.ts")
-        XCTAssertEqual(a.first?.name.count, mb)
-        XCTAssertEqual(a.first?.logoURL?.absoluteString.count, 5 * mb + 13)
+        XCTAssertEqual(a.first?.name.count, 512)
+        XCTAssertNil(a.first?.logoURL)
         let b = timed("Stream-Adresse 2 MB", "#EXTINF:-1,Lang\nhttp://h/\(String(repeating: "u", count: 2 * mb))")
-        XCTAssertEqual(b.first?.streamURL.absoluteString.count, 2 * mb + 9)
+        XCTAssertEqual(b.count, 0)
         let c = timed("Gruppe 1 MB", "#EXTINF:-1 group-title=\"\(String(repeating: "g", count: mb))\",G\nhttp://h/a.ts")
-        XCTAssertEqual(c.first?.group?.count, mb)
+        XCTAssertEqual(c.first?.group?.count, 512)
         let d = timed("1 MB Anführungszeichen", "#EXTINF:-1 \(String(repeating: "\"", count: mb)),Q\nhttp://h/a.ts")
         XCTAssertEqual(d.count, 1)
         let e = timed("500.000 × a=", "#EXTINF:-1 \(String(repeating: "a=", count: 500_000)),A\nhttp://h/a.ts")

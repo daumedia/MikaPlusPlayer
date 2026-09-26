@@ -47,6 +47,13 @@ final class VLCPlaybackEngine: NSObject, PlaybackEngine {
 
     func play() { mediaPlayer.play(); isPaused = false }
     func pause() { if mediaPlayer.isPlaying { mediaPlayer.pause() }; isPaused = true }
+
+    /// Beendet Wiedergabe und Verbindung (B03 · BUG-05); anders als `pause()` hört VLC damit auch auf zu lesen.
+    func stop() {
+        mediaPlayer.stop()
+        isPaused = true
+        state = .idle
+    }
     func togglePlayPause() { isPaused ? play() : pause() }
 
     func setVolume(_ value: Double) {

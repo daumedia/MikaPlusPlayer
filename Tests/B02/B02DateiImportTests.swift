@@ -210,9 +210,10 @@ final class B02DateiImportTests: B02TestCase {
         let dir = try tempDir("ec10")
         try Data("x".utf8).write(to: dir.appendingPathComponent("stream.ts"))
         let url = dir.appendingPathComponent("relativ.m3u")
-        try Data("#EXTINF:-1,Relativ\nstream.ts\n#EXTINF:-1,Absolut\n\(dir.appendingPathComponent("stream.ts").absoluteString)\n".utf8).write(to: url)
+        try Data("#EXTINF:-1,Relativ\nstream.ts\n#EXTINF:-1,Absolut\n\(dir.appendingPathComponent("stream.ts").absoluteString)\n#EXTINF:-1,Netz\n\(B02.dead)/live/netz.ts\n".utf8).write(to: url)
         let p = try await B02.importFile(url, c.mainContext).get()
         B02.log("EC-10|datei|\(B02.describe(p))")
-        XCTAssertEqual(p.channels.map(\.name), ["Absolut"])
+        // Relative Adresse wie bisher verworfen; seit BUG-05 auch die absolute `file:`-Adresse (kein Wiedergabe-Schema).
+        XCTAssertEqual(p.channels.map(\.name), ["Netz"])
     }
 }

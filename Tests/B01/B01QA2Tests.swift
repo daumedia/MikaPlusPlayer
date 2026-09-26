@@ -282,8 +282,8 @@ final class B01QA2Tests: B01MockTestCase {
 
             // Löschen über den App-Weg: Zeilen und Schlüsselbund-Eintrag weg
             let importer = PlaylistImporter(modelContext: ctx)
-            try importer.delete(p1)
-            try importer.delete(p2)
+            try await importer.delete(p1)
+            try await importer.delete(p2)
             XCTAssertNil(try XtreamCredentialStore.standard.load(for: p1.id))
             XCTAssertNil(try XtreamCredentialStore.standard.load(for: p2.id))
             XCTAssertEqual(B01.sqliteCount(url.path, "select count(*) from ZCHANNEL"), 0)
@@ -569,6 +569,9 @@ final class B01QA2Tests: B01MockTestCase {
         }
         try raw.start()
         defer { raw.stop() }
+        // Das Test-Cookie lebt im Arbeitsspeicher des gemeinsamen Loaders und würde sonst späteren Tests für 127.0.0.1
+        // mitgesendet (Gesamtlauf: B03 Angriff 5).
+        defer { PlaylistHTTPLoader.shared.removeCookies(named: { $0 == "qa2sess" }) }
         let cacheDir = try dir("urlcache")
         let original = URLCache.shared
         let probeCache = URLCache(memoryCapacity: 4_000_000, diskCapacity: 20_000_000, directory: cacheDir)
@@ -1049,7 +1052,7 @@ final class B01QA2Tests: B01MockTestCase {
         defer { print("B01QA2|KC|aufraeumenSonde|\(probe(exe, "delete", kc.service, playlist.id.uuidString))") }
 
         var deleteError = "ok"
-        do { try PlaylistImporter(modelContext: ctx, credentialStore: kc).delete(playlist) } catch { deleteError = error.localizedDescription }
+        do { try await PlaylistImporter(modelContext: ctx, credentialStore: kc).delete(playlist) } catch { deleteError = error.localizedDescription }
         let left = B01QA2.keychainCount(service: kc.service)
         let playlists = try ctx.fetchCount(FetchDescriptor<Playlist>())
         print("B01QA2|KC|loeschenPlaylistEintragAndererBuild|\(deleteError)|verbleibendeEintraege=\(left)|playlists=\(playlists)")

@@ -179,7 +179,7 @@ final class B03AktualisierenTests: B03QATestCase {
 
     // MARK: - AK-10 ⚠ · Favoriten vervielfachen sich (BUG-02)
 
-    @MainActor func testAK10_EinFavoritWirdZuMehreren() async throws {
+    @MainActor func testAK10_EinFavoritBleibtEinFavorit() async throws {
         let (container, _) = try fileContainer("ak10")
         let ctx = container.mainContext
         let p = try await importM3U(ctx)
@@ -218,17 +218,13 @@ final class B03AktualisierenTests: B03QATestCase {
         let afterX = favorites(x)
         B03QA.log("AK-10|m3u|vorher=\(before)|nachher=\(afterM3U)|kanalX=\(kanalX)|kanalXnochmal=\(kanalXZweimal)|xtream=1→\(afterX)")
 
-        // Ist-Verhalten (Spec AK-10), belegt:
-        XCTAssertEqual(afterM3U, ["Alpha", "Film 4K", "Film HD", "Film SD", "Gamma", "Sport HD", "sport hd"])
-        XCTAssertEqual(kanalX.count, 2)
-        XCTAssertEqual(afterX, ["Sport 1", "Sport 1 4K", "Sport 1 HD"])
-        // Erwartet: ein Stern bleibt ein Stern
-        XCTExpectFailure("BUG-02 · Ein Favorit wird beim Aktualisieren zu mehreren (FB-02)") {
-            XCTAssertEqual(afterM3U.count, before, "M3U: aus 4 Favoriten dürfen nicht 7 werden")
-            XCTAssertEqual(kanalX.count, 1, "Kanal X: aus 1 dürfen nicht 2 werden")
-            XCTAssertEqual(afterX.count, 1, "Xtream: aus 1 dürfen nicht 3 werden")
-        }
-        XCTAssertEqual(kanalXZweimal.count, 2, "weiteres Aktualisieren ohne neue Dubletten vervielfacht nicht weiter")
+        // BUG-02 behoben: ein Stern bleibt ein Stern – je Schlüssel höchstens so viele Favoriten wie vorher, und zwar
+        // derselbe Sender (gleiche Stream-Adresse).
+        XCTAssertEqual(afterM3U.count, before, "M3U: aus 4 Favoriten dürfen nicht 7 werden")
+        XCTAssertEqual(afterM3U, ["Alpha", "Film HD", "Gamma", "Sport HD"])
+        XCTAssertEqual(kanalX.count, 1, "Kanal X: aus 1 dürfen nicht 2 werden")
+        XCTAssertEqual(afterX, ["Sport 1"], "Xtream: aus 1 dürfen nicht 3 werden")
+        XCTAssertEqual(kanalXZweimal.count, 1, "weiteres Aktualisieren vervielfacht nicht")
     }
 
     // MARK: - AK-11 ⚠ · Kürzere Liste (BUG-11)
@@ -263,7 +259,7 @@ final class B03AktualisierenTests: B03QATestCase {
     // MARK: - AK-14 ⚠ · Mehrfach, AK-15 · parallel
 
     /// AK-14: gleichzeitig gestartete Aktualisierungen derselben Playlist → je ein vollständiger Abruf; Ergebnis richtig.
-    @MainActor func testAK14_MehrfachesAktualisierenDerselbenPlaylistOhneSperre() async throws {
+    @MainActor func testAK14_MehrfachesAktualisierenDerselbenPlaylistGesperrt() async throws {
         let (container, url) = try fileContainer("ak14")
         let ctx = container.mainContext
         let p = try await importM3U(ctx)
@@ -300,12 +296,9 @@ final class B03AktualisierenTests: B03QATestCase {
         XCTAssertEqual(m3uState.2, ["Alpha"])
         XCTAssertEqual(x.channelCount, 4)
         XCTAssertEqual(favorites(x).count, 1)
-        XCTAssertEqual(m3uFetches, 2)
-        XCTAssertEqual(xRequests, 9)
-        XCTExpectFailure("BUG-04 · Keine Sperre gegen mehrfaches Aktualisieren derselben Playlist (FB-04)") {
-            XCTAssertEqual(m3uFetches, 1, "zweiter Aufruf während des ersten darf keinen zweiten Abruf auslösen")
-            XCTAssertEqual(xRequests, 3, "Xtream: Zugangsdaten nur einmal senden")
-        }
+        // BUG-04 behoben: Ein zweiter Aufruf während des ersten bleibt ohne Wirkung.
+        XCTAssertEqual(m3uFetches, 1, "zweiter Aufruf während des ersten darf keinen zweiten Abruf auslösen")
+        XCTAssertEqual(xRequests, 3, "Xtream: Zugangsdaten nur einmal senden")
     }
 
     /// AK-15: zwei verschiedene Playlists gleichzeitig → beide richtig ersetzt, je mit ihren Favoriten.
@@ -544,7 +537,7 @@ final class B03AktualisierenTests: B03QATestCase {
         XCTAssertEqual(mock.requests.count, 0, "keine Anfrage")
 
         // empfohlener Weg
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
         let again = try await importXtream(ctx, pass: "qa-pass-b03-ak21")
         B03QA.log("AK-21|favoriten vorher=\(favBefore)|nach löschen+neu importieren=\(favorites(again))")
         XCTAssertEqual(favorites(again), [])
@@ -591,7 +584,7 @@ final class B03AktualisierenTests: B03QATestCase {
         mock.handler = cfg.handler()
         let task = Task { @MainActor in try await PlaylistImporter(modelContext: ctx).refresh(p) }
         try await Task.sleep(nanoseconds: 400_000_000)
-        try PlaylistImporter(modelContext: ctx).delete(p)
+        try await PlaylistImporter(modelContext: ctx).delete(p)
         let result = await task.result
         var resultText = "ok"
         if case .failure(let e) = result { resultText = e.localizedDescription }
@@ -617,7 +610,7 @@ final class B03AktualisierenTests: B03QATestCase {
         mock.handler = cfg.handler()
         let task = Task { @MainActor in try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(p) }
         try await Task.sleep(nanoseconds: 600_000_000)
-        try PlaylistImporter(modelContext: ctx).delete(p)
+        try await PlaylistImporter(modelContext: ctx).delete(p)
         let result = await task.result
         var resultText = "ok"
         if case .failure(let e) = result { resultText = e.localizedDescription }
@@ -632,7 +625,7 @@ final class B03AktualisierenTests: B03QATestCase {
     }
 
     /// AK-35 ⚠: Altbestand wird aktualisiert und währenddessen gelöscht → Schlüsselbund-Eintrag entsteht nach dem Löschen.
-    @MainActor func testAK35_AltbestandAktualisierenUndLoeschenHinterlaesstSchluesselbundEintrag() async throws {
+    @MainActor func testAK35_AltbestandAktualisierenUndLoeschenOhneVerwaistenEintrag() async throws {
         let (container, url) = try fileContainer("ak35")
         let ctx = container.mainContext
         var cfg = B03QAPanel(); cfg.streamsDelay = 1.5
@@ -647,22 +640,20 @@ final class B03AktualisierenTests: B03QATestCase {
         let pid = p.id
         let task = Task { @MainActor in try await PlaylistImporter(modelContext: ctx, loginThrottle: XtreamLoginThrottle()).refresh(p) }
         try await Task.sleep(nanoseconds: 600_000_000)
-        try PlaylistImporter(modelContext: ctx).delete(p)
+        try await PlaylistImporter(modelContext: ctx).delete(p)
         let afterDelete = try XtreamCredentialStore.standard.load(for: pid)
         _ = await task.result
         let afterRefresh = try XtreamCredentialStore.standard.load(for: pid)
         B03QA.log("AK-35|nachLoeschen=\(afterDelete != nil)|nachAktualisieren=\(afterRefresh != nil)|\(B03QA.dbSummary(url))")
         XCTAssertNil(afterDelete)
         XCTAssertEqual(B03QA.int(url.path, "select count(*) from ZPLAYLIST"), 0)
-        XCTAssertEqual(afterRefresh?.password, pass, "Ist: Eintrag mit Passwort ohne Playlist")
-        XCTExpectFailure("BUG-08 · Verwaister Schlüsselbund-Eintrag nach Löschen während des Aktualisierens (FB-08)") {
-            XCTAssertNil(afterRefresh)
-        }
+        // BUG-08 behoben: Das Aktualisieren legt den Eintrag nur an, solange die Playlist existiert.
+        XCTAssertNil(afterRefresh, "kein verwaister Schlüsselbund-Eintrag")
     }
 
     // MARK: - AK-29 ⚠ · gehaltener Sender nach Aktualisieren (Adressbildung)
 
-    @MainActor func testAK29_GehaltenerSenderNachAktualisierenOhneZugangsdaten() async throws {
+    @MainActor func testAK29_GehaltenerSenderNachAktualisierenMitZugangsdaten() async throws {
         let (container, _) = try fileContainer("ak29")
         let ctx = container.mainContext
         let x = try await importXtream(ctx, pass: "qa-pass-b03-ak29", output: .hls)
@@ -674,10 +665,8 @@ final class B03AktualisierenTests: B03QATestCase {
         let masked = after.replacingOccurrences(of: mock.hostPort, with: "<mock>")
         B03QA.log("AK-29|vorher=\(before.absoluteString.replacingOccurrences(of: mock.hostPort, with: "<mock>"))|nachher=\(masked)|playlistNil=\(held.playlist == nil)")
         XCTAssertTrue(before.absoluteString.contains("qa-pass-b03-ak29"))
-        XCTAssertEqual(after, "http://\(mock.hostPort)/live/101.m3u8", "Ist: Adresse ohne Benutzername und Passwort")
-        XCTExpectFailure("BUG-05 · Gehaltener Sender verliert nach dem Aktualisieren die Zugangsdaten (FB-05)") {
-            XCTAssertTrue(after.contains("qa-pass-b03-ak29"))
-        }
+        // BUG-05 behoben: Der Resolver schlägt die Playlist über die ID nach, nicht über die ersetzte Beziehung.
+        XCTAssertEqual(after, "http://\(mock.hostPort)/live/qa-user/qa-pass-b03-ak29/101.m3u8", "mit Benutzername und Passwort")
     }
 
     // MARK: - EC-03 · Speichern scheitert nach dem Ersetzen

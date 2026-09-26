@@ -11,17 +11,21 @@ import os
 ///   übernommen, wenn sie nachweislich das Schema dieser App hat (genau die Entitäten `Playlist` und
 ///   `Channel` mit passenden Versions-Hashes). Sie wird **kopiert**; gelöscht wird sie erst nach
 ///   geprüfter Kopie. Gehört sie nicht dieser App, bleibt sie unangetastet.
-/// - BUG-01: Xtream-Zugangsdaten aus Altbeständen wandern in den Schlüsselbund.
-/// - BUG-03: der alte HTTP-Plattencache der App wird einmalig geleert.
+/// - BUG-01: Xtream-Zugangsdaten aus Altbeständen wandern in den Schlüsselbund; seit B02 · BUG-01 ebenso
+///   Zugangsdaten aus M3U-Adressen (`username`/`password`, `user:pass@`).
+/// - BUG-03: der alte HTTP-Plattencache der App wird einmalig geleert (seit B02 · BUG-02 erneut einmal, weil
+///   M3U-Abrufe bis dahin wieder hineinschrieben; seitdem schreibt kein Importweg mehr hinein).
 /// - B09 · BUG-13: geöffnet wird mit versioniertem Schema und Migrationsplan (`AppSchema`). Lässt sich die
 ///   Datei nicht öffnen, wird sie unverändert beiseitegelegt und eine neue angelegt – kein Absturz.
 ///
-/// Die Datenbank wird **nicht** vom Backup ausgeschlossen: Nach BUG-01 enthält sie keine
+/// Die Datenbank wird **nicht** vom Backup ausgeschlossen: Nach BUG-01 (B01, B02) enthält sie keine
 /// Zugangsdaten mehr, ein Ausschluss würde Nutzern beim Wiederherstellen nur ihre Playlists nehmen.
 enum AppPersistence {
     static let storeFileName = "MikaPlusPlayer.store"
     static let legacyStoreFileName = "default.store"
-    static let cachePurgeDefaultsKey = "B01.legacyHTTPCachePurged"
+    /// Merker für das einmalige Leeren. Neuer Name seit B02 · BUG-02: Wer eine Entwicklungsversion mit dem Merker
+    /// `B01.legacyHTTPCachePurged` hatte, bekommt die seither von M3U-Abrufen geschriebenen Einträge ebenfalls entfernt.
+    static let cachePurgeDefaultsKey = "B02.legacyHTTPCachePurged"
 
     static let setAsideFolderName = "Beiseitegelegt"
 
@@ -259,6 +263,7 @@ enum AppPersistence {
 
     /// Stellt Xtream-Playlists mit Zugangsdaten in `sourceURL`/`streamURL` um: Zugangsdaten in den
     /// Schlüsselbund, Adressen ohne Geheimnis. Sender bleiben dieselben Objekte, Favoriten bleiben.
+    /// Seit B02 · BUG-01 ebenso M3U-Playlists, deren Adresse Zugangsdaten trägt (`M3UCredentials`).
     /// Danach wird die Datei verdichtet und das Write-Ahead-Log geleert, damit weder freigegebene Seiten
     /// noch alte Log-Einträge den Klartext behalten.
     /// Gelingt der Schlüsselbund-Eintrag nicht, bleibt die Playlist unverändert und spielbar.
@@ -268,8 +273,12 @@ enum AppPersistence {
         var result = CredentialMigrationResult()
         let context = ModelContext(container)
         context.autosaveEnabled = false
+        migrateM3UCredentials(context: context, store: store, result: &result)
         let descriptor = FetchDescriptor<Playlist>(predicate: #Predicate { $0.isXtream == true })
-        guard let playlists = try? context.fetch(descriptor) else { return result }
+        guard let playlists = try? context.fetch(descriptor) else {
+            if result.migratedPlaylists > 0, let storeURL { compactStore(at: storeURL) }
+            return result
+        }
 
         for playlist in playlists {
             guard let source = playlist.sourceURL,
@@ -310,6 +319,40 @@ enum AppPersistence {
             compactStore(at: storeURL)
         }
         return result
+    }
+
+    /// B02 · BUG-01: M3U-Playlists mit Zugangsdaten in der Adresse → Schlüsselbund, Adresse und Stream-Adressen mit
+    /// Platzhaltern. Dieselben Sender-Objekte, Favoriten bleiben.
+    private static func migrateM3UCredentials(context: ModelContext, store: XtreamCredentialStore,
+                                              result: inout CredentialMigrationResult) {
+        let descriptor = FetchDescriptor<Playlist>(predicate: #Predicate { $0.isXtream == false })
+        guard let playlists = try? context.fetch(descriptor) else { return }
+        for playlist in playlists {
+            guard let source = playlist.sourceURL, let split = M3UCredentials.split(source) else { continue }
+            do {
+                try store.saveM3U(split.secret, for: playlist.id)
+            } catch {
+                result.failedPlaylists += 1
+                continue
+            }
+            var rewritten = 0
+            for channel in playlist.channels {
+                let cleaned = M3UCredentials.redact(channel.streamURL, secret: split.secret)
+                if cleaned != channel.streamURL {
+                    channel.streamURL = cleaned
+                    rewritten += 1
+                }
+            }
+            playlist.sourceURL = split.stored
+            do {
+                try context.save()
+                result.migratedPlaylists += 1
+                result.rewrittenChannels += rewritten
+            } catch {
+                context.rollback()
+                result.failedPlaylists += 1
+            }
+        }
     }
 
     /// Anfänge alter Stream-Adressen: `"\(base)/live/\(user)/\(pass)/"`, roh und so, wie `URL(string:)`

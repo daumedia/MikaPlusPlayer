@@ -318,7 +318,9 @@ final class B02OberflaecheTests: B02TestCase {
         let dir = try tempDir("dialog")
         let good = dir.appendingPathComponent("qa-dialog.m3u"); try B02.zweiSenderData.write(to: good)
         let bad = dir.appendingPathComponent("notizen.txt"); try Data("Einkaufsliste\nhttp://example.invalid/a.ts\n".utf8).write(to: bad)
-        let big = dir.appendingPathComponent("gross-3000.m3u"); try B02.grosseListe(3_000).write(to: big)
+        // Seit BUG-04 ist ein Datei-Import mit 3.000 Sendern nach Bruchteilen einer Sekunde fertig; damit „Abbrechen“ nach
+        // 0,5 s einen *laufenden* Import trifft, ist die Liste größer (40.000 Sender).
+        let big = dir.appendingPathComponent("gross-40000.m3u"); try B02.grosseListe(40_000).write(to: big)
 
         // AK-27 (Datei)
         var sheet = try await openSheet(w, tab: "Datei")
@@ -376,10 +378,9 @@ final class B02OberflaecheTests: B02TestCase {
         let gap = watchdog.stop()
         let names = (try? container?.mainContext.fetch(FetchDescriptor<Playlist>()).map { "\($0.name)=\($0.channelCount)" }) ?? []
         B02.evidence("AK-05-dateidialog.txt", "AK-29|datei|abbrechenNach0.5s|sheetZuNach=\(B02.f2(elapsed))s|maxMainThreadBlockade=\(B02.f2(gap))s|playlists=\(names)|build=\(B02.buildConfiguration)")
-        XCTAssertEqual(playlistCount(), 2, "Ist: Datei-Import lief trotz Abbrechen vollständig durch")
-        XCTExpectFailure("BUG-08 · „Abbrechen\" bricht den Datei-Import nicht ab") {
-            XCTAssertEqual(playlistCount(), 1)
-        }
+        // BUG-08 behoben: „Abbrechen“ bricht den Datei-Import ab, nichts wird angelegt (BUG-04: der Klick kommt sofort an).
+        XCTAssertEqual(playlistCount(), 1)
+        XCTAssertLessThan(gap, 0.5, "Main-Thread bleibt bedienbar")
     }
 
     // MARK: AK-06
@@ -460,7 +461,7 @@ final class B02OberflaecheTests: B02TestCase {
     /// AK-29 ⚠ / BUG-08: „Abbrechen" während eines URL-Imports schließt nur das Sheet. (a) Erfolg → Playlist erscheint später.
     /// (b) Fehler → das geschlossene Sheet taucht losgelöst mit Alert auf dem Bildschirm auf. EC-21: danach öffnet das Sheet
     /// normal, ohne Alert.
-    @MainActor func testAK29_EC21_AbbrechenBrichtURLImportNichtAb() async throws {
+    @MainActor func testAK29_EC21_AbbrechenBrichtURLImportAb() async throws {
         let w = try await openPlaylists()
         // a) Erfolg nach dem Abbrechen
         server.handler = { _ in .delayed(2, B02Server.ok(B02.zweiSenderData)) }
@@ -475,7 +476,6 @@ final class B02OberflaecheTests: B02TestCase {
         let spaeter = playlistCount()
         B02.log("AK-29|a-erfolgNachAbbrechen|playlistsDirekt=\(direkt)|playlistsNach4s=\(spaeter)|anfragen=\(server.requests.count)")
         XCTAssertEqual(direkt, 0)
-        XCTAssertEqual(spaeter, 1, "Ist: Import lief weiter")
 
         // b) Fehler nach dem Abbrechen
         server.resetLog()
@@ -496,8 +496,7 @@ final class B02OberflaecheTests: B02TestCase {
             shot(o, "AK-29-losgeloestes-fenster-\(i)")
         }
         B02.log("AK-29|b-fehlerNachAbbrechen|neueFensterAufBildschirm=\(newOnScreen.count)|texte=\(orphanTexts.filter { $0.contains("Fehler") || $0.contains("HTTP") || $0.contains("URL") })|sheetAmHauptfenster=\(w.attachedSheet != nil)|anfragen=\(server.requests.count)")
-        XCTAssertGreaterThan(newOnScreen.count, 0, "Ist: losgelöstes Fenster erscheint")
-        XCTAssertTrue(orphanTexts.contains { $0.contains("Netzwerkfehler: HTTP 500") })
+        XCTAssertFalse(orphanTexts.contains { $0.contains("Netzwerkfehler: HTTP 500") })
         XCTAssertNil(w.attachedSheet)
 
         // EC-21: erneut öffnen — kein Alert am neuen Sheet
@@ -506,16 +505,15 @@ final class B02OberflaecheTests: B02TestCase {
         B02.log("EC-21|erneutGeoeffnet|alertAmSheet=\(again.attachedSheet != nil)")
         XCTAssertNil(again.attachedSheet)
 
-        XCTExpectFailure("BUG-08 · „Abbrechen\" bricht den URL-Import nicht ab; ein späterer Fehler erscheint losgelöst") {
-            XCTAssertEqual(spaeter, 0)
-            XCTAssertEqual(newOnScreen.count, 0)
-        }
+        // BUG-08 behoben: nach „Abbrechen“ entsteht nichts und es erscheint nichts (wie beim Xtream-Reiter).
+        XCTAssertEqual(spaeter, 0)
+        XCTAssertEqual(newOnScreen.count, 0)
     }
 
     // MARK: AK-30 · BUG-09
 
     /// AK-30 ⚠ / BUG-09: zwei Klicks im selben Durchlauf → zwei Anfragen, zwei Playlists; mit 150 ms Abstand → eine.
-    @MainActor func testAK30_DoppelklickAufVonURLImportieren() async throws {
+    @MainActor func testAK30_DoppelklickAufVonURLImportierenEinImport() async throws {
         let w = try await openPlaylists()
         server.handler = { _ in .delayed(1, B02Server.ok(B02.zweiSenderData)) }
         var results: [String: (Int, Int)] = [:]
@@ -539,11 +537,9 @@ final class B02OberflaecheTests: B02TestCase {
         }
         XCTAssertEqual(results["b-150ms"]?.0, 1)
         XCTAssertEqual(results["b-150ms"]?.1, 1)
-        XCTAssertEqual(results["a-selberDurchlauf"]?.0, 2, "Ist")
-        XCTAssertEqual(results["a-selberDurchlauf"]?.1, 2, "Ist")
-        XCTExpectFailure("BUG-09 · zwei Klicks vor dem Neuzeichnen starten zwei URL-Importe") {
-            XCTAssertEqual(results["a-selberDurchlauf"]?.1, 1)
-        }
+        // BUG-09 behoben: `isImporting` wird vor dem Start gesetzt – ein Import, eine Anfrage.
+        XCTAssertEqual(results["a-selberDurchlauf"]?.0, 1)
+        XCTAssertEqual(results["a-selberDurchlauf"]?.1, 1)
     }
 
     // MARK: AK-31 / AK-32 · BUG-06 / BUG-07
@@ -551,7 +547,7 @@ final class B02OberflaecheTests: B02TestCase {
     /// AK-31 (b)(c) ⚠ / BUG-06: Das „Dokumente öffnen"-Ereignis, das LaunchServices bei „Öffnen mit" an die laufende App
     /// schickt, wird hier direkt an den eigenen Prozess (Test-Host = die App, Datenbank im Speicher) gesendet. Je Ereignis
     /// entsteht ein zusätzliches leeres Fenster „Playlists"; es wird nichts importiert, keine Meldung.
-    @MainActor func testAK31_OeffnenEreignisErzeugtLeeresFensterOhneImport() async throws {
+    @MainActor func testAK31_OeffnenEreignisImportiertImOffenenFenster() async throws {
         let dir = try tempDir("ak31")
         let visibleBefore = Set(NSApp.windows.filter(\.isVisible).map(ObjectIdentifier.init))
         var created: [NSWindow] = []
@@ -584,15 +580,20 @@ final class B02OberflaecheTests: B02TestCase {
             let windowTexts = newWindows.map { texts($0).filter { $0.contains("Playlist") || $0.contains("Sender") || $0.contains("Fehler") } }
             lines.append("\(file)|neueFenster=\(newWindows.count)|titel=\(newWindows.map(\.title))|texte=\(windowTexts)")
         }
-        let allTexts = created.flatMap { texts($0) }
-        B02.evidence("AK-31-32-oeffnen.txt", "AK-31|testHost|" + lines.joined(separator: "\nAK-31|testHost|"))
-        if let first = created.first { shot(first, "AK-31-leeres-fenster-nach-oeffnen") }
-        XCTAssertEqual(created.count, 3, "je Öffnen ein zusätzliches Fenster")
-        XCTAssertEqual(created.filter { texts($0).contains { $0.contains("Keine Playlists") } }.count, 3, "alle leer")
-        XCTAssertFalse(allTexts.contains { $0.contains("Sender") || $0.contains("Fehler") })
-        XCTExpectFailure("BUG-06 · Öffnen einer M3U mit der App importiert nicht") {
-            XCTAssertTrue(allTexts.contains { $0.contains("qa-oeffnen, 2 Sender") })
-        }
+        // BUG-06 behoben: Das Ereignis landet im offenen Fenster (höchstens eines entsteht, wenn keines offen war) und
+        // importiert die Datei über denselben Weg wie der Datei-Reiter.
+        await UIHarness.spin(1.0)
+        let appWindows = NSApp.windows.filter { $0.isVisible && !($0 is NSPanel) }
+        for aw in appWindows { AX.wake(aw) }
+        await UIHarness.spin(0.3)
+        let imported = appWindows.flatMap { texts($0) }.filter { $0.contains("qa-oeffnen, 2 Sender") }
+        let failures = appWindows.flatMap { texts($0) }.filter { $0.contains("Import fehlgeschlagen") }
+        B02.evidence("AK-31-32-oeffnen.txt", "AK-31|testHost|" + lines.joined(separator: "\nAK-31|testHost|")
+                     + "\nAK-31|testHost|importiertSichtbar=\(imported.count)|fehler=\(failures)")
+        if let shown = appWindows.first(where: { texts($0).contains { $0.contains("qa-oeffnen") } }) { shot(shown, "AK-31-import-nach-oeffnen") }
+        XCTAssertLessThanOrEqual(created.count, 1, "kein leeres Fenster je Öffnen")
+        XCTAssertEqual(imported.count, 3, "jede geöffnete Datei als Playlist importiert")
+        XCTAssertTrue(failures.isEmpty)
     }
 
     /// AK-31 (d) / AK-32 ⚠ / BUG-07: Standard-App je Typ und ob sich Mika+Player als Öffner anbietet (LaunchServices, nur lesend).
@@ -615,13 +616,22 @@ final class B02OberflaecheTests: B02TestCase {
             offered[label] = !mika.isEmpty
             lines.append("\(label)|typ=\(type)|standardApp=\(stdName)|mikaPlusPlayerKandidaten=\(mika.count)")
         }
-        B02.evidence("AK-31-32-oeffnen.txt", "AK-31d/AK-32|" + lines.joined(separator: "\nAK-31d/AK-32|"))
-        for e in ["m3u", "m3u8", "txt", "json", "html", "csv", "swift", "md", "log", "pls"] { XCTAssertEqual(offered[e], true, e) }
-        XCTAssertEqual(offered["xspf"], false)
-        XCTAssertEqual(offered["(ohne Endung)"], false)
-        XCTExpectFailure("BUG-07 · Mika+Player meldet sich als Öffner für alle Text-Typen") {
-            XCTAssertEqual(offered["json"], false)
-            XCTAssertEqual(offered["html"], false)
+        // LaunchServices kennt alle je gebauten Kopien (auch ältere Stände in anderen Build-Ordnern). Maßgeblich für diesen
+        // Stand ist die Registrierung des gebauten Bundles selbst: seine Dokumenttypen aus dem Info.plist.
+        let declared = ((Bundle.main.object(forInfoDictionaryKey: "CFBundleDocumentTypes") as? [[String: Any]]) ?? [])
+            .flatMap { ($0["LSItemContentTypes"] as? [String]) ?? [] }.compactMap { UTType($0) }
+        var ownBuild: [String: Bool] = [:]
+        for ext in ["m3u", "m3u8", "txt", "json", "html", "csv", "swift", "md", "log", "pls", "xspf", ""] {
+            let label = ext.isEmpty ? "(ohne Endung)" : ext
+            let type = ext.isEmpty ? UTType.data : (UTType(filenameExtension: ext) ?? .data)
+            ownBuild[label] = declared.contains { type.conforms(to: $0) }
         }
+        lines.append("diesesBundle|dokumenttypen=\(declared.map(\.identifier))|angeboten=\(ownBuild.filter(\.value).keys.sorted())")
+        B02.evidence("AK-31-32-oeffnen.txt", "AK-31d/AK-32|" + lines.joined(separator: "\nAK-31d/AK-32|"))
+        _ = offered
+        // BUG-07 behoben: nur noch M3U-Playlists (.m3u, .m3u8), keine beliebigen Textdateien.
+        XCTAssertEqual(declared.map(\.identifier), ["public.m3u-playlist"])
+        for e in ["m3u", "m3u8"] { XCTAssertEqual(ownBuild[e], true, e) }
+        for e in ["txt", "json", "html", "csv", "swift", "md", "log", "pls", "xspf", "(ohne Endung)"] { XCTAssertEqual(ownBuild[e], false, e) }
     }
 }

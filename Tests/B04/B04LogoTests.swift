@@ -314,7 +314,7 @@ final class B04LogoTests: B04TestCase {
 
         // Playlist löschen: die Cache-Einträge bleiben
         w.back(wait: 1.0)
-        try PlaylistImporter(modelContext: ctx).delete(pl)
+        try B04QA.run(60) { try await PlaylistImporter(modelContext: ctx).delete(pl) }
         B04QA.spin(1.0)
         let nachLoeschen = B04QA.cacheRows(prefix: host.base)
         let nochImCache = adressen.values.filter { URLCache.shared.cachedResponse(for: URLRequest(url: URL(string: $0)!)) != nil }

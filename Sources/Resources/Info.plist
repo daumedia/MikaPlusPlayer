@@ -73,20 +73,27 @@
 		<string>audio</string>
 	</array>
 
-	<!-- Importierbare Dokumenttypen: M3U/M3U8-Playlists. -->
+	<!-- Importierbare Dokumenttypen: nur M3U/M3U8-Playlists (public.m3u-playlist deckt .m3u und .m3u8 ab).
+	     B02 · BUG-07: kein public.text mehr – die App bietet sich nicht für beliebige Textdateien an.
+	     B02 · BUG-06: geöffnete Dateien importiert PlaylistDocumentHandler (onOpenURL). -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>M3U Playlist</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
 			<key>LSHandlerRank</key>
 			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>public.m3u-playlist</string>
-				<string>public.text</string>
 			</array>
 		</dict>
 	</array>
+	<!-- Geöffnete Dateien werden an Ort und Stelle gelesen (iOS: security-scoped, macOS: direkt) und nicht kopiert;
+	     NO ist unter macOS nicht zulässig. -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 </dict>
 </plist>

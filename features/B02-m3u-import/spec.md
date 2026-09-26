@@ -455,6 +455,23 @@ der QA von B02.
   Ohne sie spielen manche Sender öffentlicher Listen nicht (B06). Das wäre eine Erweiterung mit
   eigener Feature-Nummer.
 
+Aus der Reparatur vom 2026-09-26 (`build-bericht.md`), ebenfalls zur Entscheidung durch den Nutzer:
+
+- **OF-10** · Sollen außer `username`/`password` und `user:pass@` weitere Geheimnisse in M3U-Adressen in den
+  Schlüsselbund wandern, etwa `token=`, `key=`, `auth=` oder signierte CDN-Parameter? Heute bleiben sie in
+  `sourceURL` und in den Stream-Adressen (BUG-01 nennt nur Benutzername und Passwort). Ebenso Logo-Adressen,
+  die Zugangsdaten tragen.
+- **OF-11** · Grenzen für Listen per URL: Ist der Mindestdurchsatz nach der Anlaufzeit (2 KiB/s ab 20 s, sonst
+  „Der Server liefert die Playlist zu langsam.") für sehr langsame Mobilverbindungen zu streng, oder sollen
+  64 MB, 100.000 Sender, 180 s, 512 Zeichen und 4.096 Zeichen je Stream-Adresse anders gewählt werden?
+- **OF-12** · Welche Stream-Schemata sollen erlaubt sein? Gewählt: `http`, `https`, `rtsp`, `rtsps`, `rtmp`,
+  `rtmps`, `rtp`, `udp`, `mms`, `mmsh`; Logos nur `http`/`https`. `file:`, `smb:`, `ftp:` u. a. fallen weg, auch
+  in lokalen Dateien.
+- **OF-13** · „Öffnen mit"/Doppelklick importiert die Datei sofort (ohne Sheet, ohne Rückfrage), unter macOS im
+  offenen Fenster. Der Rang bleibt `Default`; ob ein Doppelklick im Finder Mika+Player oder Music.app
+  startet, entscheidet LaunchServices bzw. der Nutzer („Öffnen mit › Immer öffnen mit"). Soll die Website
+  (B10, `web/content/features.ts:48`) das so beschreiben, oder soll der Rang auf `Alternate` sinken?
+
 ## Fehlbestand
 
 Nicht vorhanden oder als Fehler eingestuft, aus dem Code belegt. Kein Kriterium: `sdd-qa` prüft

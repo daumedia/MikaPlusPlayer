@@ -88,7 +88,7 @@ final class B01SicherheitTests: B01MockTestCase {
             XCTAssertEqual(secret.username, "qa-user-ak24")
 
             // Angriff 8: Löschen über den App-Weg (PlaylistsView → PlaylistImporter.delete)
-            try PlaylistImporter(modelContext: ctx).delete(playlist)
+            try await PlaylistImporter(modelContext: ctx).delete(playlist)
             XCTAssertNil(try XtreamCredentialStore.standard.load(for: playlistID), "Schlüsselbund-Eintrag muss mit der Playlist verschwinden")
             XCTAssertEqual(B01.sqliteCount(path, "select count(*) from ZPLAYLIST"), 0)
             XCTAssertEqual(B01.sqliteCount(path, "select count(*) from ZCHANNEL"), 0)
@@ -137,7 +137,7 @@ final class B01SicherheitTests: B01MockTestCase {
         XCTAssertEqual(inMemory, 0)
 
         // Playlist löschen → weiterhin nichts
-        try PlaylistImporter(modelContext: ctx).delete(playlist)
+        try await PlaylistImporter(modelContext: ctx).delete(playlist)
         try await Task.sleep(nanoseconds: 500_000_000)
         let afterDelete = B01.sqliteCount(db, keySQL) ?? 0
         print("B01BUILD|AK-25|nachLoeschenDerPlaylist|keysOnDisk=\(afterDelete)")

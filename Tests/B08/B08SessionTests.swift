@@ -377,7 +377,7 @@ final class B08SessionTests: B08TestCase {
         _ = await B08QA.wait(10) { s.slots.allSatisfy { $0.engine.state == .playing } }
         XCTAssertNotNil(try XtreamCredentialStore.standard.load(for: pid))
         let openBefore = server.openStreamConnections(containing: "/live/qa-user/\(B08QA.pass)/").count
-        try PlaylistImporter(modelContext: ctx).delete(p)
+        try await PlaylistImporter(modelContext: ctx).delete(p)
         await B08QA.spin(4)
         let pl = B08.sqliteCount(storeURL.path, "select count(*) from ZPLAYLIST") ?? -1
         let ch = B08.sqliteCount(storeURL.path, "select count(*) from ZCHANNEL") ?? -1
@@ -389,19 +389,15 @@ final class B08SessionTests: B08TestCase {
         // EC-14: Fokus wechseln, Namen lesen
         s.setFocus(1)
         let names = s.slots.map(\.channel.name)
-        let ctxNil = s.slots.map { $0.channel.modelContext == nil }
-        B08QA.log("AK-27|nach Löschen|sqlite ZPLAYLIST=\(pl) ZCHANNEL=\(ch)|schlüsselbund=\(key == nil ? "leer" : "vorhanden")|offen vorher/nachher=\(openBefore)/\(openAfter.count)|bytes +\(bytesAfter - bytesBefore) in 2 s|\(B08Engine.describe(s))|namen=\(names)|ohneKontext=\(ctxNil)|isDeleted=\(s.slots.map { $0.channel.isDeleted })")
+        B08QA.log("AK-27|nach Löschen|sqlite ZPLAYLIST=\(pl) ZCHANNEL=\(ch)|schlüsselbund=\(key == nil ? "leer" : "vorhanden")|offen vorher/nachher=\(openBefore)/\(openAfter.count)|bytes +\(bytesAfter - bytesBefore) in 2 s|\(B08Engine.describe(s))|namen=\(names)")
         XCTAssertEqual(pl, 0); XCTAssertEqual(ch, 0)
         XCTAssertNil(key, "Schlüsselbund-Eintrag entfernt")
-        XCTAssertEqual(names, ["QA Kanal 1", "QA Kanal 2"], "EC-14: Namen lesbar, kein Absturz")
-        XCTAssertEqual(openAfter.count, 2, "Ist: Verbindungen mit Zugangsdaten laufen weiter")
-        XCTAssertGreaterThan(bytesAfter, bytesBefore, "Ist: es wird weiter gestreamt")
-        XCTExpectFailure("BUG-05 · Kacheln laufen nach dem Löschen der Playlist mit Zugangsdaten weiter (FB-05)") {
-            XCTAssertEqual(openAfter.count, 0)
-            XCTAssertTrue(s.isEmpty)
-        }
-        s.remove(s.slots[0].id)
-        XCTAssertEqual(s.slots.count, 1)
+        // Seit B03 · BUG-05: Das Löschen der Playlist beendet ihre Kacheln samt Verbindungen; EC-14 (Fokus, Namen) ohne
+        // Absturz auf der leeren Session.
+        XCTAssertEqual(openAfter.count, 0, "keine Verbindung mit Zugangsdaten mehr")
+        XCTAssertEqual(bytesAfter, bytesBefore, "es wird nicht weiter gestreamt")
+        XCTAssertTrue(s.isEmpty)
+        XCTAssertEqual(names, [])
     }
 
     func testAK28_AktualisierenAlteAdresseUndZweiteKachel() async throws {

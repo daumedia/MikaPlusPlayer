@@ -227,8 +227,10 @@ final class B03OberflaecheTests: B03QATestCase {
         let m0 = m.lastRefreshed, x0 = x.lastRefreshed
         var cfg = B03QAPanel()
         cfg.m3u = B03QA.m3u(B03QA.v1 + [("Delta", nil, nil, "\(B03QA.dead)/d.m3u8"), ("Epsilon", nil, nil, "\(B03QA.dead)/e.m3u8")])
-        cfg.m3uDelay = 25
-        cfg.streamsDelay = 50
+        // Synthetische Kontextmenüs dauern je nach Last 4–14 s; die Verzögerungen liegen deshalb näher an der Leerlaufgrenze
+        // von 60 s (vorher 25 s / 50 s), damit der zweite Start sicher in den ersten Lauf fällt.
+        cfg.m3uDelay = 45
+        cfg.streamsDelay = 55
         mock.handler = cfg.handler()
 
         XCTAssertEqual(B03UI.busyCount(a), 0)
@@ -257,34 +259,31 @@ final class B03OberflaecheTests: B03QATestCase {
         B03UI.shot(a, "AK-13-zwei-laufen-ein-indikator")
         B03QA.log("AK-13|beideGestartet|seitStart=\(B03QA.f2(Date().timeIntervalSince(tStart)))s|beideLaufen=\(bothRunning)|indikator=\(both)")
         XCTAssertTrue(bothRunning, "Messpunkt liegt, während beide laufen")
-        _ = try await waitFor("M3U fertig", timeout: 40) { m.lastRefreshed != m0 ? true : nil }
+        _ = try await waitFor("M3U fertig", timeout: 60) { m.lastRefreshed != m0 ? true : nil }
         await B03UI.spin(0.6)
         let afterFirst = B03UI.busyCount(a)
         let xStillRunning = x.lastRefreshed == x0
         B03UI.shot(a, "AK-13-m3u-fertig-xtream-laeuft-kein-indikator")
         let countB = B03UI.labels(b).filter { $0.contains("QA Eins") }
         B03QA.log("AK-13|beideLaufen=\(both)|m3uFertig=\(afterFirst)|xtreamLaeuftNoch=\(xStillRunning)|fensterB=\(countB)")
-        _ = try await waitFor("Xtream fertig", timeout: 70) { x.lastRefreshed != x0 ? true : nil }
+        _ = try await waitFor("Xtream fertig", timeout: 90) { x.lastRefreshed != x0 ? true : nil }
         await B03UI.spin(0.6)
         let done = B03UI.busyCount(a)
         let labelsA = B03UI.labels(a)
         B03QA.log("AK-12|fertig|indikator=\(done)|alert=\(a.attachedSheet != nil)|texte=\(labelsA.filter { $0.contains("Sender") })")
-        XCTAssertEqual(both, 1, "Ist: nur die zuletzt gestartete Karte")
         XCTAssertTrue(xStillRunning)
-        XCTAssertEqual(afterFirst, 0, "Ist: Indikator weg, obwohl Xtream noch läuft")
         XCTAssertEqual(done, 0)
         XCTAssertNil(a.attachedSheet, "keine Erfolgsmeldung")
         XCTAssertTrue(labelsA.contains { $0.contains("9 Sender") }, "neue Anzahl in der Karte")
         XCTAssertTrue(countB.contains { $0.contains("9 Sender") }, "EC-09: Fenster B zeigt die neue Anzahl")
-        XCTExpectFailure("BUG-03 · Ladeindikator nur für eine Playlist (FB-03)") {
-            XCTAssertEqual(both, 2, "beide laufenden Aktualisierungen zeigen einen Indikator")
-            XCTAssertEqual(afterFirst, 1, "die noch laufende zeigt ihn weiter")
-        }
+        // BUG-03 behoben: je laufender Aktualisierung ein Indikator.
+        XCTAssertEqual(both, 2, "beide laufenden Aktualisierungen zeigen einen Indikator")
+        XCTAssertEqual(afterFirst, 1, "die noch laufende zeigt ihn weiter")
     }
 
     // MARK: - AK-14 ⚠ / Angriff 3
 
-    @MainActor func testAK14_Angriff3_AktualisierenBleibtWaehrendDesLaufsWaehlbar() async throws {
+    @MainActor func testAK14_Angriff3_AktualisierenWaehrendDesLaufsGesperrt() async throws {
         let (container, url) = try fileContainer("ak14ui")
         let ctx = container.mainContext
         let m = try await importM3U(ctx, name: "QA Mehrfach")
@@ -292,7 +291,11 @@ final class B03OberflaecheTests: B03QATestCase {
         let x = try await importXtream(ctx, pass: "qa-pass-b03-ak14", name: "QA Zehnmal")
         try ctx.save()
         let w = await overview(container)
-        var cfg = B03QAPanel(); cfg.m3u = B03QA.m3u(B03QA.v1); cfg.m3uDelay = 15; cfg.streamsDelay = 2
+        // Ein synthetisches Menü hält den Test-Host je Aufruf mehrere Sekunden auf (Gesamtlauf: 10 Aufrufe ≈ 76 s). Damit
+        // alle Wahlen wirklich *während* der ersten Aktualisierung fallen, antwortet der Anbieter entsprechend spät – je
+        // Anfrage unter der Leerlaufgrenze von 60 s und zusammen unter der Gesamtfrist von 180 s (M3U 45 s; Xtream
+        // Anmeldung, Kategorien und Senderliste je 55 s).
+        var cfg = B03QAPanel(); cfg.m3u = B03QA.m3u(B03QA.v1); cfg.m3uDelay = 45; cfg.authDelay = 0; cfg.streamsDelay = 2
         mock.handler = cfg.handler()
         mock.resetLog()
         var enabledWhileRunning: [Bool] = []
@@ -301,35 +304,40 @@ final class B03OberflaecheTests: B03QATestCase {
             let box = await B03UI.contextMenu(w, row: "QA Mehrfach", perform: "Aktualisieren")
             enabledWhileRunning.append(box.items.first { $0.title == "Aktualisieren" }?.isEnabled ?? false)
             deleteEnabledWhileRunning.append(box.items.first { $0.title == "Löschen" }?.isEnabled ?? false)
+            // Zeit zwischen zwei Wahlen wie bei einer Bedienung: Die Ansicht zeichnet den gesperrten Eintrag neu.
+            await B03UI.spin(0.3)
         }
         XCTAssertEqual(deleteEnabledWhileRunning, [true, true, true], "EC-07: „Löschen“ während des Laufs wählbar")
         let m0 = Date()
         let overlapping = mock.requests.filter { $0.path.hasSuffix(".m3u") }.count
-        _ = try await waitFor("drei Abrufe fertig", timeout: 40) {
+        _ = try await waitFor("Aktualisierung fertig", timeout: 90) {
             (Date().timeIntervalSince(m0) > 3 && B03UI.busyCount(w) == 0) ? true : nil
         }
         B03QA.log("AK-14|abrufeWaehrendErsterNochLief=\(overlapping)|keinerFertigBeimDrittenMenue=\(m.lastRefreshed.map { $0 < m0 } ?? true)")
         let m3uFetches = mock.requests.filter { $0.path.hasSuffix(".m3u") }.count
         let m3uRows = B03QA.int(url.path, "select count(*) from ZCHANNEL c join ZPLAYLIST p on c.ZPLAYLIST = p.Z_PK where p.ZNAME = 'QA Mehrfach'")
+        cfg.authDelay = 55; cfg.categoriesDelay = 55; cfg.streamsDelay = 55
+        mock.handler = cfg.handler()
         mock.resetLog()
         let t0 = Date()
         for _ in 0..<10 { await B03UI.contextMenu(w, row: "QA Zehnmal", perform: "Aktualisieren") }
         let menuTime = Date().timeIntervalSince(t0)
-        _ = try await waitFor("zehn Abrufe fertig", timeout: 40) { mock.requests.filter { $0.action == "get_live_streams" }.count >= 10 ? true : nil }
+        _ = try await waitFor("Aktualisierung fertig", timeout: 200) {
+            (mock.requests.contains { $0.action == "get_live_streams" } && B03UI.busyCount(w) == 0) ? true : nil
+        }
         await B03UI.spin(1.0)
         let xtreamRequests = mock.requests.filter { $0.path == "/player_api.php" }
         let withPassword = xtreamRequests.filter { $0.password == "qa-pass-b03-ak14" }.count
         B03QA.log("AK-14|m3u 3× gewählt: eintragAktiv=\(enabledWhileRunning)|abrufe=\(m3uFetches)|zeilen=\(m3uRows)|favoriten=\(favorites(m))|xtream 10× in \(B03QA.f2(menuTime))s: anfragen=\(xtreamRequests.count) mitPasswort=\(withPassword)|sender=\(x.channelCount)|alert=\(w.attachedSheet != nil)")
-        XCTAssertEqual(enabledWhileRunning, [true, true, true], "Ist: Eintrag bleibt wählbar")
-        XCTAssertEqual(m3uFetches, 3)
         XCTAssertEqual(m3uRows, 7, "Ergebnis richtig: keine doppelten Sender")
         XCTAssertEqual(favorites(m), ["Alpha"])
-        XCTAssertEqual(withPassword, 30, "Angriff 3: zehnmal Zugangsdaten an den Anbieter, ungebremst")
-        XCTExpectFailure("BUG-04 · Keine Sperre gegen mehrfaches Aktualisieren derselben Playlist (FB-04)") {
-            XCTAssertEqual(Array(enabledWhileRunning.dropFirst()), [false, false], "Eintrag während des Laufs gesperrt")
-            XCTAssertEqual(m3uFetches, 1)
-            XCTAssertEqual(withPassword, 3)
-        }
+        B03QA.log("AK-14|zeitMenueXtream=\(B03QA.f2(menuTime))s")
+        // BUG-04 behoben: Eintrag während des Laufs gesperrt, jede weitere Wahl ohne Wirkung (Angriff 3: einmal
+        // Zugangsdaten statt zehnmal).
+        XCTAssertEqual(enabledWhileRunning.first, true)
+        XCTAssertEqual(Array(enabledWhileRunning.dropFirst()), [false, false], "Eintrag während des Laufs gesperrt")
+        XCTAssertEqual(m3uFetches, 1)
+        XCTAssertEqual(withPassword, 3)
     }
 
     // MARK: - AK-18 / EC-04
@@ -393,7 +401,11 @@ final class B03OberflaecheTests: B03QATestCase {
         B03UI.shot(w, "AK-22-vor-loeschen")
         let windowsBefore = NSApp.windows.filter(\.isVisible).count
         await B03UI.contextMenu(w, row: "QA Weg", perform: "Löschen")
-        let immediately = B03QA.dbSummary(url)
+        // Seit B03 · BUG-01 läuft das Löschen abseits des Main-Actors; die Karte verschwindet sofort, die Datenbank
+        // Millisekunden später.
+        let immediately = (try? await waitFor("Datenbank leer", timeout: 10) {
+            B03QA.dbSummary(url) == "ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0" ? B03QA.dbSummary(url) : nil
+        }) ?? B03QA.dbSummary(url)
         let sheet = w.attachedSheet
         let windowsAfter = NSApp.windows.filter(\.isVisible).count
         let secret = try XtreamCredentialStore.standard.load(for: xid)
@@ -443,24 +455,22 @@ final class B03OberflaecheTests: B03QATestCase {
         XCTAssertFalse(afterRefresh.contains { $0 == "Neu" }, "Gruppen-Chips nicht aktualisiert (B04)")
 
         // AK-27: Löschen bei offener Liste
-        try PlaylistImporter(modelContext: ctx).delete(m)
+        try await PlaylistImporter(modelContext: ctx).delete(m)
         await B03UI.spin(1.5)
         let afterDelete = B03UI.labels(w)
         B03UI.shot(w, "AK-27-senderliste-nach-loeschen")
         B03QA.log("AK-27|fenstertitel=\(w.title)|texte=\(afterDelete.prefix(16))")
-        XCTAssertEqual(w.title, "QA Offen")
-        XCTAssertTrue(afterDelete.contains { $0.contains("MIKA+PLAYER · 9 SENDER") }, "Ist: alte Senderzahl")
-        XCTAssertTrue(afterDelete.contains { $0 == "News" || $0.contains("News") }, "Ist: Gruppen-Chips bleiben")
-        XCTAssertTrue(afterDelete.contains { $0.contains("Keine Sender") })
-        XCTAssertTrue(afterDelete.contains { $0.contains("Diese Playlist enthält keine Sender.") })
-        XCTExpectFailure("BUG-05 · Offene Senderliste behauptet nach dem Löschen eine leere Playlist mit alter Senderzahl (FB-05)") {
-            XCTAssertFalse(afterDelete.contains { $0.contains("9 SENDER") })
-        }
+        // BUG-05 behoben: Die offene Liste zeigt, dass die Playlist gelöscht ist – ohne alte Senderzahl und Chips.
+        XCTAssertFalse(afterDelete.contains { $0.contains("9 SENDER") })
+        XCTAssertEqual(w.title, "Playlist gelöscht")
+        XCTAssertTrue(afterDelete.contains { $0.contains("Diese Playlist wurde gelöscht.") }, "\(afterDelete.prefix(10))")
+        XCTAssertFalse(afterDelete.contains { $0 == "News" || $0 == "Sport" }, "keine Gruppen-Chips mehr")
+        XCTAssertFalse(afterDelete.contains { $0.contains("Diese Playlist enthält keine Sender.") })
     }
 
     // MARK: - AK-28 ⚠ · Player und Multiview nach Löschen
 
-    @MainActor func testAK28_PlayerUndMultiviewLaufenNachDemLoeschenWeiter() async throws {
+    @MainActor func testAK28_PlayerUndMultiviewEndenMitDemLoeschen() async throws {
         let (container, _) = try fileContainer("ak28")
         let ctx = container.mainContext
         let pass = "qa-pass-b03-ak28"
@@ -488,7 +498,7 @@ final class B03OberflaecheTests: B03QATestCase {
         B03UI.shot(pw, "AK-28-player-vor-loeschen")
         B03UI.shot(mw, "AK-28-multiview-vor-loeschen")
 
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
         await B03UI.spin(2.5)
         let connAfter = B03QA.establishedConnections(toPort: mock.port)
         let playerTitle = pw.title
@@ -499,14 +509,13 @@ final class B03OberflaecheTests: B03QATestCase {
         XCTAssertTrue(liveBefore.contains("/live/qa-user/<pass>/102.m3u8"), "Player-Verbindung mit Zugangsdaten im Pfad")
         XCTAssertTrue(liveBefore.contains("/live/qa-user/<pass>/101.m3u8"), "Multiview-Verbindung mit Zugangsdaten im Pfad")
         XCTAssertGreaterThan(connBefore, 0)
-        XCTAssertEqual(connAfter, connBefore, "Ist: Verbindungen bleiben nach dem Löschen offen")
-        XCTAssertEqual(playerTitle, "Kanal String")
-        XCTAssertEqual(slots, ["Kanal Int"])
-        XCTAssertFalse(engine.isPaused)
-        XCTExpectFailure("BUG-05 · Wiedergabe und Multiview laufen nach dem Löschen der Playlist mit Zugangsdaten weiter (FB-05)") {
-            XCTAssertEqual(connAfter, 0)
-            XCTAssertTrue(session.slots.isEmpty)
-        }
+        _ = playerTitle
+        // BUG-05 behoben: Löschen beendet Wiedergabe und Verbindungen; der Player sagt, warum.
+        XCTAssertEqual(connAfter, 0)
+        XCTAssertTrue(session.slots.isEmpty)
+        XCTAssertEqual(slots, [])
+        XCTAssertTrue(engine.isPaused, "Multiview-Engine beendet")
+        XCTAssertTrue(B03UI.labels(pw).contains { $0.contains("Die Playlist dieses Senders wurde gelöscht.") })
         // Schließen beendet: Multiview-Fenster (Fokus-Layout) und Player
         mw.contentView = nil   // wie das Schließen der Szene: onDisappear der Ansicht
         pw.contentView = nil
@@ -551,7 +560,7 @@ final class B03OberflaecheTests: B03QATestCase {
         // (1) Xtream: löschen, dann „Erneut versuchen“
         let wx = try await player(try XCTUnwrap(x.channels.first { $0.name == "Kanal Int" }), CGPoint(x: 60, y: 80))
         let textsBefore = B03UI.labels(wx)
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
         let beforeRetryX = liveRequests("101").count
         B03UI.click(try XCTUnwrap(B03UI.element(wx, "Erneut versuchen", role: "AXButton")), in: wx)
         await B03UI.spin(2.0)
@@ -561,7 +570,7 @@ final class B03OberflaecheTests: B03QATestCase {
 
         // (2) M3U: löschen, dann „Erneut versuchen“
         let wm = try await player(try XCTUnwrap(m.channels.first), CGPoint(x: 640, y: 80))
-        try PlaylistImporter(modelContext: ctx).delete(m)
+        try await PlaylistImporter(modelContext: ctx).delete(m)
         let beforeRetryM = liveRequests("m3u-sender").count
         B03UI.click(try XCTUnwrap(B03UI.element(wm, "Erneut versuchen", role: "AXButton")), in: wm)
         await B03UI.spin(2.0)
@@ -584,16 +593,12 @@ final class B03OberflaecheTests: B03QATestCase {
         let showsMissing = textsX.contains { $0.contains(missing) }
         let newX = Array(afterRetryX.dropFirst(beforeRetryX))
         B03QA.log("AK-28|retry|xtream|neueAbrufe=\(newX)|meldungZugangsdatenFehlenSichtbar=\(showsMissing)")
-        XCTAssertFalse(showsMissing, "Ist (weicht von der Spec ab): keine Meldung „Zugangsdaten fehlen“")
-        // Ist nicht stabil: je nach Lauf lädt der Knopf bei Xtream nichts (gelöschte Playlist noch erreichbar → Zugangsdaten
-        // fehlen, Meldung bleibt unsichtbar) oder die Adresse ohne Zugangsdaten (Beziehung schon nil). Nie mit Zugangsdaten.
-        XCTAssertTrue(newX.allSatisfy { $0 == "/live/101.m3u8" }, "Ist: kein neuer Abruf mit Benutzername und Passwort")
-        XCTAssertGreaterThan(afterRetryM, beforeRetryM, "M3U nach Löschen: alte Adresse erneut geladen")
-        XCTAssertEqual(afterRetry2.last, "/live/102.m3u8", "Ist: nach dem Aktualisieren ohne Benutzername und Passwort")
-        XCTExpectFailure("BUG-05 · „Erneut versuchen“ nach Löschen/Aktualisieren ruft den Anbieter erneut – ohne Zugangsdaten bzw. mit alter Adresse (FB-05)") {
-            XCTAssertTrue(newX.isEmpty, "nach dem Löschen kein neuer Abruf")
-            XCTAssertEqual(afterRetryM, beforeRetryM, "M3U nach dem Löschen kein neuer Abruf")
-            XCTAssertNotEqual(afterRetry2.last, "/live/102.m3u8", "nach dem Aktualisieren mit gültiger Adresse")
-        }
+        // BUG-05 behoben: nach dem Löschen kein Abruf, stattdessen die Meldung; nach dem Aktualisieren mit Zugangsdaten.
+        XCTAssertFalse(showsMissing)
+        XCTAssertTrue(textsX.contains { $0.contains("Die Playlist dieses Senders wurde gelöscht.") }, "\(textsX.prefix(6))")
+        XCTAssertTrue(newX.isEmpty, "nach dem Löschen kein neuer Abruf")
+        XCTAssertEqual(afterRetryM, beforeRetryM, "M3U nach dem Löschen kein neuer Abruf")
+        XCTAssertNotEqual(afterRetry2.last, "/live/102.m3u8", "nach dem Aktualisieren mit gültiger Adresse")
+        XCTAssertEqual(afterRetry2.last, "/live/qa-user/<pass>/102.m3u8")
     }
 }

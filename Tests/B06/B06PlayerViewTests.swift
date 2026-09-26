@@ -716,7 +716,7 @@ final class B06PlayerViewTests: B06TestCase {
         let w = player(c)
         _ = await B06Engine.wait(6) { B06UI.has(w, "Erneut versuchen") }
         await B06QA.spin(0.5)
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
         let resolved: String
         do { resolved = try StreamURLResolver.playableURL(for: c).absoluteString.replacingOccurrences(of: B06QA.pass, with: "<pass>") } catch { resolved = "Fehler: \(error.localizedDescription)" }
         B06QA.log("EC-11|nach Löschen|playlist=\(String(describing: c.playlist?.name))|isDeleted=\(c.isDeleted)|context=\(c.modelContext != nil)|gespeichert=\(c.streamURL.absoluteString)|resolver=\(resolved)|schlüsselbund=\((try? XtreamCredentialStore.standard.load(for: x.id)) == nil ? "leer" : "vorhanden")")
@@ -731,10 +731,14 @@ final class B06PlayerViewTests: B06TestCase {
         // Zwei beobachtete Varianten (je nach Lauf): (a) Sender hält die Playlist noch → Resolver „Zugangsdaten fehlen“, die
         // Ansicht zeigt weiter den alten Engine-Fehler, kein Abruf; (b) Playlist-Referenz schon nil → Resolver liefert die
         // gespeicherte Adresse ohne Zugangsdaten → neuer Abruf `/live/404/ec11.m3u8` (vgl. B03 QA BUG-05).
-        let variante = reqs.count == before ? "a: kein Abruf, alter Fehler" : "b: Abruf ohne Zugangsdaten \(reqs.suffix(reqs.count - before))"
+        let variante = reqs.count == before ? "kein Abruf" : "Abruf \(reqs.suffix(reqs.count - before))"
         B06QA.log("EC-11|variante=\(variante)")
-        XCTAssertFalse(labels.contains { $0.contains("Zugangsdaten") }, "Ist: Meldung „Zugangsdaten fehlen“ erscheint nicht (Spec EC-11 gelesen, anders)")
-        XCTAssertTrue(labels.contains { $0.contains("The requested URL was not found on this server.") }, "Ist: Fehlertext der Engine")
+        // Seit B03 · BUG-05: Das Löschen beendet die Wiedergabe, der Player meldet die gelöschte Playlist statt des
+        // Engine-Fehlers; „Erneut versuchen“ fragt den Anbieter nicht mehr an (weder mit noch ohne Zugangsdaten).
+        XCTAssertEqual(resolved, "Fehler: Die Playlist dieses Senders wurde gelöscht.")
+        XCTAssertTrue(labels.contains { $0.contains("Die Playlist dieses Senders wurde gelöscht.") }, "\(labels)")
+        XCTAssertFalse(labels.contains { $0.contains("The requested URL was not found on this server.") }, "kein alter Engine-Fehler")
+        XCTAssertEqual(reqs.count, before, "nach dem Löschen kein neuer Abruf")
         XCTAssertFalse(reqs.dropFirst(before).contains { $0.contains(B06QA.user) }, "nach dem Löschen keine Zugangsdaten mehr im Abruf")
     }
 

@@ -26,7 +26,7 @@ final class B02SicherheitTests: B02TestCase {
     /// AK-34 ⚠ / BUG-01: `get.php?username=…&password=…` → Passwort im Klartext in `sourceURL` und jeder Stream-Adresse;
     /// kein Schlüsselbund-Eintrag; Umstellung beim Start lässt alles stehen; Resolver reicht Adressen mit Passwort durch;
     /// Datenbank nicht vom Backup ausgeschlossen.
-    @MainActor func testAK34_ZugangsdatenAusM3ULinkImKlartext() async throws {
+    @MainActor func testAK34_ZugangsdatenAusM3ULinkImSchluesselbund() async throws {
         let pass = "qa-pass-b02ak34-\(UInt32.random(in: 1000...9999))"
         server.handler = { _ in B02Server.ok(B02SicherheitTests.getPhpListe(user: "qa-user", pass: pass), type: "application/octet-stream") }
         let dir = try tempDir("ak34")
@@ -49,30 +49,41 @@ final class B02SicherheitTests: B02TestCase {
         let excluded = try storeURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup
         B02.evidence("AK-34-35-42-sqlite.txt", "AK-34|sqlite|ZPLAYLIST.ZSOURCEURL mit Passwort=\(sourceRows)|ZCHANNEL.ZSTREAMURL mit Passwort=\(streamRows)/\(allStreams)|rohBytes=\(raw)|schluesselbund(Testdienst)=\(keychain)|umstellung=\(migration)|sourceURLDanach=\(sourceAfter)|abspielbarMitPasswort=\(playableWithPass)/\(playable.count)|isExcludedFromBackup=\(excluded.map(String.init) ?? "nil")")
 
-        // Ist-Verhalten (so beschreibt es AK-34)
-        XCTAssertEqual(sourceRows, 1)
-        XCTAssertEqual(streamRows, 3)
-        XCTAssertEqual(keychain, 0)
+        // BUG-01 behoben: kein Passwort in Datenbank und Dateien, Zugangsdaten im Schlüsselbund, abspielbar über den
+        // Resolver; die Umstellung beim Start hat nichts mehr zu tun. Die Datenbank bleibt bewusst im Backup
+        // (Begründung in `AppPersistence` trifft jetzt auch für M3U zu).
+        XCTAssertEqual(sourceRows, 0)
+        XCTAssertEqual(streamRows, 0)
+        XCTAssertEqual(allStreams, 3)
+        XCTAssertEqual(raw.values.reduce(0, +), 0, "\(raw)")
+        XCTAssertEqual(keychain, 1)
+        XCTAssertEqual(try XtreamCredentialStore.standard.loadM3U(for: p.id)?.password, pass)
         XCTAssertEqual(migration, AppPersistence.CredentialMigrationResult())
-        XCTAssertEqual(sourceAfter, 1)
+        XCTAssertEqual(sourceAfter, 0)
         XCTAssertEqual(playableWithPass, 3)
+        XCTAssertEqual(Set(playable.map(\.absoluteString)), [
+            "\(B02.dead)/live/qa-user/\(pass)/101.ts", "\(B02.dead)/qa-user/\(pass)/102", "\(B02.dead)/live/103.m3u8?token=\(pass)"
+        ], "abspielbare Adressen unverändert wie in der Liste")
         XCTAssertEqual(excluded, false)
-        // Soll (BUG-01): kein Klartext-Passwort in der Datenbank
-        XCTExpectFailure("BUG-01 · Zugangsdaten aus M3U-Links stehen im Klartext in der Datenbank") {
-            XCTAssertEqual(sourceRows + streamRows, 0)
-        }
+        XCTAssertFalse(p.sourceURL?.absoluteString.contains("qa-user") ?? true, "auch der Benutzername nicht in der Adresse")
     }
 
     /// AK-34 (b): Benutzerinfo-Variante `http://user:pass@…` → ebenfalls Klartext in `sourceURL`.
-    @MainActor func testAK34_BenutzerinfoImKlartext() async throws {
+    @MainActor func testAK34_BenutzerinfoImSchluesselbund() async throws {
         let pass = "qa-pass-b02ak34u-\(UInt32.random(in: 1000...9999))"
         let dir = try tempDir("ak34u")
         let (container, storeURL) = try B02.fileContainer(in: dir)
         _ = try await B02.importURL("http://qa-user:\(pass)@\(server.hostPort)/liste.m3u", container.mainContext).get()
         let rows = B02.int(storeURL.path, "select count(*) from ZPLAYLIST where instr(ZSOURCEURL, '\(pass)') > 0")
-        B02.evidence("AK-34-35-42-sqlite.txt", "AK-34|benutzerinfo|ZPLAYLIST.ZSOURCEURL mit Passwort=\(rows)")
-        XCTAssertEqual(rows, 1)
-        XCTExpectFailure("BUG-01 · Passwort aus der Benutzerinfo im Klartext in sourceURL") { XCTAssertEqual(rows, 0) }
+        let raw = B02.bytes(pass, storeURL).values.reduce(0, +)
+        B02.evidence("AK-34-35-42-sqlite.txt", "AK-34|benutzerinfo|ZPLAYLIST.ZSOURCEURL mit Passwort=\(rows)|rohBytes=\(raw)")
+        XCTAssertEqual(rows, 0)
+        XCTAssertEqual(raw, 0)
+        let p = try XCTUnwrap(try container.mainContext.fetch(FetchDescriptor<Playlist>()).first)
+        let secret = try XCTUnwrap(try XtreamCredentialStore.standard.loadM3U(for: p.id))
+        XCTAssertEqual(secret.username, "qa-user")
+        XCTAssertEqual(secret.password, pass)
+        XCTAssertEqual(secret.sourceURL, "http://qa-user:\(pass)@\(server.hostPort)/liste.m3u", "Abruf beim Aktualisieren wie eingegeben")
     }
 
     // MARK: AK-35 · BUG-02
@@ -80,7 +91,7 @@ final class B02SicherheitTests: B02TestCase {
     /// AK-35 ⚠ / BUG-02: Anfrage-Adresse samt Zugangsdaten und Antwortkörper landen im HTTP-Plattencache (hier: auf einen
     /// Temp-Ordner umgelenkter `URLCache.shared`, dieselbe Instanzart wie in der App) und überstehen das Löschen der
     /// Playlist; `Cache-Control: no-store` verhindert den Eintrag; das einmalige Leeren aus B01 greift nur einmal.
-    @MainActor func testAK35_PlattencacheBehaeltZugangsdatenNachLoeschen() async throws {
+    @MainActor func testAK35_KeinPlattencacheFuerM3UAbrufe() async throws {
         let pass = "qa-pass-b02ak35-\(UInt32.random(in: 1000...9999))"
         let passNoStore = pass + "-nostore"
         server.handler = { req in
@@ -98,7 +109,7 @@ final class B02SicherheitTests: B02TestCase {
         let diskAfterImport = B01QA2.occurrences(of: [pass], under: cacheDir)
         let files = diskAfterImport.filter { $0.value > 0 }.keys.sorted()
 
-        try PlaylistImporter(modelContext: c.mainContext).delete(p)
+        try await PlaylistImporter(modelContext: c.mainContext).delete(p)
         try await Task.sleep(nanoseconds: 1_000_000_000)
         let apiAfterDelete = cachedCount([url])
         let diskAfterDelete = B01QA2.occurrences(of: [pass], under: cacheDir).values.reduce(0, +)
@@ -127,25 +138,24 @@ final class B02SicherheitTests: B02TestCase {
         let afterSecondPurge = cachedCount([url])
 
         B02.evidence("AK-34-35-42-sqlite.txt", "AK-35|cache|nachImport api=\(apiAfterImport) bytes=\(diskAfterImport.values.reduce(0, +)) dateien=\(files) antwortkoerperMitPasswort=\(body.contains(pass))|nachLoeschen api=\(apiAfterDelete) bytes=\(diskAfterDelete)|no-store api=\(apiNoStore) bytes=\(diskNoStore)|leeren1=\(firstPurge)->api \(afterFirstPurge)|neuerImport+leeren2=\(secondPurge)->api \(afterSecondPurge)")
-        XCTAssertEqual(apiAfterImport, 1)
-        XCTAssertTrue(body.contains(pass), "Antwortkörper mit Passwort im Cache")
-        XCTAssertGreaterThan(diskAfterImport.values.reduce(0, +), 0)
-        XCTAssertEqual(apiAfterDelete, 1)
-        XCTAssertEqual(apiNoStore, 0)
+        // BUG-02 behoben: Der Abruf läuft über den Loader ohne Plattencache – nichts landet dort, auch nicht beim
+        // erneuten Import nach dem einmaligen Leeren.
+        XCTAssertEqual(apiAfterImport, 0)
+        XCTAssertFalse(body.contains(pass), "kein Antwortkörper mit Passwort im Cache")
+        XCTAssertEqual(diskAfterImport.values.reduce(0, +), 0)
+        XCTAssertEqual(apiAfterDelete + diskAfterDelete, 0)
+        XCTAssertEqual(apiNoStore + diskNoStore, 0)
         XCTAssertTrue(firstPurge)
         XCTAssertEqual(afterFirstPurge, 0)
         XCTAssertFalse(secondPurge)
-        XCTAssertEqual(afterSecondPurge, 1)
-        XCTExpectFailure("BUG-02 · M3U-Abruf schreibt Adresse mit Zugangsdaten und Antwort in den Plattencache; Löschen entfernt sie nicht") {
-            XCTAssertEqual(apiAfterDelete + diskAfterDelete, 0)
-        }
+        XCTAssertEqual(afterSecondPurge, 0)
     }
 
     // MARK: AK-37 · BUG-03
 
     /// AK-37 ⚠ / BUG-03: 52 MB mit 1.000 Einträgen und 52.000 Zeichen langen Namen — per URL und per Datei vollständig
     /// importiert; Speicherzuwachs; Namen ungekürzt gespeichert.
-    @MainActor func testAK37_GrosseAntwortUndDateiOhneGrenze() async throws {
+    @MainActor func testAK37_GrosseAntwortUndDateiMitGrenze() async throws {
         let longName = String(repeating: "N", count: 52_000)
         var s = "#EXTM3U\n"
         for i in 0..<1_000 { s += "#EXTINF:-1 group-title=\"G\",\(i)-\(longName)\n\(B02.dead)/live/\(i).ts\n" }
@@ -169,17 +179,16 @@ final class B02SicherheitTests: B02TestCase {
             let maxName = p.channels.map { $0.name.count }.max() ?? 0
             B02.evidence("AK-37-EC-13-grenzen.txt", "AK-37|\(weg)|bytes=\(data.count)|ergebnis=\(B02.message(r) ?? "OK")|sender=\(p.channelCount)|laengsterName=\(maxName)|gesamt=\(B02.f2(elapsed))s|maxMainThreadBlockade=\(B02.f2(gap))s|speicherVorher=\(Int(before))MB|nachher=\(Int(after))MB|build=\(B02.buildConfiguration)")
             XCTAssertEqual(p.channelCount, 1_000)
-            XCTAssertGreaterThanOrEqual(maxName, 52_000)
-            XCTExpectFailure("BUG-03 · keine Größen- und Längengrenze für unvertraute Listen") {
-                XCTAssertLessThan(maxName, 1_000)
-            }
+            // BUG-03 behoben: Namen gekürzt (512 Zeichen); Größen- und Mengengrenze prüft `B02ReparaturTests`.
+            XCTAssertLessThan(maxName, 1_000)
+            XCTAssertEqual(maxName, 512)
         }
     }
 
     // MARK: AK-39 · BUG-05
 
     /// AK-39 ⚠ / BUG-05: beliebige Schemata als Stream- und Logo-Adresse landen ungeprüft in der Datenbank.
-    @MainActor func testAK39_BeliebigeSchemataWerdenGespeichert() async throws {
+    @MainActor func testAK39_NurErlaubteSchemataWerdenGespeichert() async throws {
         let streams = ["file:///etc/hosts", "file:///Users/qa/Movies/privat.mp4", "javascript:alert(1)", "data:video/mp2t;base64,R0lGODlh",
                        "smb://nas.local/share/a.ts", "udp://@239.0.0.1:1234", "rtp://239.0.0.1:5000", "rtsp://127.0.0.1:554/cam",
                        "rtmp://127.0.0.1/live/x", "ftp://127.0.0.1/a.ts", "mailto:qa@example.invalid", "vlc://quit",
@@ -198,14 +207,15 @@ final class B02SicherheitTests: B02TestCase {
         let storedLogos = Set(p.channels.compactMap(\.logoURL?.absoluteString))
         let schemes = B02.rows(storeURL.path, "select distinct substr(ZSTREAMURL, 1, instr(ZSTREAMURL, ':')) from ZCHANNEL order by 1").map { $0[0] }
         B02.evidence("AK-39-schemata.txt", "AK-39|sender=\(p.channelCount)|streamSchemataInDB=\(schemes)|logos=\(storedLogos.sorted())|ohneSchemaGespeichert=\(storedStreams.contains("nas.local/share/a.ts"))")
-        XCTAssertEqual(p.channelCount, streams.count + logos.count)
-        for u in streams { XCTAssertTrue(storedStreams.contains(u), u) }
-        for l in logos { XCTAssertTrue(storedLogos.contains(l), l) }
+        // BUG-05 behoben: nur Wiedergabe-Schemata für Streams, nur HTTP(S) für Logos.
+        let allowed = ["udp://@239.0.0.1:1234", "rtp://239.0.0.1:5000", "rtsp://127.0.0.1:554/cam", "rtmp://127.0.0.1/live/x"]
+        XCTAssertEqual(p.channelCount, allowed.count + logos.count)
+        for u in streams { XCTAssertEqual(storedStreams.contains(u), allowed.contains(u), u) }
+        XCTAssertEqual(storedLogos, [], "kein Logo mit file:, javascript:, smb: oder ohne Schema")
+        XCTAssertEqual(schemes, ["http:", "rtmp:", "rtp:", "rtsp:", "udp:"])
         XCTAssertFalse(storedStreams.contains("nas.local/share/a.ts"))
-        XCTExpectFailure("BUG-05 · Stream- und Logo-Adressen ohne Schema-Prüfung") {
-            XCTAssertFalse(storedStreams.contains("file:///etc/hosts"))
-            XCTAssertFalse(storedLogos.contains("file:///etc/hosts"))
-        }
+        XCTAssertFalse(storedStreams.contains("file:///etc/hosts"))
+        XCTAssertFalse(storedLogos.contains("file:///etc/hosts"))
     }
 
     // MARK: AK-41 (Test-Host)
@@ -230,7 +240,9 @@ final class B02SicherheitTests: B02TestCase {
         var total = 0, hits = 0, privateVisible = false, appSubsystem = 0
         var subsystems: [String: Int] = [:]
         for case let e in try store.getEntries(at: store.position(date: start)) {
-            guard let log = e as? OSLogEntryLog else { continue }
+            // `position(date:)` liefert im Gesamtlauf auch ältere Einträge des Prozesses (z. B. Wiederherstellungs-
+            // Meldungen aus B09-Tests); gezählt wird nur das Zeitfenster dieses Tests.
+            guard let log = e as? OSLogEntryLog, log.date >= start else { continue }
             total += 1
             if log.composedMessage.contains(privMarker) { privateVisible = true }
             if log.subsystem.hasPrefix("lu.daumedia.MikaPlusPlayer") && log.subsystem != "lu.daumedia.MikaPlusPlayerTests" { appSubsystem += 1 }
@@ -247,39 +259,49 @@ final class B02SicherheitTests: B02TestCase {
 
     // MARK: AK-42
 
-    /// AK-42 / Angriff 8: Löschen über `PlaylistImporter.delete` (Weg von B03). Offen: Passwort noch in `-wal`; nach dem
-    /// Schließen in keiner Datei. Cache (AK-35) und Cookies bleiben (Angriff 8).
-    @MainActor func testAK42_LoeschenEntferntKlartextErstNachDemSchliessen() async throws {
+    /// AK-42 / Angriff 8: Löschen über `PlaylistImporter.delete` (zentraler Weg von B03). Seit B02 · BUG-01/-02 steht das
+    /// Passwort nie in der Datenbank; nach dem Löschen bleiben weder Cache-Eintrag noch Cookie noch Schlüsselbund-Eintrag.
+    @MainActor func testAK42_LoeschenLaesstKeineZugangsdatenZurueck() async throws {
         let pass = "qa-pass-b02ak42-\(UInt32.random(in: 1000...9999))"
         server.handler = { _ in B02Server.ok(B02SicherheitTests.getPhpListe(user: "qa-user", pass: pass), headers: [("Set-Cookie", "b02qaDel=\(pass); Path=/")]) }
         let dir = try tempDir("ak42")
         let url = server.url("/get.php?username=qa-user&password=\(pass)")
         let storeURL: URL
+        var beforeDelete: [String: Int] = [:]
         var openAfterDelete: [String: Int] = [:]
         var rowsAfterDelete = -1
+        var cookieBeforeDelete = -1
+        var secretAfterDelete: M3USecret?
         do {
             let (container, u) = try B02.fileContainer(in: dir)
             storeURL = u
             let ctx = container.mainContext
             let p = try await B02.importURL(url, ctx).get()
             try await Task.sleep(nanoseconds: 300_000_000)
-            let beforeDelete = B02.bytes(pass, storeURL)
-            try PlaylistImporter(modelContext: ctx).delete(p)
+            beforeDelete = B02.bytes(pass, storeURL)
+            cookieBeforeDelete = PlaylistHTTPLoader.shared.cookies.filter { $0.name == "b02qaDel" }.count
+            try await PlaylistImporter(modelContext: ctx).delete(p)
             try await Task.sleep(nanoseconds: 500_000_000)
             openAfterDelete = B02.bytes(pass, storeURL)
             rowsAfterDelete = B02.int(storeURL.path, "select (select count(*) from ZPLAYLIST) + (select count(*) from ZCHANNEL)")
-            B02.evidence("AK-34-35-42-sqlite.txt", "AK-42|vorLoeschen=\(beforeDelete)|nachLoeschenOffen zeilen=\(rowsAfterDelete) bytes=\(openAfterDelete)")
+            secretAfterDelete = try XtreamCredentialStore.standard.loadM3U(for: p.id)
+            B02.evidence("AK-34-35-42-sqlite.txt", "AK-42|vorLoeschen=\(beforeDelete)|cookieImLoader=\(cookieBeforeDelete)|nachLoeschenOffen zeilen=\(rowsAfterDelete) bytes=\(openAfterDelete)|schluesselbund=\(secretAfterDelete != nil)")
         }
         try await Task.sleep(nanoseconds: 1_500_000_000)
         let closed = B02.bytes(pass, storeURL)
         let cacheLeft = cachedCount([url])
-        let cookieLeft = HTTPCookieStorage.shared.cookies?.filter { $0.name == "b02qaDel" }.count ?? 0
-        B02.evidence("AK-34-35-42-sqlite.txt", "AK-42|nachSchliessen bytes=\(closed)|cacheEintragBleibt=\(cacheLeft)|cookieBleibt=\(cookieLeft)")
+        let cookieShared = HTTPCookieStorage.shared.cookies?.filter { $0.name == "b02qaDel" }.count ?? 0
+        let cookieLoader = PlaylistHTTPLoader.shared.cookies.filter { $0.name == "b02qaDel" }.count
+        B02.evidence("AK-34-35-42-sqlite.txt", "AK-42|nachSchliessen bytes=\(closed)|cacheEintrag=\(cacheLeft)|cookieGemeinsam=\(cookieShared)|cookieLoader=\(cookieLoader)")
+        XCTAssertEqual(beforeDelete.values.reduce(0, +), 0, "Passwort nie in der Datenbank (BUG-01)")
         XCTAssertEqual(rowsAfterDelete, 0)
-        XCTAssertGreaterThan(openAfterDelete["b02-qa.store-wal"] ?? 0, 0, "solange offen noch in -wal")
+        XCTAssertEqual(openAfterDelete.values.reduce(0, +), 0)
         XCTAssertEqual(closed.values.reduce(0, +), 0, "nach dem Schließen in keiner Datei")
-        XCTAssertEqual(cacheLeft, 1)
-        XCTAssertEqual(cookieLeft, 1)
+        XCTAssertNil(secretAfterDelete, "Schlüsselbund-Eintrag mit der Playlist gelöscht")
+        XCTAssertEqual(cacheLeft, 0, "kein Cache-Eintrag (BUG-02)")
+        XCTAssertEqual(cookieBeforeDelete, 1, "AK-36: Cookie für den nächsten Abruf im Arbeitsspeicher")
+        XCTAssertEqual(cookieShared, 0, "kein Cookie im gemeinsamen Speicher")
+        XCTAssertEqual(cookieLoader, 0, "Cookie des Hosts mit der Playlist entfernt")
     }
 
     // MARK: Angriff 1 · fremde Playlist beeinflussen (Ersatz für IDOR)
@@ -372,7 +394,9 @@ final class B02SicherheitTests: B02TestCase {
             let r = await B02.importURL(server.url("/liste.m3u"), name: v, c.mainContext)
             let stored = (try? r.get())?.name
             lines.append("name=\(v.prefix(30).debugDescription)(\(v.count))→\(stored == v ? "exakt" : "ABWEICHEND \(stored?.prefix(30) ?? "nil")")")
-            XCTAssertEqual(stored, v.isEmpty ? "127.0.0.1" : v)
+            // Seit B02 · BUG-04 wird die Playlist im Hintergrund gespeichert und aus der Datenbank gelesen, nicht mehr das
+            // ungespeicherte Objekt: Ein NUL-Zeichen schneidet die Datenbank ab (bekannter Befund B05 · BUG-09).
+            XCTAssertEqual(stored, v.isEmpty ? "127.0.0.1" : (v == "\u{0}" ? "" : v))
         }
         var liste = "#EXTM3U\n"
         for (i, v) in values.enumerated() { liste += "#EXTINF:-1 group-title=\"\(v.replacingOccurrences(of: "\"", with: ""))\",\(v)\n\(B02.dead)/live/\(i).ts\n" }

@@ -38,6 +38,8 @@ final class MultiviewSession {
         let id = UUID()
         let channel: Channel
         let engine: any PlaybackEngine
+        /// Playlist des Senders beim Hinzufügen – zum Beenden, wenn sie gelöscht wird (B03 · BUG-05).
+        var playlistID: UUID?
     }
 
     private(set) var slots: [Slot] = []
@@ -47,6 +49,32 @@ final class MultiviewSession {
 
     var isEmpty: Bool { slots.isEmpty }
     var canAddMore: Bool { slots.count < Self.maxSlots }
+
+    @ObservationIgnored private var deletionObserver: NSObjectProtocol?
+
+    init() {
+        // B03 · BUG-05: Wird die Playlist eines Streams gelöscht, endet dessen Wiedergabe samt Verbindung.
+        deletionObserver = NotificationCenter.default.addObserver(forName: PlaylistEvents.willDelete, object: nil,
+                                                                  queue: .main) { [weak self] note in
+            let ids = PlaylistEvents.ids(in: note)
+            MainActor.assumeIsolated { self?.removeSlots(ofPlaylists: ids) }
+        }
+    }
+
+    deinit {
+        if let deletionObserver { NotificationCenter.default.removeObserver(deletionObserver) }
+    }
+
+    /// Beendet und entfernt alle Streams der genannten Playlists.
+    func removeSlots(ofPlaylists ids: Set<UUID>) {
+        let doomed = slots.filter { $0.playlistID.map(ids.contains) ?? false }
+        guard !doomed.isEmpty else { return }
+        let focusedID = slots.indices.contains(focusedIndex) ? slots[focusedIndex].id : nil
+        for slot in doomed { slot.engine.stop() }
+        slots.removeAll { slot in doomed.contains { $0.id == slot.id } }
+        focusedIndex = slots.firstIndex { $0.id == focusedID } ?? 0
+        enforceAudioFocus()
+    }
 
     /// Fügt einen Sender hinzu, erzeugt sofort dessen Engine und startet die Wiedergabe.
     /// Der erste Stream wird fokussiert (mit Ton), alle weiteren starten stumm.
@@ -61,7 +89,7 @@ final class MultiviewSession {
         // Sollwert sofort setzen – bei VLC greift er, sobald der Audiokanal nach
         // `.playing` existiert (der Delegate ruft `applyAudio()` erneut).
         engine.setMuted(!isFirst)
-        slots.append(Slot(channel: channel, engine: engine))
+        slots.append(Slot(channel: channel, engine: engine, playlistID: channel.playlistID ?? channel.playlist?.id))
         if isFirst { focusedIndex = 0 }
         enforceAudioFocus()
     }

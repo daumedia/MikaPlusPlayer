@@ -159,7 +159,7 @@ final class B05DatenschutzTests: B05TestCase {
         }
         try B05QA.setFavorite(pl, "B05LOGMARKER Kanal", ctx: ctx)
         try await refreshM3U(ctx, pl, path: path, es)
-        try PlaylistImporter(modelContext: ctx).delete(pl)
+        try await PlaylistImporter(modelContext: ctx).delete(pl)
         B05QA.spin(1.0)
 
         let store = try OSLogStore(scope: .currentProcessIdentifier)

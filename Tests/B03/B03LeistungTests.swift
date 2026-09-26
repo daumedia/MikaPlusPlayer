@@ -45,7 +45,7 @@ final class B03LeistungTests: B03QATestCase {
         return n
     }
 
-    @MainActor func testAK37_AK38_AktualisierenUndLoeschenBlockierenDenMainThread() async throws {
+    @MainActor func testAK37_AK38_AktualisierenUndLoeschenBlockierenDenMainThreadNicht() async throws {
         let sizes = (env["B03_SIZES"] ?? "1000,2000").split(separator: ",").compactMap { Int($0) }
         let kinds = (env["B03_KINDS"] ?? "m3u,xtream").split(separator: ",").map(String.init)
         let load = ProcessInfo.processInfo.activeProcessorCount
@@ -79,7 +79,7 @@ final class B03LeistungTests: B03QATestCase {
                 // AK-38: Löschen nach dem Aktualisieren (Sender im Speicher)
                 let wd2 = B03QAWatchdog(); wd2.start()
                 let t1 = Date()
-                try PlaylistImporter(modelContext: ctx).delete(p)
+                try await PlaylistImporter(modelContext: ctx).delete(p)
                 let tDelete = Date().timeIntervalSince(t1)
                 try await Task.sleep(nanoseconds: 300_000_000)
                 let gap2 = wd2.stop()
@@ -103,7 +103,7 @@ final class B03LeistungTests: B03QATestCase {
                     let p3 = try XCTUnwrap(try ctx3.fetch(FetchDescriptor<Playlist>()).first)
                     let wd3 = B03QAWatchdog(); wd3.start()
                     let t3 = Date()
-                    try PlaylistImporter(modelContext: ctx3).delete(p3)
+                    try await PlaylistImporter(modelContext: ctx3).delete(p3)
                     let tDelete3 = Date().timeIntervalSince(t3)
                     try await Task.sleep(nanoseconds: 300_000_000)
                     let gap3 = wd3.stop()
@@ -123,14 +123,12 @@ final class B03LeistungTests: B03QATestCase {
                 record("\(kind)|wachstum \(ns[0])→\(ns[1]) Sender: Blockade ×\(B03QA.f2(factor)) (linear ×\(B03QA.f2(Double(ns[1]) / Double(ns[0]))), quadratisch ×\(B03QA.f2(expectedQuadratic)))")
             }
         }
-        // Erwartet (PRD: „bleibt auch bei Anbieterlisten mit mehr als 17.000 Sendern bedienbar“): keine Blockade über 1 s
+        // Erwartet (PRD: „bleibt auch bei Anbieterlisten mit mehr als 17.000 Sendern bedienbar“): keine Blockade über 1 s.
+        // BUG-01 behoben: Ersetzen und Löschen laufen über `PlaylistStore` abseits des Main-Actors.
         let worstRefresh = refreshGaps.values.flatMap(\.values).max() ?? 0
         let worstDelete = deleteGaps.values.flatMap(\.values).max() ?? 0
-        if worstRefresh > 1 || worstDelete > 1 {
-            XCTExpectFailure("BUG-01 · Aktualisieren und Löschen großer Playlists blockieren den Main-Thread (FB-01)") {
-                XCTAssertLessThanOrEqual(worstRefresh, 1, "Aktualisieren: längste Blockade \(B03QA.f2(worstRefresh)) s")
-                XCTAssertLessThanOrEqual(worstDelete, 1, "Löschen: längste Blockade \(B03QA.f2(worstDelete)) s")
-            }
-        }
+        record("ergebnis|laengsteBlockade aktualisieren=\(B03QA.f2(worstRefresh))s loeschen=\(B03QA.f2(worstDelete))s")
+        XCTAssertLessThanOrEqual(worstRefresh, 1, "Aktualisieren: längste Blockade \(B03QA.f2(worstRefresh)) s")
+        XCTAssertLessThanOrEqual(worstDelete, 1, "Löschen: längste Blockade \(B03QA.f2(worstDelete)) s")
     }
 }

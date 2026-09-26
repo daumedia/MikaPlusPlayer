@@ -37,13 +37,12 @@ final class B02LangsamTests: B02TestCase {
         B02.evidence("AK-40-messung.txt", "AK-12/EC-17|ftp|dauer=\(B02.f2(f.1))s|\(f.0)|verbindungenAmZiel=\(ftpTarget.connectionCount)|anfragenAmZiel=\(ftpTarget.requests.count)")
         XCTAssertEqual(h.0, "Netzwerkfehler: The request timed out.")
         XCTAssertEqual(h.1, 60, accuracy: 3)
-        XCTAssertEqual(t.0, "OK (20 Sender)")
-        XCTAssertGreaterThan(t.1, 90)
         XCTAssertEqual(f.0, "Netzwerkfehler: The request timed out.")
         XCTAssertEqual(f.1, 60, accuracy: 5)
-        XCTExpectFailure("BUG-03 · keine Gesamtfrist: eine tröpfelnde Antwort hält den Import beliebig offen") {
-            XCTAssertLessThan(t.1, 60)
-        }
+        // BUG-03 behoben: Nach der Anlaufzeit gilt ein Mindestdurchsatz (dazu eine Gesamtfrist von 180 s) – die
+        // tröpfelnde Antwort hält den Import nicht mehr offen.
+        XCTAssertEqual(t.0, "Netzwerkfehler: Der Server liefert die Playlist zu langsam.")
+        XCTAssertLessThan(t.1, 60)
     }
 
     // MARK: AK-40 · BUG-04
@@ -84,9 +83,9 @@ final class B02LangsamTests: B02TestCase {
             B02.evidence("AK-40-messung.txt", "AK-40|wachstum 3000→6000 Faktor=\(B02.f2(t6 / t3))|build=\(B02.buildConfiguration)")
         }
         let worst = gaps.values.max() ?? 0
-        XCTExpectFailure("BUG-04 · der Import friert die Oberfläche ein (längste Blockade \(B02.f2(worst)) s)") {
-            XCTAssertLessThan(worst, 0.5)
-        }
+        // BUG-04 behoben: Abruf, Parsen und Speichern laufen abseits des Main-Actors (`PlaylistStore`).
+        B02.evidence("AK-40-messung.txt", "AK-40|laengsteBlockade=\(B02.f2(worst))s|build=\(B02.buildConfiguration)")
+        XCTAssertLessThan(worst, 0.5, "längste Blockade \(B02.f2(worst)) s")
     }
 
     static func loadAverage() -> String {

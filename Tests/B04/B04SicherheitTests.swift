@@ -222,7 +222,7 @@ final class B04SicherheitTests: B04TestCase {
         w.open(pl, wait: 3.0)
         XCTAssertEqual(host.requests.count, 2)
         w.back(wait: 1.0)
-        try PlaylistImporter(modelContext: ctx).delete(pl)
+        try B04QA.run(60) { try await PlaylistImporter(modelContext: ctx).delete(pl) }
         B04QA.spin(1.0)
         let zeilen = ["ZPLAYLIST": B04QA.int(store.path, "select count(*) from ZPLAYLIST"),
                       "ZCHANNEL": B04QA.int(store.path, "select count(*) from ZCHANNEL")]
@@ -248,7 +248,7 @@ final class B04SicherheitTests: B04TestCase {
         w.open(pl, wait: 1.8)
         XCTAssertEqual(w.cardNames.count, 3)
         // Löschen wie B03 es tut, während die Liste offen ist
-        try PlaylistImporter(modelContext: ctx).delete(pl)
+        try B04QA.run(60) { try await PlaylistImporter(modelContext: ctx).delete(pl) }
         B04QA.spin(2.0)
         let texte = w.staticTexts
         let kopf = w.header
@@ -263,9 +263,9 @@ final class B04SicherheitTests: B04TestCase {
                        "Playlist gelöscht, während ihre Liste offen war: Kopfzeile „\(kopf ?? "-")“, Texte \(texte), "
                        + "Chips \(w.chips.map(\.title)), kein Absturz; nach Chip-Druck und Eingabe: \(w.staticTexts)")
         XCTAssertEqual(w.cardNames.count, 0, "keine Sender mehr")
-        XCTAssertTrue(w.staticTexts.contains("Diese Playlist enthält keine Sender.") || w.staticTexts.contains { $0.hasPrefix("No Results") },
-                      "die Liste bleibt stehen und zeigt einen Leerzustand")
-        XCTAssertNotNil(kopf, "die Kopfzeile hält das gelöschte Playlist-Objekt")
+        // Seit B03 · BUG-05: Die offene Liste meldet die gelöschte Playlist statt eines Leerzustands mit alter Kopfzeile.
+        XCTAssertTrue(w.staticTexts.contains { $0.contains("Diese Playlist wurde gelöscht.") }, "\(w.staticTexts)")
+        XCTAssertNil(kopf, "keine Kopfzeile mit der alten Senderzahl")
     }
 
     // MARK: - Hilfen

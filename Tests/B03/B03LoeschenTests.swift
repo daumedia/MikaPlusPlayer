@@ -35,8 +35,8 @@ final class B03LoeschenTests: B03QATestCase {
         XCTAssertNotNil(try XtreamCredentialStore.standard.load(for: xid))
         mock.resetLog()
 
-        try PlaylistImporter(modelContext: ctx).delete(m)
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(m)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
 
         let after = perTable()
         let favTab = try ctx.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.isFavorite == true })).map(\.name).sorted()
@@ -74,7 +74,7 @@ final class B03LoeschenTests: B03QATestCase {
         let hash0 = SHA256.hash(data: try Data(contentsOf: file))
         let attrs0 = try FileManager.default.attributesOfItem(atPath: file.path)
         let p = try await PlaylistImporter(modelContext: ctx).importFromFile(file)
-        try PlaylistImporter(modelContext: ctx).delete(p)
+        try await PlaylistImporter(modelContext: ctx).delete(p)
         let attrs1 = try FileManager.default.attributesOfItem(atPath: file.path)
         let hash1 = SHA256.hash(data: try Data(contentsOf: file))
         B03QA.log("AK-25|dateiDa=\(FileManager.default.fileExists(atPath: file.path))|hashGleich=\(hash0 == hash1)|mtimeGleich=\((attrs0[.modificationDate] as? Date) == (attrs1[.modificationDate] as? Date))|\(B03QA.dbSummary(url))")
@@ -93,7 +93,7 @@ final class B03LoeschenTests: B03QATestCase {
         let (container, url) = try fileContainer("ak22")
         let ctx = container.mainContext
         let p = try await importM3U(ctx)
-        try PlaylistImporter(modelContext: ctx).delete(p)
+        try await PlaylistImporter(modelContext: ctx).delete(p)
         ctx.rollback()
         B03QA.log("AK-22|openAppStore=\(launch.outcome)|undoManager(openAppStore)=\(String(describing: launch.container.mainContext.undoManager))|undoManager(diskContainer)=\(String(describing: ctx.undoManager))|nachRollback=\(B03QA.dbSummary(url))")
         XCTAssertEqual(launch.outcome, .inMemoryForTests)
@@ -102,9 +102,17 @@ final class B03LoeschenTests: B03QATestCase {
         XCTAssertEqual(B03QA.int(url.path, "select count(*) from ZPLAYLIST"), 0, "rollback bringt nichts zurück")
     }
 
-    // MARK: - AK-33 ⚠ · Plattencache (BUG-06)
+    // MARK: - AK-33 · Plattencache (BUG-06)
 
-    @MainActor func testAK33_M3UAdresseUndAntwortBleibenNachLoeschenImPlattencache() async throws {
+    /// AK-33 / BUG-06 behoben: Import und Aktualisieren einer M3U-Playlist mit Token schreiben nichts in den HTTP-Plattencache
+    /// (gemeinsamer Loader ohne `URLCache`); nach dem Löschen gibt es erst recht keinen Eintrag. Geprüft wird ein auf einen
+    /// Temp-Ordner umgelenkter `URLCache.shared` (API und Bytefolgen), damit der Cache der installierten App unberührt bleibt.
+    @MainActor func testAK33_M3UAdresseUndAntwortNichtImPlattencache() async throws {
+        let cacheDir = try tempDir("ak33-cache")
+        let original = URLCache.shared
+        let probe = URLCache(memoryCapacity: 512_000, diskCapacity: 20_000_000, directory: cacheDir)
+        URLCache.shared = probe
+        defer { URLCache.shared = original }
         let (container, _) = try fileContainer("ak33")
         let ctx = container.mainContext
         let tag = String(UInt32.random(in: 100_000...999_999))
@@ -114,48 +122,25 @@ final class B03LoeschenTests: B03QATestCase {
         let entries: [B03QA.M3UEntry] = (0..<5).map { ("\(channelMarker)-\($0)", nil, "G", "\(B03QA.dead)/\(channelMarker)-\($0).m3u8") }
         let p = try await importM3U(ctx, entries: entries, name: "QA Cache", address: address)
         try await refresh(p, ctx)
-        let db = B01.hostCacheDB.path
-        let keySQL = "select count(*) from cfurl_cache_response where instr(request_key, '\(token)') > 0"
-        let bodySQL = "select count(*) from cfurl_cache_receiver_data where instr(cast(receiver_data as text), '\(channelMarker)') > 0"
-        var keys = 0, bodies = 0
-        for _ in 0..<50 {
-            keys = B01.sqliteCount(db, keySQL) ?? 0
-            bodies = B01.sqliteCount(db, bodySQL) ?? 0
-            if keys > 0 && bodies > 0 { break }
-            try await Task.sleep(nanoseconds: 100_000_000)
-        }
-        let fsBodies = fsCachedDataHits(channelMarker)
-        B03QA.log("AK-33|vorLoeschen|cacheSchluesselMitToken=\(keys)|koerperMitSendernamen=\(bodies)|fsCachedData=\(fsBodies)|URLCache.shared=\(URLCache.shared.cachedResponse(for: URLRequest(url: URL(string: address)!)) != nil)")
-
-        try PlaylistImporter(modelContext: ctx).delete(p)
-        try await Task.sleep(nanoseconds: 2_000_000_000)
-        let keysAfter = B01.sqliteCount(db, keySQL) ?? 0
-        let bodiesAfter = (B01.sqliteCount(db, bodySQL) ?? 0) + fsCachedDataHits(channelMarker)
-        let api = URLCache.shared.cachedResponse(for: URLRequest(url: URL(string: address)!)) != nil
-        B03QA.log("AK-33|nachLoeschen|cacheSchluesselMitToken=\(keysAfter)|koerperMitSendernamen=\(bodiesAfter)|URLCache.shared=\(api)")
-        XCTAssertGreaterThan(keys, 0, "Ausgangslage: Adresse samt Token im Plattencache")
-        XCTAssertGreaterThan(bodies + fsBodies, 0, "Ausgangslage: Antwort mit Sendernamen im Plattencache")
-        XCTExpectFailure("BUG-06 · M3U-Adresse samt Token und Senderliste überstehen das Löschen im HTTP-Plattencache (FB-06)") {
-            XCTAssertEqual(keysAfter, 0)
-            XCTAssertEqual(bodiesAfter, 0)
-            XCTAssertFalse(api)
-        }
-        // Aufräumen der eigenen Testeinträge, Gegenprobe
-        URLCache.shared.removeCachedResponse(for: URLRequest(url: URL(string: address)!))
         try await Task.sleep(nanoseconds: 1_500_000_000)
-        XCTAssertEqual(B01.sqliteCount(db, keySQL) ?? 0, 0, "eigene Testeinträge entfernt")
-    }
+        let apiBefore = probe.cachedResponse(for: URLRequest(url: URL(string: address)!)) != nil
+        let bytesBefore = B01QA2.occurrences(of: [token, channelMarker], under: cacheDir).values.reduce(0, +)
+        B03QA.log("AK-33|vorLoeschen|URLCache.shared=\(apiBefore)|bytesImCacheOrdner=\(bytesBefore)")
 
-    private func fsCachedDataHits(_ marker: String) -> Int {
-        let dir = B01.hostCacheDB.deletingLastPathComponent().appendingPathComponent("fsCachedData")
-        let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
-        let needle = Data(marker.utf8)
-        return files.filter { (try? Data(contentsOf: $0))?.range(of: needle) != nil }.count
+        try await PlaylistImporter(modelContext: ctx).delete(p)
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        let apiAfter = probe.cachedResponse(for: URLRequest(url: URL(string: address)!)) != nil
+        let bytesAfter = B01QA2.occurrences(of: [token, channelMarker], under: cacheDir).values.reduce(0, +)
+        B03QA.log("AK-33|nachLoeschen|URLCache.shared=\(apiAfter)|bytesImCacheOrdner=\(bytesAfter)")
+        XCTAssertFalse(apiBefore, "kein Cache-Eintrag für Adresse samt Token")
+        XCTAssertEqual(bytesBefore, 0, "weder Token noch Sendernamen im Cache-Ordner")
+        XCTAssertFalse(apiAfter)
+        XCTAssertEqual(bytesAfter, 0)
     }
 
     // MARK: - AK-34 ⚠ · Bytes gelöschter Sender (BUG-07)
 
-    @MainActor func testAK34_NamenUndAdressenGeloeschterSenderBleibenAlsBytes() async throws {
+    @MainActor func testAK34_KeineBytesGeloeschterSenderInDerDatei() async throws {
         let tag = String(UInt32.random(in: 100_000...999_999))
         let nameMarker = "qa-b03-ak34-name-\(tag)"
         let streamMarker = "qa-b03-ak34-stream-\(tag)"
@@ -170,8 +155,8 @@ final class B03LoeschenTests: B03QATestCase {
                                         name: "QA-B03-AK34-\(tag)", address: "http://\(mock.hostPort)/l.m3u?token=\(token)")
             let x = try await importXtream(ctx, streams: B03QA.streams((0..<20).map { ("\(xMarker)-\($0)", 700 + $0, nil, "1") }), name: "QA-X-\(tag)")
             try await Task.sleep(nanoseconds: 1_000_000_000)
-            try PlaylistImporter(modelContext: ctx).delete(m)
-            try PlaylistImporter(modelContext: ctx).delete(x)
+            try await PlaylistImporter(modelContext: ctx).delete(m)
+            try await PlaylistImporter(modelContext: ctx).delete(x)
             B03QA.log("AK-34|offen|name=\(B03QA.bytes(nameMarker, url))|stream=\(B03QA.bytes(streamMarker, url))|xname=\(B03QA.bytes(xMarker, url))|\(B03QA.dbSummary(url))")
             _ = container
         }
@@ -191,14 +176,10 @@ final class B03LoeschenTests: B03QATestCase {
         let secureDelete = B03QA.int(storeURL.path, "PRAGMA secure_delete")
         let files = (try? FileManager.default.contentsOfDirectory(atPath: storeURL.deletingLastPathComponent().path))?.sorted() ?? []
         B03QA.log("AK-34|nachNeustart|m3uSendernamen=\(names)|streamAdressen=\(streams)|xtreamSendernamen=\(xnames)|playlistName=\(playlistName)|token=\(tokens)|freieSeiten=\(freelist)|secure_delete(neue Verbindung)=\(secureDelete)|dateien=\(files)")
+        // BUG-07 behoben: Nach dem Löschen wird die Datei verdichtet (VACUUM, Write-Ahead-Log geleert).
         let remaining = names + streams + xnames
-        if remaining > 0 {
-            XCTExpectFailure("BUG-07 · Namen und Stream-Adressen gelöschter Sender stehen noch als Bytes in der Datenbankdatei (FB-07)") {
-                XCTAssertEqual(remaining, 0)
-            }
-        } else {
-            B03QA.log("AK-34|in diesem Lauf keine Reste gefunden")
-        }
+        XCTAssertEqual(remaining, 0)
+        XCTAssertEqual(playlistName + tokens, 0)
     }
 
     // MARK: - AK-31 · Systemprotokoll
@@ -230,9 +211,9 @@ final class B03LoeschenTests: B03QATestCase {
         mock.handler = slow.handler()
         let t = Task { @MainActor in try await PlaylistImporter(modelContext: ctx).refresh(m) }
         try await Task.sleep(nanoseconds: 300_000_000)
-        try PlaylistImporter(modelContext: ctx).delete(m)
+        try await PlaylistImporter(modelContext: ctx).delete(m)
         _ = await t.result
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
         let privMarker = "b03qa-private-probe-\(tag)"
         Logger(subsystem: "lu.daumedia.MikaPlusPlayerTests", category: "B03QA").log("Sonde \(privMarker, privacy: .private)")
         try await Task.sleep(nanoseconds: 1_000_000_000)
@@ -261,7 +242,7 @@ final class B03LoeschenTests: B03QATestCase {
 
     /// AK-36: In der App gibt es keinen Weg, alle Daten zu entfernen; die Speicherorte liegen außerhalb des App-Bundles,
     /// das Löschen der App (Bundle entfernen) erreicht sie nicht. Das Löschen der App selbst wird nicht ausgeführt.
-    @MainActor func testAK36_KeinWegAlleDatenZuEntfernen() throws {
+    @MainActor func testAK36_WegAlleDatenZuEntfernen() throws {
         func titles(_ menu: NSMenu?, _ prefix: String = "") -> [String] {
             guard let menu else { return [] }
             return menu.items.flatMap { item -> [String] in
@@ -290,11 +271,10 @@ final class B03LoeschenTests: B03QATestCase {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         B03QA.log("AK-36|hauptmenue=\(menu.count) Einträge|verdächtig=\(suspicious)|bundle=\(bundlePath.replacingOccurrences(of: home, with: "~"))|orte=\(locations.mapValues { $0.path.replacingOccurrences(of: home, with: "~") }.sorted { $0.key < $1.key })|schluesselbundDienst=lu.daumedia.MikaPlusPlayer.xtream (Anmelde-Schlüsselbund)|imBundle=\(inside.keys.sorted())")
         XCTAssertGreaterThan(menu.count, 10, "Hauptmenü gelesen")
-        XCTAssertEqual(inside.count, 0, "Ist: kein Speicherort liegt im App-Bundle")
-        XCTAssertTrue(suspicious.filter { !$0.hasPrefix("MikaPlusPlayer › Nach Updates") }.isEmpty, "Ist: kein Menüeintrag zum Entfernen aller Daten: \(suspicious)")
-        XCTExpectFailure("BUG-09 · Kein Weg, alle Daten zu entfernen; App löschen entfernt Datenbank, Cache, Einstellungen und Schlüsselbund nicht (FB-09)") {
-            XCTAssertFalse(suspicious.isEmpty, "Menüeintrag „Alle Daten löschen“ fehlt")
-        }
+        XCTAssertEqual(inside.count, 0, "kein Speicherort liegt im App-Bundle – deshalb der Weg in der App")
+        // BUG-09 behoben: „Alle Daten entfernen …“ im App-Menü (Wirkung: `B03ReparaturTests.testBUG09_AlleDatenEntfernen`).
+        XCTAssertFalse(suspicious.isEmpty, "Menüeintrag „Alle Daten entfernen“ fehlt")
+        XCTAssertTrue(menu.contains { $0.hasSuffix(" › Alle Daten entfernen …") }, "\(suspicious)")
     }
 
     // MARK: - Angriff 1 · fremde/manipulierte IDs
@@ -323,7 +303,7 @@ final class B03LoeschenTests: B03QATestCase {
                             isXtream: true, xtreamOutput: "hls")
         ctx.insert(twin)
         try ctx.save()
-        try PlaylistImporter(modelContext: ctx).delete(twin)
+        try await PlaylistImporter(modelContext: ctx).delete(twin)
         let left = try XtreamCredentialStore.standard.load(for: x.id)
         var msg = "ok"
         do { try await refresh(x, ctx) } catch { msg = error.localizedDescription }
@@ -352,8 +332,8 @@ final class B03LoeschenTests: B03QATestCase {
         XCTAssertEqual(Set(mock.requests.flatMap { $0.headers.keys }), ["accept", "accept-encoding", "accept-language", "connection", "host", "user-agent"])
         XCTAssertTrue(mock.requests.allSatisfy { $0.headers["authorization"] == nil && $0.headers["cookie"] == nil })
         mock.resetLog()
-        try PlaylistImporter(modelContext: ctx).delete(m)
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(m)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
         try await Task.sleep(nanoseconds: 500_000_000)
         XCTAssertEqual(mock.requests.count, 0, "Löschen sendet nichts")
     }
@@ -386,7 +366,7 @@ final class B03LoeschenTests: B03QATestCase {
         XCTAssertEqual(created.map(\.channelCount), Array(repeating: 3, count: inputs.count))
         XCTAssertEqual(tablesOK, 1)
         XCTAssertEqual(longStored, 10_000)
-        for p in created { try PlaylistImporter(modelContext: ctx).delete(p) }
+        for p in created { try await PlaylistImporter(modelContext: ctx).delete(p) }
         XCTAssertEqual(B03QA.dbSummary(url), "ZPLAYLIST=0|ZCHANNEL=0|ohnePlaylist=0|favoriten=0")
     }
 }

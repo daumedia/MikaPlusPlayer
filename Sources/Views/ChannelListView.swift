@@ -11,28 +11,37 @@ struct ChannelListView: View {
     @State private var searchText = ""
     @State private var selectedGroup: String?
     @State private var groups: [String] = []
+    /// B03 · BUG-05: Die Playlist wurde gelöscht, während die Liste offen war.
+    @State private var playlistDeleted = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PlayerTheme.sectionSpacing) {
-                PlayerHeader(
-                    subline: "MIKA+PLAYER · \(playlist.channelCount) SENDER",
-                    title: playlist.name
-                )
+                if playlistDeleted {
+                    deletedState
+                } else {
+                    PlayerHeader(
+                        subline: "MIKA+PLAYER · \(playlist.channelCount) SENDER",
+                        title: playlist.name
+                    )
 
-                ChannelResultsList(
-                    playlistID: playlist.id,
-                    searchText: searchText,
-                    group: selectedGroup
-                )
+                    ChannelResultsList(
+                        playlistID: playlist.id,
+                        searchText: searchText,
+                        group: selectedGroup
+                    )
+                }
             }
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
         .scrollIndicators(.hidden)
         .background(Color.playerBackground.ignoresSafeArea())
-        .safeAreaInset(edge: .top, spacing: 0) { groupFilterBar }
-        .navigationTitle(playlist.name)
+        .safeAreaInset(edge: .top, spacing: 0) { if !playlistDeleted { groupFilterBar } }
+        .navigationTitle(playlistDeleted ? "Playlist gelöscht" : playlist.name)
+        .onReceive(NotificationCenter.default.publisher(for: PlaylistEvents.willDelete)) { note in
+            if PlaylistEvents.ids(in: note).contains(playlist.id) { playlistDeleted = true }
+        }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -41,6 +50,22 @@ struct ChannelListView: View {
         }
         .searchable(text: $searchText, prompt: "Sender suchen")
         .task(id: playlist.id) { loadGroups() }
+    }
+
+    private var deletedState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "trash")
+                .font(.system(size: 44))
+                .foregroundStyle(.secondary)
+            Text("Playlist gelöscht").font(.headline)
+            Text("Diese Playlist wurde gelöscht. Ihre Sender sind nicht mehr verfügbar.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, PlayerTheme.contentHPadding)
+        .padding(.top, 60)
     }
 
     // MARK: - Gruppen-Filter

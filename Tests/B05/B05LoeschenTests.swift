@@ -32,7 +32,7 @@ final class B05LoeschenTests: B05TestCase {
         let alertsBefore = b05AlertWindows()
 
         // wie PlaylistsView.delete (dort mit try?)
-        try? PlaylistImporter(modelContext: ctx).delete(a)
+        try? await PlaylistImporter(modelContext: ctx).delete(a)
         let gone = B05QA.wait(1.0) { tab.cardLabels == ["Neutral B"] }
         let alertsAfter = b05AlertWindows()
         tab.shot("AK-20-favoriten-nach-loeschen")
@@ -88,7 +88,7 @@ final class B05LoeschenTests: B05TestCase {
             try B05QA.setFavorite(a, "B05REST Glaube TV", ctx: ctx)
             try B05QA.setFavorite(a, "B05REST Partei TV", ctx: ctx)
             B05QA.evidence("AK-28-restbytes.txt", "vor-loeschen|\(B05QA.rawOccurrences("B05REST", store))")
-            try PlaylistImporter(modelContext: ctx).delete(a)
+            try await PlaylistImporter(modelContext: ctx).delete(a)
             B05QA.spin(0.5)
             open = B05QA.rawOccurrences("B05REST", store)
             B05QA.evidence("AK-28-restbytes.txt", "nach-loeschen-offen|\(open)|zeilen=\(B05QA.int(store.path, "SELECT COUNT(*) FROM ZCHANNEL"))")
@@ -106,12 +106,9 @@ final class B05LoeschenTests: B05TestCase {
         B05QA.evidence("AK-28-restbytes.txt", "nach-freigabe|\(afterRelease)")
         B05QA.evidence("AK-28-restbytes.txt", "nach-neustart|\(afterRestart)|\(pragmas)|datei=\(store.path)")
         let total = afterRestart.values.reduce(0, +)
-        XCTAssertGreaterThan(open.values.reduce(0, +), 0, "solange die App läuft, steht der Name im -wal")
-        // Nicht deterministisch: in 1 von 4 Läufen des Durchlaufs blieb ein Vorkommen in der Hauptdatei (vgl. B03 BUG-07 / BF-59).
-        XCTExpectFailure("BUG-10: Namen gelöschter Favoriten bleiben teils als Bytes in der Datenbankdatei (nicht deterministisch)", options: {
-            let o = XCTExpectedFailure.Options(); o.isStrict = false; return o
-        }()) {
-            XCTAssertEqual(total, 0, "nach dem Neustart keine Vorkommen mehr: \(afterRestart)")
-        }
+        // Seit B03 · BUG-07 (BF-59, gleiche Ursache wie dieser BUG-10) verdichtet das Löschen die Datei sofort: Der Name steht
+        // weder im -wal noch in freien Seiten – schon bei laufender App, nicht erst nach dem Neustart.
+        XCTAssertEqual(open.values.reduce(0, +), 0, "nach dem Löschen kein Vorkommen, auch nicht im -wal: \(open)")
+        XCTAssertEqual(total, 0, "nach dem Neustart keine Vorkommen mehr: \(afterRestart)")
     }
 }

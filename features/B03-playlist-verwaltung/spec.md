@@ -413,6 +413,22 @@ QA von B03.
 - **OF-06** · Soll die Meldung „Zugangsdaten fehlen" einen Weg anbieten, sie neu einzugeben, statt
   Löschen zu empfehlen (AK-21)? Hängt an B01 OF-05 und OF-09.
 
+Aus der Reparatur vom 2026-09-26 (`build-bericht.md`), ebenfalls zur Entscheidung durch den Nutzer:
+
+- **OF-07** · „Alle Daten entfernen": Ort (macOS im App-Menü nach „Einstellungen", iOS im Menü „…" der
+  Playlist-Übersicht), Umfang (auch Einstellungen der App einschließlich Sparkle und beiseitegelegte
+  Datenbanken) und Rückfrage (eine Warnung, kein Rückgängig) sind angenommen. Passt das, und was sagt die
+  Datenschutzseite dazu (B10)?
+- **OF-08** · Sollen Schlüsselbund-Einträge ohne Playlist, die vor dieser Reparatur entstanden sind (AK-35,
+  B01 BF-44/BF-46), beim Start entfernt werden? Heute verschwinden sie nur über „Alle Daten entfernen", weil
+  ein Eintrag zu einer beiseitegelegten Datenbank (B09) gehören kann.
+- **OF-09** · Laufende Wiedergabe beim **Aktualisieren**: Player und Multiview-Kacheln spielen die alte Adresse
+  weiter (B08 BUG-05, Teil Aktualisieren); nur „Erneut versuchen" nimmt den neuen Stand. Sollen laufende
+  Streams nach dem Aktualisieren auf den wiedererkannten Sender umschalten oder enden, wenn er fehlt?
+- **OF-10** · Beim Aktualisieren bleiben Namen und Adressen der ersetzten Sender bis zum nächsten Löschen bzw.
+  „Alle Daten entfernen" in freien Seiten der Datenbankdatei (Verdichten nur nach dem Löschen, weil es bei
+  großen Listen Sekunden kostet). Reicht das (vgl. B05 BUG-10)?
+
 ## Fehlbestand
 
 Nicht vorhanden oder als Fehler eingestuft, aus dem Code belegt. Kein Kriterium: `sdd-qa` prüft

@@ -60,7 +60,9 @@ final class B02URLImportTests: B02TestCase {
             (server.url("/ümlaut.m3u"), "/%C3%BCmlaut.m3u", server.url("/%C3%BCmlaut.m3u")),
             (server.url("/liste.m3u#fragment"), "/liste.m3u", server.url("/liste.m3u#fragment")),
             (server.url("/liste.m3u?token=qa-token&x=1"), "/liste.m3u?token=qa-token&x=1", server.url("/liste.m3u?token=qa-token&x=1")),
-            ("http://qa-user:qa-pass-b02ak08@\(server.hostPort)/liste.m3u", "/liste.m3u", "http://qa-user:qa-pass-b02ak08@\(server.hostPort)/liste.m3u")
+            // B02 · BUG-01: Benutzerinfo mit Passwort → Platzhalter in der Datenbank, Zugangsdaten im Schlüsselbund
+            ("http://qa-user:qa-pass-b02ak08@\(server.hostPort)/liste.m3u", "/liste.m3u",
+             "http://\(M3UCredentials.Marker.infoUser):\(M3UCredentials.Marker.infoPassword)@\(server.hostPort)/liste.m3u")
         ]
         for tc in cases {
             server.resetLog()
@@ -407,9 +409,12 @@ final class B02URLImportTests: B02TestCase {
         XCTAssertNil(first.header("Cookie"))
         XCTAssertEqual(reqs[1].header("Cookie"), "b02qaSess=\(marker)", "zweiter Import desselben Hosts")
         XCTAssertEqual(reqs[2].header("Cookie"), "b02qaSess=\(marker)", "Aktualisieren (B03)")
-        let stored = HTTPCookieStorage.shared.cookies?.filter { $0.name == "b02qaSess" } ?? []
-        B02.log("AK-36|cookieImSpeicher=\(stored.count)|sitzungscookie=\(stored.first?.isSessionOnly ?? false)|domain=\(stored.first?.domain ?? "-")")
+        // Seit B02 · BUG-02 hält der Loader Cookies nur im eigenen Arbeitsspeicher, nicht im gemeinsamen Speicher.
+        let shared = HTTPCookieStorage.shared.cookies?.filter { $0.name == "b02qaSess" } ?? []
+        let stored = PlaylistHTTPLoader.shared.cookies.filter { $0.name == "b02qaSess" }
+        B02.log("AK-36|cookieImLoader=\(stored.count)|imGemeinsamenSpeicher=\(shared.count)|sitzungscookie=\(stored.first?.isSessionOnly ?? false)|domain=\(stored.first?.domain ?? "-")")
         XCTAssertEqual(stored.count, 1)
+        XCTAssertEqual(shared.count, 0)
     }
 }
 

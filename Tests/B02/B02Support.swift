@@ -391,6 +391,11 @@ class B02TestCase: XCTestCase {
         dirs = []
         extraServers = []
         server = nil
+        // Seit B02 · BUG-01 legt der M3U-Import Zugangsdaten im Schlüsselbund ab – nur im Test-Dienst dieses Laufs.
+        XCTAssertTrue(XtreamCredentialStore.standard.service.hasPrefix("lu.daumedia.MikaPlusPlayer.xtream.tests."))
+        XCTAssertNoThrow(try XtreamCredentialStore.standard.deleteAll())
+        // Cookies leben seit B02 · BUG-02 nur im Arbeitsspeicher des Loaders; eigene Test-Cookies dort entfernen.
+        PlaylistHTTPLoader.shared.removeCookies(named: { $0.hasPrefix("b02qa") })
         super.tearDown()
     }
 

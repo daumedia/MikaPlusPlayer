@@ -151,7 +151,8 @@ final class B07DatenschutzTests: B07TestCase {
         }
         await B07QA.spin(1)
         let store = try OSLogStore(scope: .currentProcessIdentifier)
-        let entries = try store.getEntries(at: store.position(date: t0)).compactMap { $0 as? OSLogEntryLog }
+        // `position(date:)` liefert im Gesamtlauf auch ältere Einträge des Prozesses; nur das Zeitfenster dieses Tests zählt.
+        let entries = try store.getEntries(at: store.position(date: t0)).compactMap { $0 as? OSLogEntryLog }.filter { $0.date >= t0 }
         let needles = [B07QA.pass, B07QA.user, "QA Protokollsender", "/live/", "301.m3u8"]
         var hits: [String] = []
         for en in entries {

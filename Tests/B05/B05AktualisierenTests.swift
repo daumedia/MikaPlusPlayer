@@ -178,16 +178,11 @@ final class B05AktualisierenTests: B05TestCase {
         let zdf = pl.channels.filter { $0.name.hasPrefix("ZDF") && $0.isFavorite }.map(\.name).sorted()
         B05QA.evidence("AK-15-dubletten.txt", "m3u|nur-ZDF-SD-markiert → \(zdf)")
 
-        // Ist-Verhalten wie in der Spec (AK-15) …
-        XCTAssertEqual(after1.count, 8, "3 → 8 bei unveränderter Liste")
-        XCTAssertEqual(after2.count, 8, "entfernte Sterne kommen zurück")
-        XCTAssertEqual(zdf, ["ZDF FHD", "ZDF HD", "ZDF SD"])
-        // … und die Kehrseite: Die Auswahl des Nutzers bleibt NICHT erhalten.
-        XCTExpectFailure("BUG-01: Aktualisieren vervielfacht Favoriten (nicht eindeutiger favoriteKey) und macht Entfernen rückgängig") {
-            XCTAssertEqual(after1, before)
-            XCTAssertEqual(after2, cleaned)
-            XCTAssertEqual(zdf, ["ZDF SD"])
-        }
+        // BUG-01 behoben (gemeinsam mit B03 BUG-02): Die Auswahl des Nutzers bleibt erhalten – je Schlüssel höchstens so
+        // viele Favoriten wie vorher, und zwar derselbe Sender (gleiche Stream-Adresse).
+        XCTAssertEqual(after1, before, "3 bleiben 3 bei unveränderter Liste")
+        XCTAssertEqual(after2, cleaned, "entfernte Sterne kommen nicht zurück")
+        XCTAssertEqual(zdf, ["ZDF SD"])
     }
 
     func testAK15_EC02_NamenloseUndVariantenXtream() async throws {
@@ -226,10 +221,10 @@ final class B05AktualisierenTests: B05TestCase {
         B05QA.evidence("AK-15-dubletten.txt", "xtream|vorher=\(before.count) \(before) → nach-aktualisieren=\(after.count) \(after)")
         B05QA.evidence("AK-15-dubletten.txt", "xtream|tab-nachher=\(w.cardLabels)")
         w.shot("EC-02-nach-aktualisieren-alle-namenlosen")
-        XCTAssertEqual(after.count, 6, "2 → 6: drei ZDF-Varianten und drei namenlose Sender")
-        XCTExpectFailure("BUG-01: HD/FHD/SD mit gleicher epg_channel_id und namenlose Sender werden alle Favorit") {
-            XCTAssertEqual(after.count, before.count)
-        }
+        // BUG-01 behoben: aus 2 Favoriten bleiben 2 – „DE: ZDF HD“ über den Namen, ein namenloser Sender.
+        XCTAssertEqual(after.count, before.count)
+        XCTAssertTrue(after.contains("DE: ZDF HD@QA Xtream"), "\(after)")
+        XCTAssertEqual(after.filter { $0.hasPrefix("@") }.count, 1, "genau ein namenloser Favorit")
     }
 
     // MARK: AK-16 · EC-11
@@ -318,7 +313,7 @@ final class B05AktualisierenTests: B05TestCase {
         XCTAssertTrue(x.channels.first { $0.name == "Kanal Zwei" }?.isFavorite ?? false)
 
         // EC-05: Wer der Meldung folgt (löschen, neu importieren), verliert die Favoriten dieser Playlist
-        try PlaylistImporter(modelContext: ctx).delete(x)
+        try await PlaylistImporter(modelContext: ctx).delete(x)
         installPanel([["name": "Kanal Int", "stream_id": 1, "epg_channel_id": "kanal.int", "category_id": "1"],
                       ["name": "Kanal Zwei", "stream_id": 2, "category_id": "1"]])
         let x2 = try await importXtream(ctx, name: "QA Xtream Fehler")
@@ -377,10 +372,15 @@ final class B05AktualisierenTests: B05TestCase {
         B05QA.evidence("AK-17-randfall-speicherfehler.txt", "nach platz + nächstem stern|datei=\(disk2)|sender in datei=\(B05QA.int(store.path, "SELECT COUNT(*) FROM ZCHANNEL"))")
         XCTAssertNotEqual(message, "kein Fehler")
         XCTAssertEqual(disk, "[\"ZDF HD@QA Voll Aktualisieren\"]", "in der Datei steht der alte Stand")
-        XCTExpectFailure("BUG-11: gescheitertes Speichern beim Aktualisieren – Oberfläche zeigt den neuen, ungespeicherten Stand, technische Meldung") {
-            XCTAssertEqual(uiAfter, before, "Tab soll den gespeicherten Stand zeigen")
-            XCTAssertTrue(sameObjects, "Sender sollen unverändert bleiben (AK-17)")
-        }
+        // BUG-11 behoben: Ersetzt wird in einem eigenen Kontext in einem Speichervorgang; scheitert er, bleibt die Ansicht
+        // beim gespeicherten Stand, die Meldung ist verständlich, und ein späteres Speichern schreibt nichts nach.
+        XCTAssertEqual(uiAfter, before, "Tab soll den gespeicherten Stand zeigen")
+        XCTAssertTrue(sameObjects, "Sender sollen unverändert bleiben (AK-17)")
+        XCTAssertFalse(ctx.hasChanges, "nichts Ungespeichertes im Kontext der Ansicht")
+        XCTAssertEqual(message, PlaylistStoreError.saveFailed.localizedDescription)
+        XCTAssertFalse(message.contains("NSSQLiteErrorDomain"))
+        XCTAssertEqual(disk2, "[\"ZDF HD@QA Voll Aktualisieren\", \"arte@QA Voll Aktualisieren\"]", "späteres Speichern schreibt nur den Stern")
+        XCTAssertEqual(B05QA.int(store.path, "SELECT COUNT(*) FROM ZCHANNEL"), 3)
     }
 
     // MARK: AK-18
@@ -437,7 +437,8 @@ final class B05AktualisierenTests: B05TestCase {
         B05QA.evidence("AK-19-offen.txt", "tab vorher=[ZDF HD, arte] nachher=\(now) · player-fenster titel=\(playerTab.window.title) texte=\(playerTab.texts.prefix(4))")
         tab.shot("AK-19-tab-nach-aktualisieren")
         playerTab.shot("AK-19-player-aus-tab-nach-aktualisieren")
-        XCTAssertEqual(now, ["ZDF HD, Deutschland", "ZDF SD, Deutschland", "arte, Kultur"], "neuer Stand ohne Neuladen, einschließlich AK-15")
+        // Neuer Stand ohne Neuladen; seit BUG-01 (B05) bleibt es bei den zwei markierten Sendern (vorher kam „ZDF SD“ hinzu).
+        XCTAssertEqual(now, ["ZDF HD, Deutschland", "arte, Kultur"], "neuer Stand ohne Neuladen, ohne vervielfachte Favoriten")
         XCTAssertEqual(playerTab.window.title, "arte", "Player bleibt offen")
     }
 

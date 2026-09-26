@@ -160,6 +160,9 @@ struct B03QAPanel {
     var m3uDelay: TimeInterval = 0
     var auth: Data = try! JSONSerialization.data(withJSONObject: MockXtreamServer.okAuth)
     var authStatus = 200
+    /// Verzögerung der Anmelde- bzw. Kategorienanfrage (je unter der Leerlaufgrenze von 60 s bleiben)
+    var authDelay: TimeInterval = 0
+    var categoriesDelay: TimeInterval = 0
     var categories: Data = try! JSONSerialization.data(withJSONObject: [
         ["category_id": "1", "category_name": "News"],
         ["category_id": "2", "category_name": "Sport"]
@@ -172,7 +175,8 @@ struct B03QAPanel {
 
     func handler() -> @Sendable (MockXtreamServer.Request) -> MockXtreamServer.Reply {
         let m3u = self.m3u, m3uStatus = self.m3uStatus, m3uDelay = self.m3uDelay
-        let auth = self.auth, authStatus = self.authStatus, categories = self.categories, streams = self.streams
+        let auth = self.auth, authStatus = self.authStatus, authDelay = self.authDelay, categories = self.categories, streams = self.streams
+        let categoriesDelay = self.categoriesDelay
         let streamsStatus = self.streamsStatus, streamsDelay = self.streamsDelay, liveStatus = self.liveStatus
         return { req in
             if req.path.hasSuffix(".m3u") {
@@ -182,8 +186,12 @@ struct B03QAPanel {
             }
             if req.path == "/player_api.php" {
                 switch req.action {
-                case nil: return .raw(status: authStatus, contentType: "application/json", body: auth)
-                case "get_live_categories": return .raw(status: 200, contentType: "application/json", body: categories)
+                case nil:
+                    let r = MockXtreamServer.Reply.raw(status: authStatus, contentType: "application/json", body: auth)
+                    return authDelay > 0 ? .delayed(authDelay, r) : r
+                case "get_live_categories":
+                    let r = MockXtreamServer.Reply.raw(status: 200, contentType: "application/json", body: categories)
+                    return categoriesDelay > 0 ? .delayed(categoriesDelay, r) : r
                 case "get_live_streams":
                     let r = MockXtreamServer.Reply.raw(status: streamsStatus, contentType: "application/json", body: streams)
                     return streamsDelay > 0 ? .delayed(streamsDelay, r) : r
@@ -243,6 +251,9 @@ class B03QATestCase: XCTestCase {
         try mock.start()
         XCTAssertTrue(XtreamCredentialStore.standard.service.hasPrefix("lu.daumedia.MikaPlusPlayer.xtream.tests."),
                       "Tests dürfen nur den eigenen Schlüsselbund-Dienst benutzen")
+        // Der gemeinsame Loader hält Cookies im Arbeitsspeicher (B02 AK-36); Cookies nicht portgebunden – Cookies früherer
+        // Tests für 127.0.0.1 würden hier mitgesendet (Angriff 5 prüft den tatsächlichen Payload).
+        PlaylistHTTPLoader.shared.removeCookies(forHost: "127.0.0.1")
     }
 
     override func tearDown() {

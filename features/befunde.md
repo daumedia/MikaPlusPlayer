@@ -9,7 +9,7 @@ des Auditberichts, den `/sdd-erfassen abschluss` daraus baut.
 
 | ID | Feature | Befund | Grad | Fundstelle | Seit |
 |---|---|---|---|---|---|
-| BF-01 | B09 | v1.1-Feed im freien GitHub-Namensraum `Mukaarts` — wer den Namen registriert, steuert den Feed (Updates unterdrücken, Informations-Update mit Link, Replay signierter Archive) (Namen nur zu reservieren verstößt gegen GitHubs Richtlinie — Ausweg ist ein Übergangs-Release über den neuen Feed) · BUG-01 | kritisch | `Info.plist`@v1.1 `SUFeedURL`; `users/Mukaarts` → 404 | 2026-09-15 |
+| BF-01 | B09 | v1.1-Feed im freien GitHub-Namensraum `Mukaarts` — wer den Namen registriert, steuert den Feed (Updates unterdrücken, Informations-Update mit Link, Replay signierter Archive) (Namen nur zu reservieren verstößt gegen GitHubs Richtlinie — Ausweg ist ein Übergangs-Release über den neuen Feed) · BUG-01 — 2026-09-26: Nutzer bestätigt Umbenennung des Kontos auf `daumedia`; `Mukaarts` weiterhin frei (404), Weiterleitung aktiv; Abhilfe weiter offen (Übergangs-Release) | kritisch | `Info.plist`@v1.1 `SUFeedURL`; `users/Mukaarts` → 404 | 2026-09-15 |
 | BF-03 | B09 | Keine Developer-ID-Signatur, keine Notarisierung, DMG unsigniert · BUG-03 | hoch | `project.yml:70-71`, `scripts/make-dmg.sh` | 2026-09-15 |
 | BF-05 | B09 | Schlüsselwechsel unmöglich (ad-hoc Designated Requirement = CDHash) · BUG-05 | hoch | Ad-hoc-Signatur | 2026-09-15 |
 | BF-06 | B09 | Ein EdDSA-Schlüssel für sechs Mika+-Apps; Signatur nicht an App/Version gebunden · BUG-06 | hoch | `Info.plist` `SUPublicEDKey` | 2026-09-15 |

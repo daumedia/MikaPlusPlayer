@@ -1,10 +1,11 @@
 import Foundation
 import Security
 
-/// Schlüsselbund-Ablage der Xtream-Zugangsdaten, ein Eintrag je Playlist (B01 · BUG-01).
+/// Schlüsselbund-Ablage der Zugangsdaten, ein Eintrag je Playlist (B01 · BUG-01, B02 · BUG-01).
 ///
 /// Eintrag: generisches Passwort, `service` = Dienstname, `account` = `Playlist.id`,
-/// Inhalt = `XtreamSecret` als JSON.
+/// Inhalt = `XtreamSecret` (Xtream-Playlists) bzw. `M3USecret` (M3U-Adressen mit Zugangsdaten) als JSON.
+/// Der Name stammt aus B01; die Ablage gilt heute für alle Importwege.
 ///
 /// **Zugriffsklasse `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`:**
 /// - *AfterFirstUnlock*, weil Import und Aktualisieren großer Listen über eine Bildschirmsperre
@@ -44,20 +45,37 @@ struct XtreamCredentialStore: Sendable {
     }
 
     func save(_ secret: XtreamSecret, for playlistID: UUID) throws {
-        let data = try JSONEncoder().encode(secret)
+        try store(secret, for: playlistID, label: "Mika+Player – Xtream-Zugang")
+    }
+
+    func load(for playlistID: UUID) throws -> XtreamSecret? {
+        try value(XtreamSecret.self, for: playlistID)
+    }
+
+    /// Zugangsdaten einer M3U-Playlist (B02 · BUG-01).
+    func saveM3U(_ secret: M3USecret, for playlistID: UUID) throws {
+        try store(secret, for: playlistID, label: "Mika+Player – Playlist-Zugang")
+    }
+
+    func loadM3U(for playlistID: UUID) throws -> M3USecret? {
+        try value(M3USecret.self, for: playlistID)
+    }
+
+    private func store<Value: Encodable>(_ value: Value, for playlistID: UUID, label: String) throws {
+        let data = try JSONEncoder().encode(value)
         let query = itemQuery(for: playlistID)
         var status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
         if status == errSecItemNotFound {
             var attributes = query
             attributes[kSecValueData as String] = data
             attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-            attributes[kSecAttrLabel as String] = "Mika+Player – Xtream-Zugang"
+            attributes[kSecAttrLabel as String] = label
             status = SecItemAdd(attributes as CFDictionary, nil)
         }
         guard status == errSecSuccess else { throw KeychainError.status(status) }
     }
 
-    func load(for playlistID: UUID) throws -> XtreamSecret? {
+    private func value<Value: Decodable>(_ type: Value.Type, for playlistID: UUID) throws -> Value? {
         var query = itemQuery(for: playlistID)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -66,7 +84,7 @@ struct XtreamCredentialStore: Sendable {
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess else { throw KeychainError.status(status) }
         guard let data = result as? Data,
-              let secret = try? JSONDecoder().decode(XtreamSecret.self, from: data) else {
+              let secret = try? JSONDecoder().decode(Value.self, from: data) else {
             throw KeychainError.invalidData
         }
         return secret
@@ -77,7 +95,7 @@ struct XtreamCredentialStore: Sendable {
         guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.status(status) }
     }
 
-    /// Löscht alle Einträge dieses Dienstes. Nur für Tests mit eigenem Dienstnamen gedacht.
+    /// Löscht alle Einträge dieses Dienstes: Tests mit eigenem Dienstnamen und „Alle Daten entfernen" (B03 · BUG-09).
     func deleteAll() throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

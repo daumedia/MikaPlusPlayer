@@ -168,6 +168,15 @@ auf dem Main-Actor). Import über Xtream ist seit B01 BUG-12 blockweise im Hinte
 Stapel-Löschen per Prädikat), Ansicht erst nach dem Speichern aktualisieren.
 **Test:** `B03LeistungTests.testAK37_AK38_AktualisierenUndLoeschenBlockierenDenMainThread` (`XCTExpectFailure`, Grenze 1 s)
 
+**Behoben 2026-09-26:** Ersetzen und Löschen laufen über `Services/PlaylistStore.swift` (Actor, eigener
+`ModelContext`): Beziehung auf einmal lösen (`channels = []`), Sender löschen, neue per `append(contentsOf:)` – ein
+Speichervorgang. Die Ansicht holt danach nur die Playlist neu ab (Millisekunden); die Playlist-Zeile selbst entfernt der
+Kontext der Ansicht, damit `@Query` sofort stimmt. 17.000 Sender (Debug, Store-Datei): Aktualisieren M3U 4,09 s /
+Xtream 4,13 s, längste Blockade 0,02 s (vorher 280 s); Löschen nach Aktualisieren 1,48 s / 1,47 s und nach Neustart
+1,51 s / 1,53 s, Blockade 0,00 s (vorher 41–133 s). Nachweis:
+`B03LeistungTests.testAK37_AK38_AktualisierenUndLoeschenBlockierenDenMainThreadNicht` (Standard 1.000/2.000,
+Messlauf `TEST_RUNNER_B03_SIZES=17000`).
+
 ### BUG-02 · Ein Favorit wird beim Aktualisieren zu mehreren — mittel
 
 **Betrifft:** AK-10 (FB-02)
@@ -183,6 +192,12 @@ Stapel-Löschen per Prädikat), Ansicht erst nach dem Speichern aktualisieren.
 höchstens so viele Favoriten je Schlüssel wie vorher.
 **Test:** `B03AktualisierenTests.testAK10_EinFavoritWirdZuMehreren`
 
+**Behoben 2026-09-26:** `FavoriteCarryOver` (in `PlaylistStore.swift`): Der Schlüssel (tvg-ID bzw. Name) entscheidet
+weiter, **ob** ein neuer Sender Favorit werden darf (AK-09 unverändert); je Schlüssel werden höchstens so viele Sender
+Favorit wie vorher, bevorzugt derselbe Sender (gleiche Stream-Adresse), dann gleicher Name, dann der erste Kandidat.
+Nachweis: `B03AktualisierenTests.testAK10_EinFavoritBleibtEinFavorit` (4 → 4, Kanal X 1 → 1, Xtream 1 → 1),
+`B03ReparaturTests.testBUG02_FavoritenUebernahmeRegeln`, B05 `testAK15_…` (M3U und Xtream), `B05TabTests.testEC01_…`.
+
 ### BUG-03 · Ladeindikator nur für eine Playlist — mittel
 
 **Betrifft:** AK-13 (FB-03)
@@ -197,6 +212,10 @@ einen, obwohl die zweite noch 25 s läuft
 **Vorschlag:** Menge laufender Playlist-IDs statt eines einzelnen Werts.
 **Test:** `B03OberflaecheTests.testAK12_AK13_EC09_LadeindikatorBeiEinerUndZweiAktualisierungen`
 
+**Behoben 2026-09-26:** `PlaylistsView` führt eine Menge laufender Aktualisierungen (`refreshingIDs`) statt eines
+Werts; jede Karte zeigt ihren Indikator bis zum eigenen Ende (je Fenster, EC-09 unverändert). Nachweis:
+`B03OberflaecheTests.testAK12_AK13_EC09_…` (beide laufen → 2 Indikatoren, erste fertig → 1).
+
 ### BUG-04 · Keine Sperre gegen mehrfaches Aktualisieren derselben Playlist — mittel
 
 **Betrifft:** AK-14 (FB-04), Angriff 3
@@ -210,6 +229,13 @@ vervielfachen sich – bei großen Listen jeweils die Blockade aus BUG-01
 **Ort:** `Sources/Views/PlaylistsView.swift:39-46` (Menüeintrag nie deaktiviert, ungebundene `Task`), `Sources/Services/PlaylistImporter.swift:220`
 **Vorschlag:** Laufende Aktualisierungen je Playlist-ID merken, Menüeintrag deaktivieren und zweiten Aufruf verwerfen.
 **Test:** `B03AktualisierenTests.testAK14_…`, `B03OberflaecheTests.testAK14_Angriff3_…`
+
+**Behoben 2026-09-26:** Zwei Sperren: `PlaylistImporter.refreshing` (über alle Fenster; ein zweiter Aufruf für
+dieselbe Playlist kehrt ohne Wirkung und ohne Anfrage zurück) und im Fenster ein deaktivierter Menüeintrag
+„Aktualisieren", solange die Playlist läuft (`PlaylistsView.startRefresh` markiert sie schon vor dem Start der Aufgabe). Nachweis: `B03AktualisierenTests.testAK14_…Gesperrt` (M3U 1 Abruf, Xtream
+3 Anfragen), `B03OberflaecheTests.testAK14_Angriff3_AktualisierenWaehrendDesLaufsGesperrt` (Eintrag gesperrt,
+10 Wahlen → 3 Anfragen; Anbieterverzögerung im Test verlängert, damit alle Wahlen in den Lauf fallen, und 0,3 s
+zwischen zwei Wahlen, damit das Menü neu gezeichnet ist).
 
 ### BUG-05 · Wiedergabe, Multiview und Senderliste halten gelöschte bzw. ersetzte Sender — mittel
 
@@ -232,6 +258,16 @@ verdeckt `resolveError`), `Sources/Services/StreamURLResolver.swift:25` (ohne `p
 über die Playlist-ID statt über gehaltene Objekte führen.
 **Test:** `B03OberflaecheTests.testAK27_EC05_…`, `testAK28_PlayerUndMultiview…`, `testAK28_AK29_Erneut…`, `B03AktualisierenTests.testAK29_…`
 
+**Behoben 2026-09-26:** `PlaylistEvents.willDelete` vor jedem Löschen: `PlayerView` beendet die Engine
+(`PlaybackEngine.stop()`, neu: AVKit gibt das Element frei, VLC `stop()`), zeigt „Die Playlist dieses Senders wurde
+gelöscht." und fragt beim „Erneut versuchen" nicht mehr an; `MultiviewSession` entfernt und beendet die Kacheln der
+Playlist; `ChannelListView` zeigt „Playlist gelöscht" statt alter Senderzahl und Chips. `StreamURLResolver` schlägt die
+Playlist über `playlistID` nach, dadurch spielt ein gehaltener Sender nach dem Aktualisieren mit Zugangsdaten.
+Nachweis: `B03OberflaecheTests.testAK27_EC05_…`, `testAK28_PlayerUndMultiviewEndenMitDemLoeschen` (0 Verbindungen),
+`testAK28_AK29_ErneutVersuchen…` (nach Löschen kein Abruf, nach Aktualisieren `/live/qa-user/<pass>/102.m3u8`),
+`B03AktualisierenTests.testAK29_…MitZugangsdaten`, `B03ReparaturTests.testBUG05_…`. Laufende Kacheln nach dem
+**Aktualisieren** bleiben bei der alten Adresse (B08 BUG-05, → spec.md OF-09).
+
 ### BUG-06 · M3U-Adresse samt Token und Senderliste überstehen das Löschen im HTTP-Plattencache — mittel
 
 **Betrifft:** AK-33 (FB-06); Angriff 8
@@ -247,6 +283,11 @@ das Lesen), `:270-278` (`delete` räumt keinen Cache)
 **Vorschlag:** M3U-Abruf über eine flüchtige Sitzung ohne `URLCache` wie `XtreamHTTPLoader`; beim Löschen eigene Einträge entfernen.
 **Test:** `B03LoeschenTests.testAK33_…`
 
+**Behoben 2026-09-26:** gemeinsam mit B02 · BUG-02 – M3U-Abrufe schreiben nicht mehr in den HTTP-Plattencache
+(`PlaylistHTTPLoader`), `delete` entfernt einen etwaigen Alt-Eintrag der Adresse (auch der vollständigen mit
+Zugangsdaten) und die Cookies des Hosts. Nachweis: `B03LoeschenTests.testAK33_M3UAdresseUndAntwortNichtImPlattencache`
+(auf einen Temp-Ordner umgelenkter Cache: 0 Einträge, 0 Bytes vor und nach dem Löschen).
+
 ### BUG-07 · Namen und Stream-Adressen gelöschter Sender bleiben als Bytes in der Datenbankdatei — niedrig
 
 **Betrifft:** AK-34 (FB-07)
@@ -261,6 +302,11 @@ deterministisch); Playlistname und Token 0
 läuft nur nach der Zugangsdaten-Umstellung
 **Vorschlag:** Nach dem Löschen einer Playlist `secure_delete` bzw. `VACUUM` + `wal_checkpoint(TRUNCATE)` (im Hintergrund).
 **Test:** `B03LoeschenTests.testAK34_…`
+
+**Behoben 2026-09-26:** Nach jedem Löschen verdichtet `PlaylistStore.compact` die Datei (`VACUUM`,
+`wal_checkpoint(TRUNCATE)` über `AppPersistence.compactStore`, abseits des Main-Actors). Nachweis:
+`B03LoeschenTests.testAK34_KeineBytesGeloeschterSenderInDerDatei` (M3U-/Xtream-Namen und Adressen 0 nach Neustart),
+`B03ReparaturTests.testBUG09_…`. Beim Aktualisieren wird nicht verdichtet (→ spec.md OF-10).
 
 ### BUG-08 · Verwaister Schlüsselbund-Eintrag; Fehler beim Löschen werden verschwiegen — niedrig
 
@@ -278,6 +324,12 @@ verweigerter Schlüsselbund-Zugriff bliebe unbemerkt (im Code nachvollzogen, nic
 **Vorschlag:** Vor dem Speichern prüfen, ob die Playlist noch existiert; Fehler beim Löschen anzeigen; verwaiste Einträge beim Start entfernen.
 **Test:** `B03AktualisierenTests.testAK35_…`
 
+**Behoben 2026-09-26:** Der Schlüsselbund-Eintrag aus dem Altbestand wird im selben Schritt wie das Ersetzen
+geschrieben und nur, wenn die Playlist dann noch existiert und nicht gerade gelöscht wird (`PlaylistStore.replaceChannels`,
+`beginDelete`); `PlaylistsView` zeigt Fehler beim Löschen an (kein `try?` mehr, eigener Text, wenn nur der
+Schlüsselbund-Eintrag bleibt). Nachweis: `B03AktualisierenTests.testAK35_…OhneVerwaistenEintrag`. Ältere verwaiste
+Einträge entfernt nur „Alle Daten entfernen" (→ spec.md OF-08).
+
 ### BUG-09 · Kein Weg, alle Daten zu entfernen; App löschen entfernt nicht alles — mittel
 
 **Betrifft:** AK-36 (FB-09); Angriff 8
@@ -294,6 +346,13 @@ all of it“ (`web/app/privacy/page.tsx:39`, Stand heute). Das Deinstallieren se
 und die Website korrigieren.
 **Test:** `B03LoeschenTests.testAK36_…`
 
+**Behoben 2026-09-26:** „Alle Daten entfernen …" (macOS im App-Menü, iOS im Menü „…" der Übersicht) mit
+Warnung; `Services/AppDataReset.swift` beendet Wiedergaben, löscht alle Playlists über denselben Weg (verdichtet), alle
+Einträge des Schlüsselbund-Dienstes, den HTTP-Cache, die Cookies des Loaders, beiseitegelegte Datenbanken und die
+Einstellungen der App. Nachweis: `B03LoeschenTests.testAK36_WegAlleDatenZuEntfernen` (Menüeintrag),
+`B03ReparaturTests.testBUG09_AlleDatenEntfernen` (alles leer, 0 Bytes, Blockade 0,00 s). Website-Text gehört zu B10
+(Teil 2); Ort und Umfang → spec.md OF-07.
+
 ### BUG-10 · Löschen ohne Rückfrage und ohne Rückgängig — niedrig
 
 **Betrifft:** AK-22 (OF-01)
@@ -305,6 +364,9 @@ und die Website korrigieren.
 **Ort:** `Sources/Views/PlaylistsView.swift:47-51, 104-107`; `Sources/App/MikaPlusPlayerApp.swift:36` (`.modelContainer` ohne Undo)
 **Vorschlag:** Nach Entscheidung zu OF-01: `confirmationDialog` mit Hinweis auf Favoriten und Zugangsdaten.
 **Test:** `B03OberflaecheTests.testAK22_AK24_…`, `B03LoeschenTests.testAK22_…`
+
+**Nicht behoben:** wartet auf die Nutzerentscheidung OF-01 (Rückfrage oder Rückgängig). `testAK22_…` behält
+`XCTExpectFailure`.
 
 ### BUG-11 · Kürzere Liste ersetzt ohne Rückfrage, Favoriten kommen nicht zurück — niedrig
 
@@ -319,6 +381,9 @@ und die Website korrigieren.
 **Vorschlag:** Nach Entscheidung zu OF-02.
 **Test:** `B03AktualisierenTests.testAK11_…`
 
+**Nicht behoben:** wartet auf die Nutzerentscheidung OF-02 (Warnung bei kürzerer Liste, Favoriten aufbewahren).
+`testAK11_…` behält `XCTExpectFailure`.
+
 ### BUG-12 · „Zugangsdaten fehlen“ führt nur über Löschen, das alle Favoriten kostet — niedrig
 
 **Betrifft:** AK-21 (OF-06)
@@ -331,6 +396,9 @@ und die Website korrigieren.
 **Ort:** `Sources/Services/PlaylistImporter.swift:233-237`, `Sources/Services/StreamURLResolver.swift:17`
 **Vorschlag:** Nach Entscheidung zu OF-06.
 **Test:** `B03AktualisierenTests.testAK21_…`
+
+**Nicht behoben:** wartet auf die Nutzerentscheidung OF-06 (Zugangsdaten neu eingeben statt löschen).
+`testAK21_…` behält `XCTExpectFailure`.
 
 ## Hinweise (kein Kriterium durchgefallen)
 

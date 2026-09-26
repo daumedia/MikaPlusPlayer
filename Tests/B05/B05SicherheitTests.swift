@@ -35,8 +35,8 @@ final class B05SicherheitTests: B05TestCase {
         // B aktualisieren: der fremde Sender (playlistID = B) wird weder gelöscht noch umgeschaltet
         try await refreshM3U(ctx, b, path: "/b05/b.m3u", [E(name: "Beta", tvg: "beta.de", url: B05QA.stream(3))])
         // A und B löschen
-        try PlaylistImporter(modelContext: ctx).delete(a)
-        try PlaylistImporter(modelContext: ctx).delete(b)
+        try await PlaylistImporter(modelContext: ctx).delete(a)
+        try await PlaylistImporter(modelContext: ctx).delete(b)
         B05QA.spin(0.8)
         let after = tab.cardLabels
         let orphanRows = B05QA.rows(store.path, "SELECT ZNAME, ZISFAVORITE, ZPLAYLIST FROM ZCHANNEL ORDER BY ZNAME")

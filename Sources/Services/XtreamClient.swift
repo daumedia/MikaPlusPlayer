@@ -142,7 +142,7 @@ struct XtreamClient {
             case .tooLarge:
                 let megabyte = 1024 * 1024
                 throw XtreamError.responseTooLarge(megabytes: max(1, (limits.maxResponseBytes + megabyte - 1) / megabyte))
-            case .deadlineExceeded: throw XtreamError.deadlineExceeded(seconds: Int(limits.totalTimeout))
+            case .deadlineExceeded, .tooSlow: throw XtreamError.deadlineExceeded(seconds: Int(limits.totalTimeout))
             case .redirectBlocked: throw XtreamError.redirectBlocked
             }
         } catch let error as LossyListError {

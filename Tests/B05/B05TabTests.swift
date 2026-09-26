@@ -216,9 +216,8 @@ final class B05TabTests: B05TestCase {
         B05QA.spin(0.8)
         B05QA.evidence("EC-01.txt", "vorher=[Kanal X, News] · nach unverändertem Aktualisieren=\(w.cardLabels)")
         w.shot("EC-01-nach-aktualisieren-zwei-karten")
-        XCTExpectFailure("BUG-01: ein Favorit wird beim Aktualisieren zu mehreren (gleicher Name ohne tvg-id)") {
-            XCTAssertEqual(w.cardLabels, ["Kanal X, News"])
-        }
+        // BUG-01 behoben: eine Karte bleibt eine Karte.
+        XCTAssertEqual(w.cardLabels, ["Kanal X, News"])
     }
 
     // MARK: AK-21 · OF-05
