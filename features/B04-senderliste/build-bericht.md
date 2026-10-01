@@ -488,3 +488,121 @@ Anpassungen fremder Tests sind sachlich richtig, und B05, B03-Oberfläche und di
 Funde sind gering; R-1 und R-2 sollten vor QA 2 erledigt werden (je wenige Zeilen). Aufgeräumt: Worktree `…/wt/review-b04` samt
 DerivedData (Debug, Release) mit `git worktree remove --force` entfernt, Build-Protokoll und Zwischenstände gelöscht; keine
 Simulatoren, keine Datenträgerabbilder, kein eigener Prozess mehr aktiv; die App wurde nie regulär gestartet.
+
+## Nacharbeit nach Review 2026-09-30
+
+Eingang: die Funde R-1 und R-2 des Abschnitts *Review 2026-09-30* (oben). Gebaut am 30.09. zusammen mit der B05-Reparatur (damit
+ein Gesamtlauf beides abdeckt), übernommen in Commit `b29408a` („UNVERIFIZIERT“); abgeschlossen am 01.10. auf `main` mit einer
+Nachbesserung zu R-1 (nicht committet). Gesamtläufe, Review und Aufräumen: `features/B05-favoriten/build-bericht.md`. R-3 bis R-5
+waren nicht beauftragt und sind unverändert offen. Nur erfundene Daten, Streams auf den geschlossenen Port 9, kein Ton, keine
+Tastatureingaben.
+
+### 1 · Umgesetzt
+
+| Fund | Vorher (belegt) | Änderung | Nachher (belegt) |
+|---|---|---|---|
+| **R-1** · Schrift auf Akzent-Tasten | Weiß auf dem Akzent, gerendert im aktiven Fenster **3,16 : 1** (hell) und **2,33 : 1** (dunkel) bei allen vier Tasten (Review P9; Gegenprobe 30.09.) | „Alle Sender zeigen“ (`ChannelListView`), „Playlist importieren“ und „+“ (`PlaylistsView`), „Erneut versuchen“ (`PlayerView`): Beschriftung über den neuen Modifier `playerOnAccentLabel()` (`PlayerTheme.swift`) in `Color.playerOnAccent` (#120F10, Token aus BUG-10); in einem **inaktiven** macOS-Fenster bleibt die Systemschrift (Nachbesserung 01.10., siehe unten). Stil (`.borderedProminent`, `.tint(.playerAccent)`) und Beschriftungen unverändert | aktiv: Fläche (233, 105, 91) / Schrift (23, 18, 20) **5,86 : 1** hell, (242, 142, 134) / (23, 18, 20) **7,94 : 1** dunkel – alle vier Tasten. Inaktiv: hell **10,98 : 1**, dunkel **10,80 : 1** („Erneut versuchen“ dunkel 8,34 : 1; hell 2,63 : 1 → OF-09). `B04NacharbeitTests.testR1_…`, 24 Messungen (key, active, inactive) |
+| **R-2** · Testschärfe BUG-13 | „Öffnen < 100 ms“ nur als nicht strikte Erwartung; je Zeichen strikt nur < 150 ms | `B04LeistungTests.testAK33_AK34_EC12_…`: **Öffnen < 100 ms strikt**; **je Zeichen ≤ 120 ms strikt** (statt 150 ms; das Review schlug 100 ms vor, siehe Annahme 3); nicht strikt bleibt nur „< 50 ms je Zeichen“ (QA-Grenze). Das Protokoll vermerkt je Lauf, ob 100 ms erreicht wurden (`AK-34|R-2|zeichenMax=…|ziel100=…`) | alle Läufe mit 17.000 Sendern unten in *Verifikation* |
+
+`B04Support`: `B04Window`/`window(…)` mit `forceActive` (setzt `controlActiveState = .key`) und – seit dem 01.10. – `controlState`
+(beliebiger Fensterzustand, z. B. `.inactive`), damit die Tasten unabhängig davon gemessen werden, ob der Test-Host vorn ist.
+
+**Nachbesserung 01.10. (Review-Fund Z-1.1, bestätigt):** Die erste Fassung setzte `playerOnAccent` fest an die Beschriftung. In
+einem inaktiven Fenster – immer, wenn die App im Hintergrund ist – zeichnet macOS die Tasten nicht in Akzentfarbe, sondern grau, und
+wählt die Schrift sonst selbst. Gemessen mit einer Prüfsonde (01.10., alle Fensterzustände, beide Modi; „Alt“ = Systemschrift wie vor
+R-1, „Neu“ = fest `playerOnAccent`):
+
+```
+                          Alt (vor R-1)                          Neu (erste Fassung R-1)
+hell   key/active         (233,105,91)/Weiß        3,16 : 1      (233,105,91)/(23,18,20)   5,86 : 1
+hell   inactive           (240,240,240)/(48,48,48) 11,57 : 1     (240,240,240)/(23,18,20)  16,22 : 1
+dunkel key/active         (242,142,134)/Weiß       2,33 : 1      (242,142,134)/(23,18,20)  7,94 : 1
+dunkel inactive           (76,77,76)/(231,231,231) 6,88 : 1      (76,77,76)/(23,18,20)     2,17 : 1
+dunkel echte PlaylistsView, Fenster nicht key                    (48,44,45)/(23,18,20)     1,35 : 1
+```
+
+Der Zustand `inactive` über die Umgebung und der natürliche Zustand (Fenster nicht key, App nicht vorn) ergaben dieselben Werte.
+Jetzt bleibt in `inactive` die Systemschrift (`PlayerOnAccentLabelModifier`). Gegenprobe mit der ersten Fassung: der erweiterte Test
+schlägt fehl (dunkel inaktiv 1,35 : 1 bzw. 1,92 : 1, „Erneut versuchen“ hell inaktiv 2,92 : 1); mit der Nachbesserung grün bis auf
+den einen erwarteten Fall (OF-09).
+
+### 2 · Offen
+
+- **„Erneut versuchen“ im inaktiven Fenster, heller Modus: 2,63 : 1** — macOS zeichnet die Taste halbtransparent grau über dem
+  dunklen Video (96, 96, 96) und wählt selbst eine dunkle Schrift. So war es schon vor R-1; R-1 betrifft nur den aktiven Zustand.
+  Abhilfe wäre eine eigene Tastenform (gezeichnete Akzentfläche wie beim Chip) → `spec.md` OF-09. Im Test als erwarteter
+  Fehlschlag geführt.
+- **„< 50 ms je Zeichen“ (QA-Grenze) bleibt nicht strikt:** in keinem Lauf erreicht. Die Spitze liegt beim Aufbau einer neuen
+  Bildschirmseite Karten („F“, „Fu“, „Fußball 1“), die übrigen Zeichen bei 24–42 ms.
+- **100 ms je Zeichen meist erreicht, aber nicht verlässlich:** 30.09. Debug 87–92 ms, Release 67–87 ms (7 Läufe); Gesamtlauf
+  01.10. 17:30 (Debug, unter Last) **102 ms** → Test rot bei der damaligen Grenze 100 ms; daher strikt 120 ms (Annahme 3). Das
+  Review hatte unter Last 20 einmal 106 ms (Release) gemessen.
+- **R-1 unter iOS** nur gebaut, nicht bedient. Unter iOS gibt es keinen inaktiven Fensterzustand; ob die gedimmte Tint-Farbe bei
+  offenem Sheet oder Alert die Fläche grau färbt (dann Fast-Schwarz auf Grau), ist nicht gemessen.
+- **Nicht beauftragt:** R-3 (Zeit bis zum Platzhalter wächst mit der Warteschlange), R-4 (Leeren des Logo-Speichers während einer
+  laufenden Anfrage), R-5 (Formulierung Annahme 2). `docs/design-system.md` („Weiß auf Akzent“, DS-01) ist weiterhin veraltet.
+
+### 3 · Getroffene Annahmen
+
+1. **R-1:** Die Taste „+“ ist ein Symbol, keine Schrift (WCAG 1.4.11 verlangt dort 3 : 1); sie bekommt trotzdem dieselbe Farbe, wie
+   der Auftrag es für alle Stellen verlangt – einheitlich und über 4,5 : 1.
+2. **R-1:** In einem inaktiven macOS-Fenster bleibt die Systemschrift, weil das System dort Fläche und Schrift zusammen wählt
+   (Nachbesserung). Gemessen wird beides: aktiv (`controlActiveState = .key`, Akzentfläche nachgewiesen: Rot deutlich über Grün und
+   Blau) und inaktiv (graue Fläche nachgewiesen). `.active` (Fenster Hauptfenster, aber nicht key) zeichnet wie `.key` die
+   Akzentfläche (Sonde, seit dem Review der Nachbesserung auch im Test) und bekommt deshalb `playerOnAccent`.
+3. **R-2:** Je Zeichen strikt **120 ms** statt der vom Review vorgeschlagenen 100 ms: über dem höchsten gemessenen Wert (102 ms
+   Debug im Gesamtlauf, 106 ms Release im Review), weniger als die Hälfte des Stands vor der Reparatur (297–318 ms Release), enger
+   als die bisherigen 150 ms. Ob 100 ms erreicht wurden, steht je Lauf im Protokoll. Die strikten Grenzen gelten wie bisher nur für
+   die Messung mit 17.000 Sendern (`B04_SIZE`); der Vergleich „Öffnen mit 17.000 ≤ 20er-Liste + 50 ms“ bleibt zusätzlich bestehen.
+
+### 4 · Systemweite Änderungen
+
+| Datei / Stelle | Feature | Änderung |
+|---|---|---|
+| `Sources/Views/Theme/PlayerTheme.swift` | **Design-System** | neu `PlayerOnAccentLabelModifier` / `playerOnAccentLabel()`; Kommentar am Token `playerOnAccent` |
+| `Sources/Views/PlaylistsView.swift` | **B02, B03** | „Playlist importieren“ und „+“: `playerOnAccentLabel()` |
+| `Sources/Views/PlayerView.swift` | **B06** | „Erneut versuchen“ in der Fehleransicht: `playerOnAccentLabel()` (Taste jetzt mit Label-Closure, Beschriftung unverändert) |
+| `Sources/Views/ChannelListView.swift` | B04 | „Alle Sender zeigen“: `playerOnAccentLabel()` |
+| `Tests/B04/B04Support.swift`, `B04LeistungTests.swift`, neu `B04NacharbeitTests.swift` | Tests | siehe 1 |
+| `features/B04-senderliste/spec.md` | Doku | nur *Offene Fragen*: neu OF-09 |
+
+Die Tests anderer Features, die diese Tasten über ihre Beschriftung finden (B01, B02, B03, B06, B07, B08), sind unverändert und im
+Gesamtlauf grün.
+
+### Verifikation
+
+Läufe, Bau, Warnungen und Aufräumen gemeinsam mit B05 (`features/B05-favoriten/build-bericht.md`, *Verifikation*): 0 Warnungen in
+`Sources/`, iOS gebaut, Endstand 71 Suiten / 519 Tests / 0 Fehlschläge. Hier nur die R-1/R-2-Teile.
+
+**R-1** — `B04NacharbeitTests.testR1_…` in der Endfassung (Restlauf 01.10., 22:14; Nachweis
+`features/B04-senderliste/qa/BUILD-R1-kontrast.txt` und 18 Aufnahmen `BUILD-R1-*.png`):
+
+```
+Playlist importieren / + / Alle Sender zeigen / Erneut versuchen
+  hell   aktiv (key)            Fläche (233, 105, 91)   Schrift (23, 18, 20)     5,86 : 1   alle vier
+  hell   aktiv-nicht-key        Fläche (233, 105, 91)   Schrift (23, 18, 20)     5,86 : 1   alle vier
+  hell   inaktiv                Fläche (233, 232, 231)  Schrift (47, 47, 45)    10,98 : 1   drei Tasten
+         inaktiv, Erneut vers.  Fläche (96, 96, 96)     Schrift (30, 30, 30)     2,63 : 1   erwarteter Fehlschlag (OF-09)
+  dunkel aktiv (key)            Fläche (242, 142, 134)  Schrift (23, 18, 20)     7,94 : 1   alle vier
+  dunkel aktiv-nicht-key        Fläche (242, 142, 134)  Schrift (23, 18, 20)     7,94 : 1   alle vier
+  dunkel inaktiv                Fläche (48, 44, 45)     Schrift (228, 228, 228) 10,80 : 1   drei Tasten
+         inaktiv, Erneut vers.  Fläche (68, 69, 69)     Schrift (238, 238, 238)  8,34 : 1
+Test Suite 'B04NacharbeitTests' passed   Executed 1 test, with 0 failures (0 unexpected)
+```
+
+Gegenprobe (19:40) mit der ersten Fassung (fest `playerOnAccent`): rot – dunkel inaktiv 1,35 : 1 (drei Tasten) und 1,92 : 1
+(„Erneut versuchen“), hell inaktiv „Erneut versuchen“ 2,92 : 1. Die erste Fassung des Tests (nur aktiv, 8 Messungen) war in
+Gesamtlauf 1 grün; die Fassung mit 16 Messungen (ohne `.active`) in Gesamtlauf 2.
+
+**R-2** — `B04LeistungTests.testAK33_AK34_EC12_…`, 17.000 Sender, längste Blockade in ms:
+
+| Lauf | Build | Öffnen (Runde 1/2) | je Zeichen höchstens | 20er-Liste Öffnen | Ergebnis |
+|---|---|---|---|---|---|
+| 30.09. 23:02–23:06, drei Läufe | Debug | 60/87 · 74/89 · 65/66 | 91 · 87 · 92 | 137/90 · 130/95 · 120/92 | grün (Grenze damals 100 ms) |
+| 30.09. 23:09–23:14, vier Läufe | Release | 67/63 · 64/78 · 62/67 · 66/65 | 86 · 67 · 82 · 87 | 126–151 | grün (100 ms) |
+| 01.10. 17:58, Gesamtlauf (danach abgebrochen) | Debug | 75/69 | **102** („Fußball 1“) | 126/131 | **rot** bei 100 ms → Grenze 120 ms |
+| 01.10. 18:52, Gesamtlauf 1 | Debug | 71/66 | 77 | 143/130 | grün, Ziel 100 ms erreicht |
+| 01.10. 20:04, Gesamtlauf 2 | Debug | 73/84 | 80 | 149/139 | grün, Ziel 100 ms erreicht |
+
+In allen Läufen blieb nur die nicht strikte Erwartung „< 50 ms je Zeichen“ unerfüllt (erwarteter Fehlschlag, z. B. 77,4 ms).
+Protokolle vom 30.09.: `~/.claude/projects/…/e8de96ed-…/b05work/logs/r2-*.txt`, `gesamt-3.txt`.

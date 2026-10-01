@@ -1,0 +1,25 @@
+2026-10-01T20:14:34Z [Debug] Nacharbeit R-1 · hervorgehobene Tasten, gerendert im Fensterzustand key, active und inactive (WCAG AA 4,5 : 1):
+  Playlist importieren hell aktiv: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  + hell aktiv: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  Alle Sender zeigen hell aktiv: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  Erneut versuchen hell aktiv: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  Playlist importieren hell aktiv-nicht-key: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  + hell aktiv-nicht-key: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  Alle Sender zeigen hell aktiv-nicht-key: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  Erneut versuchen hell aktiv-nicht-key: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1
+  Playlist importieren hell inaktiv: Fläche (233, 232, 231), Schrift (47, 47, 45), 10.98 : 1
+  + hell inaktiv: Fläche (233, 232, 231), Schrift (47, 47, 45), 10.98 : 1
+  Alle Sender zeigen hell inaktiv: Fläche (233, 232, 231), Schrift (47, 47, 45), 10.98 : 1
+  Erneut versuchen hell inaktiv: Fläche (96, 96, 96), Schrift (30, 30, 30), 2.63 : 1
+  Playlist importieren dunkel aktiv: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  + dunkel aktiv: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  Alle Sender zeigen dunkel aktiv: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  Erneut versuchen dunkel aktiv: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  Playlist importieren dunkel aktiv-nicht-key: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  + dunkel aktiv-nicht-key: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  Alle Sender zeigen dunkel aktiv-nicht-key: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  Erneut versuchen dunkel aktiv-nicht-key: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
+  Playlist importieren dunkel inaktiv: Fläche (48, 44, 45), Schrift (228, 228, 228), 10.80 : 1
+  + dunkel inaktiv: Fläche (48, 44, 45), Schrift (228, 228, 228), 10.80 : 1
+  Alle Sender zeigen dunkel inaktiv: Fläche (48, 44, 45), Schrift (228, 228, 228), 10.80 : 1
+  Erneut versuchen dunkel inaktiv: Fläche (68, 69, 69), Schrift (238, 238, 238), 8.34 : 1

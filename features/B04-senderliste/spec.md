@@ -429,6 +429,18 @@ Datenmodelländerung außerhalb des Fehlerauftrags:
   (`propertiesToFetch` wirkt nicht, belegt mit SQLDebug), bei 17.000 Sendern rund 0,2 s Rechenzeit je
   Öffnen und Aktualisieren. Ein Index (`#Index`) wäre erst ab iOS 18/macOS 15 möglich.
 
+Ergänzt beim Abschluss der Nacharbeit R-1 (sdd-build, 2026-10-01). Nicht gebaut, weil Gestaltungsentscheidung
+außerhalb des Auftrags:
+
+- **OF-09** · Soll die Taste „Erneut versuchen“ der Player-Fehleransicht (B06) auch in einem **inaktiven**
+  Fenster im hellen Modus lesbar sein? Dort zeichnet macOS die hervorgehobene Taste halbtransparent grau über
+  dem dunklen Video (gemessen Fläche (96, 96, 96)) und wählt selbst eine dunkle Schrift: **2,63 : 1**. Das war
+  vor der Nacharbeit R-1 genauso (Systemschrift); R-1 betrifft nur den aktiven Zustand, mit fest gesetztem
+  `playerOnAccent` lag der Wert bei 2,92 : 1. Die drei übrigen hervorgehobenen Tasten erreichen inaktiv
+  10,8–11,0 : 1, aktiv 5,86 bzw. 7,94 : 1 (`B04NacharbeitTests.testR1_…`, der Fall steht dort als erwarteter
+  Fehlschlag). Abhilfe wäre eine eigene Tastenform wie beim Gruppen-Chip (gezeichnete Akzentfläche, die im
+  inaktiven Fenster nicht grau wird); das ändert das Aussehen aller hervorgehobenen Tasten (DS-01).
+
 ## Fehlbestand
 
 Nicht vorhanden oder als Fehler eingestuft, aus dem Code belegt. Kein Kriterium: `sdd-qa` prüft

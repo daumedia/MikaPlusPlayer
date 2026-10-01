@@ -175,6 +175,13 @@ Aktualisieren **3** („Leer-ID A", „News", „ZDF HD"; vorher 8), nach Entfer
 weiter 3 (vorher wieder 8); nur „ZDF SD" markiert → danach nur „ZDF SD" (vorher alle drei ZDF-Varianten). Xtream 2 → **2**
 (vorher 6), Tab zeigt dieselben Karten wie vorher; EC-01: eine Karte vorher, eine nachher. Der Vermerk vom 26.09. stimmt.
 
+**Geprüft 2026-10-01 (Reparatur B05):** Mit der B02+B03-Reparatur behoben und dort vermerkt (26.09./27.09.). Die
+Reproduktion lief in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege) erneut (`testAK15_EC01_EC03_…M3U`, `testAK15_EC02_…Xtream`, `testAK19_…`,
+`B05TabTests.testEC01_…`), grün ohne `XCTExpectFailure`: M3U 3 → 3, nach Entfernen und erneutem Aktualisieren 3, nur „ZDF SD“ →
+nur „ZDF SD“; Xtream 2 → 2; EC-01 eine Karte. Die Bereinigung von Steuerzeichen (BUG-09) ändert den Schlüssel und – seit der
+Nachbesserung F-04 – den Namensvergleich nur für Namen bzw. `tvg-id` mit Steuerzeichen; die Rangfolge von `FavoriteCarryOver` ist
+unverändert.
+
 ### BUG-02 · Speicherfehler beim Umschalten wird verschluckt — mittel
 
 **Betrifft:** AK-27 (FB-02)
@@ -191,6 +198,20 @@ Der Fehler steht nur im Systemprotokoll (33 Zeilen `com.apple.coredata`).
 **Ort:** `Sources/Views/ChannelRowView.swift:60-62` (`channel.isFavorite.toggle()`; `try? modelContext.save()`)
 **Vorschlag:** Fehler abfangen, Änderung zurücknehmen (`isFavorite` zurücksetzen bzw. `rollback()`) und eine Meldung zeigen.
 **Test:** `B05DatenschutzTests.testAK27_SpeicherfehlerBeimUmschaltenWirdVerschluckt` (braucht `TEST_RUNNER_B05_FULL_VOLUME`)
+
+**Behoben 2026-10-01:** `FavoriteEdits.toggle` (der eine Weg für den Stern, `PlaylistStore.swift`) speichert nicht mehr mit
+`try?`: Scheitert das Speichern, rollt es den Kontext der Ansicht zurück (nichts Ungespeichertes bleibt, das ein späteres Speichern
+mitschreibt), der Stern zeigt wieder den gespeicherten Zustand, das während eines Aktualisierens Festgehaltene steht wie vor dem
+Klick (Review R-01 bleibt erhalten), und die Karte zeigt „Favorit nicht gespeichert – Der Stern konnte nicht gespeichert werden und
+ist zurückgesetzt. Bitte freien Speicherplatz prüfen und erneut versuchen.“ Reproduktion wie oben (8-MB-HFS+-Abbild,
+vollgeschrieben, `TEST_RUNNER_B05_FULL_VOLUME`) in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege), jetzt `testAK27_SpeicherfehlerBeimUmschaltenSetztZurueckUndMeldet`:
+nach dem Klick `isFavorite=false`, `hasChanges=false`, Datei `0`, Stern grau, Tab `[]`, Meldung im Fenster der Senderliste (nicht
+im Tab); ein explizites Speichern danach gelingt auch bei vollem Datenträger (nichts ausstehend); Neustart `[]`; 3 s nach dem
+Freigeben Datei weiter `0`, der nächste Stern schreibt nur sich selbst (`dbZwei=0`, `dbDrei=1`, vorher `1`/`1`). Entfernen im Tab
+bei vollem Datenträger: Karte bleibt, Stern Akzent, Datei `1`, Meldung im Tab, Neustart `["Voll Drei"]` (vorher: Karte weg, nach
+dem Neustart zurück). Zusätzlich ohne Abbild: `B05ReparaturTests.testBUG02_…` ×2 (Speichern nachgestellt; Zusammenspiel mit dem
+Festhalten während des Aktualisierens). Ohne `TEST_RUNNER_B05_FULL_VOLUME` überspringt sich `testAK27_…` selbst; dann läuft nur
+die Testnaht. iOS nur gebaut. Siehe `build-bericht.md`.
 
 ### BUG-03 · Der Favoriten-Tab verrät die Favoritenliste an Logo-Hosts — mittel
 
@@ -217,6 +238,17 @@ Logo-Host genau die Logos der Favoriten (Reproduktion erneut ausgeführt: 3 Anfr
 abschaltbar sind oder nur mit Zustimmung laden, ist eine Produktentscheidung → B04 `spec.md` OF-07. Der Test behält sein
 `XCTExpectFailure`; seine Kopfzeilen-Zusicherungen stehen auf den neuen Werten.
 
+**Nicht behoben (Reparatur B05 2026-10-01, geprüft):** Was der gemeinsame `ChannelLogoLoader` aus der B04-Reparatur im Tab
+abdeckt, ist jetzt eigens belegt (`B05ReparaturTests.testBUG03_FavoritenTabNutztDenGemeinsamenLogoLoader`, zwei Favoriten, ein
+Nicht-Favorit): Kopfzeilen `user-agent: Mozilla/5.0`, `accept-language: *`, kein Cookie, kein Referer; eine Weiterleitung eines
+Favoriten-Logos auf einen fremden Host (anderer Port) wird nicht gefolgt (0 Anfragen dort); nach dem Laden kein Eintrag im
+`URLCache`, das Bild nur im Arbeitsspeicher; erneutes Öffnen fragt das geladene Logo nicht wieder an (zugesichert; angefragt wurde
+beim erneuten Öffnen nur das weitergeleitete, laut Protokoll, nicht zugesichert). `testAK25_…` in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege): weiter genau die 3
+Favoriten-Logos beim ersten Öffnen (erwarteter Fehlschlag), erneutes Öffnen 0 Anfragen. **Der Kern bleibt:** Beim ersten Öffnen
+erfährt jeder Logo-Host IP-Adresse und Favoritenliste. Ob der Tab Logos überhaupt laden soll (Platzhalter, nur schon geladene,
+Schalter, Zustimmung), ist eine Produktentscheidung mit sichtbarer Folge → `spec.md` OF-08 (Bezug B04 OF-07); die FAQ „Nowhere“
+bleibt bis dahin unzutreffend (BF-20, B10).
+
 ### BUG-04 · Favoriten-Zustand für VoiceOver nicht wahrnehmbar — mittel
 
 **Betrifft:** AK-05 (FB-04); Sprache der Aktion wartet auf OF-06
@@ -233,6 +265,18 @@ heißt ebenfalls „Favourite“. Ohne Logo bleibt die Karte dauerhaft „busy i
 Karte bzw. `accessibilityLabel` + `.isSelected` am Stern; Symbol des Leerzustands `accessibilityHidden`.
 **Test:** `B05SternTests.testAK05_VoiceOverKarteEinElementSternNurAlsAktionOhneZustand`
 
+**Behoben 2026-10-01:** Die Karte trägt als Favorit den VoiceOver-Wert „Favorit“ (am Namen, damit die zusammengefasste Karte ihn
+genau einmal übernimmt), die Stern-Aktion heißt je Zustand „Favorit hinzufügen“ bzw. „Favorit entfernen“ (deutsch wie die übrige
+App, Vermerk unter OF-06), das Stern-Symbol des Leerzustands ist für VoiceOver ausgeblendet. Reproduktion wie oben in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege),
+jetzt `B05SternTests.testAK05_VoiceOverKarteEinElementZustandUndAktionJeZustand`: vorher `value=` · Aktionen `["Rectangle Split Two
+By Two", "Favorit hinzufügen"]`, nach der Aktion `value=Favorit` · `["Rectangle Split Two By Two", "Favorit entfernen"]`, Etikett
+unverändert „ZDF, Vollprogramm“, weiter **ein** Element (0 Kinder); „Favorit entfernen“ stellt den Ausgangszustand wieder her;
+„Drücken“ öffnet weiter den Player. Leerzustand `["MIKA+PLAYER · FAVORITEN", "Favoriten", "Keine Favoriten", "Markiere …"]` (ohne
+„Favourite“). Ebenso `testAK01_…` (Liste und Tab: `value=Favorit`, Aktion „Favorit entfernen“) und `B05TabTests.testAK07_…`/
+`testAK08_…`. **Grenze:** Solange ein Logo lädt, meldet sich die Karte weiter als Ladeanzeige (`AXBusyIndicator`, Wert „0“, wie AK-05
+und B04 AK-22); der Wert „Favorit“ fehlt dann, der Aktionsname stimmt (Prüfsonde 01.10.) → `spec.md` OF-10. Nicht geändert: der
+⊞-Button heißt weiter „Rectangle Split Two By Two“ (B08). iOS nur gebaut, nicht mit VoiceOver bedient.
+
 ### BUG-05 · Favorit geht beim Aktualisieren ohne Hinweis verloren und kommt nicht zurück — niedrig (wartet auf OF-03)
 
 **Betrifft:** AK-14; Grenzen aus AK-13
@@ -247,6 +291,9 @@ Aktualisieren gilt als Erfolg. Ebenso bei „ß“→„SS“, „İ“→„I�
 **Vorschlag:** Nach Entscheidung zu OF-03.
 **Test:** `B05AktualisierenTests.testAK11_AK12_AK13_AK14_SchluesselUndVerlustM3U`
 
+**Nicht behoben (Reparatur B05 2026-10-01):** wartet auf OF-03 (Produktentscheidung). `B05AktualisierenTests.testAK11_AK12_AK13_AK14_SchluesselUndVerlustM3U` behält sein
+`XCTExpectFailure` und schlug in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege) erwartungsgemäß fehl.
+
 ### BUG-06 · Gleichnamige Favoriten verschiedener Playlists nicht unterscheidbar — niedrig (wartet auf OF-02)
 
 **Betrifft:** AK-09
@@ -260,6 +307,9 @@ Klick trifft einmal A, einmal B
 **Vorschlag:** Nach Entscheidung zu OF-02.
 **Test:** `B05TabTests.testAK09_GleichnamigeFavoritenNichtUnterscheidbarReihenfolgeDerAnlage`
 
+**Nicht behoben (Reparatur B05 2026-10-01):** wartet auf OF-02 (Produktentscheidung). `B05TabTests.testAK09_GleichnamigeFavoritenNichtUnterscheidbarReihenfolgeDerAnlage` behält sein
+`XCTExpectFailure` und schlug in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege) erwartungsgemäß fehl.
+
 ### BUG-07 · Tab sortiert nach Zeichencode statt wie die Senderliste — niedrig (wartet auf OF-01)
 
 **Betrifft:** AK-10
@@ -272,6 +322,9 @@ Senderliste: `COLLATE NSCollateLocaleSensitive`
 **Vorschlag:** Nach Entscheidung zu OF-01, z. B. `sort: [SortDescriptor(\.name, comparator: .localized)]` wie die Senderliste.
 **Test:** `B05TabTests.testAK10_SortierungNachZeichencode`
 
+**Nicht behoben (Reparatur B05 2026-10-01):** wartet auf OF-01 (Produktentscheidung). `B05TabTests.testAK10_SortierungNachZeichencode` behält sein
+`XCTExpectFailure` und schlug in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege) erwartungsgemäß fehl.
+
 ### BUG-08 · Löschen einer Playlist nimmt ihre Favoriten ohne Hinweis mit — niedrig (wartet auf OF-04)
 
 **Betrifft:** AK-20; Rückfrage vor dem Löschen allgemein: B03 BUG-10 (BF-61)
@@ -283,6 +336,9 @@ Senderliste: `COLLATE NSCollateLocaleSensitive`
 **Ort:** `Sources/Views/PlaylistsView.swift:104-107`, `Sources/Services/PlaylistImporter.swift:270-278`
 **Vorschlag:** Nach Entscheidung zu OF-04.
 **Test:** `B05LoeschenTests.testAK20_Angriff8_LoeschenNimmtFavoritenOhneHinweisMit`
+
+**Nicht behoben (Reparatur B05 2026-10-01):** wartet auf OF-04 (Produktentscheidung). `B05LoeschenTests.testAK20_Angriff8_LoeschenNimmtFavoritenOhneHinweisMit` behält sein
+`XCTExpectFailure` und schlug in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege) erwartungsgemäß fehl.
 
 ### BUG-09 · NUL-Zeichen in Name oder tvg-id: Favorit geht bei jedem Aktualisieren verloren — niedrig
 
@@ -298,6 +354,21 @@ Aktualisieren wieder. Der gespeicherte Name weicht außerdem vom angezeigten ab.
 Kürzung durch den SQLite-Speicher von SwiftData
 **Vorschlag:** Steuerzeichen (mindestens U+0000) beim Import von Name, `tvg-id` und Gruppe entfernen (M3U und Xtream, B02/B01).
 **Test:** `B05SicherheitTests.testAngriff7_UngewoehnlicheNamenUndTvgIDs`, `testAngriff7_NulZeichenWirdBeimSpeichernGekuerzt`
+
+**Behoben 2026-10-01:** Beim Anlegen und Aktualisieren entfallen Steuerzeichen (U+0000–U+001F und U+007F, außer Tabulator und
+Zeilenumbrüchen) aus Name, Gruppe und `tvg-id` – im gemeinsamen Anlegeweg `PlaylistStore.create`/`replaceChannels`, also für M3U
+(URL, Datei, „Öffnen mit“), Xtream und Aktualisieren gleich und vor der Favoriten-Übernahme; der Parser liefert unverändert. Der
+Favoriten-Schlüssel und der Namensvergleich der Übernahme (Nachbesserung F-04) ignorieren dieselben Zeichen (für ältere Bestände).
+Reproduktion wie oben in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege), jetzt `B05SicherheitTests.testAngriff7_UngewoehnlicheNamenUndTvgIDs`: gespeichert „NullByte“,
+Favoriten vor/nach unverändertem Aktualisieren 10/10 (vorher 10/9), „Tab\tName“ und „Rechts\u{202E}links“ unverändert;
+`testAngriff7_NulZeichenWirdBeimAnlegenEntferntSchluesselBleibt` (über den echten Anlegeweg): Name „NullByte“, `tvg-id`
+„tvg-NullByte“, Gruppe „Gruppe“, Schlüssel im Speicher und nach dem Neustart `id:tvg-NullByte` (vorher `id:tvg-Null\0Byte` →
+`id:tvg-Null`). Xtream (`B05ReparaturTests.testBUG09_Xtream…`): NUL in Name, `epg_channel_id` und Kategorie entfernt, Zeilenumbruch
+in der Gruppe bleibt (B04 AK-11), drei Favoriten 3/3 nach dem Aktualisieren. Altbestand mit ESC im Namen behält den Stern
+(`testBUG09_AltbestandMitSteuerzeichenBehaeltDenStern`); bei mehreren Kandidaten mit demselben Schlüssel geht er an den Sender mit
+demselben Namen (`testBUG09_NamensvergleichDerUebernahmeIgnoriertSteuerzeichenImAltbestand`, Gegenprobe ohne F-04 rot). **Grenze
+(abgeleitet, nicht eigens ausgeführt):** Ein Favorit, der **vor** der Reparatur NUL im Namen bzw. in der `tvg-id` hatte, steht in der
+Datei schon gekürzt und geht beim ersten Aktualisieren danach einmal verloren (vorher bei jedem) → `spec.md` OF-09.
 
 ### BUG-10 · Namen gelöschter Favoriten bleiben teils als Bytes in der Datenbankdatei — niedrig
 
@@ -325,6 +396,10 @@ im -wal" als Ist festschrieb.
 Reproduktion wie dort **elfmal** ausgeführt (`-test-iterations 11`), zusätzlich einmal im Gesamtlauf: in allen 12 Läufen
 **0** Vorkommen in Store, -wal und -shm – nach dem Löschen bei offenem Container, nach der Freigabe und nach „Neustart"
 (`freelist_count=0`). Der Vermerk vom 26.09. stimmt.
+
+**Geprüft 2026-10-01 (Reparatur B05):** Mit der B02+B03-Reparatur behoben und dort vermerkt (26.09./27.09., elf
+Wiederholungen). `testAK28_NamenGeloeschterFavoritenInDatenbankdateien` in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege): grün, 0 Vorkommen in Store, -wal und -shm nach
+dem Löschen, nach der Freigabe und nach dem Neustart (`freelist_count=0`). Diese Reparatur berührt das Löschen nicht.
 
 ### BUG-11 · Scheitert das Speichern beim Aktualisieren, zeigt die App trotzdem den neuen Stand — mittel
 
@@ -361,6 +436,12 @@ Speicherplatz prüfen und erneut versuchen." (vorher „… NSSQLiteErrorDomain 
 nach „Neustart" `["ZDF HD"]`. Nach Freigabe des Platzes und einem Stern auf „arte" steht in der Datei genau `["ZDF HD", "arte"]`
 bei 3 Sendern – nichts Ungespeichertes wird nachgeschrieben. **Korrektur zum Vermerk vom 26.09.:** Der dort genannte Lauf mit
 40-MB-Abbild ist nicht belegt (der Verifikationsabschnitt des Build-Berichts war ein Platzhalter); maßgeblich ist dieser Lauf.
+
+**Geprüft 2026-10-01 (Reparatur B05):** Mit der B02+B03-Reparatur behoben und dort vermerkt (26.09./27.09.).
+`testAK17_Randfall_SpeicherfehlerBeimAktualisieren` lief in beiden Gesamtläufen vom 01.10. (Lauf 1, 18:33–19:26; Lauf 2, 19:43–20:13 bis einschließlich B05, identische Belege) mit vollem 8-MB-Abbild (`TEST_RUNNER_B05_FULL_VOLUME`) grün:
+deutsche Meldung „Die Playlist konnte nicht gespeichert werden. Die bisherige Senderliste bleibt erhalten. …“, Tab unverändert
+`["ZDF HD, Deutschland"]`, dieselben Objekte; nach Freigabe und einem Stern genau `["ZDF HD", "arte"]` bei 3 Sendern in der Datei.
+Diese Reparatur ändert am Aktualisieren nur die Bereinigung der neuen Liste (BUG-09) und den Namensvergleich der Übernahme (F-04).
 
 ## Hinweise (kein Kriterium durchgefallen)
 
