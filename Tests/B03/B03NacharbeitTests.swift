@@ -15,7 +15,7 @@ final class B03NacharbeitTests: B03QATestCase {
 
     /// Setzt den Stern genau wie `ChannelRowView`.
     @MainActor private func tapStar(_ channel: Channel, _ ctx: ModelContext) {
-        FavoriteEdits.toggle(channel, in: ctx)
+        XCTAssertNoThrow(try FavoriteEdits.toggle(channel, in: ctx))
     }
 
     @MainActor private func channel(_ name: String, of pid: UUID, _ ctx: ModelContext) throws -> Channel {
@@ -142,8 +142,9 @@ final class B03NacharbeitTests: B03QATestCase {
                 MainActor.assumeIsolated {
                     let (targets, unstar, ctx) = captured.value
                     let oldRowsLeft = B03QA.rows(storeURL.path, "select count(*) from ZCHANNEL where ZNAME = 'Sender 11'").first?.first ?? "?"
-                    for target in targets { FavoriteEdits.toggle(target, in: ctx) }
-                    FavoriteEdits.toggle(unstar, in: ctx)
+                    for target in targets + [unstar] {
+                        do { try FavoriteEdits.toggle(target, in: ctx) } catch { XCTFail("Stern nicht gespeichert: \(error)") }
+                    }
                     probe.value = "senderMitNameInDatei=\(oldRowsLeft)|speichernDerAnsichtOhneFehler=\(!ctx.hasChanges)"
                 }
             }

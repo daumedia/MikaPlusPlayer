@@ -63,7 +63,8 @@ final class B05TabTests: B05TestCase {
     func testAK07_LeerzustandOhneUndMitPlaylists() throws {
         let (c, _) = try fileContainer("ak07")
         let w = window(NavigationStack { FavoritesView() }, c, size: CGSize(width: 760, height: 520))
-        let expected = ["MIKA+PLAYER · FAVORITEN", "Favoriten", "Favourite", "Keine Favoriten",
+        // Seit B05 · BUG-04 (Build 2026-09-30) ist das Stern-Symbol für VoiceOver ausgeblendet (vorher „Favourite“).
+        let expected = ["MIKA+PLAYER · FAVORITEN", "Favoriten", "Keine Favoriten",
                         "Markiere Sender mit dem Stern, um sie hier zu sammeln."]
         XCTAssertEqual(w.texts, expected)
         XCTAssertTrue(w.elements.filter { B05AX.role($0) == "AXButton" }.isEmpty, "kein Button, kein Verweis")
@@ -93,7 +94,8 @@ final class B05TabTests: B05TestCase {
         let inputs = w.elements.filter { ["AXTextField", "AXSearchField", "AXComboBox", "AXPopUpButton", "AXCheckBox", "AXRadioButton"].contains(B05AX.role($0)) }
         XCTAssertTrue(inputs.isEmpty, "keine Suche, kein Filter: \(inputs.map(B05AX.describe))")
         for card in w.cards {
-            XCTAssertEqual(B05AX.customActions(card.element).map(\.name), ["Rectangle Split Two By Two", "Favourite"], card.label)
+            XCTAssertEqual(B05AX.customActions(card.element).map(\.name), ["Rectangle Split Two By Two", "Favorit entfernen"], card.label)
+            XCTAssertEqual(B05AX.text(card.element, "accessibilityValue"), "Favorit", card.label)
         }
         w.shot("AK-08-favoriten-zwei-playlists")
 

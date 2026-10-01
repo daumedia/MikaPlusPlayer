@@ -311,8 +311,11 @@ struct PlayerView: View {
                     .font(.footnote)
             }
         } actions: {
-            Button("Erneut versuchen") {
+            Button {
                 retry()
+            } label: {
+                // B04 · Review R-1: Schrift `playerOnAccent` statt Weiß auf dem Akzent
+                Text("Erneut versuchen").foregroundStyle(Color.playerOnAccent)
             }
             .buttonStyle(.borderedProminent)
             .tint(.playerAccent)

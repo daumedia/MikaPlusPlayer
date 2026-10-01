@@ -10,6 +10,8 @@ struct ChannelRowView: View {
     @Environment(\.openWindow) private var openWindow
     #endif
     @Bindable var channel: Channel
+    /// Der Stern ließ sich nicht speichern (B05 · BUG-02).
+    @State private var starNotSaved = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -19,6 +21,9 @@ struct ChannelRowView: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
+                    // B05 · BUG-04: VoiceOver sagt an, ob der Sender Favorit ist. Am Namen, nicht am Stapel: Die Karte
+                    // (`NavigationLink`) fasst ihre Teile zu einem Element zusammen und übernähme den Wert sonst je Teil.
+                    .accessibilityValue(channel.isFavorite ? "Favorit" : "")
                 if let group = channel.group, !group.isEmpty {
                     PlayerBadge(systemImage: nil, text: group)
                 }
@@ -28,6 +33,11 @@ struct ChannelRowView: View {
             multiviewButton
             #endif
             favoriteButton
+        }
+        .alert("Favorit nicht gespeichert", isPresented: $starNotSaved) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(PlaylistStoreError.starNotSaved.errorDescription ?? "")
         }
     }
 
@@ -41,13 +51,20 @@ struct ChannelRowView: View {
     private var favoriteButton: some View {
         Button {
             // Review R-01: über `FavoriteEdits`, damit ein Stern während des Aktualisierens nicht verloren geht.
-            FavoriteEdits.toggle(channel, in: modelContext)
+            // B05 · BUG-02: Scheitert das Speichern, ist der Stern schon zurückgesetzt; hier nur die Meldung.
+            do {
+                try FavoriteEdits.toggle(channel, in: modelContext)
+            } catch {
+                starNotSaved = true
+            }
         } label: {
             Image(systemName: channel.isFavorite ? "star.fill" : "star")
                 .font(.title3)
                 .foregroundStyle(channel.isFavorite ? Color.playerAccent : Color.secondary)
         }
         .buttonStyle(.plain)
+        // B05 · BUG-04: deutsche Aktion je Zustand statt des Symbolnamens „Favourite“.
+        .accessibilityLabel(channel.isFavorite ? "Favorit entfernen" : "Favorit hinzufügen")
     }
 
     #if os(macOS)

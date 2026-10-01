@@ -268,10 +268,13 @@ private struct ChannelResultsList: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button("Alle Sender zeigen", action: showAllGroups)
-                .buttonStyle(.borderedProminent)
-                .tint(.playerAccent)
-                .padding(.top, 4)
+            Button(action: showAllGroups) {
+                // B04 · Review R-1: Schrift `playerOnAccent` wie am gewählten Chip (Weiß auf dem Akzent: 3,16 : 1 bzw. 2,33 : 1).
+                Text("Alle Sender zeigen").foregroundStyle(Color.playerOnAccent)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.playerAccent)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, PlayerTheme.contentHPadding)

@@ -44,7 +44,9 @@ final class B05SternTests: B05TestCase {
         for w in [list, tab] {
             let card = try XCTUnwrap(w.card("ZDF"))
             let actions = B05AX.customActions(card.element).map(\.name)
-            XCTAssertEqual(actions, ["Rectangle Split Two By Two", "Favourite"], "Aktionen der Karte")
+            // Seit B05 · BUG-04 (Build 2026-09-30): Stern-Aktion deutsch und nach Zustand benannt (vorher „Favourite“).
+            XCTAssertEqual(actions, ["Rectangle Split Two By Two", "Favorit entfernen"], "Aktionen der Karte")
+            XCTAssertEqual(B05AX.text(card.element, "accessibilityValue"), "Favorit")
             XCTAssertEqual(B05AX.text(card.element, "accessibilityHelp"), "Zu Multiview hinzufügen")
             B05QA.evidence("AK-01-05-accessibility.txt", "AK-01|\(w === list ? "liste" : "tab")|\(B05AX.describe(card.element))")
         }
@@ -180,7 +182,10 @@ final class B05SternTests: B05TestCase {
 
     // MARK: AK-05 · VoiceOver
 
-    func testAK05_VoiceOverKarteEinElementSternNurAlsAktionOhneZustand() throws {
+    /// Seit der Reparatur (B05 · BUG-04, Build 2026-09-30): Der Zustand ist wahrnehmbar – Wert „Favorit“ an der Karte, Aktion
+    /// „Favorit hinzufügen“ bzw. „Favorit entfernen“ je Zustand; das Symbol des Leerzustands ist für VoiceOver ausgeblendet.
+    /// Vorher waren Karte und Aktion („Favourite“) vor und nach dem Umschalten gleich.
+    func testAK05_VoiceOverKarteEinElementZustandUndAktionJeZustand() throws {
         let (c, _, pl) = try threeChannels("ak05")
         let zdf = try XCTUnwrap(pl.channels.first { $0.name == "ZDF" })
         let list = window(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 760, height: 520))
@@ -191,15 +196,29 @@ final class B05SternTests: B05TestCase {
         XCTAssertEqual(B05AX.labelOnly(card.element), "ZDF, Vollprogramm")
         XCTAssertEqual(kids, 0, "Karte ist ein einziges Element")
         XCTAssertEqual(list.card("arte").map { B05AX.labelOnly($0.element) }, "arte", "ohne Gruppe nur der Name")
+        XCTAssertEqual(B05AX.text(card.element, "accessibilityValue"), "", "kein Favorit: kein Wert")
+        XCTAssertEqual(B05AX.customActions(card.element).map(\.name), ["Rectangle Split Two By Two", "Favorit hinzufügen"])
 
-        // Aktion „Favourite“ wie aus dem VoiceOver-Aktionen-Menü
-        let fav = try XCTUnwrap(B05AX.customActions(card.element).first { $0.name == "Favourite" })
-        XCTAssertTrue(B05AX.perform(fav))
+        // Aktion „Favorit hinzufügen“ wie aus dem VoiceOver-Aktionen-Menü
+        let add = try XCTUnwrap(B05AX.customActions(card.element).first { $0.name == "Favorit hinzufügen" })
+        XCTAssertTrue(B05AX.perform(add))
         B05QA.spin(0.8)
         XCTAssertTrue(zdf.isFavorite, "Aktion schaltet um")
         let cardAfter = try XCTUnwrap(list.card("ZDF"))
         let after = B05AX.describe(cardAfter.element)
         XCTAssertEqual(list.starColor("ZDF"), "akzent")
+        XCTAssertEqual(B05AX.labelOnly(cardAfter.element), "ZDF, Vollprogramm", "Etikett bleibt")
+        XCTAssertEqual(B05AX.text(cardAfter.element, "accessibilityValue"), "Favorit", "VoiceOver sagt „Favorit“ an")
+        XCTAssertEqual(B05AX.customActions(cardAfter.element).map(\.name), ["Rectangle Split Two By Two", "Favorit entfernen"])
+        XCTAssertNotEqual(before, after, "Accessibility der Karte unterscheidet „kein Favorit“ und „Favorit“")
+
+        // „Favorit entfernen“ schaltet zurück
+        let remove = try XCTUnwrap(B05AX.customActions(cardAfter.element).first { $0.name == "Favorit entfernen" })
+        XCTAssertTrue(B05AX.perform(remove))
+        B05QA.spin(0.8)
+        XCTAssertFalse(zdf.isFavorite)
+        let cardBack = try XCTUnwrap(list.card("ZDF"))
+        XCTAssertEqual(B05AX.describe(cardBack.element), before, "wieder wie vorher")
 
         // „Drücken“ öffnet den Player (nicht den Stern)
         let erste = try XCTUnwrap(list.card("Das Erste HD"))
@@ -208,19 +227,15 @@ final class B05SternTests: B05TestCase {
         XCTAssertEqual(list.window.title, "Das Erste HD")
         XCTAssertFalse(pl.channels.first { $0.name == "Das Erste HD" }!.isFavorite)
 
-        // Leerzustand des Tabs: Symbol heißt ebenfalls „Favourite“
+        // Leerzustand des Tabs: das Symbol ist Schmuck und für VoiceOver ausgeblendet (vorher „Favourite“)
         let tab = window(NavigationStack { FavoritesView() }, try B05QA.memoryContainer(), size: CGSize(width: 600, height: 400),
                          origin: CGPoint(x: 820, y: 60))
         let tabTexts = tab.texts
         B05QA.evidence("AK-01-05-accessibility.txt", "AK-05|vorher|\(before)|kinder=\(kids)")
-        B05QA.evidence("AK-01-05-accessibility.txt", "AK-05|nach-aktion-favourite|\(after)|isFavorite=\(zdf.isFavorite)")
+        B05QA.evidence("AK-01-05-accessibility.txt", "AK-05|nach-aktion-favorit-hinzufuegen|\(after)|isFavorite=true")
         B05QA.evidence("AK-01-05-accessibility.txt", "AK-05|leerzustand-texte|\(tabTexts)")
-        XCTAssertTrue(tabTexts.contains("Favourite"), "\(tabTexts)")
-
-        // Kehrseite (FB-04): Der Zustand muss für VoiceOver wahrnehmbar sein – irgendein Accessibility-Merkmal der
-        // Karte (Label, Wert, Aktionsname, Auswahl) muss sich zwischen „kein Favorit“ und „Favorit“ unterscheiden.
-        XCTExpectFailure("BUG-04: Favoriten-Zustand für VoiceOver nicht wahrnehmbar – Karte vor und nach dem Umschalten identisch") {
-            XCTAssertNotEqual(before, after, "Accessibility der Karte ändert sich nicht mit dem Favoriten-Zustand")
-        }
+        XCTAssertFalse(tabTexts.contains("Favourite"), "\(tabTexts)")
+        XCTAssertEqual(tabTexts, ["MIKA+PLAYER · FAVORITEN", "Favoriten", "Keine Favoriten",
+                                  "Markiere Sender mit dem Stern, um sie hier zu sammeln."])
     }
 }

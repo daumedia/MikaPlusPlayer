@@ -220,9 +220,16 @@ final class B04LeistungTests: B04TestCase {
             // BUG-13 behoben: Die Listengröße bestimmt die Blockaden nicht mehr (17.000 Sender wie 20 Sender).
             XCTAssertLessThanOrEqual(oeffnen.max() ?? 999, (referenzOeffnen.max() ?? 0) + 50,
                                      "Öffnen mit 17.000 Sendern blockiert nicht länger als mit 20 Sendern")
-            // Je Zeichen baut die Liste eine neue Bildschirmseite Karten auf (Grundlast, siehe unten); gegen einen Rückfall
-            // auf das Verhalten vor der Reparatur (297–318 ms im Release) gilt hier 150 ms.
-            XCTAssertLessThan(einzelzeichen.max() ?? 999, 150, "kein Zeichen blockiert wie vor der Reparatur")
+            // Nacharbeit R-2 (Review 2026-09-30): Öffnen unter 100 ms (QA-Grenze) ist erreicht und gilt jetzt strikt.
+            XCTAssertLessThan(oeffnen.max() ?? 999, 100, "Öffnen blockiert die Oberfläche nicht merklich")
+            // Je Zeichen baut die Liste eine neue Bildschirmseite Karten auf (Grundlast, siehe unten). Das Review schlug
+            // „≤ 100 ms“ vor; gemessen wurden als längste Blockade je Lauf Debug 87–102 ms, Release 67–87 ms (Review: bis
+            // 106 ms unter Last 20) – 100 ms hält nicht stabil (Gesamtlauf 01.10.: 101,6 ms bei „Fußball 1“). Strikt gilt
+            // deshalb 120 ms: über dem höchsten gemessenen Wert, weniger als die Hälfte des Stands vor der Reparatur
+            // (297–318 ms im Release) und enger als die bisherigen 150 ms. Ob 100 ms erreicht wurden, steht im Protokoll.
+            let zeichenMax = einzelzeichen.max() ?? 999
+            B04QA.log("AK-34|R-2|zeichenMax=\(B04QA.f0(zeichenMax)) ms|ziel100=\(zeichenMax <= 100 ? "erreicht" : "nicht erreicht")")
+            XCTAssertLessThanOrEqual(zeichenMax, 120, "kein Zeichen blockiert länger als 120 ms")
             // Grenzen der QA (Durchlauf 1)
             XCTAssertLessThan(max(leeren, max(leeren2, chipWeg)), 100, "Leeren der Suche und Abwählen eines Chips unter 100 ms")
             XCTAssertLessThan(schnellBlock.maxMs, 100, "schnelles Tippen staut sich nicht")
@@ -232,11 +239,10 @@ final class B04LeistungTests: B04TestCase {
             for (vorgang, ms) in bisAnzeige {
                 XCTAssertLessThan(ms, 1_000, "\(vorgang): Ergebnis nach weniger als 1 s sichtbar")
             }
-            // Nicht erreicht (Grundlast, auch bei 20 Sendern und schon vor der Reparatur): Öffnen einer Senderliste
-            // (Navigation, Suchfeld, erste Karten) und der Aufbau einer neuen Bildschirmseite Karten je Zeichen.
-            XCTExpectFailure("BUG-13 (Rest) · Grundlast von Navigation und Kartenaufbau über den QA-Grenzen, unabhängig von der Listengröße",
+            // Nicht verlässlich erreicht (Grundlast, auch bei 20 Sendern und schon vor der Reparatur): der Aufbau einer neuen
+            // Bildschirmseite Karten je Zeichen unter 50 ms.
+            XCTExpectFailure("BUG-13 (Rest) · Grundlast des Kartenaufbaus je Zeichen über der QA-Grenze von 50 ms, unabhängig von der Listengröße",
                              options: .nonStrict()) {
-                XCTAssertLessThan(oeffnen.max() ?? 0, 100, "Öffnen blockiert die Oberfläche nicht merklich")
                 XCTAssertLessThan(einzelzeichen.max() ?? 0, 50, "einzelne Zeichen unter der Wahrnehmungsgrenze")
             }
         }

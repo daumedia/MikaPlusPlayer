@@ -49,6 +49,7 @@ struct FavoritesView: View {
             Image(systemName: "star")
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)   // B05 · BUG-04: Schmuck, sonst liest VoiceOver den Symbolnamen „Favourite“
             Text("Keine Favoriten").font(.headline)
             Text("Markiere Sender mit dem Stern, um sie hier zu sammeln.")
                 .font(.subheadline)

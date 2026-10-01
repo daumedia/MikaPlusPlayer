@@ -83,6 +83,25 @@ enum FavoriteCarryOver {
     }
 }
 
+extension ParsedChannel {
+    /// Name, Gruppe und `tvg-id` ohne Steuerzeichen (`Channel.removingControlCharacters`), B05 · BUG-09: Die
+    /// Datenbankdatei kürzte einen Text mit NUL-Zeichen, der Favoriten-Schlüssel passte danach nicht mehr zur Liste
+    /// des Anbieters. Gilt für M3U und Xtream gleich, weil beide Wege über `PlaylistStore` speichern. Eine Gruppe oder
+    /// `tvg-id`, die dadurch leer wird, entfällt.
+    var withoutControlCharacters: ParsedChannel {
+        var copy = self
+        copy.name = Channel.removingControlCharacters(name)
+        copy.group = group.flatMap(Self.cleaned)
+        copy.tvgID = tvgID.flatMap(Self.cleaned)
+        return copy
+    }
+
+    private static func cleaned(_ value: String) -> String? {
+        let result = Channel.removingControlCharacters(value)
+        return result.isEmpty && !value.isEmpty ? nil : result
+    }
+}
+
 /// Eine Stern-Änderung in der Ansicht: der Sender (wie beim Lesen erkannt) und sein Stern **danach**.
 struct FavoriteEdit: Sendable, Equatable {
     let channelID: UUID
@@ -102,12 +121,32 @@ struct FavoriteEdit: Sendable, Equatable {
 enum FavoriteEdits {
     private static var journals: [UUID: [FavoriteEdit]] = [:]
 
-    /// Schaltet den Stern um und speichert – wie bisher in `ChannelRowView` – und hält die Änderung fest, falls die
-    /// Playlist des Senders gerade aktualisiert wird.
-    static func toggle(_ channel: Channel, in context: ModelContext) {
+    /// Schaltet den Stern um, speichert sofort und hält die Änderung fest, falls die Playlist des Senders gerade
+    /// aktualisiert wird.
+    ///
+    /// Scheitert das Speichern (z. B. Datenträger voll), wird die Änderung verworfen (B05 · BUG-02): Der Kontext wird
+    /// zurückgerollt – sonst schriebe ein späteres Speichern den Stern unbemerkt mit –, der Stern zeigt wieder den
+    /// gespeicherten Zustand, und das Festgehaltene steht wie vor dem Klick, damit das Aktualisieren den verworfenen
+    /// Stern nicht auf die neuen Sender nachzieht. Der Aufrufer meldet den Fehler.
+    /// - Throws: `PlaylistStoreError.starNotSaved`
+    static func toggle(_ channel: Channel, in context: ModelContext) throws {
+        try toggle(channel, in: context, save: { try $0.save() })
+    }
+
+    /// Wie `toggle(_:in:)`, mit austauschbarem Speichern (Tests: Speicherfehler ohne vollen Datenträger).
+    static func toggle(_ channel: Channel, in context: ModelContext, save: (ModelContext) throws -> Void) throws {
+        let before = channel.isFavorite
+        let journalBefore = channel.playlistID.flatMap { journals[$0] }
         channel.isFavorite.toggle()
         record(channel)
-        try? context.save()
+        do {
+            try save(context)
+        } catch {
+            context.rollback()
+            if channel.isFavorite != before { channel.isFavorite = before }
+            if let playlistID = channel.playlistID, journals[playlistID] != nil { journals[playlistID] = journalBefore }
+            throw PlaylistStoreError.starNotSaved
+        }
     }
 
     static func record(_ channel: Channel) {
@@ -209,9 +248,11 @@ actor PlaylistStore {
     /// Übersicht blendet sie aus, und nur der letzte Block setzt die Senderzahl. Scheitert ein Block oder wird die
     /// aufrufende Aufgabe abgebrochen, wird die Playlist samt bereits gespeicherter Sender sofort wieder entfernt. Gelingt
     /// auch das nicht (z. B. Datenträger voll), bleibt sie unsichtbar und `removeUnfinished` entfernt sie beim nächsten
-    /// Anlegen bzw. beim nächsten Start (Review R-02).
+    /// Anlegen bzw. beim nächsten Start (Review R-02). Name, Gruppe und `tvg-id` werden ohne Steuerzeichen gespeichert
+    /// (B05 · BUG-09, `ParsedChannel.withoutControlCharacters`).
     /// - Throws: `CancellationError` beim Abbruch, sonst `PlaylistStoreError.createFailed`.
     func create(_ draft: Draft, channels: [ParsedChannel], in container: ModelContainer) throws {
+        let channels = channels.map(\.withoutControlCharacters)
         _ = try? removeUnfinished(in: container)
         let context = ModelContext(container)
         context.autosaveEnabled = false
@@ -281,10 +322,13 @@ actor PlaylistStore {
     // MARK: - Ersetzen (Aktualisieren)
 
     /// Ersetzt alle Sender in **einem** Speichervorgang: Scheitert er, bleibt die alte Liste vollständig erhalten
-    /// (B03 AK-18, B05 · BUG-11). Favoriten gehen nach `FavoriteCarryOver` auf die neuen Sender über.
+    /// (B03 AK-18, B05 · BUG-11). Favoriten gehen nach `FavoriteCarryOver` auf die neuen Sender über. Die neue Liste wird
+    /// wie beim Anlegen ohne Steuerzeichen übernommen – vor der Übernahme, damit die Schlüssel zu den gespeicherten passen
+    /// (B05 · BUG-09).
     func replaceChannels(of id: UUID, persistentID: PersistentIdentifier?, with channels: [ParsedChannel],
                          refreshedAt: Date, newSourceURL: URL?, credentialUpdate: CredentialUpdate?,
                          credentialStore: XtreamCredentialStore, in container: ModelContainer) throws -> ReplaceOutcome {
+        let channels = channels.map(\.withoutControlCharacters)
         guard !deleting.contains(id) else { return .playlistGone }
         let context = ModelContext(container)
         context.autosaveEnabled = false
@@ -425,6 +469,8 @@ actor PlaylistStore {
 
     // MARK: - Hilfen
 
+    /// Einziger Ort, an dem Sender entstehen (Anlegen und Aktualisieren, alle Importwege). Erwartet eine bereinigte
+    /// Liste (`ParsedChannel.withoutControlCharacters`).
     private static func makeChannel(_ item: ParsedChannel, playlistID: UUID, isFavorite: Bool) -> Channel {
         Channel(name: item.name, streamURL: item.streamURL, logoURL: item.logoURL, group: item.group,
                 tvgID: item.tvgID, isFavorite: isFavorite, playlistID: playlistID)
@@ -458,6 +504,8 @@ enum PlaylistStoreError: LocalizedError, Equatable {
     case createFailed
     /// Die neue Senderliste ist gespeichert, Stern-Änderungen aus der Laufzeit nicht (Review R-01).
     case favoritesNotSaved
+    /// Ein Stern ließ sich nicht speichern und ist zurückgesetzt (B05 · BUG-02).
+    case starNotSaved
 
     var errorDescription: String? {
         switch self {
@@ -469,6 +517,9 @@ enum PlaylistStoreError: LocalizedError, Equatable {
         case .favoritesNotSaved:
             return "Die Playlist wurde aktualisiert, aber Sterne, die während des Aktualisierens gesetzt oder entfernt "
                 + "wurden, konnten nicht gespeichert werden. Bitte die Favoriten dieser Playlist prüfen."
+        case .starNotSaved:
+            return "Der Stern konnte nicht gespeichert werden und ist zurückgesetzt. "
+                + "Bitte freien Speicherplatz prüfen und erneut versuchen."
         }
     }
 }

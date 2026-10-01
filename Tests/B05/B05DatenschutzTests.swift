@@ -179,7 +179,10 @@ final class B05DatenschutzTests: B05TestCase {
     // MARK: AK-27 · FB-02
 
     /// Braucht ein vollschreibbares, eingehängtes Datenträgerabbild (`TEST_RUNNER_B05_FULL_VOLUME=<Mountpoint>`).
-    func testAK27_SpeicherfehlerBeimUmschaltenWirdVerschluckt() throws {
+    /// Seit der Reparatur (B05 · BUG-02, Build 2026-09-30): Scheitert das Speichern, springt der Stern zurück, der Tab bleibt
+    /// wie gespeichert, eine deutsche Meldung erscheint, und nichts Ungespeichertes bleibt im Kontext (vorher: Stern im
+    /// neuen Zustand, keine Meldung, ein späteres Speichern schrieb ihn unbemerkt mit).
+    func testAK27_SpeicherfehlerBeimUmschaltenSetztZurueckUndMeldet() throws {
         guard let volPath = B05QA.env("B05_FULL_VOLUME"), FileManager.default.fileExists(atPath: volPath) else {
             throw XCTSkip("kein Datenträgerabbild (TEST_RUNNER_B05_FULL_VOLUME)")
         }
@@ -196,6 +199,7 @@ final class B05DatenschutzTests: B05TestCase {
         let pl = try seed(ctx, name: "QA Voll", [("Voll Eins", nil, nil, false, nil), ("Voll Zwei", nil, nil, false, nil), ("Voll Drei", nil, nil, false, nil)])
         let list = window(NavigationStack { ChannelListView(playlist: pl) }, c, size: CGSize(width: 700, height: 420))
         let tab = window(NavigationStack { FavoritesView() }, c, size: CGSize(width: 700, height: 420), origin: CGPoint(x: 780, y: 60))
+        let meldung = PlaylistStoreError.starNotSaved.errorDescription ?? "-"
 
         func fill() -> Int {
             let fd = Darwin.open(filler.path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
@@ -215,23 +219,30 @@ final class B05DatenschutzTests: B05TestCase {
         let free = (try? vol.resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity) ?? -1
         B05QA.evidence("AK-27-speicherfehler.txt", "volume gefüllt|bytes=\(filled)|frei=\(free)|autosave=\(ctx.autosaveEnabled)")
 
-        // Stern drücken wie der Nutzer
+        // Stern drücken wie der Nutzer: Speichern scheitert → Stern zurück, Tab unverändert, Meldung
         XCTAssertTrue(list.clickStar("Voll Zwei", wait: 0.8))
         let zwei = try XCTUnwrap(pl.channels.first { $0.name == "Voll Zwei" })
         let shown = tab.cardLabels
-        let alerts = b05AlertWindows()
-        let line1 = "nach-klick-voll|isFavorite=\(zwei.isFavorite)|hasChanges=\(ctx.hasChanges)|db=\(B05QA.dbFavorite(store, name: "Voll Zwei"))|stern=\(list.starColor("Voll Zwei"))|tab=\(shown)|alerts=\(alerts)"
+        let alert = list.alertTexts
+        let line1 = "nach-klick-voll|isFavorite=\(zwei.isFavorite)|hasChanges=\(ctx.hasChanges)|db=\(B05QA.dbFavorite(store, name: "Voll Zwei"))|stern=\(list.starColor("Voll Zwei"))|tab=\(shown)|alert=\(alert)|alertTab=\(tab.alertTexts)"
         B05QA.evidence("AK-27-speicherfehler.txt", line1)
-        list.shot("AK-27-speicher-voll-stern-gefuellt")
-        tab.shot("AK-27-speicher-voll-favoriten-tab")
-        XCTAssertTrue(zwei.isFavorite)
-        XCTAssertEqual(B05QA.dbFavorite(store, name: "Voll Zwei"), "0", "nichts gespeichert")
-        XCTAssertEqual(shown, ["Voll Zwei"])
+        list.shot("AK-27-speicher-voll-meldung")
+        XCTAssertFalse(zwei.isFavorite, "Stern springt auf den gespeicherten Zustand zurück")
+        XCTAssertEqual(list.starColor("Voll Zwei"), "grau")
+        XCTAssertEqual(B05QA.dbFavorite(store, name: "Voll Zwei"), "0")
+        XCTAssertEqual(shown, [], "Tab nimmt keine ungespeicherte Karte auf")
+        XCTAssertFalse(ctx.hasChanges, "nichts Ungespeichertes bleibt im Kontext")
+        XCTAssertTrue(alert.contains("Favorit nicht gespeichert"), "\(alert)")
+        XCTAssertTrue(alert.contains(meldung), "\(alert)")
+        XCTAssertEqual(tab.alertTexts, [], "Meldung nur im Fenster, in dem geklickt wurde")
+        XCTAssertTrue(list.confirmAlert(), "Meldung mit OK schließen")
+        XCTAssertEqual(list.alertTexts, [])
 
-        // Was `try?` verschluckt
+        // Nichts ist mehr ausstehend: ein explizites Speichern gelingt auch bei vollem Datenträger
         var saveError = "ok"
-        do { try ctx.save() } catch { let ns = error as NSError; saveError = "\(ns.domain) \(ns.code) · \(ns.userInfo["NSSQLiteErrorDomain"] ?? "-")" }
+        do { try ctx.save() } catch { let ns = error as NSError; saveError = "\(ns.domain) \(ns.code)" }
         B05QA.evidence("AK-27-speicherfehler.txt", "expliziter-save|\(saveError)")
+        XCTAssertEqual(saveError, "ok")
 
         // „Neustart“ bei weiterhin vollem Datenträger
         var restart = "-"
@@ -240,39 +251,50 @@ final class B05DatenschutzTests: B05TestCase {
             restart = try B05QA.tabQuery(c2.mainContext).map(\.name).description
         } catch { restart = "fehler: \(error.localizedDescription)" }
         B05QA.evidence("AK-27-speicherfehler.txt", "neustart-voll|favoriten=\(restart)")
+        XCTAssertEqual(restart, "[]")
 
-        // Automatisches Speichern, solange voll / nach dem Freigeben
+        // Automatisches Speichern, solange voll / nach dem Freigeben: nichts wird nachgeschrieben
         B05QA.spin(3.0)
         B05QA.evidence("AK-27-speicherfehler.txt", "3s-voll|db=\(B05QA.dbFavorite(store, name: "Voll Zwei"))|hasChanges=\(ctx.hasChanges)")
         try? FileManager.default.removeItem(at: filler)
         B05QA.spin(3.0)
         B05QA.evidence("AK-27-speicherfehler.txt", "3s-nach-freigabe|db=\(B05QA.dbFavorite(store, name: "Voll Zwei"))|hasChanges=\(ctx.hasChanges)")
+        XCTAssertEqual(B05QA.dbFavorite(store, name: "Voll Zwei"), "0")
         XCTAssertTrue(list.clickStar("Voll Drei", wait: 0.8))
-        B05QA.evidence("AK-27-speicherfehler.txt", "weiterer-stern-mit-platz|dbZwei=\(B05QA.dbFavorite(store, name: "Voll Zwei"))|dbDrei=\(B05QA.dbFavorite(store, name: "Voll Drei"))|hasChanges=\(ctx.hasChanges)")
+        B05QA.evidence("AK-27-speicherfehler.txt", "weiterer-stern-mit-platz|dbZwei=\(B05QA.dbFavorite(store, name: "Voll Zwei"))|dbDrei=\(B05QA.dbFavorite(store, name: "Voll Drei"))|hasChanges=\(ctx.hasChanges)|alert=\(list.alertTexts)")
+        XCTAssertEqual(B05QA.dbFavorite(store, name: "Voll Zwei"), "0", "der verworfene Stern wird nicht mitgeschrieben")
+        XCTAssertEqual(B05QA.dbFavorite(store, name: "Voll Drei"), "1")
+        XCTAssertEqual(list.alertTexts, [], "mit Platz keine Meldung")
+        XCTAssertEqual(tab.cardLabels, ["Voll Drei"])
 
-        // Entfernen im Tab bei vollem Datenträger: Karte verschwindet, kommt nach Neustart zurück
+        // Entfernen im Tab bei vollem Datenträger: Karte bleibt, Meldung im Tab, Neustart zeigt denselben Stand
         _ = fill()
         XCTAssertTrue(tab.clickStar("Voll Drei", wait: 0.8))
         let drei = try XCTUnwrap(pl.channels.first { $0.name == "Voll Drei" })
-        B05QA.evidence("AK-27-speicherfehler.txt", "entfernen-im-tab-voll|tab=\(tab.cardLabels)|isFavorite=\(drei.isFavorite)|db=\(B05QA.dbFavorite(store, name: "Voll Drei"))|alerts=\(b05AlertWindows())")
+        let alertTab = tab.alertTexts
+        B05QA.evidence("AK-27-speicherfehler.txt", "entfernen-im-tab-voll|tab=\(tab.cardLabels)|isFavorite=\(drei.isFavorite)|db=\(B05QA.dbFavorite(store, name: "Voll Drei"))|stern=\(tab.starColor("Voll Drei"))|hasChanges=\(ctx.hasChanges)|alert=\(alertTab)")
+        tab.shot("AK-27-speicher-voll-entfernen-im-tab-meldung")
+        XCTAssertTrue(drei.isFavorite)
+        XCTAssertEqual(tab.cardLabels, ["Voll Drei"], "Karte bleibt, weil nichts gespeichert ist")
+        XCTAssertEqual(tab.starColor("Voll Drei"), "akzent")
+        XCTAssertEqual(B05QA.dbFavorite(store, name: "Voll Drei"), "1")
+        XCTAssertFalse(ctx.hasChanges)
+        XCTAssertTrue(alertTab.contains(meldung), "\(alertTab)")
+        XCTAssertTrue(tab.confirmAlert())
         var restart2 = "-"
         do { let c3 = try B05QA.reopen(store); restart2 = try B05QA.tabQuery(c3.mainContext).map(\.name).description } catch { restart2 = "fehler" }
         B05QA.evidence("AK-27-speicherfehler.txt", "neustart-nach-entfernen|favoriten=\(restart2)")
+        XCTAssertEqual(restart2, "[\"Voll Drei\"]", "Anzeige und Datei stimmen überein")
         try? FileManager.default.removeItem(at: filler)
         B05QA.spin(0.5)
 
-        // Systemprotokoll: nur SwiftData/Core Data meldet den Fehler
+        // Systemprotokoll: Core Data meldet den Fehler weiterhin dort (App-Code protokolliert nichts, AK-26)
         if let logStore = try? OSLogStore(scope: .currentProcessIdentifier),
            let pos = Optional(logStore.position(date: start)),
            let entries = try? logStore.getEntries(at: pos) {
             let lines = entries.compactMap { $0 as? OSLogEntryLog }.filter { $0.composedMessage.contains("save failed") || $0.composedMessage.contains("disk is full") }
             for l in lines.prefix(3) { B05QA.evidence("AK-27-speicherfehler.txt", "systemprotokoll|\(l.subsystem)|\(l.composedMessage.prefix(220))") }
             B05QA.evidence("AK-27-speicherfehler.txt", "systemprotokoll-zeilen=\(lines.count)")
-        }
-
-        XCTExpectFailure("BUG-02: Speicherfehler beim Umschalten wird verschluckt – Stern zeigt den neuen Zustand, nichts gespeichert, keine Meldung") {
-            XCTAssertTrue(!zwei.isFavorite || !alerts.isEmpty || line1.contains("db=1"),
-                          "erwartet: Zustand zurückgesetzt oder Meldung")
         }
     }
 }

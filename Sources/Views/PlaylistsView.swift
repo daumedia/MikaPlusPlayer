@@ -34,6 +34,7 @@ struct PlaylistsView: View {
                     #endif
                     Button { showingImport = true } label: {
                         Image(systemName: "plus")
+                            .foregroundStyle(Color.playerOnAccent)   // B04 · Review R-1: nicht Weiß auf dem Akzent
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
@@ -120,11 +121,14 @@ struct PlaylistsView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button("Playlist importieren") { showingImport = true }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .tint(.playerAccent)
-                .padding(.top, 4)
+            Button { showingImport = true } label: {
+                // B04 · Review R-1: Schrift `playerOnAccent` statt Weiß auf dem Akzent
+                Text("Playlist importieren").foregroundStyle(Color.playerOnAccent)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .tint(.playerAccent)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, PlayerTheme.contentHPadding)

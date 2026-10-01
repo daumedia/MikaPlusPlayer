@@ -301,12 +301,20 @@ final class B04Nav {
 /// Wie `ContentView`, Tab „Playlists“: `NavigationStack { PlaylistsView() }`, nur mit steuerbarem Pfad.
 struct B04Root: View {
     @Bindable var nav: B04Nav
+    /// Zeichnet Bedienelemente wie in einem aktiven Fenster, auch wenn der Test-Host nicht vorn ist (Nacharbeit R-1:
+    /// hervorgehobene Tasten sind in inaktiven Fenstern grau).
+    var forceActive = false
 
     var body: some View {
-        NavigationStack(path: $nav.path) {
+        let stack = NavigationStack(path: $nav.path) {
             PlaylistsView()
         }
         .tint(.playerAccent)
+        if forceActive {
+            stack.environment(\.controlActiveState, .key)
+        } else {
+            stack
+        }
     }
 }
 
@@ -319,10 +327,10 @@ final class B04Window {
 
     init(_ container: ModelContainer, size: CGSize = CGSize(width: 900, height: 700),
          origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil,
-         multiview: MultiviewSession? = nil) {
+         multiview: MultiviewSession? = nil, forceActive: Bool = false) {
         let multiview = multiview ?? MultiviewSession()
         self.multiview = multiview
-        let root = B04Root(nav: nav).environment(multiview).modelContainer(container)
+        let root = B04Root(nav: nav, forceActive: forceActive).environment(multiview).modelContainer(container)
         let hv = NSHostingView(rootView: root)
         let w = NSWindow(contentRect: NSRect(origin: origin, size: size),
                          styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
@@ -1080,8 +1088,9 @@ class B04TestCase: XCTestCase {
     }
 
     func window(_ c: ModelContainer, size: CGSize = CGSize(width: 900, height: 700),
-                origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil) -> B04Window {
-        let w = B04Window(c, size: size, origin: origin, appearance: appearance)
+                origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil,
+                forceActive: Bool = false) -> B04Window {
+        let w = B04Window(c, size: size, origin: origin, appearance: appearance, forceActive: forceActive)
         windows.append(w)
         return w
     }
