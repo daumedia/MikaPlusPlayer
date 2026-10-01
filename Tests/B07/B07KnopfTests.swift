@@ -246,7 +246,7 @@ final class B07KnopfTests: B07TestCase {
 
     // MARK: AK-09 (macOS-Teil)
 
-    func testAK09_TSUeberVLC_KeinKnopf_PNurSteuerung_KeinHinweis() async throws {
+    func testAK09_TSUeberVLC_KeinKnopf_PZeigtHinweisNurHLS() async throws {
         let c = channel("QA TS", "/tslive/ak09.ts")
         let w = playerWindow(c)
         try await activate(w)
@@ -264,17 +264,21 @@ final class B07KnopfTests: B07TestCase {
         let hiddenBefore = !controlsVisible(w)
         let beep = await press(w, .char("p"))
         let flashed = await B07Engine.wait(2) { self.controlsVisible(w) }
-        await B07QA.spin(2)
         let texts = B07UI.elements(w).map(B07UI.label).filter { !$0.isEmpty }
+        B07QA.shot(w, "BUILD-BUG-04-ts-vlc-p-hinweis-mac")
+        await B07QA.spin(2)
         B07QA.log("AK-09|P: vorher ausgeblendet=\(hiddenBefore) → eingeblendet=\(flashed != nil)|pipfenster=\(B07PiPWindows.current())|texte=\(texts)|beep=\(beep)")
-        XCTAssertEqual(beep, [], "P wird behandelt (kein Beep), wirkt aber nur als Einblenden")
+        XCTAssertEqual(beep, [], "P wird behandelt (kein Beep)")
         XCTAssertTrue(hiddenBefore)
-        XCTAssertNotNil(flashed, "P blendet nur die Steuerung ein")
-        XCTAssertTrue(B07PiPWindows.current().isEmpty)
-        XCTExpectFailure("BUG-04 · MPEG-TS (VLC): kein Bild-in-Bild und keine Erklärung in der App") {
-            XCTAssertTrue(texts.contains { $0.localizedCaseInsensitiveContains("bild-in-bild") || $0.localizedCaseInsensitiveContains("picture") },
-                          "App erklärt, warum Bild-in-Bild fehlt")
+        XCTAssertNotNil(flashed, "P blendet die Steuerung ein")
+        XCTAssertTrue(B07PiPWindows.current().isEmpty, "weiterhin kein Bild-in-Bild bei VLC")
+        // Behoben (BUG-04, 2026-09-27): P erklärt kurz, dass es Bild-in-Bild nur mit HLS gibt.
+        XCTAssertTrue(texts.contains { $0.contains("Bild-in-Bild gibt es nur mit HLS, nicht mit MPEG-TS.") },
+                      "App erklärt, warum Bild-in-Bild fehlt")
+        let hintGone = await B07Engine.wait(4) {
+            !B07UI.elements(w).map(B07UI.label).contains { $0.contains("Bild-in-Bild gibt es nur mit HLS") }
         }
+        XCTAssertNotNil(hintGone, "der Hinweis verschwindet nach wenigen Sekunden")
     }
 
     /// AK-09, zweiter Satz: Xtream im Standardformat → `.ts` → VLC → kein PiP.
@@ -379,7 +383,7 @@ final class B07KnopfTests: B07TestCase {
 /// AK-09: Das Import-Sheet schlägt für Xtream MPEG-TS vor und erklärt nur „benötigt VLCKit“ – kein Wort zu Bild-in-Bild.
 @MainActor
 final class B07ImportHinweisTests: XCTestCase {
-    func testAK09_ImportSheetStandardMPEGTS_OhneHinweisAufBildInBild() async throws {
+    func testAK09_ImportSheetStandardMPEGTS_MitHinweisBildInBildNurHLS() async throws {
         let container = try B07QA.inMemoryContainer()
         let w = B07UI.window(ImportPlaylistView().modelContainer(container), size: CGSize(width: 520, height: 640), title: "B07-Import")
         defer { B07UI.close(w) }
@@ -387,11 +391,12 @@ final class B07ImportHinweisTests: XCTestCase {
         let texts = B07UI.elements(w).map(B07UI.label).filter { !$0.isEmpty }
         B07QA.log("AK-09|Import-Sheet Texte=\(texts)")
         B07QA.shot(w, "AK-09-import-standard-mpegts")
+        B07QA.shot(w, "BUILD-BUG-04-import-standard-mpegts-hinweis")
         XCTAssertTrue(texts.contains { $0.contains(XtreamOutput.mpegts.hint) }, "Standard ist MPEG-TS (Hinweistext des gewählten Formats)")
-        XCTExpectFailure("BUG-04 · Import-Sheet schlägt MPEG-TS vor, ohne zu sagen, dass es dort kein Bild-in-Bild gibt") {
-            XCTAssertTrue(texts.contains { $0.localizedCaseInsensitiveContains("bild-in-bild") || $0.localizedCaseInsensitiveContains("picture") },
-                          "Hinweis, dass MPEG-TS kein Bild-in-Bild kann")
-        }
+        // Behoben (BUG-04, 2026-09-27): Der Hinweis zum Standardformat nennt die Einschränkung.
+        XCTAssertTrue(texts.contains { $0.contains("Bild-in-Bild gibt es nur mit HLS.") },
+                      "Hinweis, dass MPEG-TS kein Bild-in-Bild kann")
+        XCTAssertFalse(XtreamOutput.hls.hint.contains("Bild-in-Bild gibt es nur"), "der HLS-Hinweis bleibt unverändert")
         B07QA.log("AK-09|Hinweise: mpegts='\(XtreamOutput.mpegts.hint)' hls='\(XtreamOutput.hls.hint)'")
     }
 }

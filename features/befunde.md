@@ -16,20 +16,10 @@ des Auditberichts, den `/sdd-erfassen abschluss` daraus baut.
 | BF-07 | B09 | Feed-Branch `main` ohne Branch-Schutz oder Ruleset · BUG-07 | hoch | GitHub-Repo-Einstellungen | 2026-09-15 |
 | BF-08 | B09 | Feed unsigniert (DMG-Prüfung vor dem Einhängen behoben 2026-09-16; Feed-Pflicht offen, braucht signierten Appcast beim nächsten Release) · BUG-08 | hoch | `Info.plist:27-32` | 2026-09-15 |
 | BF-09 | B09 | `disable-library-validation` ohne tragfähige Begründung · BUG-09 | mittel | `MikaPlusPlayer.entitlements:9-12` | 2026-09-15 |
-| BF-12 | B09 | Datenschutzseite nennt User-Agent und automatische Prüfung nicht · BUG-12 | mittel | `web/app/privacy/page.tsx:57-59` | 2026-09-15 |
-| BF-16 | B09 | Website beschreibt den Update-Weg ungenau · BUG-16 | niedrig | `web/app/changelog/page.tsx:21`, `web/content/features.ts:42-43` | 2026-09-15 |
 | BF-18 | B09 | Menüpunkt „Nach Updates suchen …" aktualisiert seinen Aktiv-Zustand nicht (nicht observierbar) (Reparatur greift an der echten Menüleiste nicht, QA 2) · BUG-18 | mittel | `SparkleUpdater.swift:10,22`, `MikaPlusPlayerApp.swift:39` | 2026-09-15 |
-| BF-19 | B10 | Website öffentlich nicht erreichbar (`DEPLOYMENT_NOT_FOUND`, Vercel-Login mit Cookie, Domain NXDOMAIN) — einzige Datenschutzerklärung nicht abrufbar · BUG-01 | hoch | Vercel-Projekt, Repository-Homepage | 2026-09-15 |
-| BF-20 | B10 | Datenschutzerklärung widerspricht dem App-Verhalten (Speicherort, Kopien, Löschen der App, Empfänger, „Nowhere") · BUG-02 | hoch | `web/app/privacy/page.tsx:19-20,37-39,47-49`, `web/app/page.tsx:64-72`, `web/content/faq.ts:40` | 2026-09-15 |
+| BF-19 | B10 | Website öffentlich nicht erreichbar (`DEPLOYMENT_NOT_FOUND`, Vercel-Login mit Cookie, Domain NXDOMAIN) — einzige Datenschutzerklärung nicht abrufbar · BUG-01 — 2026-09-30: Production-Deployment steht auf `47a90c3` ohne die korrigierten Texte; wird nur der Schutz abgeschaltet, geht die widerlegte Datenschutzseite online | hoch | Vercel-Projekt, Repository-Homepage | 2026-09-15 |
 | BF-21 | B10 | Pflichtangaben fehlen: Verantwortlicher, Rechtsgrundlagen, Speicherdauer, Betroffenenrechte, nicht öffentlicher Kontaktweg; kein `docs/datenschutz.md` · BUG-03 | hoch | `web/app/privacy/page.tsx`, `web/components/site-footer.tsx` | 2026-09-15 |
-| BF-22 | B10 | `/download` ohne Cache im Fehlerfall und ohne Limit (64 Aufrufe → 64 GitHub-Anfragen) · BUG-04 | mittel | `web/app/download/route.ts:5-9`, `web/lib/releases.ts:73-90` | 2026-09-15 |
-| BF-23 | B10 | `next` 16.2.12 mit kritischer Advisory GHSA-2xp9-vwfh-vxw4; Angriffsfläche heute nur lokale Quellen · BUG-05 | mittel | `web/package.json:15` | 2026-09-15 |
-| BF-24 | B10 | Gatekeeper-Anleitung beschreibt ab macOS 15 entfallenen Weg; keine Prüfsumme für den Erstdownload · BUG-06 | mittel | `web/app/support/page.tsx:35-44`, `web/components/gatekeeper-note.tsx:9-13`, `web/content/faq.ts:10` | 2026-09-15 |
-| BF-25 | B10 | Werbeaussagen, die Release v1.1 nicht erfüllt (Bild-in-Bild, Doppelklick-Import, Changelog in Sparkle, App-Name, „open-source" ohne Lizenz, Sprache) · BUG-07 | mittel | `web/content/features.ts:13-48`, `web/app/support/page.tsx`, `web/components/site-footer.tsx:14` | 2026-09-15 |
-| BF-26 | B10 | Ersatz-Release fest auf v1.1 verdrahtet, vom Release-Skript nicht gepflegt · BUG-08 | mittel | `web/lib/releases.ts:46-60,126`, `scripts/release.sh` | 2026-09-15 |
-| BF-27 | B10 | Keine Content-Security-Policy, keine Permissions-Policy · BUG-09 | niedrig | `web/next.config.ts:5-19` | 2026-09-15 |
-| BF-28 | B10 | `node="[object Object]"` in gerenderten Release-Notizen · BUG-10 | niedrig | `web/components/release-notes.tsx:14-18` | 2026-09-15 |
-| BF-29 | B10 | Open-Graph-Angaben der Unterseiten zeigen auf die Startseite · BUG-11 | niedrig | `web/app/layout.tsx:52-59` | 2026-09-15 |
+| BF-22 | B10 | `/download` ohne Cache im Fehlerfall und ohne Limit (64 Aufrufe → 64 GitHub-Anfragen) · BUG-04 — Cache im Fehlerfall behoben (QA 2), Limit je Besucher offen (OF-06) | mittel | `web/app/download/route.ts:5-9`, `web/lib/releases.ts:73-90` | 2026-09-15 |
 | BF-40 | B01 | Zweiter Import desselben Zugangs legt eine zweite Playlist an (Doppelklick-Teil behoben 2026-09-16; Dublette wartet auf Nutzerentscheidung OF-01) · BUG-09 | niedrig | `PlaylistImporter.swift:61-85`, `ImportPlaylistView.swift:81-86` | 2026-09-16 |
 | BF-43 | B01 | Zugangsdaten stehen bei aktivem Private-Data-Logging im Unified Log (CFNetwork-Fehlerzeilen) · Hinweis H-2 | niedrig | Folge von `XtreamClient.swift:61-72` (Zugangsdaten in der URL) | 2026-09-16 |
 | BF-44 | B01 | Nach Übernahme einer v1.1-Datenbank ohne verbliebene Xtream-Playlist bleiben alte Passwörter aus freien Datenbankseiten erhalten (878 Vorkommen), weil nur bei ≥ 1 umgestellter Playlist verdichtet wird · QA 2 BUG-13 | mittel | `AppPersistence.swift` (Migration/VACUUM) | 2026-09-16 |
@@ -91,7 +81,6 @@ des Auditberichts, den `/sdd-erfassen abschluss` daraus baut.
 | BF-100 | B06 | Vollbildzustand nicht an das Player-Fenster gebunden (falsches Fenster, grüner Knopf, Tabwechsel) · BUG-06 | mittel | `PlayerView.swift:20,306-313,399-411` | 2026-09-26 |
 | BF-101 | B06 | libVLC-Hänger des Hauptthreads beim Erzeugen eines Players, während andere abgebaut werden (zweimal im Test-Host; relevant für Multiview) · BUG-07 | mittel | `VLCPlaybackEngine.swift:30-38` | 2026-09-26 |
 | BF-102 | B06 | Am iPad erreicht die Hardware-Tastatur den Player nicht · BUG-08 | mittel | `PlayerView.swift:58-61,81` | 2026-09-26 |
-| BF-103 | B06 | Website verspricht Rückmeldung für jede Taste; F, Esc und P (VLC) haben keine · BUG-05 | niedrig | `web/content/features.ts:38`, `web/app/support/page.tsx:65-72` | 2026-09-26 |
 | BF-104 | B06 | Ladekreis dunkelgrau statt weiß; Sendername unter iOS im hellen Erscheinungsbild unsichtbar · BUG-09 | niedrig | `PlayerView.swift:53,66-68,101-103` | 2026-09-26 |
 | BF-105 | B07 | Mac: Nach „Zurück" spielt Bild-in-Bild verwaist weiter, die App kann es nicht beenden, der nächste Sender läuft parallel (42–60 s), „Zurück zur App" lässt den Stream unsichtbar weiterlaufen — gleiche Ursache wie BF-97 · BUG-01 (gegengeprüft ✅) | hoch | `PlayerView.swift:17,83-92`, `AVKitPlaybackEngine.swift:76-78,153-172` | 2026-09-26 |
 | BF-106 | B07 | Wiedergabezustand folgt dem Player nicht, wenn das System ihn anhält (Pause/Schließen im Systemfenster, zweites Bild-in-Bild) · BUG-03 | mittel | `AVKitPlaybackEngine.swift:13,45-47`, `PlayerView.swift:146,348-353` | 2026-09-26 |
@@ -107,6 +96,13 @@ des Auditberichts, den `/sdd-erfassen abschluss` daraus baut.
 | BF-116 | B08 | Derselbe Sender ohne Hinweis zweimal im Multiview — wartet auf OF-01 · BUG-08 | niedrig | `MultiviewSession.swift:54-67` | 2026-09-26 |
 | BF-117 | B08 | ⊞ ohne Zugangsdaten öffnet leeres Multiview ohne Meldung — wartet auf OF-02 · BUG-09 | niedrig | `MultiviewSession.swift:57`, `ChannelRowView.swift:75-76` | 2026-09-26 |
 | BF-118 | B08 | Multiview bis 105 × 106 pt verkleinerbar, kleine Kacheln laufen über, Umschalter verschwindet · BUG-10 | niedrig | `MikaPlusPlayerApp.swift:58`, `MultiviewScreen.swift:13-27` | 2026-09-26 |
+| BF-119 | B09 | Test-Host und Debug-Build teilen die Bundle-ID der echten App: Testläufe schreiben in deren Einstellungen und Cache; nach einem Neustart hat macOS am 2026-09-29 den Test-Host aus `build/dd-test` per Fensterwiederherstellung als normale App gestartet, der die Datenbank am alten Ort (`default.store`, Testdaten vom 15.09.) in den app-eigenen Ordner übernommen und das Original entfernt hat | mittel | `project.yml` (Test-Host = App-Bundle), `AppEnvironment.swift`, `AppPersistence.swift` | 2026-09-29 |
+| BF-120 | B10 | `next` 16.3.3 mit neuer kritischer Advisory GHSA-vcvr-r3jv-pc5j (seit 22.09., behoben ab 16.3.6); heute nicht ausnutzbar, Vorschaubild statisch · QA 2 BUG-12 | mittel | `web/package.json` | 2026-09-30 |
+| BF-121 | B10 | Datenschutzseite verschweigt, dass jede Anfrage die macOS-Version verrät (`Darwin/…`), bei Streams auch Sprache und Player · QA 2 BUG-13 | niedrig | `web/app/privacy/page.tsx` | 2026-09-30 |
+| BF-122 | B10 | „Removing everything" nennt `~/Library/Preferences/lu.daumedia.MikaPlusPlayer/` (VLC `vlcrc`) und Zeitpunkte von Import/Aktualisierung nicht · QA 2 BUG-14 | niedrig | `web/app/privacy/page.tsx` | 2026-09-30 |
+| BF-123 | B10 | FAQ verspricht Versionshinweise im Update-Fenster, der Feed enthält keine · QA 2 BUG-15 | niedrig | `web/content/faq.ts`, `appcast.xml` | 2026-09-30 |
+| BF-124 | B10 | Ein GitHub-Fehler bei der stündlichen Neuberechnung entfernt Prüfsumme, DMG-Link und Changelog bis zur nächsten erfolgreichen Neuberechnung · QA 2 BUG-16 | niedrig | `web/lib/releases.ts` | 2026-09-30 |
+| BF-125 | B10 | Seite schiebt die erzwungene HTTP-Umschreibung auf die Panels („most panels serve nothing else") — unbelegt · QA 2 BUG-17 | niedrig | `web/app/privacy/page.tsx` | 2026-09-30 |
 
 ## Behoben
 
@@ -132,6 +128,17 @@ des Auditberichts, den `/sdd-erfassen abschluss` daraus baut.
 | BF-14 | B09 | Sparkle nicht gepinnt, aufgelöste Version nicht versioniert · BUG-14 | mittel | 2026-09-16 (QA 2 bestätigt) | nein — Branch `sdd/rueckerfassung`, nicht committet |
 | BF-15 | B09 | Notarisierungsweg im README in falscher Reihenfolge · BUG-15 | mittel | 2026-09-16 (QA 2 bestätigt) | nein — Branch `sdd/rueckerfassung`, nicht committet |
 | BF-17 | B09 | Keine Tests für die Update-Kette · BUG-17 (Tests aus QA-Durchlauf 1 liegen bereit) | mittel | 2026-09-16 (QA 2 bestätigt) | nein — Branch `sdd/rueckerfassung`, nicht committet |
+| BF-12 | B09 | Datenschutzseite nennt User-Agent und automatische Prüfung nicht · BUG-12 | mittel | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-16 | B09 | Website beschreibt den Update-Weg ungenau · BUG-16 | niedrig | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-20 | B10 | Datenschutzerklärung widerspricht dem App-Verhalten (Speicherort, Kopien, Löschen der App, Empfänger, „Nowhere") · BUG-02 | hoch | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-23 | B10 | `next` 16.2.12 mit kritischer Advisory GHSA-2xp9-vwfh-vxw4; Angriffsfläche heute nur lokale Quellen · BUG-05 | mittel | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-24 | B10 | Gatekeeper-Anleitung beschreibt ab macOS 15 entfallenen Weg; keine Prüfsumme für den Erstdownload · BUG-06 | mittel | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-25 | B10 | Werbeaussagen, die Release v1.1 nicht erfüllt (Bild-in-Bild, Doppelklick-Import, Changelog in Sparkle, App-Name, „open-source" ohne Lizenz, Sprache) · BUG-07 | mittel | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-26 | B10 | Ersatz-Release fest auf v1.1 verdrahtet, vom Release-Skript nicht gepflegt · BUG-08 | mittel | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-27 | B10 | Keine Content-Security-Policy, keine Permissions-Policy · BUG-09 | niedrig | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-28 | B10 | `node="[object Object]"` in gerenderten Release-Notizen · BUG-10 | niedrig | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-29 | B10 | Open-Graph-Angaben der Unterseiten zeigen auf die Startseite · BUG-11 | niedrig | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
+| BF-103 | B06 | Website verspricht Rückmeldung für jede Taste; F, Esc und P (VLC) haben keine · BUG-05 | niedrig | 2026-09-30 (B10 QA 2 bestätigt) | nein — Arbeitsbaum `sdd/reparaturen`, nicht committet; Vercel-Production steht auf `47a90c3` |
 
 ## Akzeptiert
 

@@ -216,10 +216,10 @@ final class B06EngineZustandTests: B06TestCase {
         XCTAssertEqual(xr.first?.range, "bytes=0-")
     }
 
-    // MARK: AK-10 ⚠ · VLC: HTTP-Fehler und Host weg
+    // MARK: AK-10 · VLC: HTTP-Fehler und Host weg (behoben in Build B06 · BUG-01)
 
-    func testAK10_VLCHTTPFehlerUndHostWegOhneMeldung() async throws {
-        let seconds: TimeInterval = langsam ? 60 : 15
+    func testAK10_VLCHTTPFehlerUndHostWegZeigenMeldung() async throws {
+        let seconds: TimeInterval = langsam ? 60 : 8
         let items = start([
             ("401-ts", "/401/ak10.ts"), ("403-ts", "/403/ak10.ts"), ("404-ts", "/404/ak10.ts"),
             ("port-zu-ts", "http://127.0.0.1:1/ak10.ts"), ("dns-ts", "http://b06-qa.invalid/ak10.ts"),
@@ -233,20 +233,26 @@ final class B06EngineZustandTests: B06TestCase {
             let reqs = label.contains("port") || label.contains("dns") ? -1 : mock.requests.filter { $0.path == path }.count
             summary.append("\(label):\(B06Engine.name(e.state))/vlc=\(v.map(B06Engine.vlcState) ?? "-")/anfragen=\(reqs)")
             B06QA.log("AK-10|\(label)|nach \(Int(seconds))s|zustand=\(B06Engine.name(e.state))|zeiten=\(first[label] ?? [:])|vlcRoh=\(v.map(B06Engine.vlcState) ?? "-")|anfragen=\(reqs)")
-            // Ist: nie .failed – die Ansicht zeigt für .idle/.loading den Ladekreis
-            XCTAssertNil(failureText(e), label)
-            XCTAssertTrue([.idle, .loading].contains(e.state), "\(label): Ladekreis-Zustand")
+            // Behoben: VLC-Fehler enden in der Fehleransicht mit deutscher Meldung, schnell und dauerhaft
+            XCTAssertEqual(failureText(e), VLCPlaybackEngine.Failure.cannotOpen.message, label)
+            XCTAssertLessThan(first[label]?["failed"] ?? 99, 3.0, "\(label): Meldung nach < 3 s")
+            XCTAssertNil(first[label]?["playing"], "\(label): nie „läuft“")
+            for secret in [B06QA.pass, B06QA.user, "127.0.0.1", "b06-qa.invalid", "/live/", "ak10"] {
+                XCTAssertFalse((failureText(e) ?? "").contains(secret), "AK-31 \(label) enthält \(secret)")
+            }
         }
         B06QA.log("AK-10|zusammenfassung|\(summary)")
-        XCTExpectFailure("BUG-01 · VLC-Fehler (401/403/404/Host weg) erreichen die Oberfläche nie – FB-01") {
-            for (label, e) in items { XCTAssertNotNil(failureText(e), "\(label) sollte .failed melden") }
-        }
+        let offen = mock.connections.filter { $0.path.contains("ak10") && $0.closed == nil }.map(\.path)
+        XCTAssertEqual(offen, [], "nach der Meldung keine offene Verbindung")
     }
 
-    // MARK: AK-11 ⚠ · VLC: keine Daten, HTML, verzögert
+    // MARK: AK-11 · VLC: keine Daten, HTML, verzögert (behoben in Build B06 · BUG-01)
 
-    func testAK11_VLCHaengerHTMLVerzoegertGiltAlsLaeuft() async throws {
-        let seconds: TimeInterval = langsam ? 200 : 15
+    /// Schnell mit kurzen Fristen (Laden 5 s); mit `B06_LANGSAM=1` mit den Standardfristen (40 s / 30 s).
+    func testAK11_VLCHaengerHTMLVerzoegertMeldenSich() async throws {
+        if !langsam { VLCPlaybackEngine.limitsForNewEngines = .init(load: 5, stall: 5) }
+        let loadLimit = VLCPlaybackEngine.limitsForNewEngines.load
+        let seconds: TimeInterval = langsam ? 60 : 12
         let items = start([
             ("haenger-ts", "/hang/ak11.ts"), ("html-ts", "/html/ak11.ts"), ("verzoegert30-ts", "/delay/30/tslive/ak11.ts"),
         ])
@@ -255,17 +261,26 @@ final class B06EngineZustandTests: B06TestCase {
         for (label, e) in items {
             let v = B06Engine.vlcPlayer(e)
             let bytes = mock.connections.filter { $0.path.contains("ak11") && $0.path.contains(label.prefix(4)) }.map(\.bytesSent)
-            B06QA.log("AK-11|\(label)|nach \(Int(seconds))s|zustand=\(B06Engine.name(e.state))|zeiten=\(first[label] ?? [:])|vlcRoh=\(v.map(B06Engine.vlcState) ?? "-")|gesendeteBytes=\(bytes)")
-            XCTAssertNil(failureText(e), label)
+            B06QA.log("AK-11|\(label)|nach \(Int(seconds))s|zustand=\(B06Engine.name(e.state))|zeiten=\(first[label] ?? [:])|vlcRoh=\(v.map(B06Engine.vlcState) ?? "-")|gesendeteBytes=\(bytes)|frist=\(Int(loadLimit))s")
         }
         _ = now
-        XCTAssertEqual(items[0].1.state, .playing, "Hänger gilt als „läuft“")
-        XCTAssertLessThan(first["haenger-ts"]?["playing"] ?? 99, 1.0)
-        XCTExpectFailure("BUG-01 · VLC ohne Daten/HTML/verzögert gilt als „läuft“ bzw. lädt endlos, ohne Meldung – FB-01") {
-            for (label, e) in items where label != "verzoegert30-ts" || langsam {
-                XCTAssertNotNil(failureText(e), "\(label) sollte .failed melden oder eine Zeitgrenze haben")
-            }
+        // Hänger: Ladekreis bis zur Frist, dann „antwortet nicht“ – nie „läuft“
+        XCTAssertNil(first["haenger-ts"]?["playing"], "Hänger gilt nicht mehr als „läuft“")
+        XCTAssertEqual(failureText(items[0].1), VLCPlaybackEngine.Failure.noResponse.message)
+        XCTAssertEqual(first["haenger-ts"]?["failed"] ?? 0, loadLimit, accuracy: 1.5, "Meldung nach der Ladefrist")
+        // HTML statt Video: kein Bild, Meldung sofort
+        XCTAssertNil(first["html-ts"]?["playing"])
+        XCTAssertEqual(failureText(items[1].1), VLCPlaybackEngine.Failure.unplayable.message)
+        XCTAssertLessThan(first["html-ts"]?["failed"] ?? 99, 3.0)
+        if langsam {
+            // Verzögerter Start (30 s) liegt innerhalb der Ladefrist (40 s): spielt danach
+            XCTAssertEqual(items[2].1.state, .playing, "verzögerter Stream spielt nach 30 s")
+            XCTAssertEqual(first["verzoegert30-ts"]?["playing"] ?? 0, 30, accuracy: 5)
+        } else {
+            XCTAssertEqual(failureText(items[2].1), VLCPlaybackEngine.Failure.noResponse.message, "mit 5 s Frist: antwortet nicht")
         }
+        let offen = mock.connections.filter { $0.path.contains("ak11") && $0.closed == nil && !$0.path.contains("verzoegert") }
+        XCTAssertEqual(offen.filter { $0.path.contains("hang") || $0.path.contains("html") }.map(\.path), [], "nach der Meldung keine offene Verbindung")
     }
 
     // MARK: AK-12 ⚠ · VLC: Abbruch mitten im Stream / EC-04 Dateiende
@@ -278,14 +293,14 @@ final class B06EngineZustandTests: B06TestCase {
             B06QA.log("AK-12|\(label)|zustand=\(B06Engine.name(e.state))|zeiten=\(first[label] ?? [:])|vlcRoh=\(v.map(B06Engine.vlcState) ?? "-")|verbindungen=\(mock.connections.filter { $0.path.contains(label.hasPrefix("abbruch") ? "ak12" : "short") }.map { "\($0.id):\($0.closeReason ?? "offen")" })")
         }
         let abort = items[0].1
-        XCTAssertEqual(abort.state, .playing, "Ist: Standbild gilt weiter als „läuft“")
-        XCTAssertNil(first["abbruch-5s"]?["failed"])
-        // EC-04 (VLC-Dateiende): Spec „gelesen: ended → idle → Ladekreis“; ausgeführt: bleibt „läuft“ (Standbild)
-        XCTAssertEqual(items[1].1.state, .playing, "EC-04 Ist: Ende einer TS-Datei über HTTP bleibt .playing")
+        // Behoben (BUG-01): Abbruch mitten im Stream → „Verbindung unterbrochen“, kurz nach dem Ende der Daten
+        XCTAssertEqual(failureText(abort), VLCPlaybackEngine.Failure.interrupted.message)
+        XCTAssertNotNil(first["abbruch-5s"]?["playing"], "lief vorher")
+        XCTAssertEqual(first["abbruch-5s"]?["failed"] ?? 0, 6, accuracy: 3, "Meldung kurz nach dem Abbruch (5 s)")
+        // EC-04 (VLC-Dateiende): bleibt „läuft“ (Standbild) wie das MP4-Ende bei AVKit
+        XCTAssertEqual(items[1].1.state, .playing, "EC-04: Ende einer TS-Datei über HTTP bleibt .playing")
         XCTAssertNil(first["datei-8s"]?["idle"])
-        XCTExpectFailure("BUG-01 · Abbruch eines laufenden TS-Streams bleibt „läuft“ (Standbild, keine Meldung) – FB-01") {
-            XCTAssertNotEqual(abort.state, .playing)
-        }
+        XCTAssertNil(first["datei-8s"]?["failed"])
     }
 
     // MARK: EC-04 · MP4 bis zum Ende (AVKit)
@@ -326,7 +341,8 @@ final class B06EngineZustandTests: B06TestCase {
             B06QA.log("AK-35|\(label)|zustand=\(B06Engine.name(e.state))|zeiten=\(first[label] ?? [:])|vlcRoh=\(v.map(B06Engine.vlcState) ?? "-")|spielt=\(v.map(B06Engine.vlcIsPlaying) ?? false)")
         }
         XCTAssertEqual(items[0].1.state, .playing, "libVLC spielt die lokale Datei aus der Playlist")
-        XCTAssertNil(failureText(items[1].1), "Ist: unbrauchbare Datei erzeugt keine Meldung (FB-01)")
+        // Behoben (BUG-01): eine unbrauchbare Datei endet in einer Meldung; Schema/Ziel bleiben offen (BUG-03)
+        XCTAssertNotNil(failureText(items[1].1), "unbrauchbare Datei erzeugt eine Meldung")
         B06QA.log("AK-35|Prüfungen im Code: nur pathExtension (PlaybackEngine.swift:13-19); kein Schema-, Host- oder Größenfilter; libVLC-Version laut User-Agent VLC/3.0.21 LibVLC/3.0.21")
     }
 }

@@ -25,6 +25,12 @@ extension Color {
     /// (semantisch passend zum Video-Schauen).
     static let playerAccent = Color(light: (239, 68, 68), dark: (248, 113, 113))
 
+    /// Schrift auf einer Fläche in `playerAccent` (gewählter Gruppen-Chip, hervorgehobene Tasten wie „Playlist
+    /// importieren“, „Alle Sender zeigen“, „Erneut versuchen“, „+“), in beiden Modi das Fast-Schwarz der Familie (#120F10,
+    /// wie `--on-accent` der Website im Dunkelmodus). Weiß erreicht auf dem Akzent nur 3,76 : 1 (hell) bzw. 2,77 : 1
+    /// (dunkel); #120F10 erreicht 5,07 : 1 bzw. 6,89 : 1 (B04 · BUG-10, Review R-1, DS-01).
+    static let playerOnAccent = Color(light: (18, 15, 16), dark: (18, 15, 16))
+
     /// App-Hintergrund (warmes Hell-Grau / fast Schwarz).
     static let playerBackground = Color(light: (246, 244, 243), dark: (18, 15, 16))
 

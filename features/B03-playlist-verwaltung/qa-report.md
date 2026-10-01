@@ -177,6 +177,25 @@ Xtream 4,13 s, längste Blockade 0,02 s (vorher 280 s); Löschen nach Aktualisie
 `B03LeistungTests.testAK37_AK38_AktualisierenUndLoeschenBlockierenDenMainThreadNicht` (Standard 1.000/2.000,
 Messlauf `TEST_RUNNER_B03_SIZES=17000`).
 
+**Behoben 2026-09-27:** Reproduktion (Schritte 1–3) erneut ausgeführt mit dem QA-Test (`TEST_RUNNER_B03_SIZES=17000`,
+`B03_KINDS=m3u,xtream`, `B03_RESTART_DELETE=1`; Store-Datei über `AppPersistence.diskContainer`, 17 Favoriten,
+Main-Thread-Wachhund alle 20 ms):
+
+| 17.000 Sender | Release (`-O`, `build/dd-release`), Lauf 1 / Lauf 2 | Debug (`build/dd-test`) | QA 1 Release (vorher) |
+|---|---|---|---|
+| Xtream aktualisieren | 6,43 s / 5,27 s · Blockade **0,00 s / 0,00 s** | 5,26 s · 0,02 s | 280,48 s · 280,38 s |
+| Xtream löschen nach Aktualisieren | 2,48 s / 1,97 s · 0,01 s / 0,00 s | 1,86 s · 0,01 s | 132,60 s |
+| Xtream löschen nach Neustart | 2,26 s / 2,05 s · 0,00 s / 0,01 s | 2,00 s · 0,00 s | 41,31 s |
+| M3U aktualisieren | 5,36 s / 4,94 s · 0,00 s / 0,01 s | 7,51 s · 0,04 s | — |
+| M3U löschen nach Aktualisieren | 1,85 s / 1,69 s · 0,00 s / 0,00 s | 2,51 s · 0,00 s | — |
+| M3U löschen nach Neustart | 1,90 s / 1,87 s · 0,00 s / 0,00 s | 2,17 s · 0,00 s | — |
+
+Favoriten jeweils 17 → 17, danach `ZPLAYLIST=0`, `ZCHANNEL=0`. Längste Blockade über alle Läufe 0,04 s (Debug) bzw. 0,01 s
+(Release), vorher so lang wie der ganze Vorgang. Standardlauf im Gesamtlauf (1.000/2.000 Sender): Aktualisieren 0,30–0,67 s,
+Löschen 0,12–0,29 s, Blockade 0,00–0,01 s. **Korrektur zum Vermerk vom 26.09.:** Die dort genannten Zeiten (Aktualisieren
+4,09 s / 4,13 s, Löschen 1,47–1,53 s, Debug) sind in keinem erhaltenen Protokoll belegt; heute gemessen sind die Werte der
+Tabelle, unter hoher Fremdlast (Last-Mittel 38–177 bei 16 Kernen). Die Blockade ist bestätigt.
+
 ### BUG-02 · Ein Favorit wird beim Aktualisieren zu mehreren — mittel
 
 **Betrifft:** AK-10 (FB-02)
@@ -198,6 +217,11 @@ Favorit wie vorher, bevorzugt derselbe Sender (gleiche Stream-Adresse), dann gle
 Nachweis: `B03AktualisierenTests.testAK10_EinFavoritBleibtEinFavorit` (4 → 4, Kanal X 1 → 1, Xtream 1 → 1),
 `B03ReparaturTests.testBUG02_FavoritenUebernahmeRegeln`, B05 `testAK15_…` (M3U und Xtream), `B05TabTests.testEC01_…`.
 
+**Behoben 2026-09-27:** Reproduktion (Schritte 1–3) erneut ausgeführt (`testAK10_EinFavoritBleibtEinFavorit`, Gesamtlauf):
+M3U **4 → 4** Favoriten, genau „Alpha", „Film HD", „Gamma", „Sport HD" (vorher 7 mit „sport hd", „Film SD", „Film 4K"); zwei
+gleichnamige „Kanal X": 1 → 1 (vorher 2); Xtream „Sport 1": 1 → 1 (vorher 3). AK-09 unverändert erfüllt (Wiedererkennung über
+tvg-ID bzw. Namen: „Alpha Neu", „BETA"; Xtream „Kanal A (neu)", „Kanal B"). Der Vermerk vom 26.09. stimmt.
+
 ### BUG-03 · Ladeindikator nur für eine Playlist — mittel
 
 **Betrifft:** AK-13 (FB-03)
@@ -215,6 +239,12 @@ einen, obwohl die zweite noch 25 s läuft
 **Behoben 2026-09-26:** `PlaylistsView` führt eine Menge laufender Aktualisierungen (`refreshingIDs`) statt eines
 Werts; jede Karte zeigt ihren Indikator bis zum eigenen Ende (je Fenster, EC-09 unverändert). Nachweis:
 `B03OberflaecheTests.testAK12_AK13_EC09_…` (beide laufen → 2 Indikatoren, erste fertig → 1).
+
+**Behoben 2026-09-27:** Reproduktion (zwei Remote-Playlists, Anbieter antwortet verzögert, beide nacheinander aktualisieren)
+im echten Fenster erneut ausgeführt: solange beide laufen **2** Indikatoren (vorher 1), nach dem Ende der M3U-Aktualisierung
+**1** Indikator, während Xtream noch läuft (vorher 0); danach 0, kein Alert; zweites Fenster ohne Indikator, zeigt sofort
+„QA Eins, 9 Sender" (EC-09). Abweichung zur Reproduktion: Der Anbieter antwortet nach 45 s / 55 s statt 25 s / 50 s (Begründung
+im Build-Bericht, Annahme 20). Der Vermerk vom 26.09. stimmt.
 
 ### BUG-04 · Keine Sperre gegen mehrfaches Aktualisieren derselben Playlist — mittel
 
@@ -236,6 +266,12 @@ dieselbe Playlist kehrt ohne Wirkung und ohne Anfrage zurück) und im Fenster ei
 3 Anfragen), `B03OberflaecheTests.testAK14_Angriff3_AktualisierenWaehrendDesLaufsGesperrt` (Eintrag gesperrt,
 10 Wahlen → 3 Anfragen; Anbieterverzögerung im Test verlängert, damit alle Wahlen in den Lauf fallen, und 0,3 s
 zwischen zwei Wahlen, damit das Menü neu gezeichnet ist).
+
+**Behoben 2026-09-27:** Reproduktion (zehnmal „Aktualisieren" über das Kontextmenü einer Xtream-Playlist, Anfragen am Anbieter
+zählen) im echten Fenster erneut ausgeführt: 10 Wahlen in 25,97 s → **3 Anfragen** mit Passwort, d. h. genau ein Aktualisieren
+(vorher 30 von 30); M3U: der Eintrag ist ab der zweiten Wahl gesperrt (`isEnabled` true, false, false), **1 Abruf** (vorher 3),
+7 Zeilen, Favorit bleibt, kein Alert. Über den Dienst gleichzeitig gestartet: M3U 2× → 1 Abruf, Xtream 3× → 3 Anfragen, Ergebnis
+unverändert richtig (7 bzw. 4 Sender). Der Vermerk vom 26.09. stimmt.
 
 ### BUG-05 · Wiedergabe, Multiview und Senderliste halten gelöschte bzw. ersetzte Sender — mittel
 
@@ -268,6 +304,17 @@ Nachweis: `B03OberflaecheTests.testAK27_EC05_…`, `testAK28_PlayerUndMultiviewE
 `B03AktualisierenTests.testAK29_…MitZugangsdaten`, `B03ReparaturTests.testBUG05_…`. Laufende Kacheln nach dem
 **Aktualisieren** bleiben bei der alten Adresse (B08 BUG-05, → spec.md OF-09).
 
+**Behoben 2026-09-27 (Löschen und „Erneut versuchen"; laufende Wiedergabe beim Aktualisieren nicht, wartet auf OF-09):**
+Reproduktion (Schritte 1–3) im echten Fenster erneut ausgeführt: Nach dem Löschen **0** offene Verbindungen (vorher 4 mit
+`/live/qa-user/<pass>/…`), Multiview-Kacheln 0, Engine beendet (`idle`, pausiert), Datenbank 0; offene Senderliste zeigt
+Fenstertitel „Playlist gelöscht" und „Diese Playlist wurde gelöscht. Ihre Sender sind nicht mehr verfügbar." statt „· 9 SENDER",
+Chips und „Diese Playlist enthält keine Sender." „Erneut versuchen" nach dem Löschen: Xtream meldet „Die Playlist dieses
+Senders wurde gelöscht." ohne neue Anfrage, M3U lädt nichts nach (2 → 2 Abrufe, vorher 2 → 4). Nach dem **Aktualisieren** ruft
+„Erneut versuchen" `/live/qa-user/<pass>/102.m3u8` **mit** Zugangsdaten ab (vorher `/live/102.m3u8` ohne), ein gehaltener Sender
+löst nach dem Aktualisieren weiter mit Zugangsdaten auf (`testAK29_…MitZugangsdaten`). Offen bleibt wie am 26.09. vermerkt:
+Player und Kacheln, die beim Aktualisieren **laufen**, spielen die alte Adresse weiter (`B08SessionTests.testAK28_…` behält
+sein `XCTExpectFailure`, schlägt darin weiter fehl) – Produktentscheidung OF-09. Der Vermerk vom 26.09. stimmt.
+
 ### BUG-06 · M3U-Adresse samt Token und Senderliste überstehen das Löschen im HTTP-Plattencache — mittel
 
 **Betrifft:** AK-33 (FB-06); Angriff 8
@@ -288,6 +335,12 @@ das Lesen), `:270-278` (`delete` räumt keinen Cache)
 Zugangsdaten) und die Cookies des Hosts. Nachweis: `B03LoeschenTests.testAK33_M3UAdresseUndAntwortNichtImPlattencache`
 (auf einen Temp-Ordner umgelenkter Cache: 0 Einträge, 0 Bytes vor und nach dem Löschen).
 
+**Behoben 2026-09-27:** Reproduktion (M3U mit `?token=` importieren und aktualisieren, löschen, Cache abfragen) erneut
+ausgeführt: vor und nach dem Löschen liefert `URLCache.shared` **keine** Antwort, 0 Bytes im Cache-Ordner (vorher 1 Schlüssel
+mit Token, 1 Antwortkörper mit allen Sendernamen). Abweichung zur Reproduktion: Statt `~/Library/Caches/<Bundle-ID>/Cache.db`
+der installierten App wird ein auf einen Temp-Ordner umgelenkter `URLCache.shared` abgefragt (der Test-Host teilt die
+Bundle-ID mit der echten App, deren Cache nicht gelesen wird). Der Vermerk vom 26.09. stimmt.
+
 ### BUG-07 · Namen und Stream-Adressen gelöschter Sender bleiben als Bytes in der Datenbankdatei — niedrig
 
 **Betrifft:** AK-34 (FB-07)
@@ -307,6 +360,11 @@ läuft nur nach der Zugangsdaten-Umstellung
 `wal_checkpoint(TRUNCATE)` über `AppPersistence.compactStore`, abseits des Main-Actors). Nachweis:
 `B03LoeschenTests.testAK34_KeineBytesGeloeschterSenderInDerDatei` (M3U-/Xtream-Namen und Adressen 0 nach Neustart),
 `B03ReparaturTests.testBUG09_…`. Beim Aktualisieren wird nicht verdichtet (→ spec.md OF-10).
+
+**Behoben 2026-09-27:** Reproduktion (Schritte 1–3) erneut ausgeführt, im Gesamtlauf und zusätzlich fünfmal hintereinander
+(`-test-iterations 5`), weil der Rest in der QA nicht deterministisch war: jedes Mal M3U-Sendernamen **0**, Stream-Adressen
+**0**, Xtream-Sendernamen **0** (vorher 14 / 14 / 40), Playlistname und Token 0, freie Seiten 0 – offen wie nach „Neustart".
+Der Vermerk vom 26.09. stimmt.
 
 ### BUG-08 · Verwaister Schlüsselbund-Eintrag; Fehler beim Löschen werden verschwiegen — niedrig
 
@@ -329,6 +387,13 @@ geschrieben und nur, wenn die Playlist dann noch existiert und nicht gerade gel�
 `beginDelete`); `PlaylistsView` zeigt Fehler beim Löschen an (kein `try?` mehr, eigener Text, wenn nur der
 Schlüsselbund-Eintrag bleibt). Nachweis: `B03AktualisierenTests.testAK35_…OhneVerwaistenEintrag`. Ältere verwaiste
 Einträge entfernt nur „Alle Daten entfernen" (→ spec.md OF-08).
+
+**Behoben 2026-09-27:** Reproduktion (Altbestand mit Zugangsdaten in `sourceURL`, Anbieter 1,5 s verzögert, „Aktualisieren",
+nach 0,6 s „Löschen", Schlüsselbund lesen) erneut ausgeführt (`testAK35_…OhneVerwaistenEintrag`): direkt nach dem Löschen kein
+Eintrag und **auch nach dem Ende des Aktualisierens keiner** (vorher Eintrag mit Passwort), 0 Playlists, 0 Sender. Der zweite
+Teil (Fehler beim Löschen werden angezeigt) ist im Code nachvollzogen (`PlaylistsView.delete` ohne `try?`,
+`PlaylistImporter.DeleteError`), ein verweigerter Schlüsselbund-Zugriff (EC-08) ist wie in der QA nicht ausgeführt. Der Vermerk
+vom 26.09. stimmt.
 
 ### BUG-09 · Kein Weg, alle Daten zu entfernen; App löschen entfernt nicht alles — mittel
 
@@ -353,6 +418,15 @@ Einstellungen der App. Nachweis: `B03LoeschenTests.testAK36_WegAlleDatenZuEntfer
 `B03ReparaturTests.testBUG09_AlleDatenEntfernen` (alles leer, 0 Bytes, Blockade 0,00 s). Website-Text gehört zu B10
 (Teil 2); Ort und Umfang → spec.md OF-07.
 
+**Behoben 2026-09-27 (App-Teil; Website-Aussage offen bei B10):** Reproduktion (Hauptmenü und Übersicht nach einem Weg
+durchsuchen, Speicherorte bestimmen) erneut ausgeführt: Das Hauptmenü (116 Einträge) enthält **„Mika+Player › Alle Daten
+entfernen …"** (vorher kein Eintrag). Der Weg selbst (`testBUG09_AlleDatenEntfernen`, Temp-Datenbank): danach 0 Playlists,
+0 Sender, 0 Favoriten, 0 Einträge im Schlüsselbund-Testdienst, Ordner `Beiseitegelegt` entfernt, HTTP-Cache, Einstellung und
+Cookies des Loaders (Test-Ziele) leer, 0 Namensbytes in der Datei, Blockade 0,00 s; offene Ansichten wurden vorher benachrichtigt. Nicht ausgeführt: der
+Menüeintrag an der installierten App (würde deren Daten löschen) und der iOS-Eintrag im Menü „…" (nur gebaut). Das Löschen der App
+selbst entfernt weiterhin nicht alles; die Aussage „deleting the app removes all of it" (`web/app/privacy/page.tsx`) gehört zu
+B10. Der Vermerk vom 26.09. stimmt.
+
 ### BUG-10 · Löschen ohne Rückfrage und ohne Rückgängig — niedrig
 
 **Betrifft:** AK-22 (OF-01)
@@ -367,6 +441,11 @@ Einstellungen der App. Nachweis: `B03LoeschenTests.testAK36_WegAlleDatenZuEntfer
 
 **Nicht behoben:** wartet auf die Nutzerentscheidung OF-01 (Rückfrage oder Rückgängig). `testAK22_…` behält
 `XCTExpectFailure`.
+
+**Nicht behoben (geprüft 2026-09-27):** wartet weiter auf OF-01. Reproduktion im Gesamtlauf erneut ausgeführt: „Löschen" im
+Menü löscht sofort (Datenbank 0/0, Schlüsselbund-Eintrag weg), kein Sheet, `undo:` behandelt niemand; die Erwartung in
+`XCTExpectFailure` schlägt weiter fehl („Rückfrage oder Rückgängig"). Neu seit der Reparatur: Das Löschen läuft über den
+zentralen Weg (Wiedergabe endet, Datei wird verdichtet) – an der fehlenden Rückfrage ändert das nichts.
 
 ### BUG-11 · Kürzere Liste ersetzt ohne Rückfrage, Favoriten kommen nicht zurück — niedrig
 
@@ -384,6 +463,9 @@ Einstellungen der App. Nachweis: `B03LoeschenTests.testAK36_WegAlleDatenZuEntfer
 **Nicht behoben:** wartet auf die Nutzerentscheidung OF-02 (Warnung bei kürzerer Liste, Favoriten aufbewahren).
 `testAK11_…` behält `XCTExpectFailure`.
 
+**Nicht behoben (geprüft 2026-09-27):** wartet weiter auf OF-02. Reproduktion im Gesamtlauf erneut ausgeführt: 7 → 1 → 7 Sender,
+Favoriten 4 → 0 → 0, keine Meldung; die Erwartung in `XCTExpectFailure` schlägt weiter fehl.
+
 ### BUG-12 · „Zugangsdaten fehlen“ führt nur über Löschen, das alle Favoriten kostet — niedrig
 
 **Betrifft:** AK-21 (OF-06)
@@ -399,6 +481,10 @@ Einstellungen der App. Nachweis: `B03LoeschenTests.testAK36_WegAlleDatenZuEntfer
 
 **Nicht behoben:** wartet auf die Nutzerentscheidung OF-06 (Zugangsdaten neu eingeben statt löschen).
 `testAK21_…` behält `XCTExpectFailure`.
+
+**Nicht behoben (geprüft 2026-09-27):** wartet weiter auf OF-06. Reproduktion im Gesamtlauf erneut ausgeführt: Meldung „Die
+Zugangsdaten dieser Xtream-Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren.", nach Löschen und
+Neu-Import Favoriten 2 → 0; die Erwartung in `XCTExpectFailure` schlägt weiter fehl.
 
 ## Hinweise (kein Kriterium durchgefallen)
 

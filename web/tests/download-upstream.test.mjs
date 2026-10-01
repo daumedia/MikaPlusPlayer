@@ -1,5 +1,7 @@
 // B10 · Website — Upstream-Verhalten von /download und Changelog-Rendering am echten Build (QA-Durchlauf 1, 2026-09-15;
-// angepasst bei der Reparatur Teil 1, 2026-09-16: BUG-04, BUG-08, BUG-10 behoben, BUG-06 Prüfsumme)
+// angepasst bei der Reparatur Teil 1, 2026-09-16: BUG-04, BUG-08, BUG-10 behoben, BUG-06 Prüfsumme;
+// Reparatur Teil 2, 2026-09-30: AK-34 prüft die Download-Beschriftung statt jedes „Version 1.1“ im Text,
+// weil die Seitentexte seit BUG-02/BUG-07 bewusst das Release v1.1 benennen)
 //
 // Ausführen (keine zusätzliche Abhängigkeit, dauert ca. 30–60 s, braucht installierte node_modules):
 //   cd web && node --test --test-timeout=300000 tests/download-upstream.test.mjs
@@ -247,7 +249,12 @@ test("AK-34 (BUG-08 behoben): GitHub antwortet nicht mit 200 → /download leite
   const buttons = [...home.matchAll(/<a href="([^"]+)"[^>]*>(?:(?!<\/a>)[\s\S])*Download for macOS<\/a>/g)].map((m) => m[1]);
   assert.deepEqual(buttons, [LATEST_RELEASE_PAGE, LATEST_RELEASE_PAGE], "Startseite (beim Build ohne Release-Daten) verlinkt die Release-Seite");
   assert.match(home, /Latest release on GitHub/);
-  assert.ok(!home.includes("v1.1/MikaPlusPlayer-v1.1.dmg") && !home.includes("Version 1.1"), "kein fest verdrahtetes v1.1");
+  // Die Seitentexte beschreiben seit Teil 2 bewusst das Release v1.1 („Version 1.1 still pauses …“). Fest verdrahtet
+  // wäre ein v1.1-DMG-Link oder die Download-Beschriftung „Version 1.1 · <Größe> · macOS …“ ohne Release-Daten.
+  assert.ok(!home.includes("v1.1/MikaPlusPlayer-v1.1.dmg"), "kein fest verdrahteter v1.1-DMG-Link");
+  const homeText = home.replace(/<!-- -->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  assert.ok(!/Version 1\.1 · /.test(homeText), "keine fest verdrahtete v1.1-Beschriftung unter der Schaltfläche");
+  assert.ok((homeText.match(/Latest release on GitHub · macOS 14 Sonoma or later/g) ?? []).length >= 2, "beide Beschriftungen ohne Version");
 });
 
 test("AK-34/FB-21 (BUG-04 behoben): im Fehlerfall höchstens eine Upstream-Anfrage je Zeitfenster; gleichzeitige Aufrufe teilen sich eine", async (t) => {

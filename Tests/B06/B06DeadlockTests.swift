@@ -88,9 +88,10 @@ final class B06DeadlockTests: B06TestCase {
             Self.fortschritt.tick("Runde \(runde) geladen")
             await B06QA.spin(1.5)
             let zustaende = gruppe.map { B06Engine.name($0.state) }
-            for e in gruppe { e.pause() }                           // wie `onDisappear`
-            if mitStop {                                            // wie das Aufräumen der QA (stop auf allen Playern)
-                for e in gruppe { if let v = B06Engine.vlcPlayer(e) { _ = v.perform(NSSelectorFromString("stop")) } }
+            if mitStop {                                            // Build B06 · BUG-02/07: wie Verlassen bzw. Multiview schließen
+                for e in gruppe { e.stop() }
+            } else {                                                // Engines ohne stop() fallen lassen (Abbau über deinit)
+                for e in gruppe { e.pause() }
             }
             for w in fenster { B06UI.close(w) }
             fenster.removeAll()
@@ -99,6 +100,8 @@ final class B06DeadlockTests: B06TestCase {
             await B06QA.spin(0.5)
             B06QA.log("BUG-07|Runde \(runde) ok|zustände=\(zustaende)|offeneVerbindungen=\(mock.connections.filter { $0.closed == nil }.count)")
         }
-        B06QA.log("BUG-07|alle \(runden) Runden ohne Hänger durchgelaufen (kein Deadlock in diesem Lauf)")
+        let lc = VLCPlayerLifecycle.shared
+        B06QA.log("BUG-07|alle \(runden) Runden ohne Hänger durchgelaufen (kein Deadlock in diesem Lauf)|abbauten=\(lc.completedTeardowns)|zurückgestellteErzeugungen=\(lc.deferredCreations)|höchstensGleichzeitig=\(lc.maxConcurrentTeardowns)")
+        XCTAssertLessThanOrEqual(lc.maxConcurrentTeardowns, 1)
     }
 }

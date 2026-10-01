@@ -369,9 +369,36 @@ nach der QA von B05.
   ein anderes Gerät mitzunehmen (AK-21)?
 - **OF-06** · Soll die VoiceOver-Beschriftung des Sterns deutsch sein („Favorit") statt des englischen
   Systemnamens „Favourite" (AK-05)? Gleiche Lage wie B07 OF-03 und B04 OF-03.
+  *Stand 2026-09-30 (sdd-build, Reparatur BUG-04, nicht beantwortet):* Der Fehlerauftrag verlangte
+  deutsche Aktionsnamen; gebaut ist „Favorit hinzufügen" bzw. „Favorit entfernen" je Zustand, dazu der
+  Wert „Favorit" an der Karte, und das Stern-Symbol des Leerzustands ist für VoiceOver ausgeblendet
+  (Begründung: App-Oberfläche nur Deutsch laut PRD; wie `PlayerView`, das Symbole aus demselben Grund
+  ausblendet). Der ⊞-Button daneben heißt weiter „Rectangle Split Two By Two" (B08). Zur Bestätigung
+  durch den Nutzer.
 - **OF-07** · Die Website sagt „Star a channel anywhere" (`web/content/features.ts:18`). Einen Stern gibt
   es in der Senderliste und im Tab, nicht im Player und nicht im Multiview. Soll er dort auch hin, oder
   ist „anywhere" so gemeint?
+
+Ergänzt beim Bau der Reparatur (sdd-build, 2026-09-30). Nicht gebaut, weil Produktentscheidung:
+
+- **OF-08** · Soll der Favoriten-Tab Senderlogos überhaupt laden – oder nur schon geladene aus dem
+  Arbeitsspeicher zeigen, abschaltbar bzw. erst nach Zustimmung (BUG-03, AK-25; gleiche Frage für die
+  Senderliste: B04 OF-07)? Seit der B04-Reparatur lädt der Tab über denselben `ChannelLogoLoader` wie die
+  Senderliste: neutrale Kopfzeilen (`User-Agent: Mozilla/5.0`, `Accept-Language: *`), keine Weiterleitung
+  auf fremde Hosts, kein Plattencache, erneutes Öffnen ohne erneute Anfrage (belegt:
+  `B05ReparaturTests.testBUG03_…`). Beim ersten Öffnen erfährt jeder Logo-Host aber weiter die IP-Adresse
+  und – weil der Tab genau die Favoriten zeigt – die Favoritenliste. Ganz vermeiden ließe sich das nur
+  ohne Anfrage (Platzhalter bzw. nur Logos, die die Senderliste in dieser Sitzung schon geladen hat) oder
+  mit einem Schalter, den es mangels Einstellungen noch nicht gibt; beides verändert sichtbar, was der Tab
+  zeigt. Die FAQ „Nowhere" und die PRD-Begründung der Stufe B stimmen bis dahin nicht (BF-20, B10).
+- **OF-09** · Sollen Steuerzeichen in Senderdaten weiter gefasst entfernt werden (BUG-09)? Gebaut ist:
+  Beim Anlegen und Aktualisieren (M3U und Xtream) entfallen U+0000–U+001F und U+007F in Name, Gruppe und
+  `tvg-id`, außer Tabulator und Zeilenumbrüchen (sichtbar; ein Zeilenumbruch in einer Gruppe ist laut B04
+  AK-11 eine eigene Gruppe). Nicht entfernt werden die Steuerzeichen U+0080–U+009F (entstehen beim
+  Latin-1-Rückfall aus Umlauten, B02 EC-07/EC-08, B02 OF-06) und Formatzeichen wie U+202E (B02 EC-06). Ein
+  Favorit, der **vor** der Reparatur einen Namen oder eine `tvg-id` mit NUL-Zeichen hatte, ist in der
+  Datei schon gekürzt gespeichert und geht beim ersten Aktualisieren danach einmal verloren (vorher ging
+  er bei jedem Aktualisieren verloren); andere Steuerzeichen in Altbeständen erkennt der Schlüssel wieder.
 
 ## Fehlbestand
 

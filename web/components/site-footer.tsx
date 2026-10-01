@@ -11,8 +11,8 @@ export function SiteFooter() {
             <Wordmark />
           </p>
           <p className="max-w-md text-sm text-ink-soft">
-            An open-source IPTV player. It plays the playlist you bring and is not affiliated
-            with any provider.
+            An IPTV player with its source on GitHub. It plays the playlist you bring and is not
+            affiliated with any provider.
           </p>
         </div>
 

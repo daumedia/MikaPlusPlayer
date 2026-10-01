@@ -379,8 +379,26 @@ final class B05Window {
     }
 
     func close() {
+        if let sheet = window.attachedSheet { window.endSheet(sheet) }
         window.orderOut(nil)
         window.close()
+    }
+
+    /// Beschriftungen eines Alerts an diesem Fenster (SwiftUI `.alert` erscheint unter macOS als Sheet); leer ohne Alert.
+    var alertTexts: [String] {
+        guard let sheet = window.attachedSheet else { return [] }
+        if let v = sheet.contentView { _ = v.accessibilityHitTest(NSPoint(x: sheet.frame.midX, y: sheet.frame.midY)) }
+        return B05AX.all(sheet).map(B05AX.label).filter { !$0.isEmpty }
+    }
+
+    /// Bestätigt den Alert an diesem Fenster mit „OK“. Rückgabe: Taste gefunden und der Alert danach geschlossen.
+    @discardableResult
+    func confirmAlert(wait: TimeInterval = 0.6) -> Bool {
+        guard let sheet = window.attachedSheet,
+              let ok = B05AX.all(sheet).first(where: { B05AX.role($0) == "AXButton" && B05AX.label($0) == "OK" }) else { return false }
+        _ = B05AX.press(ok)   // NSAlert-Tasten melden das Drücken nicht immer zurück; maßgeblich ist, ob der Alert zu ist
+        B05QA.spin(wait)
+        return window.attachedSheet == nil
     }
 
     func wake() { _ = hosting.accessibilityHitTest(NSPoint(x: window.frame.midX, y: window.frame.midY)) }

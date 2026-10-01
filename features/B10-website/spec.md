@@ -340,6 +340,30 @@ durch den Nutzer:*
   Release-Seite, im Fehlerfall höchstens eine Anfrage je 5-Minuten-Fenster. OF-01 ist damit gegenstandslos. Die
   Kriterien neu zu fassen ist Spec-Pflege und nicht Aufgabe von `sdd-build`. — `sdd-qa` B10 Durchlauf 2.
 
+*Eingetragen bei `sdd-build` B10 Teil 2 (2026-09-30), ohne Rückfrage entschieden (Zielmodus) — zur Bestätigung durch den
+Nutzer:*
+
+- **OF-08** · Nach BUG-02 und BUG-07 beschreiben AK-06, AK-11, AK-18, AK-22 und AK-24 wörtlich Texte, die es nicht mehr
+  gibt: Fußzeile „An open-source IPTV player“, acht Funktionen samt „Picture in Picture“, „Seventeen thousand channels,
+  still usable“, „The Mac app also checks this list for itself through Sparkle“, sechs Tasten mit P, Erststart-Schritte
+  mit „Mika+Player“ statt `MikaPlusPlayer` und „Last updated 30 July 2026“. Die Datenschutzseite hat zusätzlich den
+  Abschnitt „Removing everything“ und den Punkt „Stream servers.“. Die Kriterien neu zu fassen ist Spec-Pflege. —
+  `sdd-qa` B10 Durchlauf 2.
+- **OF-09** · Lizenz (FB-13): Die Fußzeile sagt jetzt „An IPTV player with its source on GitHub“ statt „open-source“,
+  weil das Repository keine Lizenz hat. Soll eine Open-Source-Lizenz vergeben werden, und welche? Erst danach darf
+  „open-source“ zurück auf die Seite. — Nutzer.
+- **OF-10** · Die Texte der Website sind an das Release v1.1 gebunden („version 1.1“, Messwerte, Datenschutzseite mit
+  `default.store`, Klartext und Sparkle-Verhalten von v1.1). Die Download-Schaltfläche folgt dagegen automatisch dem
+  neuesten GitHub-Release. Mit dem nächsten Release (B01-Schlüsselbund, eigener Speicherort, Cache-Reparaturen,
+  B02-Doppelklick, B04-Tempo, B07-Bild-in-Bild) werden viele Aussagen falsch, sobald das DMG online ist. Soll der
+  Release-Ablauf (B09, `scripts/release.sh`) einen Schritt „Website-Aussagen gegen das neue Release prüfen“ bekommen
+  und das Release erst nach der Website-Anpassung veröffentlicht werden? Muster „Außendarstellung läuft dem Code voraus“
+  in `befunde.md`. — Nutzer, vor dem nächsten Release.
+- **OF-11** · Soll die Website bekannte Fehler von v1.1 nennen, die keine Werbeaussage widerlegen, etwa den Absturz im
+  Multiview-Raster beim Schließen oder Entfernen (B08 BUG-01, kritisch) oder den eingefrorenen Import großer Listen
+  jenseits der genannten Zahlen? Teil 2 nennt nur Einschränkungen, die einer Aussage der Seite widersprachen: das
+  schwarze große Bild bei MPEG-TS im Multiview (B08 BUG-02) und die Dauer bei 17.000 Sendern. — Nutzer.
+
 ## Fehlbestand
 
 Nicht vorhanden oder nicht zutreffend, aus Code, Build oder Artefakt belegt. Kein Kriterium — `sdd-qa` prüft nichts

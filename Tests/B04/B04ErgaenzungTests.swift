@@ -55,23 +55,30 @@ final class B04ErgaenzungTests: B04TestCase {
         B04QA.evidence("AK-31-33-sql.txt", "Echtes SQL der ChannelListView (CoreData SQLDebug, stderr des Test-Hosts)\n  "
                        + belege.joined(separator: "\n  ") + "\n  Ausführungszeiten: " + zeiten.suffix(8).joined(separator: " · "))
 
-        // AK-31: Filter und Sortierung in SQL
+        // AK-31: Filter und Sortierung in SQL. Seit B04 · BUG-12/-13 (Build 2026-09-29): über die indizierte Beziehung
+        // (`t0.ZPLAYLIST = ?`), die Trefferliste nur als Kennungen (`SELECT 0, t0.Z_PK`), im Hintergrund.
         let geordnet = "ORDER BY t0.ZNAME COLLATE NSCollateLocaleSensitive"
-        XCTAssertTrue(sqlOeffnen.contains { $0.contains("t0.ZPLAYLISTID = ?") && $0.contains(geordnet) },
-                      "Öffnen: Trefferliste mit Filter auf die Playlist und Sortierung in SQLite")
-        XCTAssertTrue(sqlChip.contains { $0.contains("t0.ZGROUP = ?") && $0.contains(geordnet) }, "Chip: ZGROUP in SQL")
+        let beziehung = "t0.ZPLAYLIST IS NOT NULL AND  t0.ZPLAYLIST = ?"
+        XCTAssertTrue(sqlOeffnen.contains { $0.hasPrefix("SELECT 0, t0.Z_PK FROM ZCHANNEL t0 WHERE") && $0.contains(beziehung) && $0.contains(geordnet) },
+                      "Öffnen: Kennungen mit Filter über die Beziehung und Sortierung in SQLite")
+        XCTAssertFalse((sqlOeffnen + sqlChip + sqlSucheChip + sqlSuche).contains { $0.contains("ZPLAYLISTID = ?") },
+                       "die unindizierte Kopie playlistID filtert nicht mehr")
+        XCTAssertTrue(sqlChip.contains { $0.contains(beziehung) && $0.contains("t0.ZGROUP = ?") && $0.contains(geordnet) }, "Chip: ZGROUP in SQL")
         XCTAssertTrue(sqlSucheChip.contains { $0.contains("NSCoreDataStringSearch( t0.ZNAME, ?, 417, 1)")
                           && $0.contains("t0.ZGROUP = ?") && $0.contains(geordnet) }, "Suche + Chip in SQL")
         XCTAssertTrue(sqlSuche.contains { $0.contains("NSCoreDataStringSearch( t0.ZNAME, ?, 417, 1)")
                           && !$0.contains("ZGROUP = ?") }, "nur Suche in SQL")
+        // Karten holen nur ihren eigenen Sender (sichtbarer Bereich), nicht die ganze Liste
+        let einzeln = (sqlOeffnen + sqlChip).filter { $0.contains("WHERE  t0.Z_PK = ?  LIMIT 1") }
+        B04QA.log("AK-31|kartenAbfragen=\(einzeln.count)")
+        XCTAssertFalse(einzeln.isEmpty, "Karten holen ihren Sender einzeln")
 
-        // AK-33: die Chip-Berechnung (ohne ORDER BY) liest alle Spalten, obwohl nur `group` angefordert ist
-        let chipAbfrage = sqlOeffnen.filter { $0.contains("t0.ZPLAYLISTID = ?") && !$0.contains("ORDER BY") }
+        // AK-33: Die Chip-Berechnung (ohne ORDER BY) läuft im Hintergrund (BUG-14, Teil Main-Thread: behoben, Blockade in
+        // B04LeistungTests). SwiftData liest dabei weiter alle Spalten, obwohl nur `group` angefordert ist.
+        let chipAbfrage = sqlOeffnen.filter { $0.contains(beziehung) && !$0.contains("ORDER BY") }
         B04QA.log("AK-33|chipAbfrage=\(chipAbfrage)")
         XCTAssertFalse(chipAbfrage.isEmpty, "Chip-Berechnung als eigene Abfrage ohne Sortierung")
-        XCTAssertTrue(chipAbfrage.allSatisfy { $0.contains("t0.ZSTREAMURL") && $0.contains("t0.ZLOGOURL") && $0.contains("t0.ZNAME") },
-                      "Ist-Stand: alle Spalten einschließlich Stream- und Logo-Adresse")
-        XCTExpectFailure("BUG-14 · Chip-Berechnung lädt alle Sender mit allen Spalten (propertiesToFetch wirkungslos, FB-09)") {
+        XCTExpectFailure("BUG-14 (Teil Spalten) · SwiftData liest trotz propertiesToFetch alle Spalten – ohne Schemaänderung nicht lösbar (spec OF-08)") {
             XCTAssertFalse(chipAbfrage.contains { $0.contains("ZSTREAMURL") }, "nur die Spalte ZGROUP wird gelesen")
         }
     }
@@ -87,12 +94,22 @@ final class B04ErgaenzungTests: B04TestCase {
             }
             return out
         }
+        func schrift(_ name: NSAppearance.Name) -> NSColor {
+            var out = NSColor.white
+            NSAppearance(named: name)!.performAsCurrentDrawingAppearance {
+                out = NSColor(Color.playerOnAccent).usingColorSpace(.sRGB) ?? .white
+            }
+            return out
+        }
         let hell = aufgeloest(.aqua), dunkel = aufgeloest(.darkAqua)
+        let schriftHell = schrift(.aqua), schriftDunkel = schrift(.darkAqua)
         func rgb(_ c: NSColor) -> String {
             String(format: "(%.0f, %.0f, %.0f)", c.redComponent * 255, c.greenComponent * 255, c.blueComponent * 255)
         }
-        let kHell = B04Shot.contrast(.white, hell), kDunkel = B04Shot.contrast(.white, dunkel)
-        B04QA.log("AK-13|akzentAusCode|hell=\(rgb(hell)) kontrast=\(String(format: "%.2f", kHell))|dunkel=\(rgb(dunkel)) kontrast=\(String(format: "%.2f", kDunkel))")
+        // Seit B04 · BUG-10 (Build 2026-09-29): Schrift `playerOnAccent` statt Weiß.
+        let kHell = B04Shot.contrast(schriftHell, hell), kDunkel = B04Shot.contrast(schriftDunkel, dunkel)
+        let weissHell = B04Shot.contrast(.white, hell), weissDunkel = B04Shot.contrast(.white, dunkel)
+        B04QA.log("AK-13|akzentAusCode|hell=\(rgb(hell)) schrift=\(rgb(schriftHell)) kontrast=\(String(format: "%.2f", kHell)) (weiß \(String(format: "%.2f", weissHell)))|dunkel=\(rgb(dunkel)) schrift=\(rgb(schriftDunkel)) kontrast=\(String(format: "%.2f", kDunkel)) (weiß \(String(format: "%.2f", weissDunkel)))")
 
         // Aus der Aufnahme: gewählter Chip in beiden Erscheinungsbildern
         let (c, _) = try fileContainer("ak13k")
@@ -100,28 +117,30 @@ final class B04ErgaenzungTests: B04TestCase {
             .init("Alpha Sport", "Sport"), .init("Beta News", "News"),
         ])
         var gerendert: [String] = []
+        var gerenderteKontraste: [Double] = []
         for (name, label) in [(NSAppearance.Name.aqua, "hell"), (NSAppearance.Name.darkAqua, "dunkel")] {
             let w = window(c, size: CGSize(width: 700, height: 420), appearance: name)
             w.open(pl, wait: 1.5)
             XCTAssertTrue(w.pressChip("Sport", wait: 1.0))
-            w.shot("AK-13-chip-\(label)")
+            w.shot("BUILD-AK-13-chip-\(label)")
             let chip = try XCTUnwrap(w.chips.first { $0.title == "Sport" })
             let r = w.inWindow(chip.frame)
             let (flaeche, schrift) = B04Shot.fillAndText(w.window, in: r)
             let k = B04Shot.contrast(flaeche, schrift)
+            gerenderteKontraste.append(k)
             gerendert.append("\(label): Fläche \(rgb(flaeche)), Schrift \(rgb(schrift)), \(String(format: "%.2f", k)) : 1")
             B04QA.log("AK-13|gerendert|\(gerendert.last!)")
             w.close()
         }
-        B04QA.evidence("AK-13-kontrast.txt",
-                       "Akzentfarbe aus PlayerTheme (aufgelöst): hell \(rgb(hell)) → Weiß \(String(format: "%.2f", kHell)) : 1, "
-                       + "dunkel \(rgb(dunkel)) → Weiß \(String(format: "%.2f", kDunkel)) : 1 (15-pt-Text medium, WCAG AA 4,5 : 1)\n  "
+        B04QA.evidence("BUILD-AK-13-kontrast.txt",
+                       "Akzentfarbe aus PlayerTheme (aufgelöst): hell \(rgb(hell)) → Schrift \(rgb(schriftHell)) \(String(format: "%.2f", kHell)) : 1, "
+                       + "dunkel \(rgb(dunkel)) → Schrift \(rgb(schriftDunkel)) \(String(format: "%.2f", kDunkel)) : 1 (15-pt-Text medium, WCAG AA 4,5 : 1)\n  "
                        + "Gerendert (Fensteraufnahme, gewählter Chip „Sport“): " + gerendert.joined(separator: " · "))
-        XCTAssertEqual(rgb(hell), "(239, 68, 68)")
-        XCTAssertEqual(rgb(dunkel), "(248, 113, 113)")
-        XCTExpectFailure("BUG-10 · gewählter Chip mit zu wenig Kontrast (FB-11, DS-01)") {
-            XCTAssertGreaterThanOrEqual(min(kHell, kDunkel), 4.5, "Weiß auf Akzent erreicht 4,5 : 1")
-        }
+        XCTAssertEqual(rgb(hell), "(239, 68, 68)", "Akzent unverändert")
+        XCTAssertEqual(rgb(dunkel), "(248, 113, 113)", "Akzent unverändert")
+        XCTAssertGreaterThanOrEqual(min(kHell, kDunkel), 4.5, "Schrift auf Akzent erreicht 4,5 : 1 (aus dem Code)")
+        XCTAssertEqual(gerenderteKontraste.count, 2)
+        XCTAssertGreaterThanOrEqual(gerenderteKontraste.min() ?? 0, 4.5, "gerendert in beiden Modi mindestens 4,5 : 1")
     }
 
     // MARK: - Angriff 4 (Logo-Adressen im Systemprotokoll)

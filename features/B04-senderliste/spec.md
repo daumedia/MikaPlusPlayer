@@ -406,6 +406,28 @@ nach der QA von B04.
 - **OF-06** · Sollen Logo-Adressen mit `file://` (und anderen Nicht-HTTP-Schemata) geladen werden
   (EC-05)? Eine fremde Playlist kann so lokale Bilddateien anzeigen lassen; ein Abfluss nach
   außen entsteht dabei nicht.
+  *Stand 2026-09-29 (sdd-build, Reparatur BUG-04 bis BUG-07, nicht beantwortet):* Der gemeinsame
+  Logo-Loader lädt nur noch `http`/`https`; `file:`, `data:`, `javascript:` und andere Schemata
+  zeigen sofort den Platzhalter, ohne Anfrage – gleiche Regel wie beim Import (B02 · BUG-05, B02 OF-12).
+  Neue Importe speichern solche Adressen ohnehin nicht mehr. Zur Bestätigung durch den Nutzer.
+
+Ergänzt beim Bau der Reparatur (sdd-build, 2026-09-29). Nicht gebaut, weil Produktentscheidung bzw.
+Datenmodelländerung außerhalb des Fehlerauftrags:
+
+- **OF-07** · Sollen Senderlogos abschaltbar sein oder nur mit Zustimmung geladen werden – und sollen
+  nur `https`-Logos geladen werden (BUG-06, AK-25 bis AK-27; B05 BUG-03 für den Favoriten-Tab)? Heute
+  (nach der Reparatur) erfährt jeder Logo-Host weiter die IP-Adresse und – über die Auswahl der
+  angefragten Logos – was der Nutzer sucht, filtert oder als Favorit hat; `http://`-Logos gehen
+  unverschlüsselt (ATS `NSAllowsArbitraryLoads` bleibt, weil auch Streams ohne `https` laufen).
+  Behoben sind nur die Teile ohne spürbare Produktfolge: neutrale Kopfzeilen, keine Weiterleitung auf
+  fremde Hosts, kein Plattencache. Ein Schalter „Senderlogos laden" (Einstellungen fehlen der App bisher,
+  DS-08) oder „nur HTTPS" würde bei vielen Anbietern alle Logos zu Platzhaltern machen.
+- **OF-08** · Soll die Gruppenliste einer Playlist beim Import bzw. Aktualisieren gespeichert werden
+  (neues Feld an `Playlist`, Schema-Version 2 mit Migrationsstufe), damit die Chip-Leiste nur noch eine
+  Zeile statt aller Sender liest (BUG-14, AK-33)? Nach der Reparatur läuft die Berechnung im Hintergrund
+  und blockiert die Oberfläche nicht mehr; SwiftData liest dabei aber weiter alle Spalten aller Sender
+  (`propertiesToFetch` wirkt nicht, belegt mit SQLDebug), bei 17.000 Sendern rund 0,2 s Rechenzeit je
+  Öffnen und Aktualisieren. Ein Index (`#Index`) wäre erst ab iOS 18/macOS 15 möglich.
 
 ## Fehlbestand
 

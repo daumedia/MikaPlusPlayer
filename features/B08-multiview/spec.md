@@ -342,12 +342,45 @@ von B08.
   (AK-07)? Deckungsgleich mit B01 OF-11.
 - **OF-03** · Soll die App das Verbindungslimit des Abos kennen (`user_info.max_connections` liefert das Panel
   bei der Anmeldung mit) und vor bzw. beim Überschreiten warnen? Die fehlende Rückmeldung selbst ist FB-06.
+  *Stand 2026-09-28 (Build B08, BUG-06):* Die Rückmeldung ist gebaut – eine abgelehnte Kachel zeigt die Meldung der
+  Engine und, solange ein anderer Stream desselben Anbieters (Host und Port) läuft, zusätzlich „Möglicherweise erlaubt
+  dein Abo nicht so viele Streams gleichzeitig.". `max_connections` wird **nicht** ausgewertet, die Zahl der Kacheln
+  nicht begrenzt und vorab nicht gewarnt; das bleibt die Entscheidung dieser Frage. Ob der Hinweis auch erscheinen
+  soll, wenn der Player im Hauptfenster die Verbindung belegt (die Kachel sieht ihn nicht), gehört mit dazu.
 - **OF-04** · Soll das Multiview Tasten haben (z. B. 1–4 für den Fokus, Leertaste, M), oder zumindest keinen
   Warnton erzeugen (AK-29)? Die Tastenliste der Website nennt kein Fenster und lässt offen, ob sie hier gilt.
 - **OF-05** · Soll der Ton-Fokus auch den Player im Hauptfenster einschließen (AK-18, AK-05)? Die Website
   verspricht „Only the focused stream plays sound, so four matches at once do not turn into noise".
 - **OF-06** · Soll eine gescheiterte Kachel „Erneut versuchen" anbieten wie der Player (AK-25, AK-26)?
 - **OF-07** · Soll das gewählte Layout (und ggf. die Belegung) einen Neustart überdauern (AK-24)?
+
+Aus der Reparatur (Build B08, 2026-09-28) — ohne Rückfrage entschieden, zur Bestätigung durch den Nutzer:
+
+- **OF-08** · Lage der kleinen Kacheln im Fokus-Layout (BUG-04): Sie beginnen jetzt **46 pt** unter dem oberen
+  Inhaltsrand (8 pt Innenabstand + 30 pt X-Knopf + 8 pt) statt 16 pt, damit das X des großen Streams frei liegt;
+  rechts bleiben 16 pt, dazwischen 8 pt. AK-10 nennt noch „16 pt vom Rand". Bestätigen oder eine andere Lösung wählen
+  (z. B. X des großen Streams links oder unten).
+- **OF-09** · Umschalter „Fokus | Raster" mit weniger als zwei Streams (BUG-01): Ist „Raster" gewählt, bleibt er aktiv
+  (Weg zurück zu „Fokus"); ist „Fokus" gewählt, bleibt er wie bisher gesperrt. AK-12 nennt noch „deaktiviert, solange
+  weniger als zwei Streams laufen". Alternative: beim Unterschreiten von zwei Streams automatisch auf „Fokus" – dann
+  ginge die Wahl „Raster" beim Entfernen verloren.
+- **OF-10** · Mindestgröße des Fensters (BUG-10): Inhalt mindestens **640 × 483 pt** (mit Titelleiste 640 × 535 pt) –
+  so passen drei kleine Kacheln samt Abständen unter die Leiste des großen Streams. Bestätigen.
+- **OF-11** · Frist für hängende AVKit-Kacheln (BUG-07, HLS-Teil): Eine Kachel, deren Wiedergabezeit **30 s** lang
+  nicht weiterläuft (z. B. Live-HLS, dessen Segmente mit 404 enden – AVKit gibt dann nie auf), zeigt „Die Verbindung
+  zum Sender wurde unterbrochen." und lädt nicht mehr nach. 30 s wie die Hängerfrist der VLC-Engine (B06 OF-08).
+  Gilt **nur für Kacheln**; der Player (B06) behält das Verhalten von AVKit (Standbild ohne Ende). Soll der Player
+  dieselbe Frist bekommen, und passt die Länge?
+- **OF-12** · Abgeblendeter ⊞ (BUG-03): Der Knopf ist bei vollem Multiview nur noch abgeblendet (30 % Deckkraft) und
+  wirkungslos, nicht mehr „deaktiviert" – sonst fiele der Klick an die Karte. Bedienungshilfen melden ihn damit nicht
+  mehr als deaktiviert; der Tooltip „Multiview voll (max. 4)" bleibt. Reicht das, oder soll der Zustand zusätzlich
+  angesagt werden?
+- **OF-13** · Ladeanzeige der Kachel (B06 OF-12): Kacheln zeigen weiter den grauen System-Ladekreis, der Player seit
+  B06 BUG-09 einen weißen. Nicht Teil des Fehlerauftrags, nicht geändert.
+- **OF-14** · Laufende Kacheln beim **Aktualisieren** der Playlist (AK-28, BUG-05 Teil Aktualisieren): Sie spielen die
+  alte Adresse weiter, derselbe Sender lässt sich mit neuer Adresse ein zweites Mal hinzufügen. Ob laufende Streams
+  umschalten, enden oder bleiben, entscheidet B03 OF-09 (dort für Player und Multiview gemeinsam); die Dublette hängt
+  zusätzlich an OF-01. Das Löschen der Playlist beendet die Kacheln seit der B03-Reparatur (AK-27).
 
 ## Fehlbestand
 

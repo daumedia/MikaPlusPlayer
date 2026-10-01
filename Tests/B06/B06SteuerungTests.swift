@@ -115,9 +115,9 @@ final class B06SteuerungTests: B06TestCase {
         }
     }
 
-    // MARK: EC-05 / AK-29 (Engine) · Pause während VLC noch lädt
+    // MARK: EC-05 / AK-29 (Engine) · Pause während VLC noch lädt (behoben in Build B06 · BUG-02)
 
-    func testEC05_PauseWaehrendVLCLaedtWirktNicht() async throws {
+    func testEC05_PauseWaehrendVLCLaedtBrichtLadenAb() async throws {
         let url = mock.url("/delay/3/tslive/ec05.ts")
         let e = mutedEngine(for: url)
         host(e, index: 0)
@@ -130,12 +130,19 @@ final class B06SteuerungTests: B06TestCase {
         let now = Date()
         let conn = mock.connections(containing: "ec05").last
         let last4 = conn?.bytes(from: now.addingTimeInterval(-4), to: now) ?? 0
-        B06QA.log("EC-05|+8s|isPaused=\(e.isPaused)|state=\(B06Engine.name(e.state))|\(raw(e))|vlcIsPlaying=\(B06Engine.vlcPlayer(e).map(B06Engine.vlcIsPlaying) ?? false)|bytesLetzte4s=\(last4)|rate/s=\(Int(mock.media.tsRate))")
-        XCTAssertTrue(e.isPaused, "App hält den Stream für pausiert (Knopf zeigt ▶)")
-        XCTExpectFailure("BUG-02 · pause() während VLC lädt wirkt nicht – Stream läuft mit voller Datenrate (FB-02, EC-05)") {
-            XCTAssertEqual(B06Engine.vlcPlayer(e).map(B06Engine.vlcIsPlaying), false)
-            XCTAssertLessThan(last4, Int(mock.media.tsRate))
-        }
+        let vlcPlaying = B06Engine.vlcPlayer(e).map(B06Engine.vlcIsPlaying) ?? false
+        B06QA.log("EC-05|+8s|isPaused=\(e.isPaused)|state=\(B06Engine.name(e.state))|\(raw(e))|vlcIsPlaying=\(vlcPlaying)|bytesLetzte4s=\(last4)|rate/s=\(Int(mock.media.tsRate))|verbindung=\(conn?.closed == nil ? "offen" : "zu")")
+        XCTAssertTrue(e.isPaused, "Knopf zeigt ▶")
+        // Behoben: die Pause bricht das Laden ab – VLC startet danach nicht mehr, es fließen keine Daten
+        XCTAssertFalse(vlcPlaying)
+        XCTAssertLessThan(last4, Int(mock.media.tsRate))
+        XCTAssertNotNil(conn?.closed, "Verbindung zu")
+        // Fortsetzen lädt neu und spielt
+        e.play()
+        let t = await B06Engine.wait(8) { e.state == .playing }
+        B06QA.log("EC-05|play() nach Pause beim Laden|playingNach=\(t.map(B06QA.f1) ?? "-")s|anfragen=\(mock.requests(containing: "ec05").count)")
+        XCTAssertNotNil(t, "play() setzt fort (neues Laden)")
+        XCTAssertFalse(e.isPaused)
     }
 
     // MARK: AK-28 (Engine) · pausierte Engines laden weiter

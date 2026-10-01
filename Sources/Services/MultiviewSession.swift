@@ -33,6 +33,10 @@ final class MultiviewSession {
     /// Obergrenze gleichzeitiger Streams (2×2-Raster).
     static let maxSlots = 4
 
+    /// B08 · BUG-07: Frist ohne Fortschritt für AVKit-Kacheln (wie die Hängerfrist der VLC-Engine, 30 s). Danach zeigt
+    /// die Kachel „Die Verbindung zum Sender wurde unterbrochen." statt eines Standbilds. Nur Tests setzen kürzere Werte.
+    static var stallLimitForNewTiles: TimeInterval = 30
+
     /// Ein Multiview-Platz: Sender + die dafür erzeugte Engine.
     struct Slot: Identifiable {
         let id = UUID()
@@ -40,6 +44,9 @@ final class MultiviewSession {
         let engine: any PlaybackEngine
         /// Playlist des Senders beim Hinzufügen – zum Beenden, wenn sie gelöscht wird (B03 · BUG-05).
         var playlistID: UUID?
+        /// Anbieter der Stream-Adresse (Host und Port, ohne Pfad und Zugangsdaten) – für den Hinweis auf das
+        /// Verbindungslimit des Abos (B08 · BUG-06).
+        var provider: String?
     }
 
     private(set) var slots: [Slot] = []
@@ -84,21 +91,23 @@ final class MultiviewSession {
         // B01 · BUG-01: Xtream-Adressen erst hier mit Zugangsdaten aus dem Schlüsselbund.
         guard let url = try? StreamURLResolver.playableURL(for: channel) else { return }
         let engine = PlaybackEngineFactory.engine(for: url)
+        (engine as? AVKitPlaybackEngine)?.limitStalls(to: Self.stallLimitForNewTiles)
         let isFirst = slots.isEmpty
         engine.load(url)
         // Sollwert sofort setzen – bei VLC greift er, sobald der Audiokanal nach
         // `.playing` existiert (der Delegate ruft `applyAudio()` erneut).
         engine.setMuted(!isFirst)
-        slots.append(Slot(channel: channel, engine: engine, playlistID: channel.playlistID ?? channel.playlist?.id))
+        slots.append(Slot(channel: channel, engine: engine, playlistID: channel.playlistID ?? channel.playlist?.id,
+                          provider: Self.provider(of: url)))
         if isFirst { focusedIndex = 0 }
         enforceAudioFocus()
     }
 
-    /// Entfernt einen Slot. Stoppt die Engine **explizit** (pause), bevor die Referenz
-    /// fällt – die Engines haben keinen `deinit`/`stop`, sonst liefe Audio weiter.
+    /// Entfernt einen Slot. Beendet die Engine **explizit** (`stop`), bevor die Referenz fällt: Verbindung zu,
+    /// VLC-Player geordnet abgebaut (B06 · BUG-02/BUG-07).
     func remove(_ slotID: UUID) {
         guard let index = slots.firstIndex(where: { $0.id == slotID }) else { return }
-        slots[index].engine.pause()
+        slots[index].engine.stop()
         slots.remove(at: index)
         // Fokus dem gleichen Stream nachführen: Entfernen VOR dem fokussierten
         // verschiebt diesen um eine Position nach unten.
@@ -114,11 +123,24 @@ final class MultiviewSession {
         enforceAudioFocus()
     }
 
-    /// Stoppt alle Engines und leert die Session (z. B. beim Schließen des Fensters).
+    /// Stoppt alle Engines und leert die Session (z. B. beim Schließen des Fensters). Die VLC-Player werden dabei
+    /// nacheinander abgebaut, nicht gleichzeitig (B06 · BUG-07).
     func clear() {
-        slots.forEach { $0.engine.pause() }
+        slots.forEach { $0.engine.stop() }
         slots.removeAll()
         focusedIndex = 0
+    }
+
+    /// B08 · BUG-06: Spielt gerade ein anderer Stream desselben Anbieters? Scheitert eine Kachel in dieser Lage, hat der
+    /// Anbieter vermutlich keine weitere gleichzeitige Verbindung zugelassen (Verbindungslimit des Abos).
+    func otherStreamIsPlaying(onProviderOf slot: Slot) -> Bool {
+        guard let provider = slot.provider else { return false }
+        return slots.contains { $0.id != slot.id && $0.provider == provider && $0.engine.state == .playing }
+    }
+
+    private static func provider(of url: URL) -> String? {
+        guard let host = url.host?.lowercased(), !host.isEmpty else { return nil }
+        return url.port.map { "\(host):\($0)" } ?? host
     }
 
     /// Stellt sicher, dass nur der fokussierte Stream Ton hat.

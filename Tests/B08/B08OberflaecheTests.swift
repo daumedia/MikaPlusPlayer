@@ -75,9 +75,9 @@ final class B08OberflaecheTests: B08UITestCase {
         XCTAssertTrue(labels.contains("Kein Stream im Multiview"))
     }
 
-    // MARK: AK-04 · AK-05 ⚠ · AK-21 · EC-06 — voll in allen Fenstern; Klick auf den grauen ⊞ öffnet den Player
+    // MARK: AK-04 · AK-05 · AK-21 · EC-06 — voll in allen Fenstern; Klick auf den grauen ⊞ bewirkt nichts (BUG-03 behoben)
 
-    func testAK04_AK05_AK21_EC06_VollInAllenFensternKlickAufGrauOeffnetPlayer() async throws {
+    func testAK04_AK05_AK21_EC06_VollInAllenFensternKlickAufGrauBewirktNichts() async throws {
         let (_, app) = try await resetAppSession()
         let chans = (1...4).map { ("Kanal \($0)", "/tslive/ak05-\($0).ts") } + [("Kanal 5 HLS", "/livehls/ak05-5/index.m3u8")]
         let p = try playlist("QA Voll", chans, favorites: true)
@@ -115,17 +115,14 @@ final class B08OberflaecheTests: B08UITestCase {
         let playerMuted = newPlayers.map(\.isMuted)
         let req5 = server.requests(containing: "ak05-5").count - before5
         B08QA.log("AK-05|klick auf grauen ⊞|fenstertitel \(titleBefore) → \(a.title)|slots=\(app.slots.count)|neue AVPlayer=\(newPlayers.count) isMuted=\(playerMuted) volume=\(newPlayers.map(\.volume))|anfragen Kanal 5=\(req5)|TS-Verbindungen=\(tsOpen)|multiview fokussiert muted=\(focusedEngine.isMuted)")
-        B08UI.shot(a, "AK-05-klick-auf-grauen-plus-oeffnet-player")
+        B08UI.shot(a, "BUILD-AK-05-klick-auf-grauen-plus-bewirkt-nichts")
         XCTAssertEqual(app.slots.count, 4, "kein fünfter im Multiview")
         XCTAssertFalse(focusedEngine.isMuted, "im Multiview hat der fokussierte Stream weiter Ton")
-        XCTAssertEqual(a.title, "Kanal 5 HLS", "Ist: der Player dieses Senders öffnet sich")
-        XCTAssertGreaterThan(req5, 0, "Ist: fünfte Verbindung zum Anbieter")
-        XCTAssertEqual(playerMuted, [false], "Ist: Player mit Ton (Zustand; hörbar ist nichts: keine Tonspur, Lautstärke 0)")
-        XCTExpectFailure("BUG-03 · Klick auf den abgeblendeten ⊞ öffnet den Player mit Ton und fünfter Verbindung (FB-03)") {
-            XCTAssertEqual(a.title, titleBefore, "erwartet: voll heißt, es passiert nichts")
-            XCTAssertEqual(req5, 0)
-        }
-        B08UI.close(a)   // Player verlassen (pausiert)
+        // Seit B08 · BUG-03 (Build 2026-09-28): voll heißt, der Klick bewirkt nichts – kein Player, keine fünfte Verbindung.
+        XCTAssertEqual(a.title, titleBefore, "kein Player – die Liste bleibt stehen")
+        XCTAssertEqual(req5, 0, "keine fünfte Verbindung zum Anbieter")
+        XCTAssertEqual(playerMuted, [], "kein weiterer Player (mit Ton)")
+        B08UI.close(a)
         await B08QA.spin(0.5)
     }
 
@@ -200,7 +197,11 @@ final class B08OberflaecheTests: B08UITestCase {
         for t in tiles {
             XCTAssertEqual(t.maxX, content.maxX - 16, accuracy: 1.5, "16 pt vom rechten Rand")
         }
-        XCTAssertEqual(tiles[0].maxY, content.maxY - 16, accuracy: 1.5, "16 pt vom oberen Rand")
+        // Seit B08 · BUG-04 (Build 2026-09-28): die kleinen Kacheln beginnen unterhalb der Leiste des großen Streams
+        // (8 pt Innenabstand + 30 pt X + 8 pt), damit dessen X frei liegt – vorher 16 pt vom oberen Rand.
+        XCTAssertEqual(tiles[0].maxY, content.maxY - MultiviewMetrics.smallTileTopInset, accuracy: 1.5, "unterhalb der Leiste des großen Streams")
+        XCTAssertEqual(MultiviewMetrics.smallTileTopInset, 46)
+        XCTAssertLessThan(tiles[0].maxY, big.minY, "erste kleine Kachel unterhalb des großen X")
         XCTAssertEqual(tiles[0].minY - tiles[1].maxY, 8, accuracy: 1.5, "8 pt Abstand")
         XCTAssertEqual(tiles[1].minY - tiles[2].maxY, 8, accuracy: 1.5)
         // Etiketten: Reihenfolge des Hinzufügens, Lautsprecher-Symbol
@@ -234,7 +235,7 @@ final class B08OberflaecheTests: B08UITestCase {
         return Double(red) / Double(w * h)
     }
 
-    // MARK: AK-11 · AK-12 · AK-13 ⚠ — Raster-Geometrie, Umschalter, Raster mit einem Stream
+    // MARK: AK-11 · AK-12 · AK-13 — Raster-Geometrie, Umschalter, Raster mit einem Stream (BUG-01 behoben)
 
     func testAK11_AK12_AK13_RasterUmschalterUndEinzelnerStreamImRaster() async throws {
         let (w, app) = try await resetAppSession()
@@ -304,37 +305,34 @@ final class B08OberflaecheTests: B08UITestCase {
         XCTAssertLessThan(icons.first?.midY ?? 9999, content.minY + tileH, "Lautsprecher-Etikett wandert zur Kachel unten links")
         XCTAssertLessThan(icons.first?.midX ?? 9999, content.minX + tileW)
 
-        // AK-13: im Raster auf einen Stream reduzieren – nur über sichere Schritte (4→3 per X, dann Fokus, 3→2, Raster, 2→1 per X)
-        if let x = closeButtons(w).map({ ($0, B08UI.frame($0)) }).min(by: { ($0.1.minY, $0.1.minX) < ($1.1.minY, $1.1.minX) }) {
-            await humanClick(w, screen: NSPoint(x: x.1.midX, y: x.1.midY))          // 4 → 3 im Raster (laut Spec kein Absturz)
+        // AK-13 / BUG-01 (Build 2026-09-28): im Raster per X auf einen Stream reduzieren – jeder Schritt ohne Absturz,
+        // auch 3 → 2 (vorher Absturz „Index out of range“); jeweils das X der Kachel oben links.
+        var counts: [Int] = []
+        for _ in 0..<3 {
+            if let x = closeButtons(w).map({ ($0, B08UI.frame($0)) }).min(by: { ($0.1.minY, $0.1.minX) < ($1.1.minY, $1.1.minX) }) {
+                await humanClick(w, screen: NSPoint(x: x.1.midX, y: x.1.midY))
+            }
+            await B08QA.spin(0.8)
+            counts.append(app.slots.count)
         }
-        await B08QA.spin(0.8)
-        XCTAssertEqual(app.slots.count, 3, "4 → 3 im Raster per X")
-        app.layout = .focus                                                       // 3 → 2 im Raster stürzt ab (AK-23): im Fokus-Layout entfernen
-        await B08QA.spin(0.3)
-        app.remove(app.slots[app.slots.count - 1].id)
-        await B08QA.spin(0.5)
-        await clickSegment(w, 1)
-        if app.layout != .grid { app.layout = .grid }
-        await B08QA.spin(0.5)
-        if let x = closeButtons(w).map({ ($0, B08UI.frame($0)) }).max(by: { $0.1.midX < $1.1.midX }) {
-            await humanClick(w, screen: NSPoint(x: x.1.midX, y: x.1.midY))          // 2 → 1 im Raster (laut Spec kein Absturz)
-        }
-        await B08QA.spin(1)
+        XCTAssertEqual(counts, [3, 2, 1], "4 → 3 → 2 → 1 im Raster per X")
         pickerLog.append("Raster mit 1: \(pickerState(w))")
-        B08UI.shot(w, "AK-13-raster-ein-stream-umschalter-gesperrt")
-        B08QA.log("AK-12|umschalter=\(pickerLog)|AK-13|slots=\(app.slots.count) layout=\(app.layout.rawValue)")
-        XCTAssertEqual(app.slots.count, 1)
+        B08UI.shot(w, "BUILD-AK-13-raster-ein-stream-umschalter-frei")
         XCTAssertEqual(app.layout, .grid, "Raster bleibt eingestellt")
-        XCTAssertEqual(picker(w)?.isEnabled, false, "Umschalter gesperrt – zurück zu „Fokus“ erst ab zwei Streams")
         XCTAssertEqual(picker(w)?.selectedSegment, 1)
-        XCTExpectFailure("BUG-01 · Mit einem Stream im Raster kommt der Nutzer nicht zurück zu „Fokus“; jeder weitere Schritt (X, Schließen) stürzt ab (FB-01)") {
-            XCTAssertEqual(picker(w)?.isEnabled, true, "erwartet: ein Weg zurück, der nicht abstürzt")
+        XCTAssertEqual(picker(w)?.isEnabled, true, "BUG-01: mit einem Stream im Raster führt der Umschalter zurück zu „Fokus“")
+        await clickSegment(w, 0)
+        if app.layout != .focus, let pk = picker(w) {
+            pk.selectedSegment = 0
+            _ = pk.sendAction(pk.action, to: pk.target)
+            await B08QA.spin(0.5)
         }
-        // Kein Absturz im Test: Layout programmatisch zurück (für den Nutzer nicht möglich)
-        app.layout = .focus
-        viaClick = true
+        pickerLog.append("nach „Fokus“: \(pickerState(w))")
+        B08QA.log("AK-12|umschalter=\(pickerLog)|AK-13|slots=\(app.slots.count) layout=\(app.layout.rawValue)|X-Schritte=\(counts)")
+        XCTAssertEqual(app.layout, .focus, "zurück zu „Fokus“")
+        XCTAssertEqual(picker(w)?.isEnabled, false, "im Fokus-Layout mit einem Stream gesperrt (AK-12)")
         _ = viaClick
+        viaClick = true
     }
 
     // MARK: AK-12 — Layout bleibt über Schließen/Öffnen (nur ohne Streams erreichbar, sonst AK-23)
@@ -354,9 +352,9 @@ final class B08OberflaecheTests: B08UITestCase {
         app.layout = .focus
     }
 
-    // MARK: AK-14 · AK-15 ⚠ — Fokuswechsel per Klick; VLC-Hauptbild schwarz, HLS korrekt
+    // MARK: AK-14 · AK-15 — Fokuswechsel per Klick; großes Bild bei VLC und HLS (BUG-02 behoben)
 
-    func testAK14_AK15_FokuswechselVLCHauptbildSchwarzHLSKorrekt() async throws {
+    func testAK14_AK15_FokuswechselVLCUndHLSHauptbildSichtbar() async throws {
         let (w, app) = try await resetAppSession()
         w.setFrame(NSRect(x: 320, y: 165, width: 1280, height: 720), display: true)
         let region = CGRect(x: 0.04, y: 0.35, width: 0.5, height: 0.6)   // Hauptbild ohne Kacheln oben rechts und ohne Etikett
@@ -399,16 +397,14 @@ final class B08OberflaecheTests: B08UITestCase {
         let vlc = results["VLC"]!, hls = results["HLS"]!
         XCTAssertLessThan(vlc[0], 0.2, "VLC: vor dem Wechsel Bild da")
         XCTAssertLessThan(hls.dropFirst().prefix(4).max() ?? 1, 0.2, "HLS: nach dem Wechsel Bild da")
-        XCTAssertLessThan(vlc.last ?? 1, 0.2, "VLC: nach Raster und zurück wieder Bild")
-        XCTAssertGreaterThan(vlc[1...5].min() ?? 0, 0.95, "Ist: VLC-Hauptbild nach dem Fokuswechsel schwarz (1–15 s, nach Größenänderung)")
-        XCTExpectFailure("BUG-02 · Nach dem Fokuswechsel bleibt das Hauptbild bei VLC schwarz (FB-02)") {
-            XCTAssertLessThan(vlc[1...5].max() ?? 1, 0.2)
-        }
+        XCTAssertLessThan(vlc.last ?? 1, 0.2, "VLC: nach Raster und zurück Bild")
+        // Seit B08 · BUG-02 (Build 2026-09-28): das große Bild zeigt nach dem Fokuswechsel den neuen VLC-Stream
+        XCTAssertLessThan(vlc[1...5].max() ?? 1, 0.2, "VLC-Hauptbild nach dem Fokuswechsel sichtbar (1–15 s, nach Größenänderung)")
     }
 
-    // MARK: AK-16 ⚠ — X des großen Streams liegt unter der ersten kleinen Kachel
+    // MARK: AK-16 — X des großen Streams liegt frei (BUG-04 behoben)
 
-    func testAK16_XDesGrossenStreamsVerdeckt() async throws {
+    func testAK16_XDesGrossenStreamsErreichbar() async throws {
         let (w, app) = try await resetAppSession()
         w.setFrame(NSRect(x: 320, y: 165, width: 1280, height: 720), display: true)
         add(app, channel("Groß", "/tslive/ak16a.ts")); add(app, channel("Klein", "/tslive/ak16b.ts"))
@@ -416,28 +412,16 @@ final class B08OberflaecheTests: B08UITestCase {
         let xs = closeButtons(w).map { ($0, B08UI.frame($0)) }.sorted { $0.1.midX > $1.1.midX }
         let bigX = xs[0], smallX = xs[1]
         let smallTile = tileRect(fromX: smallX.1, size: CGSize(width: 240, height: 135))
-        let covered = smallTile.contains(NSPoint(x: bigX.1.midX, y: bigX.1.midY))
-        B08QA.log("AK-16|großes X=\(bigX.1)|erste kleine Kachel=\(smallTile)|X-Mitte liegt in der Kachel=\(covered)")
-        XCTAssertTrue(covered)
-        var foci: [Int] = [app.focusedIndex]
-        for _ in 0..<6 {
-            let f = B08UI.frame(closeButtons(w).map { $0 }.max { B08UI.frame($0).midX < B08UI.frame($1).midX }!)
-            await humanClick(w, screen: NSPoint(x: f.midX, y: f.midY))
-            foci.append(app.focusedIndex)
-        }
-        B08UI.shot(w, "AK-16-grosses-x-verdeckt")
-        B08QA.log("AK-16|6 Klicks auf das große X|fokus=\(foci)|slots=\(app.slots.map(\.channel.name))")
-        XCTAssertEqual(app.slots.count, 2, "Ist: der Klick auf das große X entfernt nichts (ein freies X reagiert auf denselben Klick, AK-08)")
-        B08QA.log("AK-16|Hinweis: Fokus-Umschalten durch den Klick nicht beobachtbar – Tipp-Gesten reagieren nur bei aktiver App (aktiv=\(NSApp.isActive))|hit=\(B08UI.hitView(w, at: w.convertPoint(fromScreen: NSPoint(x: bigX.1.midX, y: bigX.1.midY))))")
-        XCTExpectFailure("BUG-04 · X des großen Streams ist mit der Maus nicht erreichbar (FB-04)") {
-            XCTAssertEqual(app.slots.count, 1, "erwartet: X entfernt den großen Stream")
-        }
-        // Gegenprobe: per Accessibility (VoiceOver-Weg) ist das X erreichbar
-        let big = closeButtons(w).max { B08UI.frame($0).midX < B08UI.frame($1).midX }!
-        let pressed = B08UI.press(big)
-        await B08QA.spin(0.8)
-        B08QA.log("AK-16|Accessibility-Druck auf großes X|ausgeführt=\(pressed)|slots=\(app.slots.map(\.channel.name))")
-        XCTAssertEqual(app.slots.count, 1, "per Accessibility entfernt das X den großen Stream")
+        let covered = smallTile.intersects(bigX.1)
+        B08QA.log("AK-16|großes X=\(bigX.1)|erste kleine Kachel=\(smallTile)|X von der Kachel verdeckt=\(covered)")
+        // Seit B08 · BUG-04 (Build 2026-09-28): die kleinen Kacheln beginnen unterhalb der Leiste – das X liegt frei.
+        XCTAssertFalse(covered, "großes X von keiner kleinen Kachel verdeckt")
+        let focusedBefore = app.focusedIndex
+        await humanClick(w, screen: NSPoint(x: bigX.1.midX, y: bigX.1.midY))
+        B08UI.shot(w, "BUILD-AK-16-grosses-x-entfernt")
+        B08QA.log("AK-16|Mausklick auf das große X|fokus vorher=\(focusedBefore)|slots=\(app.slots.map(\.channel.name))|hit=\(B08UI.hitView(w, at: w.convertPoint(fromScreen: NSPoint(x: bigX.1.midX, y: bigX.1.midY))))")
+        XCTAssertEqual(app.slots.map(\.channel.name), ["Klein"], "ein Mausklick auf das große X entfernt den großen Stream")
+        XCTAssertFalse(app.slots[0].engine.isMuted, "der nachrückende Stream hat Ton (AK-17)")
     }
 
     // MARK: AK-18 — Player im Hauptfenster und Multiview haben beide Ton (OF-05)
@@ -584,7 +568,9 @@ final class B08OberflaecheTests: B08UITestCase {
         XCTAssertTrue(labels.contains("The requested URL was not found on this server."))
         XCTAssertTrue(labels.contains("Could not connect to the server."))
         XCTAssertEqual(leaks, [], "weder Adresse noch Benutzername oder Passwort")
-        XCTAssertGreaterThanOrEqual(busy, 1, "404 TS: Ladeanzeige statt Fehler")
+        // Seit B06 · BUG-01 (Build 2026-09-27): die VLC-Kachel mit 404 zeigt die Fehleransicht statt der Ladeanzeige
+        XCTAssertTrue(labels.contains(VLCPlaybackEngine.Failure.cannotOpen.message), "404 TS: Meldung")
+        XCTAssertEqual(busy, 0, "404 TS: keine Ladeanzeige mehr")
         await safeClear(app)
         // AK-31: Anbieterlimit 1 – eine Kachel spielt, drei zeigen die Ladeanzeige (erst, wenn die alte Verbindung zu ist)
         _ = await B08QA.wait(5) { self.server.openStreamConnections(containing: "/live/").isEmpty }
@@ -597,14 +583,17 @@ final class B08OberflaecheTests: B08UITestCase {
         B08UI.shot(w, "AK-31-anbieterlimit-eine-verbindung")
         B08QA.log("AK-31|UI|ladeanzeigen=\(busy31)|fehlermeldungen=\(labels31.filter { $0.contains("fehlgeschlagen") }.count)|\(B08Engine.describe(app))")
         XCTAssertEqual(app.slots.first?.engine.state, .playing, "die erste Kachel spielt")
-        XCTAssertEqual(busy31, 3, "drei Kacheln: Ladeanzeige")
-        XCTAssertEqual(labels31.filter { $0.contains("fehlgeschlagen") }.count, 0, "Ist: keine Meldung")
+        // Seit B06 · BUG-01: die drei abgelehnten Kacheln melden sich (403 → „… der Zugang wurde abgelehnt.“)
+        XCTAssertEqual(busy31, 0, "keine Ladeanzeige ohne Ende")
+        XCTAssertEqual(labels31.filter { $0.contains("fehlgeschlagen") }.count, 3, "drei Meldungen")
+        // Seit B08 · BUG-06 (Build 2026-09-28): die abgelehnten Kacheln erklären das Verbindungslimit auf Deutsch
+        XCTAssertEqual(labels31.filter { $0 == MultiviewTile.connectionLimitHint }.count, 3, "Hinweis auf das Verbindungslimit")
         app.layout = .focus
     }
 
-    // MARK: EC-10 · EC-11 — kleines Fenster, langer Name
+    // MARK: EC-10 · EC-11 — kleinstes Fenster (BUG-10 behoben), langer Name
 
-    func testEC10_EC11_KleinesFensterUndLangerName() async throws {
+    func testEC10_EC11_KleinstesFensterUndLangerName() async throws {
         let (w, app) = try await resetAppSession()
         add(app, channel(String(repeating: "Sehr langer Sendername ", count: 20), "/hang/ec11a.ts"))
         for i in 2...4 { add(app, channel("Kachel \(i)", "/hang/ec10-\(i).ts")) }
@@ -622,10 +611,12 @@ final class B08OberflaecheTests: B08UITestCase {
         let labels = B08UI.labels(w).map { $0.count > 60 ? "\($0.prefix(30))…(\($0.count) Zeichen)" : $0 }
         B08QA.log("EC-10|angefordert 300x200 → fenster \(Int(w.frame.width))x\(Int(w.frame.height)) inhalt \(Int(content.width))x\(Int(content.height))|unterste kleine Kachel endet \(Int(lowest - content.minY)) pt über dem Fensterboden|EC-11 etiketten=\(labels)")
         XCTAssertTrue(app.slots.count == 4)
-        XCTAssertLessThan(w.frame.height, 200, "Ist: das Fenster lässt sich weit unter die Höhe der kleinen Kacheln verkleinern")
-        XCTExpectFailure("BUG-10 · Im kleinen Fenster laufen die kleinen Kacheln über den Rand, Umschalter und X verschwinden (EC-10)") {
-            XCTAssertGreaterThanOrEqual(lowest, content.minY, "erwartet: Mindestgröße, in die die kleinen Kacheln passen")
-        }
+        // Seit B08 · BUG-10 (Build 2026-09-28): Mindestgröße, in die alle kleinen Kacheln samt Rand passen
+        XCTAssertGreaterThanOrEqual(content.height, MultiviewScreen.minimumContentSize.height - 1, "Inhalt nicht kleiner als die Mindesthöhe")
+        XCTAssertGreaterThanOrEqual(content.width, MultiviewScreen.minimumContentSize.width - 1)
+        XCTAssertGreaterThanOrEqual(lowest, content.minY, "die unterste kleine Kachel endet im Fenster")
+        XCTAssertEqual(tiles.count, 3)
+        XCTAssertNotNil(picker(w), "Umschalter sichtbar")
         w.setFrame(NSRect(x: 320, y: 165, width: 1280, height: 720), display: true)
     }
 }

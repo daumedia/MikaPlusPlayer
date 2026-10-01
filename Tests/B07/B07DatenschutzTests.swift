@@ -152,8 +152,25 @@ final class B07DatenschutzTests: B07TestCase {
         await B07QA.spin(1)
         let store = try OSLogStore(scope: .currentProcessIdentifier)
         // `position(date:)` liefert im Gesamtlauf auch ältere Einträge des Prozesses; nur das Zeitfenster dieses Tests zählt.
-        let entries = try store.getEntries(at: store.position(date: t0)).compactMap { $0 as? OSLogEntryLog }.filter { $0.date >= t0 }
+        let all = try store.getEntries(at: store.position(date: t0)).compactMap { $0 as? OSLogEntryLog }
+        let entries = all.filter { $0.date >= t0 }
         let needles = [B07QA.pass, B07QA.user, "QA Protokollsender", "/live/", "301.m3u8"]
+        // Review R-07: belegen, was das Zeitfenster ausschließt – ältere Einträge, die `position(date:)` mitliefert, und
+        // welche davon eine Nadel treffen (Quelle: frühere Tests desselben Prozesses).
+        let older = all.filter { $0.date < t0 }
+        let olderHits = older.filter { en in needles.contains { en.composedMessage.contains($0) } }
+        B07QA.log("AK-23|R-07|vorStart=\(older.count)|davonMitNadel=\(olderHits.count)|fruehester=\(older.first.map { ISO8601DateFormatter().string(from: $0.date) } ?? "-")")
+        for en in olderHits.prefix(12) {
+            B07QA.log("AK-23|R-07|ausgeschlossen|\(ISO8601DateFormatter().string(from: en.date))|\(en.subsystem)|\(en.category)|\(en.composedMessage.prefix(160))")
+        }
+        // Was die drei Assertions ohne Zeitfenster sähen (nur Protokoll): Quellen der ausgeschlossenen Treffer.
+        let olderBySource = Dictionary(grouping: olderHits) { en -> String in
+            if en.subsystem.hasPrefix("lu.daumedia") { return "app" }
+            if en.subsystem.hasPrefix("com.apple.avkit") || en.composedMessage.localizedCaseInsensitiveContains("pictureinpicture") { return "pip/avkit" }
+            if en.subsystem.hasPrefix("com.apple.network") || en.subsystem.hasPrefix("com.apple.CFNetwork") { return "netzwerk" }
+            return "sonstige:\(en.subsystem)"
+        }.mapValues(\.count)
+        B07QA.log("AK-23|R-07|ohneZeitfenster|quellen=\(olderBySource.sorted { $0.key < $1.key })")
         var hits: [String] = []
         for en in entries {
             let m = en.composedMessage

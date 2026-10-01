@@ -174,6 +174,16 @@ Indizes, und das Layout beim Unterschreiten von zwei Streams auf „Fokus“ zur
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ — In eigener Kopie (eigene Bundle-ID, Test-Host mit Datenbank im Speicher, Sender ohne Mediendaten und Ton) endete jeder Prozess mit „Index out of range“ in `MultiviewScreen.gridLayout` `:79` ← `ForEachChild.updateValue()`: roter Knopf des echten Fensters mit 4 und 1 Stream sowie X per `AXPress` 3 → 2 und 1 → 0, in Debug **und** Release (`-O`), dazu die vier Beleg-Tests der QA in Debug und ein eigenes Fenster ohne QA-Hilfen (`clear()` im Raster stürzt bei jeder Anzahl 1–4 ab), während 4 → 3, 2 → 1 und Fokus + Schließen ohne Absturz blieben und der Umschalter bei einem Stream `aktiv=false` zeigte (nur „kein Weg hinaus“ ist überzeichnet: ein zweiter Stream per ⊞ gibt ihn frei, ⌘Q beendet ohne Absturz); Grad angemessen (kritisch: Absturz im Hauptweg „Multiview schließen“, `MultiviewScreen.swift` seit `v1.1` unverändert).
 
+**Behoben 2026-09-28:** Raster und Fokus-Layout bauen die Kacheln über `ForEach(session.slots)` auf, gebunden an `Slot.id`;
+Lage und Größe bestimmt die neue Anordnung `MultiviewArrangement` (`MultiviewScreen.swift`) – kein Index-Zugriff auf
+`session.slots` mehr, der beim Schrumpfen veralten kann. Mit einem Stream im Raster bleibt der Umschalter aktiv und führt
+zurück zu „Fokus“ (spec OF-09). Vor der Reparatur reproduziert (Debug, je eigener Prozess): alle vier Fälle enden mit
+„Fatal error: Index out of range“ ← `MultiviewScreen.gridLayout` `:79`. Danach bestanden, in Debug **und Release** (`-O`):
+`B08AbsturzTests` (vier Fälle und drei Gegenproben, jetzt im Gesamtlauf statt opt-in; nur EC-15 bleibt opt-in, ohne
+Absturzbericht), `B08ReparaturTests.testBUG01_RasterLeerenUndEntfernen…` (`clear()` im Raster mit 1–4 Streams, Entfernen
+von vorn, hinten und aus der Mitte bis 0), `testBUG01_EinStreamImRasterZurueckZuFokus`; O `testAK11_AK12_AK13_…` ohne
+`XCTExpectFailure` (X im Raster 4 → 3 → 2 → 1, dann Klick auf „Fokus“).
+
 ### BUG-02 · VLC-Bild bleibt schwarz, sobald eine Kachel ihren Stream wechselt: nach dem Fokuswechsel und im Raster nach dem Entfernen — hoch
 
 **Betrifft:** AK-15 (FB-02), AK-11/AK-19 (Raster nach dem Entfernen, Fund des Code-Reviews); Website-Versprechen
@@ -196,6 +206,15 @@ Zeichenfläche in `updateNSView` neu einhängen, wie es `PlayerLayerView` für A
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ — In einer eigenen Kopie (Test-Host, Datenbank im Speicher, Medien ohne Tonspur, Lautstärke 0) ergaben die drei Beleg-Tests erneut einen Schwarzanteil des großen Bildes von 0,00 → 1,00 (1, 5, 10, 15 s, nach Größenänderung, echter Klick 2/10 s) bei HLS 0,00 und im Raster nach dem X auf V1 `[1,00; 0,00; 0,00; 1,00]`; eine zusätzliche Strukturprüfung zeigt die Ursache: Nach `setFocus(1)` hängt die Zeichenfläche des fokussierten VLC-Streams mit Ton in keinem Fenster (`superview = nil`), die des alten Streams sitzt in der kleinen Kachel, auch nach dem Zurückwechseln bleibt es schwarz, und im Raster steckt die Fläche von V2 unter dem Etikett „V3“ und die von V3 unter „V4“, die von V4 fehlt (Bild und Etikett passen also zusätzlich nicht zusammen). Im AK-14-Teil von `testAK14_AK15_AK16_…` blieb der erste Klick ohne Wirkung (Aktivierung), mit BUG-02 hat das nichts zu tun. Grad angemessen.
 
+**Behoben 2026-09-28:** Jede Kachel ist an ihren Slot gebunden (siehe BUG-01) und bleibt bei Fokuswechsel, Layoutwechsel
+und Entfernen dieselbe Ansicht. Zusätzlich steckt die VLC-Zeichenfläche in einem Behälter je Einbettung
+(`VLCSurfaceHostView`, `VLCPlaybackEngine.swift`), der sie in `updateNSView` und beim Einfügen ins Fenster wieder einhängt
+und beim Abbau an eine andere Einbettung derselben Engine weitergibt. Vor der Reparatur reproduziert: N
+`testAK14_AK15_AK16_…` mit echtem Klick bei aktiver App → Schwarzanteil 1,00. Danach: O `testAK14_AK15_…VLCUndHLSHauptbildSichtbar`
+VLC 0,00 bei 1/5/10/15 s, nach Größenänderung und nach Raster ↔ Fokus; N echter Klick 0,00/0,00; N `testCR_…` drei Bilder;
+`testBUG02_VLCZeichenflaecheFolgtIhremStream` (Fläche jedes Streams an seiner Stelle, kleine über der großen, Raster nach
+dem Entfernen der ersten Kachel; auch Release).
+
 ### BUG-03 · Klick auf den abgeblendeten ⊞ öffnet den Player mit Ton und fünfter Verbindung — mittel
 
 **Betrifft:** AK-05 (FB-03); Sicherheitskatalog 4.2
@@ -211,6 +230,11 @@ Streams mit Ton, fünf Verbindungen. Bei einem Abo mit Verbindungslimit scheiter
 **Vorschlag:** Den Button nicht deaktivieren, sondern bei vollem Multiview wirkungslos machen (Aktion prüft `canAddMore`) bzw. den Klick
 mit `.allowsHitTesting`/eigener Geste abfangen, damit er nie die Karte erreicht.
 **Test:** O `testAK04_AK05_AK21_EC06_…` (`XCTExpectFailure("BUG-03 …")`)
+
+**Behoben 2026-09-28:** Der ⊞ ist bei vollem Multiview abgeblendet (30 % Deckkraft), aber nicht mehr deaktiviert; seine
+Aktion prüft `canAddMore` und tut dann nichts, der Klick erreicht die Karte nicht mehr (`ChannelRowView.swift`). O
+`testAK04_AK05_AK21_EC06_…KlickAufGrauBewirktNichts`: Titel bleibt „QA Voll“, 0 Anfragen für Kanal 5, kein neuer Player;
+`testBUG03_…` ebenso im Favoriten-Tab. Folge für Bedienungshilfen → spec OF-12.
 
 ### BUG-04 · Das X des großen Streams ist im Fokus-Layout nicht erreichbar — hoch
 
@@ -230,6 +254,12 @@ das X der großen Kachel links bzw. unten platzieren.
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ (mit Einschränkung) — In einer eigenen Kopie (Test-Host, Datenbank im Speicher, HLS ohne Tonspur, Lautstärke 0, App aktiv) verlegten sechs Klicks auf die Mitte des großen X (1577, 810) den Fokus `0 → 1 → 0 → 1 → 0 → 1 → 0` ohne etwas zu entfernen, und beide Beleg-Tests ergaben erneut `[2, 0, 1, 0, 1, 0, 1]` bzw. Entfernen per `AXPress`. Überzeichnet sind aber „nicht erreichbar“ und „Ausweg nur … Raster“: Der nicht verdeckte Rand des X (rechts 1584–1592, oben 817–825, 46 % des X-Rechtecks, sichtbar als dunkle Sichel ohne Kreuz) ist klickbar, denn je ein Klick bei (1589, 810) und bei (1577, 822) entfernte den großen Stream. Außerdem entfernt der Umweg „kleine Kachel anklicken, dann das X des vorher großen, jetzt kleinen Streams“ ihn mit zwei Klicks im Fokus-Layout, ohne Raster und ohne Absturz. Grad angemessen (hoch: Das Kriterium bleibt an der sichtbaren Stelle unerfüllt, im Standard-Layout bei jedem Versuch, und der Fehlklick verlegt den Ton). Die Begründung mit dem Raster-Absturz als einzigem Ausweg sollte entfallen.
 
+**Behoben 2026-09-28:** Die kleinen Kacheln beginnen unterhalb der Leiste des großen Streams, 46 pt unter dem oberen
+Inhaltsrand statt 16 pt (8 pt Innenabstand + X fest 30 × 30 pt + 8 pt, `MultiviewMetrics`; spec OF-08). O
+`testAK16_XDesGrossenStreamsErreichbar`: großes X (1562, 795, 30 × 30) von keiner Kachel verdeckt, ein Mausklick entfernt
+den großen Stream, der nachrückende hat Ton; N mit echtem Klick bei aktiver App ebenso; `testBUG04_…`: von vier auf einen
+Stream nur über das große X, je Klick genau einer mit Ton. O `testAK10_…` prüft die neue Lage (46 pt).
+
 ### BUG-05 · Kacheln überleben Löschen und Aktualisieren ihrer Playlist, samt Verbindung mit Zugangsdaten — mittel (= BF-56)
 
 **Betrifft:** AK-27, AK-28 (FB-05); Sicherheitskatalog 5.2; B03 BUG-05
@@ -243,6 +273,13 @@ mit `201.ts` hinzu
 **Ort:** `Sources/Services/MultiviewSession.swift:37-41, 54-67`; `Sources/Services/PlaylistImporter.swift:220, 270` (keine Benachrichtigung)
 **Vorschlag:** Beim Löschen/Aktualisieren die Slots der Playlist entfernen bzw. neu auflösen (gemeinsam mit B03 BF-56).
 **Test:** S `testAK27_EC14_Angriff8_…`, `testAK28_…` (je `XCTExpectFailure("BUG-05 …")`)
+
+**Teil Löschen behoben (durch die B02+B03-Reparatur, zentraler Löschweg):** `PlaylistEvents.willDelete` →
+`MultiviewSession.removeSlots(ofPlaylists:)` beendet die Kacheln der gelöschten Playlist samt Verbindung. S
+`testAK27_EC14_Angriff8_…` bestand im Ausgangslauf dieses Builds und danach (0 offene Verbindungen mit Zugangsdaten, keine
+weiteren Bytes, Session leer, kein Absturz). **Nicht behoben: Teil Aktualisieren** – ob laufende Kacheln umschalten, enden
+oder bleiben, ist Produktverhalten (B03 OF-09), die Dublette hängt an OF-01 (spec OF-14); S `testAK28_…` behält sein
+`XCTExpectFailure`.
 
 ### BUG-06 · N Kacheln = N Verbindungen ohne Rücksicht auf das Anbieterlimit; Kacheln über dem Limit scheitern ohne Meldung — mittel
 
@@ -260,6 +297,13 @@ kommt hinzu; `max_connections` aus `user_info` wird nicht gelesen
 `max_connections` beim Hinzufügen berücksichtigen bzw. anzeigen (nach Entscheidung OF-03).
 **Test:** S `testAK30_…`, `testAK31_…`, O `testAK25_AK26_AK32_…` (UI-Teil AK-31) (`XCTExpectFailure("BUG-06 …")`)
 
+**Teil Meldung behoben 2026-09-28:** Seit B06 BUG-01 melden sich die abgelehnten VLC-Kacheln („Der Sender konnte nicht
+geöffnet werden …“); jetzt steht darunter, solange ein anderer Stream desselben Anbieters (Host und Port) läuft,
+„Möglicherweise erlaubt dein Abo nicht so viele Streams gleichzeitig.“ (`MultiviewTile`, `MultiviewSession.otherStreamIsPlaying`).
+`testBUG06_…`: Limit 1 → eine Kachel spielt, drei zeigen Meldung und Hinweis; eine allein gescheiterte Kachel ohne Hinweis;
+O AK-31-Teil ebenso. **Nicht behoben:** die Rücksicht auf das Limit (`max_connections` auswerten, Kacheln begrenzen, vorab
+warnen) – Produktentscheidung spec OF-03; S `testAK30_…` behält sein `XCTExpectFailure`.
+
 ### BUG-07 · Kacheln zeigen VLC-Fehler nie, abgebrochene HLS-Segmente 20 s lang nicht — hoch (= BF-96)
 
 **Betrifft:** AK-26; B06 BUG-01 (FB-01)
@@ -276,6 +320,14 @@ kommt hinzu; `max_connections` aus `user_info` wird nicht gelesen
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ — in eigener Kopie lief `testAK25_AK26_FehlerJeKachel` mit den erwarteten Fehlschlägen (VLC 404/Port zu `idle` bei 3/8/16/25 s, Abbruch und Hänger `playing`, HLS nach 20 s `playing` bei 7 Segment-404), und die zusätzlich einzeln gerenderte echte `MultiviewTile` zeigte nach 3, 10, 25 und 45 s in keinem Fall „Wiedergabe fehlgeschlagen“: 404/Port zu Ladeanzeige (libVLC `stopped`, nie `error`), Abbruch Standbild bei 00:00:05.720 (libVLC `paused`), Hänger schwarz ohne Ladeanzeige (`buffering`), HLS nach 45 s mit 21 Segment-404 weiter `playing`; Grad angemessen
 
+**Behoben 2026-09-28:** VLC-Teil durch die B06-Reparatur (BF-96): S `testAK25_AK26_FehlerJeKachel` war im Ausgangslauf
+dieses Builds für 404, Port zu und Abbruch grün, der Hänger lädt bis zur Frist. HLS-Teil hier: AVKit gibt bei Live-HLS mit
+Segment-404 nie auf (Messung 120 s: Wiedergabezeit steht bei 15,9 s, 57 × 404, Zustand „spielt“). AVKit-Kacheln haben jetzt
+eine Frist von 30 s ohne Fortschritt (`AVKitPlaybackEngine.limitStalls(to:)`, gesetzt von `MultiviewSession`; spec OF-11)
+→ „Die Verbindung zum Sender wurde unterbrochen.“, danach keine Anfrage mehr. `testBUG07_…`: Meldung 30,2 s nach dem
+Stillstand, eine gesunde HLS-Kachel spielt weiter; S `testAK25_AK26_…` (Frist dort 5 s) ohne `XCTExpectFailure`. Der
+Player (B06) behält das Verhalten von AVKit.
+
 ### BUG-08 · Derselbe Sender kommt ohne Hinweis zweimal ins Multiview — niedrig (wartet auf OF-01)
 
 **Betrifft:** AK-06
@@ -285,6 +337,9 @@ kommt hinzu; `max_connections` aus `user_info` wird nicht gelesen
 **Ort:** `Sources/Services/MultiviewSession.swift:54-67` (keine Dublettenprüfung), `Sources/Views/ChannelRowView.swift:74-77`
 **Vorschlag:** Nach OF-01 in `add` prüfen (z. B. über `Channel.persistentModelID` bzw. die Adresse) und den ⊞ für laufende Sender kennzeichnen.
 **Test:** S `testAK06_…`, N `testAK06_AK07_…` (`XCTExpectFailure("BUG-08 …")`)
+
+**Nicht behoben:** wartet auf OF-01 (Produktentscheidung: Dubletten zulassen, verhindern oder melden). S `testAK06_…`,
+N `testAK06_AK07_…` behalten ihr `XCTExpectFailure`.
 
 ### BUG-09 · ⊞ ohne Zugangsdaten öffnet ein leeres Multiview ohne Meldung — niedrig (wartet auf OF-02)
 
@@ -297,6 +352,9 @@ kommt hinzu; `max_connections` aus `user_info` wird nicht gelesen
 **Vorschlag:** `add` einen Fehler bzw. ein Ergebnis zurückgeben lassen und das Fenster nur bei Erfolg öffnen, sonst Meldung wie im Player.
 **Test:** S `testAK07_…`, N `testAK06_AK07_…` (`XCTExpectFailure("BUG-09 …")`)
 
+**Nicht behoben:** wartet auf OF-02 (= B01 OF-11, Produktentscheidung). S `testAK07_…`, N `testAK06_AK07_…` behalten ihr
+`XCTExpectFailure`.
+
 ### BUG-10 · Das Multiview lässt sich bis 105 × 106 pt verkleinern; kleine Kacheln laufen über den Rand, Umschalter und X verschwinden — niedrig
 
 **Betrifft:** EC-10; `design.md` („Größe durch Inhalt nach unten begrenzt“)
@@ -307,6 +365,11 @@ Kacheln sind nicht zu sehen (`EC-10-kleinstes-fenster.png`)
 **Ort:** `Sources/App/MikaPlusPlayerApp.swift:58` (`.windowResizability(.contentMinSize)` ohne Mindestrahmen), `Sources/Views/MultiviewScreen.swift:13-27`
 **Vorschlag:** `.frame(minWidth:minHeight:)` am `MultiviewScreen` (z. B. 640 × 480) setzen.
 **Test:** O `testEC10_EC11_…` (`XCTExpectFailure("BUG-10 …")`)
+
+**Behoben 2026-09-28:** Mindestinhalt 640 × 483 pt (`MultiviewScreen.minimumContentSize` mit
+`.windowResizability(.contentMinSize)`; spec OF-10): drei kleine Kacheln passen samt Abständen unter die Leiste des großen
+Streams. O `testEC10_EC11_KleinstesFensterUndLangerName`: kleinstes Fenster 640 × 535 pt, Inhalt 640 × 483, unterste kleine
+Kachel endet 16 pt über dem Fensterboden, Umschalter sichtbar; `testBUG10_…` ebenso mit allen vier X im Fenster.
 
 ## Hinweise (kein Kriterium durchgefallen)
 

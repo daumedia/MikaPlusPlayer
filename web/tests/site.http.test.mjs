@@ -1,5 +1,7 @@
 // B10 · Website — HTTP-Tests gegen den lokal laufenden Produktionsserver (QA-Durchlauf 1, 2026-09-15;
-// angepasst bei der Reparatur Teil 1, 2026-09-16: BUG-05, BUG-06, BUG-09, BUG-11 behoben, todo entfernt)
+// angepasst bei der Reparatur Teil 1, 2026-09-16: BUG-05, BUG-06, BUG-09, BUG-11 behoben, todo entfernt;
+// Reparatur Teil 2, 2026-09-30: BUG-02, BUG-07, BF-12, BF-16, BF-25, BF-81, BF-103, BF-107 behoben — todo entfernt,
+// neue Soll-Tests, Wortlaut-Tests auf die Texte zum Release v1.1 umgestellt)
 //
 // Voraussetzung: Produktions-Build ohne GITHUB_TOKEN und ohne NEXT_PUBLIC_SITE_URL/VERCEL_PROJECT_PRODUCTION_URL,
 // GitHub beim Build erreichbar, Server auf eigenem Port:
@@ -137,7 +139,7 @@ test("AK-05/AK-06/AK-07: Kopfzeile, Fußzeile, Skip-Link und lang im ausgeliefer
 
     const footer = page.slice(page.indexOf("<footer"), page.indexOf("</footer>"));
     const ftext = visibleText(footer);
-    assert.ok(ftext.includes("An open-source IPTV player. It plays the playlist you bring and is not affiliated with any provider."));
+    assert.ok(ftext.includes("An IPTV player with its source on GitHub. It plays the playlist you bring and is not affiliated with any provider."), "BUG-07 (FB-13): kein „open-source“ ohne Lizenz");
     assert.match(footer, /href="https:\/\/github\.com\/daumedia\/MikaPlusPlayer\/issues" target="_blank" rel="noopener noreferrer"[^>]*>Report an issue</);
     assert.match(footer, /href="https:\/\/github\.com\/daumedia\/MikaPlusPlayer" target="_blank" rel="noopener noreferrer"[^>]*>Source</);
 
@@ -169,12 +171,12 @@ test("AK-09 (BUG-06): Hero mit Download-Link direkt auf das DMG bei github.com, 
   }
 });
 
-test("AK-11/AK-12: Abschnittsreihenfolge der Startseite; kein Abschnitt „The app itself“", async () => {
+test("AK-11/AK-12 (BUG-07): Abschnittsreihenfolge der Startseite; sieben Funktionen ohne Bild-in-Bild; kein Abschnitt „The app itself“", async () => {
   const text = visibleText(body(await html("/")));
   assertInOrder(text, [
     "You bring", "The app adds", "It never does",
     "Getting started", "CH 01 Add a playlist", "CH 02 Find your channels", "CH 03 Watch",
-    "Seventeen thousand channels, still usable",
+    "Seventeen thousand channels, searchable",
     "What it does", "Library", "Playback", "System",
     "Up to four streams, in a window of their own",
     "What it needs", "macOS 14 Sonoma or later", "Universal build for Apple silicon and Intel",
@@ -182,7 +184,7 @@ test("AK-11/AK-12: Abschnittsreihenfolge der Startseite; kein Abschnitt „The a
   ]);
   const page = await html("/");
   const featureTitles = [...page.matchAll(/<h4 class="font-display text-base font-semibold">([^<]+)<\/h4>/g)];
-  assert.equal(featureTitles.length, 8, "acht Funktionen");
+  assert.equal(featureTitles.length, 7, "sieben Funktionen: Library 3, Playback 2 (Bild-in-Bild ist nicht im Release v1.1), System 2");
   assert.ok(!text.includes("The app itself"));
   assert.match(page, /href="\/support"[^>]*>\s*support page/);
 });
@@ -232,7 +234,7 @@ test("AK-18/AK-19: Changelog mit v1.1, englischem Ersatztext, Datum, Links, SHA-
   const text = visibleText(body(page));
   assertInOrder(text, [
     "Every version so far",
-    "Pulled from GitHub releases. The Mac app also checks this list for itself through Sparkle.",
+    "Pulled from GitHub releases. The Mac app does not read this page: Sparkle checks a separate update feed, and a version reaches the app only once it is listed there.",
     "v1.1 – Multiview", "June 23, 2026",
     "Multiview (macOS) — watch up to four streams at once",
     "the support page on this site shows how to allow it and how to check the download's SHA-256 checksum",
@@ -260,27 +262,27 @@ test("AK-21: vom Browser geladene JS-Dateien enthalten kein react-markdown/remar
 
 // ---------------------------------------------------------------- Support
 
-test("AK-22/AK-23 (BUG-06): Support-Seite — fünf Erststart-Schritte mit Prüfsumme und Systemeinstellungen, drei Einrichtungsschritte, sechs Tasten, neun zugeklappte Fragen", async () => {
+test("AK-22/AK-23 (BUG-06, BUG-07): Support-Seite — fünf Erststart-Schritte mit Prüfsumme und Systemeinstellungen, drei Einrichtungsschritte, fünf Tasten, neun zugeklappte Fragen", async () => {
   const page = await html("/support");
   const text = visibleText(body(page));
   assertInOrder(text, [
     "First launch on macOS",
     "Since macOS 15 Sequoia, Control-clicking the app and choosing Open no longer gets past that",
-    "01 Open the DMG and drag Mika+Player to Applications.",
+    "01 Open the DMG and drag MikaPlusPlayer to Applications.",
     "02 Check the download before you open it. In Terminal, type shasum -a 256 and a space, drag the DMG into the window and press Return.",
     "The result has to match the SHA-256 shown under the download button",
-    "03 Open Mika+Player from the Applications folder once.",
+    "03 Open MikaPlusPlayer from the Applications folder once.",
     "04 Open System Settings → Privacy & Security , scroll to Security and click Open Anyway .",
     "The button is there for about an hour after the blocked attempt.",
     "05 Confirm with your login password.",
-    "On macOS 14 Sonoma, Control-clicking Mika+Player in Applications and choosing Open works as well.",
+    "On macOS 14 Sonoma, Control-clicking MikaPlusPlayer in Applications and choosing Open works as well.",
     "Adding a playlist", "CH 01 Add a playlist", "CH 02 Find your channels", "CH 03 Watch",
     "https://iptv-org.github.io/iptv/index.m3u",
     "Keyboard controls", "Questions",
   ]);
   assert.match(page, /href="https:\/\/iptv-org\.github\.io\/iptv\/index\.m3u" target="_blank" rel="noopener noreferrer"/);
   const dts = [...page.matchAll(/<dt class="font-mono text-sm">([^<]+)<\/dt>/g)].map((m) => m[1]);
-  assert.deepEqual(dts, ["Space", "↑ ↓ + −", "M", "F", "P", "Esc"]);
+  assert.deepEqual(dts, ["Space", "↑ ↓ + −", "M", "F", "Esc"], "BUG-07 (FB-02): Taste P gibt es in v1.1 nicht");
   const details = [...page.matchAll(/<details\b([^>]*)>/g)];
   assert.equal(details.length, 9);
   for (const d of details) assert.ok(!/\bopen\b/.test(d[1]), "anfangs zugeklappt");
@@ -300,7 +302,7 @@ test("AK-24/AK-25/AK-26: Aufbau und Wortlaut der Datenschutzseite", async () => 
     "Xtream logins travel over plain HTTP",
     "This website",
     "Content",
-    "Last updated 30 July 2026",
+    "Last updated 30 September 2026",
     "a GitHub issue",
   ]);
   assert.ok(text.includes("rewrites an https:// host to plain HTTP"));
@@ -310,14 +312,123 @@ test("AK-24/AK-25/AK-26: Aufbau und Wortlaut der Datenschutzseite", async () => 
   assert.ok(text.includes("GitHub, which counts downloads per release"));
 });
 
-test("FB-03/FB-04/FB-05 (Befund): Datenschutzseite enthält Aussagen, die der App-Code nicht erfüllt", { todo: "BUG-02 Datenschutzaussagen widersprechen dem App-Verhalten" }, async () => {
+test("FB-03/FB-04/FB-05 (BUG-02 behoben): Datenschutzseite enthält keine Aussagen mehr, die der App-Code nicht erfüllt", async () => {
   const privacy = visibleText(body(await html("/privacy")));
   const home = visibleText(body(await html("/")));
+  const support = visibleText(body(await html("/support")));
   assert.ok(!privacy.includes("nothing goes to us"), "FB-03: „nothing goes to us“ — App sendet an Anbieter, Logo-Hosts, GitHub");
+  assert.ok(!/no server/i.test(privacy), "FB-03: „no server … on this site“ — /download ist eine Server-Funktion");
   assert.ok(!home.includes("send your data anywhere"), "FB-03: „It never does … send your data anywhere“");
-  assert.ok(!privacy.includes("They stay in the app’s own storage"), "FB-04: default.store liegt unter ~/Library/Application Support/");
+  assert.ok(!home.includes("all on your Mac, all local"), "FB-03: „all on your Mac, all local“");
+  assert.ok(!support.includes("Nowhere."), "FB-03 (B05 H-5): FAQ „Where does my data go? Nowhere.“");
+  assert.ok(!/They stay in the app.s own storage/.test(privacy), "FB-04: default.store liegt unter ~/Library/Application Support/");
+  assert.ok(!privacy.includes("no copy anywhere else"), "FB-04: HTTP-Cache hält eine zweite Kopie");
   assert.ok(!privacy.includes("deleting the app removes all of it"), "FB-04: Löschen der App entfernt default.store und Cache.db nicht");
   assert.ok(!privacy.includes("Every stream, channel list and logo request goes to the host you entered"), "FB-05");
+  assert.ok(!privacy.includes("Neither of those tells us who you are"), "FB-17 (Teil): IP-Adressen in Server-Logs");
+});
+
+test("BUG-02 (Soll): Datenschutzseite beschreibt Speicherort, Kopien, Löschweg und alle Empfänger von Version 1.1", async () => {
+  const privacy = visibleText(body(await html("/privacy")));
+  // Geltungsbereich: das ausgelieferte Release
+  assert.ok(privacy.includes("version 1.1 of the Mac app"), "Seite nennt die beschriebene Version");
+  // Speicherort und Kopien (B01 BUG-01/03/04, B02 BUG-01/02, B03 BUG-06/07)
+  assertInOrder(privacy, [
+    "What the app stores",
+    "~/Library/Application Support/default.store",
+    "not encrypted",
+    "does not use the macOS Keychain",
+    "in plain text",
+    "Time Machine",
+    "~/Library/Caches/lu.daumedia.MikaPlusPlayer",
+    "~/Library/HTTPStorages/lu.daumedia.MikaPlusPlayer",
+    "~/Library/Preferences/lu.daumedia.MikaPlusPlayer.plist",
+  ]);
+  assert.ok(privacy.includes("Deleting a playlist removes it and its channels from the database, but not from the network cache"), "B03 BUG-06");
+  // Empfänger (FB-05, B02 H-5, B04 BUG-06, B05 BUG-03, B01 BUG-10)
+  assertInOrder(privacy, [
+    "What the app connects to",
+    "User-Agent", "system language",
+    "Your provider.", "follows the redirect",
+    "Stream servers.", "any other server",
+    "Channel logo servers.", "which logos", "Favourites tab", "no setting to turn logos off",
+    "GitHub.",
+  ]);
+  // Löschen der App (FB-04, B03 BUG-09)
+  assertInOrder(privacy, [
+    "Removing everything",
+    "Deleting the app does not remove",
+    "default.store-shm", "default.store-wal",
+    "SwiftData",
+    "Time Machine backups",
+  ]);
+});
+
+test("BF-12/BF-16 (B09 BUG-12/BUG-16): User-Agent, automatische Update-Prüfung und Update-Weg beschrieben", async () => {
+  const privacy = visibleText(body(await html("/privacy")));
+  const github = privacy.slice(privacy.indexOf("GitHub. "), privacy.indexOf("Xtream logins travel over plain HTTP"));
+  assert.ok(github.length > 0, "Abschnitt „GitHub.“ vorhanden");
+  assert.ok(github.includes("automatically"), "BF-12: automatische Prüfung genannt");
+  assert.ok(github.includes("about once a day"), "BF-12: Häufigkeit genannt");
+  assert.ok(github.includes("without asking first"), "BF-12: ohne Einwilligungsdialog");
+  assert.ok(github.includes("User-Agent") && github.includes("Sparkle version"), "BF-12: User-Agent mit App- und Sparkle-Version");
+  assert.ok(github.includes("raw.githubusercontent.com") && github.includes("github.com"), "Feed- und Download-Host");
+  const changelog = visibleText(body(await html("/changelog")));
+  assert.ok(!changelog.includes("checks this list for itself"), "BF-16 (FB-10): Sparkle liest appcast.xml, nicht die Release-Liste");
+  assert.ok(changelog.includes("The Mac app does not read this page"), "BF-16: Update-Weg richtig beschrieben");
+  const home = visibleText(body(await html("/")));
+  const support = visibleText(body(await html("/support")));
+  assert.ok(!home.includes("Updates that install themselves"), "BF-16 (FB-09): Selbstinstallation erst nach Opt-in");
+  assert.ok(!support.includes("can install them on its own"), "BF-16 (FB-09): FAQ");
+  assert.ok(support.includes("Nach Updates suchen"), "Menüeintrag mit seinem echten (deutschen) Namen");
+});
+
+test("BUG-07 / BF-25 / BF-81 / BF-103 / BF-107: Werbeaussagen entsprechen dem Release v1.1", async () => {
+  const home = visibleText(body(await html("/")));
+  const supportPage = await html("/support");
+  const support = visibleText(body(supportPage));
+  const changelog = visibleText(body(await html("/changelog")));
+  // FB-02 / BF-107: Bild-in-Bild und Taste P gibt es in v1.1 nicht
+  for (const [name, text] of [["/", home], ["/support", support], ["/changelog", changelog]]) {
+    assert.ok(!/Picture in Picture|\bPiP\b/.test(text), `${name}: Bild-in-Bild ist nicht im Release v1.1`);
+  }
+  const dts = [...supportPage.matchAll(/<dt class="font-mono text-sm">([^<]+)<\/dt>/g)].map((m) => m[1]);
+  assert.ok(!dts.includes("P"), "Taste P tut in v1.1 nichts");
+  // FB-01 (B02 BUG-06): kein Doppelklick-Import in v1.1
+  assert.ok(!home.includes("double-clicking one opens it here"));
+  assert.ok(home.includes("Double-clicking a playlist in Finder does not import it in version 1.1"));
+  // FB-08 / BF-103: Rückmeldung nur für Leertaste, Lautstärke, M
+  assert.ok(!home.includes("On-screen feedback confirms each one"));
+  assert.ok(home.includes("Play/pause, volume and mute show a short on-screen confirmation"));
+  assert.ok(support.includes("F and Esc only switch full screen"));
+  // FB-06 / BF-81 (B04 BUG-13/14, B01 BUG-12, B02 BUG-04, B03 BUG-01): Leistungsaussagen
+  for (const [name, text] of [["/", home], ["/support", support]]) {
+    for (const claim of ["responds immediately", "as fast as you can type", "stay responsive", "takes a few seconds", "rather than in memory", "not in memory", "still usable"]) {
+      assert.ok(!text.includes(claim), `${name}: „${claim}“ ist durch die Messung widerlegt`);
+    }
+  }
+  assert.ok(home.includes("0.9 seconds"), "gemessene Blockade beim Öffnen genannt");
+  assert.ok(support.includes("four and a half minutes"), "gemessene Importdauer genannt");
+  // FB-07 (B05 H-5): Favoriten über tvg-id oder Namen
+  assert.ok(!home.includes("matches favourites by their tvg-id, so"));
+  assert.ok(home.includes("the same tvg-id — or, if it has none, the same name"));
+  assert.ok(!home.includes("Star a channel anywhere"), "B05 H-5: im Player gibt es keinen Stern");
+  // FB-09 / FB-10: siehe BF-12/BF-16
+  // FB-12: App-Name im Finder
+  assert.ok(support.includes("drag MikaPlusPlayer to Applications"));
+  assert.ok(support.includes("Open MikaPlusPlayer from the Applications folder once"));
+  assert.ok(!/drag Mika\+Player to Applications/.test(support));
+  // FB-13: „open-source“ ohne Lizenz
+  for (const [name, text] of [["/", home], ["/support", support], ["/changelog", changelog]]) {
+    assert.ok(!/open-source|open source/i.test(text), `${name}: keine Lizenz im Repository`);
+  }
+  // FB-14: Sprache der App
+  assert.ok(home.includes("The app's interface is in German."));
+  assert.ok(home.includes("Datei (file)"), "Einrichtungsschritt nennt den Reiter so, wie er in der App heißt");
+  // B08 BUG-02: großes Bild wandert bei MPEG-TS (VLC) in v1.1 nicht mit
+  assert.ok(!home.includes("the same way they do in the app"));
+  assert.ok(home.includes("an MPEG-TS stream (the Xtream default) can stay black in the large tile"));
+  assert.ok(changelog.includes("Known issue in 1.1"), "Release-Notizen nennen die Einschränkung");
 });
 
 test("FB-16/FB-17/FB-18 (Befund): keine Anbieterkennzeichnung, kein Verantwortlicher, kein Auskunftsweg", { todo: "BUG-03 Pflichtangaben fehlen" }, async () => {

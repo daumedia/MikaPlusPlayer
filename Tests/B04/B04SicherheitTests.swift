@@ -40,21 +40,23 @@ final class B04SicherheitTests: B04TestCase {
         w.open(b, wait: 1.5)
         let inB = w.cardNames
         B04QA.log("ANGRIFF-1|inA=\(inA)|sucheAlphaInA=\(sucheA)|chipsA=\(chipsA)|inB=\(inB)")
-        XCTAssertEqual(Set(inA), ["A1 Alpha, Sport", "A2 Beta, News"], "nur Sender der geöffneten Playlist")
+        XCTAssertEqual(Set(inA), ["A1 Alpha, Sport", "A2 Beta, News", "X2 Beziehung A, playlistID B, Sport"],
+                       "nur Sender der geöffneten Playlist")
+        XCTAssertEqual(Set(inB), ["B1 Alpha, Kino", "B2 Gamma, Doku"], "nur Sender der geöffneten Playlist")
         XCTAssertEqual(sucheA, ["A1 Alpha, Sport"], "die Suche greift nicht auf andere Playlists über")
-        XCTAssertFalse(inA.contains { $0.hasPrefix("X1") }, "Sender ohne playlistID erscheinen nirgends")
-        XCTAssertFalse(inA.contains { $0.hasPrefix("X2") }, "die Liste folgt der Kopie playlistID, nicht der Beziehung")
-        XCTAssertTrue(inB.contains { $0.hasPrefix("X2") }, "widersprüchliche Denormalisierung zeigt den Sender in B")
-        B04QA.evidence("angriff-1-fremde-ids.txt",
-                       "Playlist A zeigt \(inA), Playlist B zeigt \(inB); Sender ohne playlistID bleibt unsichtbar, "
-                       + "Sender mit Beziehung A und playlistID B erscheint unter B (Denormalisierung).")
+        XCTAssertFalse(inA.contains { $0.hasPrefix("X1") }, "Sender ohne Playlist erscheinen nirgends")
+        XCTAssertFalse(inB.contains { $0.hasPrefix("X1") }, "Sender ohne Playlist erscheinen nirgends")
+        // Seit B04 · BUG-12 (Build 2026-09-29) filtert die Liste über die Beziehung (wie `StreamURLResolver`), nicht über
+        // die unindizierte Kopie `playlistID`: Der widersprüchliche Sender erscheint in seiner Playlist A, nicht in B.
+        XCTAssertTrue(inA.contains { $0.hasPrefix("X2") }, "die Liste folgt der Beziehung")
+        XCTAssertFalse(inB.contains { $0.hasPrefix("X2") }, "eine manipulierte Kopie playlistID holt keinen fremden Sender in B")
         // Gegenprobe in der Datenbank
         B04QA.log("ANGRIFF-1|db|ZCHANNEL=\(B04QA.int(store.path, "select count(*) from ZCHANNEL"))|ohnePlaylistID=\(B04QA.int(store.path, "select count(*) from ZCHANNEL where ZPLAYLISTID is null"))")
     }
 
     // MARK: - 3 · Wiederholversuche / Bremse für Logo-Anfragen
 
-    func testAngriff3_KeineBremseFuerWiederholteLogoAnfragen() throws {
+    func testAngriff3_WiederholtesOeffnenFragtGeladeneLogosNichtErneutAn() throws {
         let (c, _) = try fileContainer("angriff3")
         let pl = try B04QA.seed(c.mainContext, name: "QA Wiederholung", items: [
             .init("W1", "Logos", logo: "\(host.base)/nocache/w1.png"),
@@ -68,10 +70,10 @@ final class B04SicherheitTests: B04TestCase {
         let anfragen = host.requests.map(\.path)
         let w1 = anfragen.filter { $0 == "/nocache/w1.png" }.count
         B04QA.log("ANGRIFF-3|zehnmalGeoeffnet|anfragenGesamt=\(anfragen.count)|w1=\(w1)")
-        B04QA.evidence("angriff-3-wiederholung.txt",
-                       "Zehnmal Liste öffnen und verlassen: \(anfragen.count) Logo-Anfragen (davon \(w1) für dasselbe Logo). "
-                       + "Es gibt keine Bremse; begrenzt wird nur durch Sichtbarkeit und durch den Plattencache.")
-        XCTAssertGreaterThan(w1, 1, "dasselbe Logo wird bei jedem Öffnen erneut geladen (keine Bremse)")
+        // Seit B04 · BUG-07 (Build 2026-09-29): Geladene Logos liegen im Arbeitsspeicher (nicht auf der Platte); zehnmal
+        // Öffnen fragt jedes Logo einmal an.
+        XCTAssertEqual(w1, 1, "dasselbe Logo wird nicht bei jedem Öffnen erneut geladen")
+        XCTAssertEqual(anfragen.count, 2)
     }
 
     // MARK: - 4 · Personendaten in Protokollen
@@ -207,11 +209,15 @@ final class B04SicherheitTests: B04TestCase {
                        + "\n  Logo-Schemata: " + logos.joined(separator: ", "))
         w.shot("angriff-7-eingaben")
         XCTAssertEqual(host.requests.count, 0, "javascript:, data: und file: lösen keine Netzanfragen aus")
+        // Seit B04 · BUG-04 (Build 2026-09-29): fremde Schemata ergeben sofort den Platzhalter (vorher: javascript: mit
+        // Dauer-Ladeindikator, data: geladen).
+        XCTAssertEqual(w.rows.filter { $0.label.hasPrefix("Logo") }.count, 3)
+        XCTAssertEqual(w.busyRows.filter { $0.hasPrefix("Logo") }, [], "kein Ladeindikator für fremde Schemata")
     }
 
     // MARK: - 8 · Löschen
 
-    func testAngriff8_LoeschenEntferntSenderAberNichtDieKopienDaneben() throws {
+    func testAngriff8_LoeschenEntferntSenderUndLogos() throws {
         let (c, store) = try fileContainer("angriff8")
         let ctx = c.mainContext
         let pl = try B04QA.seed(ctx, name: "QA Löschen", items: [
@@ -229,11 +235,17 @@ final class B04SicherheitTests: B04TestCase {
         let nameBytes = B04QA.rawOccurrences("Löschkanal Eins", store)
         let cache = B04QA.cacheRows(prefix: host.base).count
         B04QA.log("ANGRIFF-8|nachLoeschen|zeilen=\(zeilen)|nameInDatei=\(nameBytes)|CacheDbZeilen=\(cache)")
+        let imSpeicher = ["/nocache/l1.png", "/nocache/l2.png"].filter {
+            ChannelLogoLoader.shared.cachedImage(for: URL(string: host.base + $0)!) != nil
+        }
+        B04QA.log("ANGRIFF-8|nachLoeschen|logosImArbeitsspeicher=\(imSpeicher.count)")
         B04QA.evidence("angriff-8-loeschen.txt",
-                       "Nach dem Löschen: \(zeilen), Sendername \(nameBytes)× in der Datenbankdatei, \(cache) Logo-Einträge im Plattencache.")
+                       "Nach dem Löschen: \(zeilen), Sendername \(nameBytes)× in der Datenbankdatei, \(cache) Logo-Einträge im Plattencache, \(imSpeicher.count) im Arbeitsspeicher.")
         XCTAssertEqual(zeilen["ZCHANNEL"], 0, "die Sender sind aus der Datenbank entfernt")
         XCTAssertEqual(zeilen["ZPLAYLIST"], 0)
-        XCTAssertGreaterThan(cache, 0, "die Logo-Einträge im Plattencache bleiben (FB-07)")
+        // Seit B04 · BUG-07 (Build 2026-09-29): keine Logo-Einträge im Plattencache, Arbeitsspeicher geleert.
+        XCTAssertEqual(cache, 0, "keine Logo-Einträge im Plattencache")
+        XCTAssertEqual(imSpeicher, [], "Löschen entfernt die Logos aus dem Arbeitsspeicher")
     }
 
     // MARK: - EC-09

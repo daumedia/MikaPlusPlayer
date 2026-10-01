@@ -11,6 +11,8 @@ export const NOTE_OVERRIDES: Record<string, string> = {
 - **Audio follows focus**: only the focused stream plays sound. Clicking a tile moves both the sound and the large picture.
 - Add channels to Multiview with the new **⊞ button** in the channel list and favourites.
 
+Known issue in 1.1: after a click on a small tile, an MPEG-TS stream (the Xtream default) can stay black in the large tile while its sound plays; switching to grid and back brings the picture back.
+
 Automatic updates ship through Sparkle and are signed with EdDSA.
 
 Installation: open the DMG and drag the app to Applications. The build is ad-hoc signed and not notarised, so macOS blocks the first launch; the support page on this site shows how to allow it and how to check the download's SHA-256 checksum.`,

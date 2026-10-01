@@ -18,7 +18,8 @@ export default async function ChangelogPage() {
       <p className="eyebrow">Changelog</p>
       <h1 className="headline mt-2 text-4xl sm:text-5xl">Every version so far</h1>
       <p className="mt-5 text-lg leading-relaxed text-ink-soft">
-        Pulled from GitHub releases. The Mac app also checks this list for itself through Sparkle.
+        Pulled from GitHub releases. The Mac app does not read this page: Sparkle checks a
+        separate update feed, and a version reaches the app only once it is listed there.
       </p>
 
       {releases?.length ? (

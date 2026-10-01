@@ -170,6 +170,23 @@ werten, `.buffering` erst nach dem ersten Bild als spielend zählen und eine Zei
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ — Mit eigenem Mock auf 127.0.0.1 und eigenem Test in getrennter Kopie meldet VLC bei 401/403/404, geschlossenem Port und unbekanntem Host `error` und in derselben Millisekunde `stopped`, die Engine steht nach 0,3 s auf `idle` und bleibt dort 60 s (vier Anfragen je Öffnen), Hänger und HTML gelten als `playing` (HTML in diesem Lauf `playing` statt Ladekreis, vgl. „je nach Lauf“), ein Abbruch nach 5 s lässt VLC auf `paused` (Bildzeit steht bei 4,3 s) und die Engine 25 s auf `playing`, `failed` wird nie gesetzt, und die gehostete `PlayerView` zeigt nach 30 s bei `.ts`-404 nur den Ladekreis bzw. beim Hänger eine schwarze Fläche, während die AVKit-404-Kontrolle im selben Lauf „Wiedergabe fehlgeschlagen“ mit „Erneut versuchen“ zeigt; Grad angemessen.
 
+**Behoben 2026-09-27:** Die VLC-Engine liest den Zustand im Delegate-Aufruf selbst – VLCKit ruft ihn synchron auf seinem
+Ereignis-Thread direkt nach dem Speichern auf – und reicht ihn in Reihenfolge an den Hauptthread; „error“ geht nicht mehr an
+„stopped“ verloren. „Läuft“ gilt erst ab dekodiertem bzw. angezeigtem Bild (Wächter alle 0,25 s), „buffering“ nicht mehr. Endet der
+Datenstrom ohne eigene Pause (VLCKit startet libVLC mit `--play-and-pause`, das Ende kommt als „paused“ oder „stopped“), ist das ein
+Fehler; nur das Ende einer suchbaren Datei (≥ 90 %) bleibt Standbild wie bei AVKit (EC-04). Zeitgrenzen analog AVKit: 40 s bis zum
+ersten Bild, 30 s ohne neues Bild. Nach jedem Fehler wird der Player abgebaut (Verbindung zu); „Erneut versuchen“ lädt mit einem neuen.
+Meldungen deutsch, ohne Adresse: „Der Sender konnte nicht geöffnet werden. Möglicherweise ist er nicht erreichbar oder nicht mehr
+vorhanden, oder der Zugang wurde abgelehnt.“ (401/403/404/Host) · „Der Sender antwortet nicht.“ (Ladefrist) · „Der Sender liefert kein
+abspielbares Video.“ (HTML) · „Die Verbindung zum Sender wurde unterbrochen.“ (Abbruch, Hänger). Reproduktion erneut ausgeführt:
+Z `testAK10_…ZeigenMeldung` (alle sechs Fälle nach 0,05 s, 60 s stabil, 0 offene Verbindungen), Z `testAK11_…MeldenSich` (Hänger
+nach 40,0 s bzw. mit 5-s-Frist nach 5,2 s, HTML nach 0,05 s, verzögerter Start spielt nach 30,4 s), Z `testAK12_EC04_…` (Abbruch
+nach 5 s → Meldung nach 6,8 s; Dateiende bleibt Standbild), Z `testAK35_…` (Textdatei → Meldung), P `testAK10_AK11_…MitMeldung`
+(Fehleransicht mit „Erneut versuchen“, Bilder `qa/BUILD-BUG-01-…`), R `testBUG01_…` (Hänger mitten im Stream: Meldung nach
+4 s + 30 s = 34,2 s, Verbindung zu; „Erneut versuchen“ an der VLC-Engine). iOS-Sonde: TS-404 zeigt die Meldung
+(`qa/BUILD-IOS-iphone-02-…`, `qa/BUILD-IOS-ipad-02-…`). `XCTExpectFailure` entfernt, Tests umbenannt. Fundstelle
+`Sources/Services/VLCPlaybackEngine.swift`.
+
 ### BUG-02 · Verlassen beendet die Wiedergabe nicht: Engines und Verbindungen überleben den Player, VLC spielt nach Verlassen während des Ladens — hoch
 
 **Betrifft:** AK-28, AK-29 (FB-02), EC-05; Sicherheitskatalog 4.2, 4.3
@@ -197,6 +214,21 @@ N `testAK28_FB02_SenderwechselHaeltAlteVerbindungenOffen` (nicht strikt)
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ — In eigener Kopie (Test-Host, stumme Medien, Mock 127.0.0.1) lebte nach dem echten „Back“-Knopf auf dem Weg ContentView → Playlist → Sender die TS-Engine 60 s pausiert weiter bei laut `lsof`/`netstat` offener Verbindung (2/2 Läufe; Nachladen nur bis zum vollen Socket-Puffer, Recv-Q 576.120 B), die HLS-Engine rief in 12 s nach „Zurück“ 10 bzw. 12 Mal Playlist und Segmente ab, und nach Verlassen während des Ladens spielte VLC ohne Testreferenz ab +4 s bis +20 s mit voller Rate (Recv-Q 0, `isPaused=true`) – nur im reduzierten `NavigationStack`-Host wurde die spielende TS-Engine sofort freigegeben (3/3) und es trat keine zweite gleichzeitige Verbindung auf; Grad angemessen.
 
+**Behoben 2026-09-27:** Verlassen beendet die Wiedergabe: „Zurück“ (der Player fällt aus dem Navigationsstapel,
+`isPresented` → falsch) und am Mac das Schließen des Fensters rufen `stop()` – AVKit gibt das Element frei
+(`replaceCurrentItem(with: nil)`), VLC stoppt und baut den Player geordnet ab –, und die Ansicht gibt die Engine frei. Ein Tabwechsel
+pausiert weiter nur (AK-27, dieselbe Engine, keine neue Anfrage). Läuft Bild-in-Bild, übernimmt `DetachedPlayback` die Engine: Sie
+spielt im schwebenden Fenster weiter, bis Bild-in-Bild endet, und wird dann beendet – die app-weite Stelle, auf der die B07-Reparatur
+(BUG-01, verwaistes Fenster am Mac) aufbauen kann. Pause während VLC noch lädt bricht das Laden ab, „Abspielen“ lädt neu (EC-05,
+AK-29). Multiview entfernt Kacheln mit `stop()`. Mock-Protokoll: R `testBUG02_VerlassenBeendetVerbindungenNullWeitereAnfragen`
+(TS, HLS, TS, TS erneut) → je **0 Anfragen** 1–6 s nach „Zurück“, 0 offene Ströme, höchstens **1** Strom gleichzeitig;
+P `testAK28_…` (HLS 0 Abrufe in 12 s, TS zu, AVPlayer ohne Element), `testAK28b_…` (strikt: TS zu), `testAK29_…` (VLC startet nicht,
+keine Daten, Verbindung zu), S `testEC05_…` (Pause beim Laden: keine Daten, Fortsetzen spielt), R `testBUG02_MitBildInBild…`
+(Attrappe: läuft weiter, `stop` sobald Bild-in-Bild endet). iOS-Sonde iPhone 17 und iPad Air 11 (iOS 27): TS-Verbindung 0,01–0,39 s
+nach „Zurück“ zu, HLS 0 Anfragen danach, Tabwechsel ohne neuen Aufbau, höchstens 1 Strom (`qa/BUILD-IOS-sonde-protokoll.txt`).
+Bleibt: eine leere Keep-alive-Verbindung von AVFoundation nach HLS (keine Anfrage, keine Daten, ≈ 29 s) wie B08 H-1. Fundstellen
+`PlayerView.swift` (`leavePlayer`), `DetachedPlayback.swift` (neu), `VLCPlaybackEngine.swift`, `MultiviewSession.swift`.
+
 ### BUG-03 · Unvertraute Streams laufen durch eine libVLC mit veröffentlichten Lücken, ohne Sandbox und ohne Eingrenzung von Schema und Ziel — hoch
 
 **Betrifft:** AK-35 (FB-03); Sicherheitskatalog 4.4, Angriff 2 und 7
@@ -222,6 +254,17 @@ an die Engines geben; mittelfristig Sandbox bzw. Developer-ID mit Library Valida
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ — `libvlc_get_version` liefert zur Laufzeit „3.0.21 Vetinari“ / `3.0.21-49-g608e9fb467` (die 49 sind die VLCKit-Patches auf `TESTEDHASH dd8bfdba` = Tag 3.0.21, keine 3.0.22-Korrekturen), alle Bulletin-Module (`codec_cc`, `demux_mp4_mp4`, `demux_libogg`, `access_mms`, `codec_substx3g` …) sind statisch gelinkt, ein per `importFromFile` importiertes M3U reicht `file://` (TS spielt, stummes MP4 unter `.ts`-Namen wird von libVLC demuxt) und `http://localhost:<port>` (`GET` mit `VLC/3.0.21`) ungeprüft an libVLC, Release `app-sandbox=false`/`disable-library-validation=true`, `vlckit-spm` endet bei 3.6.0, VLCKit 3.7.3 (`79128878`) enthält 3.0.22 vollständig; Grad angemessen
 
+**Nicht behoben:** Die Bedingungen für einen Wechsel der Bezugsquelle sind nicht alle erfüllbar. (a) erfüllt: VideoLAN
+bietet VLCKit 3.7.3 (libVLC 3.0.23, Commit `79128878`) offiziell an. (b) nicht erfüllt: nur als CocoaPods-Archiv
+`download.videolan.org/pub/cocoapods/prod/VLCKit-3.7.3-319ed2c0-79128878.tar.xz` (iOS getrennt `MobileVLCKit-…tar.xz`); die Tags
+3.7.0–3.7.3 (code.videolan.org und GitHub-Spiegel) enthalten kein `Package.swift`, ein `.zip` gibt es nicht, und SwiftPM lehnt das
+Archiv ab – ausgeführt mit einem Probe-Paket: `unsupported extension for binary target 'VLCKit'; valid extensions are:
+'artifactbundleindex', 'zip'`. Das einzige offizielle SwiftPM-Paket (`videolan/vlckit` `master`) ist VLCKit 4.0 als Vorabversion mit
+anderer API – keine andere Bezugsquelle derselben Bibliothek. (c) und (d) damit nicht mehr zu prüfen. `project.yml` nicht geändert.
+Eingebettet bleibt, am gebauten Bundle gelesen (`strings`): macOS `VLCKit.framework` → `3.0.21-49-g608e9fb467`, iOS
+`MobileVLCKit.framework` → `3.0.21-49-gd1840ca85f` (User-Agent `VLC/3.0.21 LibVLC/3.0.21`). Entscheidung → `spec.md` OF-06; die
+Eingrenzung von `file://`/Ziel (Produktverhalten) → OF-07.
+
 ### BUG-04 · Die Fehleransicht schickt Endnutzer zur README und behauptet, VLCKit fehle — mittel
 
 **Betrifft:** AK-13 (FB-04, DS-06)
@@ -235,6 +278,10 @@ README.“, obwohl VLCKit eingebunden ist und die Ursache eine andere; beim echt
 **Vorschlag:** Hinweis an `#if !canImport(VLCKitSPM) …` binden oder entfernen.
 **Test:** P `testAK13_AK04_AK31_Fehleransichten` (`XCTExpectFailure("BUG-04 …")`)
 
+**Behoben 2026-09-27:** Der Hinweis erscheint nur noch in einem Build ohne VLCKit (`#if !canImport(VLCKitSPM) …`) und dann
+bei TS-Adressen. P `testAK13_AK04_AK31_Fehleransichten`: bei fehlenden Zugangsdaten kein Hinweis, auch nach „Erneut versuchen“
+(`qa/BUILD-BUG-04-…`); P `testAK10_AK11_…`: VLC-Fehleransicht ohne Hinweis. `XCTExpectFailure` entfernt.
+
 ### BUG-05 · Die Website verspricht Bildschirm-Rückmeldung für jede Taste; F, Esc und P (VLC) haben keine — niedrig
 
 **Betrifft:** FB-05
@@ -247,6 +294,9 @@ Standardformat – kein HUD und kein Bild-in-Bild, nur die Steuerung
 **Ort:** `web/content/features.ts:38`, `web/app/support/page.tsx:65-72`; Code `Sources/Views/PlayerView.swift:306-313, 362-365`
 **Vorschlag:** Website-Text auf Leertaste/M/Lautstärke einschränken und P als „nur HLS“ kennzeichnen (Teil der B10-Reparatur, vgl. BF-25).
 **Test:** N `testFB05_FUndEscZeigenKeinHUD_LeertasteSchon` (`XCTExpectFailure("BUG-05 …")`), P `testAK20_AK15_VLCTasteP`
+
+**Nicht behoben:** gehört zur Website-Reparatur (B10 Teil 2), nicht zu diesem Fehlerauftrag. Der genannte Test N
+`testFB05_…` liegt nicht im Repository (`Tests/B06/B06NachtragTests.swift` fehlt, siehe Build-Bericht).
 
 ### BUG-06 · Der Vollbildzustand des Players ist nicht an sein Fenster gebunden — mittel
 
@@ -264,6 +314,15 @@ eigenen Aktionen), `:408-411` (`resetOrientation` beim Verschwinden, `isFullscre
 **Vorschlag:** Fenster der Ansicht ermitteln (z. B. über einen `NSViewRepresentable`-Anker) und `isFullscreen` aus
 `NSWindow.didEnter/didExitFullScreenNotification` dieses Fensters führen; beim Verschwinden zurücksetzen.
 **Test:** P `testAK23_…`, `testAK24_…`, N `testAK21_FB06_TabwechselImVollbildVerstimmtPlayer` (je `XCTExpectFailure("BUG-06 …")`)
+
+**Behoben 2026-09-27:** Die Ansicht kennt ihr Fenster (unsichtbare `NSView`, die ihr Fenster meldet) und schaltet nur dieses
+ins bzw. aus dem Vollbild; `isFullscreen` folgt `didEnter/didExitFullScreenNotification` dieses Fensters (grüner Knopf, Menü,
+Tabwechsel) und wird beim Verschwinden zurückgesetzt. P `testAK23_…PlayerFenster` (A geht ins Vollbild, B nicht; zweite Aktion holt A
+zurück, Titel zurück), P `testAK24_…PlayerFolgtFenster` (grüner Knopf: Symbol „Vollbild verlassen“, 24 pt, Titel leer; das erste F
+verlässt; umgekehrt nach F und grünem Knopf wieder Fensterdarstellung), R `testBUG06_…` (Tabwechsel im Vollbild: Fenster verlässt
+das Vollbild, zurück im Player Titel und Symbol richtig), Bilder `qa/BUILD-BUG-06-…`. Diese Tests brauchen einen aktiven Test-Host;
+in der Baseline vor der Reparatur scheiterten AK-23/AK-24 am unveränderten Code zusätzlich an der Umgebung (Beep ohne gesendete Taste,
+zweites F ohne Wirkung), in einzelnen Läufen werden sie übersprungen, wenn der Test-Host nicht aktiv wird. `XCTExpectFailure` entfernt.
 
 ### BUG-07 · libVLC kann den Hauptthread beim Erzeugen eines Players dauerhaft blockieren, während andere Player abgebaut werden — mittel
 
@@ -287,6 +346,16 @@ libVLC 3.0.21 (BUG-03)
 aktuelle libVLC prüfen; in B08 gezielt mit vier Kacheln wiederholen.
 **Test:** `B06DeadlockTests.testBUG07_…` und N `testBUG07_SenderwechselImNavigationsstapel` (nur mit `B06_DEADLOCK=1`, Wachhund)
 
+**Behoben 2026-09-27 (Ursache ausgeschlossen, Hänger selbst weiterhin nicht reproduzierbar):** Alle VLC-Player laufen durch
+`VLCPlayerLifecycle`: vor der Freigabe `stop()` und Warten auf „stopped“, letzte Referenz auf einer eigenen seriellen Queue (der Abbau
+blockiert nie den Hauptthread), Warten bis der Player wirklich frei ist, dann der nächste – nie mehr als ein Abbau; neue Player
+entstehen erst, wenn kein Abbau läuft (Erzeugung zurückgestellt, das Laden zählt dabei in die 40-s-Frist). Engines, die ohne `stop()`
+fallen, geben ihren Player über `deinit` in denselben Weg. Multiview entfernt und leert mit `stop()`. Belege: R `testBUG07_…`
+(Multiview mit vier VLC-Kacheln schließen und sofort vier neue, 3 Durchgänge: je 4 Abbauten nacheinander, 4 zurückgestellte
+Erzeugungen, Schließen und Neubelegen 0,0 s auf dem Hauptthread, alle vier neuen spielen nach 1,1–1,4 s, alte Verbindungen zu), `B06DeadlockTests` (`B06_DEADLOCK=1`) 12 × 4 mit
+`stop()` und 8 × 6 ohne `stop()` mit Fenstern: je 48 Abbauten, höchstens 1 gleichzeitig, kein Hänger. Fundstelle
+`VLCPlaybackEngine.swift` (`VLCPlayerLifecycle`), `MultiviewSession.swift`.
+
 ### BUG-08 · Am iPad erreicht die Tastatur den Player nicht — mittel
 
 **Betrifft:** AK-18, AK-19 (iPad-Teil, in der Spec „gelesen“)
@@ -304,6 +373,12 @@ Fokus der oben liegenden iPad-Tab-Leiste (nicht belegt)
 über `UIKeyCommand`/`.keyboardShortcut` anbinden.
 **Test:** keiner (nur im iOS-Simulator bedienbar), Protokoll `qa/IOS-11-simulator-protokoll.txt`
 
+**Nicht behoben (Änderung eingebaut, nicht nachgewiesen):** Der Player fordert am iPad den Tastaturfokus als Vorgabe
+(`defaultFocus`), nach dem Übergang erneut (0,35 s und 1,35 s nach dem Erscheinen) und bei einem Tipp aufs Bild an. Die Reproduktion
+(Hardware-Tastatur am iPad) ließ sich in dieser Umgebung nicht ausführen: Simulator-Tastenereignisse brauchen eine UI-Automatisierung
+(AXe o. ä.), die hier nicht installiert ist. iOS gebaut, die iPad-Sonde lief (Wiedergabe, Verlassen), Tasten wurden nicht gesendet.
+Prüfung → QA-Durchlauf 2.
+
 ### BUG-09 · Ladekreis dunkelgrau statt weiß; Sendername unter iOS im hellen Erscheinungsbild unsichtbar — niedrig
 
 **Betrifft:** AK-01; Design-System („Laden (Video): `ProgressView` `.large`, weiß, mittig auf Schwarz“)
@@ -319,6 +394,13 @@ Erscheinungsbild sichtbar (`IOS-10-…`). Am iPad ebenso
 **Vorschlag:** Indikator mit `.controlSize(.large)` und `.colorScheme(.dark)`/`.environment(\.colorScheme, .dark)` bzw. eigener Farbe;
 Navigationsleiste des Players dunkel erzwingen.
 **Test:** keiner (Darstellung), Bilder unter `qa/`
+
+**Behoben 2026-09-27:** Ladekreis im dunklen Farbschema mit `brightness(1)` (weiß, Deckkraft des System-Ladekreises): am Mac
+max. Helligkeit 0,589 im hellen und 0,618 im dunklen Fenster statt 0,275, 58–64 Pixel über 0,5 statt 0 (R `testBUG09_…`, Bilder
+`qa/BUILD-BUG-09-…`); iOS weiß (`qa/BUILD-IOS-iphone-03-…`, `qa/BUILD-IOS-ipad-03-…`). Navigationsleiste des Players unter iOS
+schwarz mit hellem Titel (`toolbarBackground(.black)`, `toolbarColorScheme(.dark)`): Sendername im hellen Erscheinungsbild weiß auf
+Schwarz (`qa/BUILD-IOS-iphone-01-…`, iPad `qa/BUILD-IOS-ipad-02-…`). Nicht Teil des Befunds, aber aufgefallen: die Fehleransicht ist
+unter iOS im hellen Erscheinungsbild kontrastarm (→ `spec.md` OF-13), die Multiview-Kachel hat noch den grauen Kreis (OF-12).
 
 ## Hinweise (kein Kriterium durchgefallen)
 

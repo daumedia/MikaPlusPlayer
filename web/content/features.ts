@@ -6,16 +6,22 @@ export type Feature = {
   body: string;
 };
 
+/**
+ * Every claim here describes version 1.1 of the Mac app — the release offered for download (tag v1.1).
+ * Features and fixes that are not in a release yet (Picture in Picture, double-click import, faster
+ * lists) stay off this list until a release ships them. Numbers are measurements from the QA reports
+ * of B01–B04 (features/…/qa-report.md).
+ */
 export const FEATURES: readonly Feature[] = [
   {
     kicker: "Library",
-    title: "Search that keeps up with 17,000 channels",
-    body: "Search and group filters run in the database, not in memory. Type a name, tap a group chip, and the list responds immediately — even on the oversized channel lists Xtream panels tend to hand out.",
+    title: "Search across 17,000 channels",
+    body: "Search and the channel filter run as database queries, so even the oversized lists Xtream panels hand out stay searchable. Version 1.1 still pauses on lists that size: opening one takes up to about a second, and importing 17,000 channels takes several minutes.",
   },
   {
     kicker: "Library",
-    title: "Favourites that survive a refresh",
-    body: "Star a channel anywhere and it shows up in one tab across every playlist. Refreshing a remote playlist matches favourites by their tvg-id, so a provider reordering their list does not wipe your selection.",
+    title: "Favourites across playlists",
+    body: "Star a channel in the list and it shows up in one Favourites tab across every playlist. After a refresh, a favourite keeps its star if the channel comes back with the same tvg-id — or, if it has none, the same name. If the provider changes that id or name, the star is gone, and channels that share one all get the star.",
   },
   {
     kicker: "Library",
@@ -29,22 +35,17 @@ export const FEATURES: readonly Feature[] = [
   },
   {
     kicker: "Playback",
-    title: "Picture in Picture",
-    body: "Send the stream into the system PiP window and keep watching while you work. On iPhone and iPad it starts on its own when the app moves to the background.",
-  },
-  {
-    kicker: "Playback",
     title: "Hands on the keyboard",
-    body: "Space plays and pauses, arrow keys and +/− set the volume in 5% steps, M mutes, F goes full screen, P opens Picture in Picture, Esc comes back. On-screen feedback confirms each one, then disappears.",
+    body: "Space plays and pauses, arrow keys and +/− set the volume in 5% steps, M mutes, F switches to full screen and Esc leaves it. Play/pause, volume and mute show a short on-screen confirmation, then it disappears.",
   },
   {
     kicker: "System",
-    title: "Updates that install themselves",
-    body: "The Mac app checks for new versions through Sparkle and verifies every update with an EdDSA signature before installing. No package manager, no re-download from a web page.",
+    title: "Updates through Sparkle",
+    body: "The Mac app looks for a new version automatically, about once a day, and asks before installing it — unless you let Sparkle install future updates on its own. Every update is verified with an EdDSA signature first. No package manager, no re-download from a web page.",
   },
   {
     kicker: "System",
     title: "Three ways in",
-    body: "Sign in with Xtream Codes credentials, paste an M3U or M3U8 link, or open a playlist file from disk. Mika+Player also registers as a handler for .m3u files, so double-clicking one opens it here.",
+    body: "Sign in with Xtream Codes credentials, paste an M3U or M3U8 link, or open a playlist file from inside the app. Double-clicking a playlist in Finder does not import it in version 1.1.",
   },
 ] as const;

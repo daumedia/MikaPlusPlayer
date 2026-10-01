@@ -9,7 +9,7 @@ export const SETUP_STEPS: readonly SetupStep[] = [
   {
     channel: "01",
     title: "Add a playlist",
-    body: "Pick Xtream and enter host, username and password — or switch to URL and paste an M3U link, or to File and open a playlist from disk. Naming the playlist is optional.",
+    body: "Pick Xtream and enter host, username and password — or switch to URL and paste an M3U link, or to Datei (file) and open a playlist from disk. Naming the playlist is optional.",
   },
   {
     channel: "02",

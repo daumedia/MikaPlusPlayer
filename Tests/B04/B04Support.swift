@@ -157,35 +157,33 @@ enum B04QA {
         }
     }
 
-    // MARK: Abfragen der Liste (Spiegel)
+    // MARK: Abfragen der Liste
 
-    /// Spiegelt Predicate und Sortierung aus `ChannelResultsList.init` Zeile für Zeile; der Typ ist `private`,
-    /// deshalb wird die Abfrage hier nachgebaut. Die Gegenprobe gegen die echte Ansicht steht in
-    /// `B04SucheTests.testAK07_…Oberflaeche`.
-    static func resultsDescriptor(_ playlistID: UUID, _ searchText: String, _ group: String?) -> FetchDescriptor<Channel> {
-        let s = searchText
-        let g = group
-        let predicate = #Predicate<Channel> { ch in
-            ch.playlistID == playlistID
-                && (s.isEmpty || ch.name.localizedStandardContains(s))
-                && (g == nil || ch.group == g)
-        }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.name, comparator: .localized)])
+    /// Seit der Reparatur (B04 · BUG-12 bis BUG-14, 2026-09-29) liegt die Abfrage der Liste als `ChannelListQuery`
+    /// offen; statt eines Spiegels benutzen die Tests sie selbst. Die Gegenprobe gegen die echte Ansicht steht weiter
+    /// in `B04SucheTests.testAK07_…Oberflaeche`.
+    @MainActor
+    static func owner(_ ctx: ModelContext, _ playlistID: UUID) -> PersistentIdentifier? {
+        var descriptor = FetchDescriptor<Playlist>(predicate: #Predicate { $0.id == playlistID })
+        descriptor.fetchLimit = 1
+        return (try? ctx.fetch(descriptor))?.first?.persistentModelID
+    }
+
+    static func resultsDescriptor(_ owner: PersistentIdentifier, _ searchText: String, _ group: String?) -> FetchDescriptor<Channel> {
+        ChannelListQuery.descriptor(playlist: owner, search: searchText, groupValues: group.map { [$0] })
     }
 
     @MainActor
     static func results(_ ctx: ModelContext, _ pid: UUID, _ search: String = "", _ group: String? = nil) -> [String] {
-        ((try? ctx.fetch(resultsDescriptor(pid, search, group))) ?? []).map(\.name)
+        guard let owner = owner(ctx, pid) else { return [] }
+        return ((try? ctx.fetch(resultsDescriptor(owner, search, group))) ?? []).map(\.name)
     }
 
-    /// Spiegelt `ChannelListView.loadGroups()`.
+    /// Chip-Titel wie die Leiste sie zeigt (`ChannelListQuery.groups`).
     @MainActor
     static func groupsMirror(_ ctx: ModelContext, _ pid: UUID) -> [String] {
-        var descriptor = FetchDescriptor<Channel>(predicate: #Predicate { $0.playlistID == pid })
-        descriptor.propertiesToFetch = [\.group]
-        let fetched = (try? ctx.fetch(descriptor)) ?? []
-        let names = fetched.compactMap { $0.group?.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-        return Array(Set(names)).sorted()
+        guard let owner = owner(ctx, pid) else { return [] }
+        return (try? ChannelListQuery.groups(in: ctx.container, playlist: owner).chips) ?? []
     }
 
     // MARK: SQLite (nur Test-Dateien)
@@ -303,12 +301,20 @@ final class B04Nav {
 /// Wie `ContentView`, Tab „Playlists“: `NavigationStack { PlaylistsView() }`, nur mit steuerbarem Pfad.
 struct B04Root: View {
     @Bindable var nav: B04Nav
+    /// Zeichnet Bedienelemente wie in einem aktiven Fenster, auch wenn der Test-Host nicht vorn ist (Nacharbeit R-1:
+    /// hervorgehobene Tasten sind in inaktiven Fenstern grau).
+    var forceActive = false
 
     var body: some View {
-        NavigationStack(path: $nav.path) {
+        let stack = NavigationStack(path: $nav.path) {
             PlaylistsView()
         }
         .tint(.playerAccent)
+        if forceActive {
+            stack.environment(\.controlActiveState, .key)
+        } else {
+            stack
+        }
     }
 }
 
@@ -321,10 +327,10 @@ final class B04Window {
 
     init(_ container: ModelContainer, size: CGSize = CGSize(width: 900, height: 700),
          origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil,
-         multiview: MultiviewSession? = nil) {
+         multiview: MultiviewSession? = nil, forceActive: Bool = false) {
         let multiview = multiview ?? MultiviewSession()
         self.multiview = multiview
-        let root = B04Root(nav: nav).environment(multiview).modelContainer(container)
+        let root = B04Root(nav: nav, forceActive: forceActive).environment(multiview).modelContainer(container)
         let hv = NSHostingView(rootView: root)
         let w = NSWindow(contentRect: NSRect(origin: origin, size: size),
                          styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
@@ -402,6 +408,27 @@ final class B04Window {
             .sorted { $0.1.minX < $1.1.minX }
     }
 
+    /// Scrollt die Chip-Leiste, bis der Chip aufgebaut ist (Leiste mit vielen Gruppen baut nur sichtbare Chips auf).
+    @discardableResult
+    func revealChip(_ title: String) -> Bool {
+        if chips.contains(where: { $0.title == title }) { return true }
+        // Die Leiste ist die rein waagerecht scrollbare Ansicht (die Seite selbst scrollt senkrecht).
+        guard let bar = B04AX.views(hosting, of: NSScrollView.self).first(where: {
+            ($0.documentView?.bounds.width ?? 0) > $0.contentSize.width + 10
+                && ($0.documentView?.bounds.height ?? .infinity) <= $0.contentSize.height + 1
+        }) else { return false }
+        let breite = bar.contentSize.width
+        var x: CGFloat = 0
+        while x < (bar.documentView?.bounds.width ?? 0) {
+            x += breite * 0.8
+            bar.contentView.scroll(to: NSPoint(x: x, y: 0))
+            bar.reflectScrolledClipView(bar.contentView)
+            B04QA.spin(0.3)
+            if chips.contains(where: { $0.title == title }) { return true }
+        }
+        return false
+    }
+
     @discardableResult
     func pressChip(_ title: String, wait: TimeInterval = 1.0) -> Bool {
         guard let chip = chips.first(where: { $0.title == title }) else { return false }
@@ -414,7 +441,11 @@ final class B04Window {
     /// Accessibility-Baum als `AXBusyIndicator` statt `AXButton`; ihr Wert (`| 0`) wird abgeschnitten.
     var rows: [(label: String, frame: NSRect, busy: Bool, element: NSObject)] {
         let all = elements
-        guard let list = all.first(where: { B04AX.role($0) == "AXOpaqueProviderGroup" }) else { return [] }
+        // Seit der Reparatur (B04 · BUG-13) ist bei vielen Gruppen auch die Chip-Leiste ein Lazy-Container (eine Zeile,
+        // rund 28 pt hoch); die Senderliste ist der höchste Container mit gültigem Rahmen.
+        let gruppen = all.filter { B04AX.role($0) == "AXOpaqueProviderGroup" }
+        let gueltig = gruppen.filter { let f = B04AX.frame($0); return f.width > 0 && f.height.isFinite && f.minY.isFinite }
+        guard let list = gueltig.max(by: { B04AX.frame($0).height < B04AX.frame($1).height }) ?? gruppen.first else { return [] }
         return B04AX.all(list).dropFirst()
             .filter { ["AXButton", "AXBusyIndicator"].contains(B04AX.role($0)) }
             .map { e -> (String, NSRect, Bool, NSObject) in
@@ -1057,8 +1088,9 @@ class B04TestCase: XCTestCase {
     }
 
     func window(_ c: ModelContainer, size: CGSize = CGSize(width: 900, height: 700),
-                origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil) -> B04Window {
-        let w = B04Window(c, size: size, origin: origin, appearance: appearance)
+                origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil,
+                forceActive: Bool = false) -> B04Window {
+        let w = B04Window(c, size: size, origin: origin, appearance: appearance, forceActive: forceActive)
         windows.append(w)
         return w
     }

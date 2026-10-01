@@ -100,21 +100,16 @@ final class B08NachtragTests: B08UITestCase {
         B08QA.log("AK-14|Klick auf das große Bild|fokus=\(app.focusedIndex)")
         XCTAssertEqual(app.focusedIndex, 2, "Klick auf den fokussierten Stream bewirkt nichts")
 
-        // AK-16: sechs Klicks auf die Stelle des großen X
+        // AK-16 / BUG-04 (Build 2026-09-28): ein Klick auf das große X entfernt den großen Stream („Drei HLS", Index 2);
+        // als letzter in der Reihe bekommt der davor den Ton (AK-17).
         xs = xFramesTopDown(w)
         let bigX = xs[0]
-        var foci = [app.focusedIndex]
-        for _ in 0..<6 {
-            await queuedClick(w, screen: NSPoint(x: bigX.midX, y: bigX.midY))
-            foci.append(app.focusedIndex)
-        }
-        B08UI.shot(w, "AK-16-klicks-aufs-grosse-x-aktive-app")
-        B08QA.log("AK-16|aktive App|6 Klicks auf das große X bei \(bigX)|fokus=\(foci)|slots=\(app.slots.map(\.channel.name))")
-        XCTAssertEqual(app.slots.count, 3, "Ist: kein Stream entfernt")
-        XCTAssertGreaterThan(Set(foci).count, 1, "Ist: der Klick verlegt den Fokus auf die erste kleine Kachel")
-        XCTExpectFailure("BUG-04 · X des großen Streams ist mit der Maus nicht erreichbar, der Klick verlegt Ton und Fokus (FB-04)") {
-            XCTAssertEqual(app.slots.count, 2, "erwartet: X entfernt den großen Stream")
-        }
+        await queuedClick(w, screen: NSPoint(x: bigX.midX, y: bigX.midY))
+        B08UI.shot(w, "BUILD-AK-16-klick-aufs-grosse-x-aktive-app")
+        B08QA.log("AK-16|aktive App|Klick auf das große X bei \(bigX)|fokus=\(app.focusedIndex)|slots=\(app.slots.map(\.channel.name))")
+        XCTAssertEqual(app.slots.map(\.channel.name), ["Eins HLS", "Zwei TS"], "der große Stream ist entfernt")
+        XCTAssertEqual(app.focusedIndex, 1)
+        XCTAssertEqual(app.slots.map(\.engine.isMuted), [true, false])
 
         // Raster: Klick auf die Kachel unten links (Index 2)
         await safeClear(app)
@@ -154,10 +149,8 @@ final class B08NachtragTests: B08UITestCase {
         B08QA.log("AK-15|VLC|echter Klick wirkt=\(geklickt)|Schwarzanteil Hauptbild vorher/2 s/10 s=\(B08QA.f2(vorher))/\(B08QA.f2(nach2))/\(B08QA.f2(nach10))|\(B08Engine.describe(app))")
         XCTAssertTrue(geklickt)
         XCTAssertLessThan(vorher, 0.2)
-        XCTAssertGreaterThan(min(nach2, nach10), 0.95, "Ist: Hauptbild schwarz")
-        XCTExpectFailure("BUG-02 · Nach dem Fokuswechsel per Klick bleibt das VLC-Hauptbild schwarz (FB-02)") {
-            XCTAssertLessThan(max(nach2, nach10), 0.2)
-        }
+        // Seit B08 · BUG-02 (Build 2026-09-28): das große Bild zeigt den angeklickten VLC-Stream
+        XCTAssertLessThan(max(nach2, nach10), 0.2, "VLC-Hauptbild nach dem Klick sichtbar")
         NSApp.deactivate()
     }
 
@@ -190,9 +183,8 @@ final class B08NachtragTests: B08UITestCase {
         B08QA.log("CR|Raster VLC|Schwarzanteil Zellen oben links, oben rechts, unten links, unten rechts vorher=\(vorher) nach X auf V1=\(nach)|slots=\(app.slots.map(\.channel.name))|etiketten=\(etiketten)|\(B08Engine.describe(app))")
         XCTAssertEqual(app.slots.map(\.channel.name), ["V2", "V3", "V4"])
         XCTAssertTrue(vorher.allSatisfy { (Double($0) ?? 1) < 0.2 }, "vorher vier Bilder")
-        XCTExpectFailure("BUG-02 · Raster: nach dem Entfernen einer vorderen VLC-Kachel zeigen die nachrückenden Zellen kein Bild (Identität je Index)") {
-            XCTAssertTrue(nach.prefix(3).allSatisfy { (Double($0) ?? 1) < 0.2 }, "erwartet: drei Bilder")
-        }
+        // Seit B08 · BUG-02 (Build 2026-09-28): die Kacheln sind an ihren Slot gebunden – die nachrückenden zeigen ihr Bild
+        XCTAssertTrue(nach.prefix(3).allSatisfy { (Double($0) ?? 1) < 0.2 }, "drei Bilder")
         app.layout = .focus
         await B08QA.spin(0.8)
     }

@@ -20,7 +20,7 @@ enum XtreamOutput: String, CaseIterable, Identifiable {
     var hint: String {
         switch self {
         case .hls: return "Spielt direkt mit AVKit – kein VLCKit nötig."
-        case .mpegts: return "Originalformat des Anbieters – benötigt VLCKit."
+        case .mpegts: return "Originalformat des Anbieters – benötigt VLCKit. Bild-in-Bild gibt es nur mit HLS."
         }
     }
 

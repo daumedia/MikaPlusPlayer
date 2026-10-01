@@ -53,7 +53,7 @@ final class B07SystemfensterTests: B07TestCase {
 
     // MARK: AK-16 · Pause-Knopf des echten Systemfensters
 
-    func testAK16_PauseKnopfDesSystemfensters_AppZeigtWeiterLaeuft() async throws {
+    func testAK16_PauseKnopfDesSystemfensters_AppZeigtAngehalten() async throws {
         let c = channel("QA Pause echt", "/livehls/p16/index.m3u8")
         let w = playerWindow(c)
         try await activate(w)
@@ -87,10 +87,9 @@ final class B07SystemfensterTests: B07TestCase {
         XCTAssertEqual(b1 + b2, [])
         e.stopPictureInPicture()
         _ = await B07Engine.wait(8) { !e.isPictureInPictureActive }
-        XCTExpectFailure("BUG-03 · Pause im Bild-in-Bild-Fenster: App zeigt weiter „läuft“, erster Druck verpufft") {
-            XCTAssertTrue(e.isPaused || label0.contains("play.fill"), "App-Zustand folgt der Pause im Systemfenster")
-            XCTAssertEqual(r1, 1, accuracy: 0.01, "erster Druck setzt fort")
-        }
+        // Behoben (BUG-03, 2026-09-27)
+        XCTAssertTrue(e.isPaused || label0.contains("play.fill"), "App-Zustand folgt der Pause im Systemfenster")
+        XCTAssertEqual(r1, 1, accuracy: 0.01, "erster Druck setzt fort")
     }
 
     // MARK: EC-07 · Schließen-Knopf des Systemfensters
@@ -113,12 +112,8 @@ final class B07SystemfensterTests: B07TestCase {
         XCTAssertTrue(B07PiPWindows.current().isEmpty)
         XCTAssertTrue(pipLabel(w).contains("pip.enter"), "Knopf wieder „Bild-in-Bild öffnen“")
         // Ob das System beim Schließen pausiert, steht offen (Spec EC-07) – festgehalten wird der Ist-Wert;
-        // bei Pause muss die App es anzeigen (sonst AK-16/BUG-03).
-        if rate == 0 {
-            XCTExpectFailure("BUG-03 · System pausiert beim Schließen, App zeigt weiter „läuft“") {
-                XCTAssertTrue(e.isPaused, "App-Zustand folgt der Pause durch das System")
-            }
-        }
+        // die App zeigt, was der Player tut (behoben BUG-03, 2026-09-27).
+        XCTAssertEqual(e.isPaused, rate == 0, "App-Zustand folgt dem Player (rate=\(rate))")
     }
 
     // MARK: EC-08 · „Zurück zur App“ bei offenem Player
@@ -197,10 +192,9 @@ final class B07SystemfensterTests: B07TestCase {
             B07QA.log("\(tag)|Ergebnis: nach \(button) \(10 + longObserve) s ohne Fenster, rate zuletzt=\(lastRate), Segmente in \(longObserve) s=\(segLong)")
         }
         weakP?.pause(); weakE?.stopPictureInPicture()
-        XCTExpectFailure("BUG-01 · Nach „Zurück“ bleibt eine Wiedergabe ohne Player (Systemfenster als einzige Steuerung)") {
-            XCTAssertEqual(segAfter, 0, "nach \(button) lädt der verwaiste Stream nicht weiter")
-            XCTAssertFalse(rateAfter > 0.5 && winsAfter == 0, "keine unsichtbar weiterlaufende Wiedergabe")
-        }
+        // Behoben (BUG-01; wirksam seit der B06-Reparatur `DetachedPlayback`, „Zurück zur App“ mit Delegate)
+        XCTAssertEqual(segAfter, 0, "nach \(button) lädt der verwaiste Stream nicht weiter")
+        XCTAssertFalse(rateAfter > 0.5 && winsAfter == 0, "keine unsichtbar weiterlaufende Wiedergabe")
     }
 
     private var longObserve = 0

@@ -630,7 +630,8 @@ enum B08Engine {
 
     static func avPlayer(_ e: any PlaybackEngine) -> AVPlayer? { child(e, "player") as? AVPlayer }
     static func vlcPlayer(_ e: any PlaybackEngine) -> NSObject? { child(e, "mediaPlayer") as? NSObject }
-    static func isVLC(_ e: any PlaybackEngine) -> Bool { vlcPlayer(e) != nil }
+    /// Am Typ erkannt: seit B06 · BUG-01/07 hat eine VLC-Engine nach einem Fehler (bzw. vor dem Start) keinen Player.
+    static func isVLC(_ e: any PlaybackEngine) -> Bool { String(describing: type(of: e)).contains("VLC") }
     static func kind(_ e: any PlaybackEngine) -> String { isVLC(e) ? "VLC" : "AVKit" }
 
     static func vlcState(_ v: NSObject) -> String {

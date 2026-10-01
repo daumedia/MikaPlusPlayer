@@ -373,6 +373,36 @@ Alle vom 2026-09-16. Entscheidung durch den Nutzer (Michael Ferreira), vor der R
 - **OF-05** · Soll die VLC-Engine unter iOS wie AVKit im Hintergrund weiterspielen (Audio-Sitzung), oder ist das
   Anhalten im Hintergrund gewollt (AK-30)? Mit stummen Streams nicht prüfbar.
 
+Ergänzt 2026-09-27 aus der Reparatur (sdd-build, Fehlerauftrag BUG-01 bis BUG-09). Entscheidung durch den Nutzer.
+
+- **OF-06** · **Bezugsquelle für VLCKit ≥ 3.7 (libVLC 3.0.23, BUG-03).** VideoLAN liefert VLCKit 3.7.x nur als
+  CocoaPods-Archiv (`download.videolan.org/pub/cocoapods/prod/VLCKit-3.7.3-….tar.xz`, iOS getrennt als
+  `MobileVLCKit-…tar.xz`); die Tags 3.7.0–3.7.3 enthalten kein `Package.swift`, SwiftPM nimmt für Binärziele nur
+  `.zip`/`.artifactbundleindex` an. Eine Umstellung ohne neue Einbindungsart ist damit nicht möglich. Zur Wahl:
+  (a) CocoaPods oder Carthage neben XcodeGen einführen, (b) das offizielle Archiv selbst als `xcframework.zip` neu
+  packen und mit Prüfsumme hosten (dann nicht mehr die Datei von VideoLAN), (c) die Frameworks ins Repository legen,
+  (d) auf ein offizielles SwiftPM-Paket für 3.x warten, (e) VLCKit 4 (SwiftPM vorhanden, aber Vorabversion mit
+  anderer API). Bis dahin bleibt libVLC `3.0.21-49-g608e9fb467` eingebettet.
+- **OF-07** · Sollen Stream-Adressen aus Playlists auf `http`/`https` eingegrenzt werden (BUG-03, Angriff 7)? Heute
+  gehen `file://` und Ziele im lokalen Netz an libVLC. Eine Eingrenzung würde lokale Dateien in M3U-Listen
+  ausschließen – spürbares Produktverhalten, deshalb nicht im Build entschieden.
+- **OF-08** · VLC-Fristen und -Meldungen bestätigen (BUG-01): Ladefrist 40 s bis zum ersten Bild, 30 s ohne neues
+  Bild während der Wiedergabe (analog AVKit: HLS-Hänger ≈ 40 s, Abbruch ≈ 31 s); deutsche Meldungen „Der Sender
+  konnte nicht geöffnet werden …", „Der Sender antwortet nicht.", „Der Sender liefert kein abspielbares Video.",
+  „Die Verbindung zum Sender wurde unterbrochen.". Die AVKit-Texte bleiben englisch (OF-01).
+- **OF-09** · Pause während ein VLC-Sender noch lädt (EC-05) bricht das Laden ab; „Abspielen" lädt neu. So gebaut,
+  weil VLC eine Pause erst nach dem Start annimmt. Gewollt?
+- **OF-10** · Tabwechsel (AK-27) lässt Engine und Verbindung pausiert bestehen – eine pausierte AVKit-Engine lädt
+  Live-HLS weiter, eine pausierte VLC-Engine hält die Verbindung (und bei Abos mit einer Verbindung den Platz).
+  Soll ein verdeckter Player nach einer Frist beendet werden? Nicht Teil von BUG-02 (dort nur „Verlassen").
+- **OF-11** · Am Mac endet die Wiedergabe jetzt auch beim Schließen des Player-Fensters (EC-13) wie bei „Zurück".
+  Gewollt?
+- **OF-12** · Die Multiview-Kachel zeigt denselben grauen Ladekreis wie vorher der Player (B08,
+  `MultiviewTile.swift`); BUG-09 betraf nur den Player. Für die B08-Reparatur.
+- **OF-13** · Die Fehleransicht (AK-13) ist unter iOS im hellen Erscheinungsbild kontrastarm: grauer Meldungstext auf
+  grauem `.ultraThinMaterial` über der schwarzen Fläche (`qa/BUILD-IOS-iphone-02-…`). Seit BUG-01 erscheint sie auch
+  für VLC-Fehler, also häufiger. Soll sie wie der Rest des Players dunkel erzwungen werden?
+
 ## Fehlbestand
 
 Nicht vorhanden oder als Fehler eingestuft, aus dem Code belegt. Kein Kriterium: `sdd-qa` prüft nichts davon als

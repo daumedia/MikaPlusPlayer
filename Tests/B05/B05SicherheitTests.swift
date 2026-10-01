@@ -105,11 +105,15 @@ final class B05SicherheitTests: B05TestCase {
         func short(_ l: [String]) -> [String] { l.map { $0.count > 40 ? "\($0.prefix(12))…(\($0.count))" : $0 } }
         let lost = Set(before).subtracting(after)
         B05QA.evidence("Angriff-7.txt", "verloren beim aktualisieren=\(short(Array(lost)))")
-        XCTAssertEqual(Set(before).subtracting(lost), Set(after), "außer dem NUL-Fall bleiben alle Favoriten")
         XCTAssertEqual(tableOK, pl.channelCount)
-        XCTExpectFailure("BUG-09: NUL-Zeichen in Name/tvg-id – die Datenbank kürzt beim Speichern, der Favorit geht bei jedem Aktualisieren verloren") {
-            XCTAssertTrue(lost.isEmpty, "\(short(Array(lost)))")
-        }
+        // Seit B05 · BUG-09 (Build 2026-09-30): Steuerzeichen werden beim Anlegen entfernt – der NUL-Sender heißt „NullByte“
+        // und bleibt wie alle anderen Favorit (vorher: gekürzt auf „Null“, beim Aktualisieren verloren, 10 → 9).
+        XCTAssertTrue(lost.isEmpty, "\(short(Array(lost)))")
+        XCTAssertEqual(Set(before), Set(after))
+        XCTAssertEqual(after.count, names.count)
+        XCTAssertTrue(imported.contains("NullByte"), "\(short(imported))")
+        XCTAssertTrue(imported.contains("Tab\tName"), "Leerraum bleibt")
+        XCTAssertTrue(imported.contains("Rechts\u{202E}links"), "Formatzeichen sind keine Steuerzeichen")
         XCTAssertEqual(Set(heights).count, 1, "alle Karten gleich hoch (einzeilig)")
         // Stern auf der langen Karte funktioniert
         let longName = try XCTUnwrap(pl.channels.first { $0.name.hasPrefix("B05LANG") }?.name)
@@ -117,23 +121,26 @@ final class B05SicherheitTests: B05TestCase {
         XCTAssertEqual(B05QA.dbFavorite(store, name: longName), "0")
     }
 
-    /// Ursache von BUG-09: Der Parser behält das NUL-Zeichen, die SQLite-Datei speichert den Text nur bis dazu. Das
-    /// Objekt im Speicher behält den vollen Wert bis zum nächsten Laden – danach passt der Schlüssel nicht mehr.
-    func testAngriff7_NulZeichenWirdBeimSpeichernGekuerzt() throws {
-        let parsed = M3UParser().parse("#EXTM3U\n#EXTINF:-1 tvg-id=\"tvg-Null\u{0000}Byte\",Null\u{0000}Byte\nhttp://127.0.0.1:9/n.m3u8\n")
+    /// Ursache von BUG-09 war: Der Parser behält das NUL-Zeichen, die SQLite-Datei speichert Text nur bis dazu, nach dem
+    /// nächsten Laden passte der Schlüssel nicht mehr. Seit der Reparatur (Build 2026-09-30) entfernt der Anlegeweg
+    /// (`PlaylistStore`, für M3U und Xtream) Steuerzeichen aus Name, Gruppe und `tvg-id`: gespeichert wird „NullByte“, der
+    /// Schlüssel ist im Speicher und nach dem Neustart gleich.
+    func testAngriff7_NulZeichenWirdBeimAnlegenEntferntSchluesselBleibt() async throws {
+        let parsed = M3UParser().parse("#EXTM3U\n#EXTINF:-1 tvg-id=\"tvg-Null\u{0000}Byte\" group-title=\"Gr\u{0000}uppe\",Null\u{0000}Byte\nhttp://127.0.0.1:9/n.m3u8\n")
+        XCTAssertEqual(parsed.first?.name.unicodeScalars.count, 9, "der Parser liefert das Zeichen noch")
         let (c, store) = try fileContainer("nul")
-        let pl = Playlist(name: "QA NUL"); c.mainContext.insert(pl)
-        let ch = Channel(name: "Null\u{0000}Byte", streamURL: URL(string: "\(B05QA.dead)/n.m3u8")!, tvgID: "tvg-Null\u{0000}Byte",
-                         isFavorite: true, playlist: pl, playlistID: pl.id)
-        c.mainContext.insert(ch)
-        try c.mainContext.save()
+        let id = UUID()
+        try await PlaylistStore().create(PlaylistStore.Draft(id: id, name: "QA NUL"), channels: parsed, in: c)
+        let ch = try XCTUnwrap(try c.mainContext.fetch(FetchDescriptor<Channel>(predicate: #Predicate { $0.playlistID == id })).first)
         let keyInMemory = ch.favoriteKey
         let c2 = try B05QA.reopen(store)  // Container festhalten, sonst sind die Objekte ohne Kontext
         let reloaded = try XCTUnwrap(try c2.mainContext.fetch(FetchDescriptor<Channel>()).first)
-        B05QA.evidence("Angriff-7.txt", "nul|parser name=\(parsed.first?.name.unicodeScalars.count ?? -1) zeichen, tvg=\(parsed.first?.tvgID?.unicodeScalars.count ?? -1)|im speicher schlüssel=\(keyInMemory.debugDescription)|nach neustart name=\(reloaded.name.debugDescription) schlüssel=\(reloaded.favoriteKey.debugDescription)")
-        XCTAssertEqual(parsed.first?.name.unicodeScalars.count, 9)
-        XCTExpectFailure("BUG-09: NUL-Zeichen wird beim Speichern abgeschnitten, der Favoriten-Schlüssel ändert sich") {
-            XCTAssertEqual(reloaded.favoriteKey, keyInMemory)
-        }
+        B05QA.evidence("Angriff-7.txt", "nul|parser name=\(parsed.first?.name.unicodeScalars.count ?? -1) zeichen, tvg=\(parsed.first?.tvgID?.unicodeScalars.count ?? -1)|gespeichert name=\(ch.name.debugDescription) tvg=\(ch.tvgID.debugDescription) gruppe=\(ch.group.debugDescription)|im speicher schlüssel=\(keyInMemory.debugDescription)|nach neustart name=\(reloaded.name.debugDescription) schlüssel=\(reloaded.favoriteKey.debugDescription)")
+        XCTAssertEqual(ch.name, "NullByte")
+        XCTAssertEqual(ch.tvgID, "tvg-NullByte")
+        XCTAssertEqual(ch.group, "Gruppe")
+        XCTAssertEqual(keyInMemory, "id:tvg-NullByte")
+        XCTAssertEqual(reloaded.name, "NullByte")
+        XCTAssertEqual(reloaded.favoriteKey, keyInMemory)
     }
 }

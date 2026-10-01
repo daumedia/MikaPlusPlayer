@@ -219,6 +219,15 @@ Begründung für den fehlenden Backup-Ausschluss trifft damit auch für M3U zu. 
 `B02ReparaturTests.testBUG01_*` (Zerlegen/Wiederherstellen, Aktualisieren, fehlender Eintrag, Umstellung Temp-Datenbank
 und v1.1-Vorlage). Nicht erfasst: `token=` und andere Parameter (→ spec.md OF-10).
 
+**Behoben 2026-09-27:** Reproduktion (Schritte 1–4) erneut ausgeführt, Gesamtlauf auf `27be161` (Debug,
+`build/dd-test`), `B02SicherheitTests.testAK34_ZugangsdatenAusM3ULinkImSchluesselbund`: `ZSOURCEURL` mit Passwort **0**
+(vorher 1), `ZSTREAMURL` **0 von 3** (vorher 3 von 3), Bytefolgen in Store/-wal/-shm 0/0/0 (vorher 4 im -wal),
+Schlüsselbund-Eintrag im Testdienst 1 (vorher 0), Resolver 3 von 3 Adressen abspielbar, `isExcludedFromBackup` weiter
+`false` (die Begründung „enthält keine Zugangsdaten mehr" trifft jetzt auch für M3U zu). Benutzerinfo-Variante 0 (vorher 1).
+`B02ReparaturTests.testBUG01_*` grün: Aktualisieren ruft `/get.php?username=qa-user&password=<pass>&type=m3u_plus` mit den
+Zugangsdaten aus dem Schlüsselbund ab (Rohbytes danach 0, Favorit bleibt); Umstellung Temp-Datenbank
+`migratedPlaylists: 1, rewrittenChannels: 2`, v1.1-Vorlage `1 / 1`, Vorlagen-Playlist bleibt. Der Vermerk vom 26.09. stimmt.
+
 ### BUG-02 · M3U-Abruf schreibt Adresse samt Zugangsdaten und Antwort in den HTTP-Plattencache; Löschen entfernt sie nicht — mittel
 
 **Betrifft:** AK-35, AK-42 (Angriff 8), FB-02
@@ -248,6 +257,14 @@ zusätzlich einen etwaigen Alt-Eintrag der Adresse. Nachweis: `testAK35_KeinPlat
 0 Bytes – auch nach erneutem Import), `testAK42_LoeschenLaesstKeineZugangsdatenZurueck`,
 `B02URLImportTests.testAK36_…`, `B03LoeschenTests.testAK33_…`.
 
+**Behoben 2026-09-27:** Reproduktion (Schritte 1–5) erneut ausgeführt (`testAK35_KeinPlattencacheFuerM3UAbrufe`,
+`testAK42_LoeschenLaesstKeineZugangsdatenZurueck`, Gesamtlauf): nach dem Import **0** Cache-Einträge und 0 Bytefolgen
+(vorher 1 / 8), nach dem Löschen 0 / 0, mit `no-store` 0 / 0; einmaliges Leeren: 1. Aufruf `true`, erneuter Import schreibt
+nichts, 2. Aufruf `false` und weiterhin 0 Einträge (vorher 1). Nach dem Löschen außerdem Cookie im Loader 0, im gemeinsamen
+Speicher 0, Schlüsselbund-Eintrag entfernt. AK-36 bleibt erfüllt: Das Sitzungscookie geht bei der 2. und 3. Anfrage an
+denselben Host wieder mit (`cookie=b02qaSess=<marker>`), liegt aber nur im Loader (gemeinsamer Speicher 0). Der Vermerk vom
+26.09. stimmt.
+
 ### BUG-03 · Keine Größen-, Längen-, Mengen- oder Gesamtzeitgrenze für unvertraute Listen — mittel
 
 **Betrifft:** AK-37, AK-38, EC-13, EC-14, FB-03
@@ -273,6 +290,16 @@ Stream-Adressen über 4.096 und Logo-Adressen über 2.048 Zeichen. Nachweis: `te
 (längster Name 512), `B02LangsamTests.testAK12_AK28_AK38_EC17_…` (Tröpfeln endet vor 60 s mit „Der Server liefert
 die Playlist zu langsam."; Leerlauf weiter 60 s), `B02ParserTests.testEC13_…`, `B02ReparaturTests.testBUG03_…`
 (Größe URL/Datei, Menge, Frist). Werte → spec.md OF-11.
+
+**Behoben 2026-09-27:** Reproduktion erneut ausgeführt (Gesamtlauf): (1)(2) die 52.062.788-Byte-Liste wird per URL und per
+Datei weiter angenommen – sie liegt unter der Grenze von 64 MB –, aber der längste gespeicherte Name hat **512** statt 52.004
+Zeichen, Main-Thread-Blockade 0,00 s (vorher 3,56 s / 3,49 s). Parser: Name 1 MB → 512 Zeichen, Gruppe 1 MB → 512, Logo-Adresse
+5 MB und Stream-Adresse 2 MB verworfen (vorher ungekürzt). (3) 20 Sender in 10 Stücken alle 10 s → „Netzwerkfehler: Der Server
+liefert die Playlist zu langsam." nach **30,21 s** (vorher Import nach 100,30 s); reiner Stillstand weiter nach 60,06 s
+(AK-28). Die Ablehnung an den Grenzen belegt `B02ReparaturTests.testBUG03_…` mit verkleinerten Grenzwerten (Größe per URL und
+Datei, Menge, Gesamtfrist nach 4,03 s; jeweils nichts angelegt), die Standardwerte 64 MB und 100.000 Sender stehen im Test fest.
+Nicht ausgeführt: eine echte Antwort über 64 MB und die 180-s-Frist mit Standardwerten (derselbe Code mit größeren Werten).
+Der Vermerk vom 26.09. stimmt.
 
 ### BUG-04 · Der Import friert die Oberfläche ein; 17.000 Sender ≈ 282 s, auch im Release-Build — hoch
 
@@ -300,6 +327,22 @@ blockweise per `append(contentsOf:)`) – derselbe Weg wie Xtream. 17.000 Sender
 `B02LangsamTests.testAK40_…` (Standard 1.500/3.000/6.000 und `TEST_RUNNER_B02_QA_SIZES=17000`),
 `B02ReparaturTests.testBUG04_DateiImportBlockiertDenMainThreadNicht`.
 
+**Behoben 2026-09-27:** Reproduktion (Schritte 1–3) erneut ausgeführt, 17.000 Sender (≈ 146 Byte je Eintrag), Main-Thread-
+Wächter wie in der QA:
+
+| 17.000 Sender | Release (`-O`, `build/dd-release`), 2 Läufe | Debug (`build/dd-test`) | QA 1 (vorher) |
+|---|---|---|---|
+| URL, Datenbank im Speicher | 3,04 s / 3,10 s · Blockade 0,00 s / 0,01 s | 4,22 s · 0,01 s | Release 282,54 s · 282,51 s |
+| URL, Store-Datei | 3,19 s / 2,98 s · Blockade 0,01 s / 0,00 s | 4,72 s · 0,00 s | — |
+| Datei (Store-Datei) | 3,01 s · Blockade 0,01 s | 3,29 s · 0,02 s | Debug, 3.000 Sender: 9,23 s Blockade |
+
+Standardlauf (Debug, Gesamtlauf): 1.500 / 3.000 / 6.000 Sender 0,22 / 0,55 / 1,16 s, Blockade je 0,00 s, doppelte Menge →
+Faktor 2,09 (vorher 3,98, quadratisch). Die längste Blockade liegt damit bei höchstens 0,02 s. **Korrektur zum Vermerk vom 26.09.:** Die dort
+genannten Gesamtzeiten (URL 2,36 s, Store-Datei 2,45 s, Datei 2,42 s, Debug) sind in keinem erhaltenen Protokoll belegt; heute
+gemessen sind 3,0–4,7 s. Gemessen unter hoher Fremdlast (Last-Mittel 38–177 bei 16 Kernen, u. a. acht hängende Shell-Prozesse
+anderer Projekte mit je 100 % CPU) – die Gesamtzeiten sind deshalb eher zu hoch; die Aussage „Oberfläche bleibt bedienbar"
+hängt an der Blockade, nicht an der Gesamtzeit.
+
 ### BUG-05 · Stream- und Logo-Adressen werden ohne Schema-Prüfung übernommen — mittel
 
 **Betrifft:** AK-39, FB-05
@@ -320,6 +363,13 @@ bzw. Anzeigen passiert, entscheiden B06/B08 (VLCKit) und B04 (`AsyncImage`).
 `ftp:`, relative Logos …) fällt weg – auch in lokalen Dateien. Nachweis: `testAK39_NurErlaubteSchemataWerdenGespeichert`
 (Schemata in der DB: http, rtmp, rtp, rtsp, udp; keine Logos), `B02ParserTests.testEC10_…`, `testEC11_…`,
 `B02DateiImportTests.testEC10_…`. Auswahl → spec.md OF-12.
+
+**Behoben 2026-09-27:** Reproduktion (dieselbe Liste mit 17 Einträgen per URL, SQLite-Abfrage der Temp-Datenbank) erneut
+ausgeführt (`testAK39_NurErlaubteSchemataWerdenGespeichert`, Gesamtlauf): gespeichert **8** statt 17 Sender, Schemata in
+`ZSTREAMURL` nur noch `http:`, `rtmp:`, `rtp:`, `rtsp:`, `udp:` (vorher zusätzlich `data:`, `file:`, `ftp:`, `javascript:`,
+`mailto:`, `smb:`, `vlc:`, `x-apple.systempreferences:`), Logos `[]` (vorher `file:///etc/hosts`, `javascript:alert(1)`,
+`smb://…`, relativ). Datei-Weg und Parser (`B02DateiImportTests.testEC10_…`, `B02ParserTests.testEC10_…`/`testEC11_…`)
+grün. Der Vermerk vom 26.09. stimmt.
 
 ### BUG-06 · „Öffnen mit" importiert nicht; jedes Öffnen erzeugt ein leeres Fenster — mittel
 
@@ -348,6 +398,18 @@ iOS-Build-Warnung aus EC-23). Nachweis: `B02OberflaecheTests.testAK31_OeffnenEre
 (höchstens 1 neues Fenster, 3 importierte Playlists sichtbar). Ob der Finder-Doppelklick Mika+Player oder Music.app
 öffnet, entscheidet LaunchServices (→ spec.md OF-13, Website B10).
 
+**Behoben 2026-09-27:** Alle drei Schritte der Reproduktion erneut ausgeführt.
+(1)(2) Kopie der Debug-App aus `build/dd-test` mit eigener Bundle-ID (`…b02probe27`), Sparkle-Prüfung aus, Feed auf Port 9,
+ad hoc neu signiert. Erst mit `open --env XCTestSessionIdentifier=…` (Datenbank im Speicher; die vorab angelegte leere
+Store-Datei der Kopie blieb 0 Byte): Kaltstart mit `qa-doppelklick.m3u` → 1 Fenster; bei laufender App `.m3u8`, `.txt`, `.m3u`
+geöffnet → weiterhin **1 Fenster, 1 Prozess** (vorher 2, 3, 4 Fenster). Dann derselbe Ablauf mit auf die eigene Store-Datei der
+Kopie umgebogener Datenbank (vorab angelegt, dadurch wird eine vorhandene `default.store` nie übernommen), um den Import zu
+belegen: nach dem Kaltstart 1 Playlist „qa-doppelklick", 2 Sender, ohne `sourceURL`; nach den drei weiteren Öffnen-Ereignissen
+4 Playlists / 8 Sender, weiterhin 1 Fenster. Danach Kopie, `lsregister -u`, Einstellungen, Cache und Datenbank der Kopie
+entfernt. (3) Test-Host (`testAK31_OeffnenEreignisImportiertImOffenenFenster`): je Ereignis **0** neue Fenster (vorher 1 leeres
+Fenster „Keine Playlists"), 3 importierte Playlists im offenen Fenster sichtbar, kein Fehler. Der Vermerk vom 26.09. stimmt; der
+Finder-Doppelklick selbst öffnet auf dem Prüfrechner weiter Music.app (Standard-App für `.m3u`/`.m3u8`, OF-13).
+
 ### BUG-07 · Mika+Player meldet sich als Öffner für alle Text-Typen — niedrig
 
 **Betrifft:** AK-32, FB-07
@@ -363,6 +425,14 @@ Liste, nicht bei `xspf` und bei Dateien ohne Endung. Öffnen bewirkt nur ein lee
 `public.text` entfernt, Rolle `Viewer`. Nachweis: `testAK31d_AK32_OeffnerRegistrierung` prüft die Dokumenttypen des
 gebauten Bundles (m3u, m3u8 ja; txt, json, html, csv, swift, md, log, pls, xspf, ohne Endung nein). LaunchServices
 listet ältere gebaute Kopien in anderen Build-Ordnern weiter, bis sie neu registriert oder gelöscht werden.
+
+**Behoben 2026-09-27:** Reproduktion wörtlich erneut ausgeführt: `NSWorkspace.urlsForApplications(toOpen:)` für Probedateien
+mit den Endungen `m3u`, `m3u8`, `txt`, `json`, `html`, `csv`, `swift`, `md`, `log`, `pls`, `xspf` und ohne Endung. Der heute
+gebaute Mika+Player (`build/dd-test`) steht nur noch bei **`m3u` und `m3u8`** in der Kandidatenliste, bei allen übrigen nicht
+(vorher bei `m3u`, `m3u8`, `txt`, `json`, `html`, `csv`, `swift`, `md`, `log`, `pls`); insgesamt sind nur noch zwei Kopien
+registriert (Debug- und Release-Build dieser Prüfung), beide nur für `m3u`/`m3u8`. Gebautes `Info.plist`: ein Dokumenttyp
+`public.m3u-playlist`, Rolle `Viewer`, Rang `Default`. Test `testAK31d_AK32_OeffnerRegistrierung` im Gesamtlauf grün. Der Vermerk
+vom 26.09. stimmt.
 
 ### BUG-08 · „Abbrechen" bricht URL- und Datei-Import nicht ab; ein späterer Fehler erscheint in einem losgelösten Fenster — mittel
 
@@ -390,6 +460,13 @@ angezeigt (`PlaylistStore.create` prüft den Abbruch je Block und räumt auf). N
 `testAK29_EC21_AbbrechenBrichtURLImportAb` (0 Playlists nach 4 s, kein losgelöstes Fenster),
 `testAK16_AK27_AK29_DateiImportUeberDialog` (40.000-Sender-Datei, „Abbrechen" nach 0,5 s → keine zweite Playlist).
 
+**Behoben 2026-09-27:** Reproduktion (Schritte 1–4) im echten Fenster erneut ausgeführt (Gesamtlauf): (a) Erfolg nach
+„Abbrechen": 0 Playlists direkt und **0 nach 4 s** (vorher 1), 1 Anfrage. (b) Fehler (HTTP 500) nach „Abbrechen": **0** neue
+Fenster auf dem Bildschirm, kein Alert, kein Sheet am Hauptfenster (vorher losgelöstes Sheet plus Alert). (c) Datei: „Abbrechen"
+0,5 s nach dem Start → Sheet nach 1,04 s geschlossen, längste Blockade 0,28 s (vorher 9,23 s), angelegt bleibt nur die
+vorher importierte 2-Sender-Playlist, keine zweite. Abweichung zur Reproduktion: Die Datei hat 40.000 statt 3.000 Sender, weil
+der Import von 3.000 Sendern jetzt vor dem Klick fertig ist. Der Vermerk vom 26.09. stimmt.
+
 ### BUG-09 · Zwei Klicks auf „Von URL importieren" vor dem Neuzeichnen starten zwei Importe — niedrig
 
 **Betrifft:** AK-30, FB-09
@@ -405,6 +482,9 @@ angezeigt (`PlaylistStore.create` prüft den Abbruch je Block und räumt auf). N
 **Behoben 2026-09-26:** `isImporting` wird in `startImport` vor dem Start der Aufgabe gesetzt, ein zweiter Start
 wird abgewiesen (Muster aus B01 · BUG-09, jetzt für alle Reiter). Nachweis:
 `testAK30_DoppelklickAufVonURLImportierenEinImport` (1 Anfrage, 1 Playlist).
+
+**Behoben 2026-09-27:** Reproduktion (zwei Mausklick-Ereignisse im selben Durchlauf, Server antwortet nach 1 s) erneut
+ausgeführt: **1 Anfrage, 1 Playlist** (vorher 2 / 2); mit 150 ms Abstand weiter 1 / 1. Der Vermerk vom 26.09. stimmt.
 
 ## Hinweise (kein Kriterium durchgefallen)
 

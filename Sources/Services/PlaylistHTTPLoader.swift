@@ -6,8 +6,10 @@ import Foundation
 ///   die Antworten landen weder im HTTP-Plattencache noch im gemeinsamen `URLCredentialStorage`
 ///   (B01 · BUG-03, B02 · BUG-02, B03 · BUG-06). Cookies leben nur im Arbeitsspeicher dieser Session
 ///   (B02 AK-36) und werden beim Löschen einer Playlist für deren Host entfernt.
-/// - Weiterleitungen je Anfrage: `.sameOrigin` (Xtream: nur dasselbe Panel, B01 · BUG-10) oder `.follow`
-///   (M3U: wie bisher auch zu anderen Hosts, B02 AK-11; eine Basic-Auth-Antwort geht nie an ein anderes Ziel).
+/// - Weiterleitungen je Anfrage: `.sameOrigin` (Xtream: nur dasselbe Panel, B01 · BUG-10), `.follow`
+///   (M3U: wie bisher auch zu anderen Hosts, B02 AK-11; eine Basic-Auth-Antwort geht nie an ein anderes Ziel) oder
+///   `.sameHost` (Senderlogos: nur derselbe Host, höchstens einige Male, B04 · BUG-06).
+/// - Senderlogos benutzen eine eigene Instanz mit eigener Konfiguration (`init(configuration:)`, `ChannelLogoLoader`).
 /// - Obergrenze für die Antwortgröße, eine gemeinsame Frist und optional ein Mindestdurchsatz, sobald die Antwort
 ///   begonnen hat (B01 · BUG-08, B02 · BUG-03).
 final class PlaylistHTTPLoader: NSObject, URLSessionDataDelegate, @unchecked Sendable {
@@ -26,6 +28,10 @@ final class PlaylistHTTPLoader: NSObject, URLSessionDataDelegate, @unchecked Sen
         case sameOrigin
         /// jede Weiterleitung, die `URLSession` selbst zulässt
         case follow
+        /// nur derselbe Host und Port – als einzige Ausnahme der Wechsel von `http` (Port 80) auf `https` (Port 443)
+        /// desselben Hosts –, nie von `https` zurück auf `http`, höchstens `maxRedirects` Weiterleitungen
+        /// (B04 · BUG-06; eine Schleife endet so nach wenigen Anfragen, BUG-04)
+        case sameHost(maxRedirects: Int)
     }
 
     /// Mindestdurchsatz ab einer Anlaufzeit nach Beginn der Antwort.
@@ -63,6 +69,8 @@ final class PlaylistHTTPLoader: NSObject, URLSessionDataDelegate, @unchecked Sen
         var started = false
         /// Zeitpunkt der ersten Antwort (Kopfzeilen) – Beginn der Durchsatzmessung.
         var responseStarted: Date?
+        /// Bisher gefolgte Weiterleitungen (`.sameHost`).
+        var redirectCount = 0
 
         init(origin: Origin?, maxBytes: Int, redirects: RedirectPolicy, throughput: Throughput?) {
             self.origin = origin
@@ -76,12 +84,17 @@ final class PlaylistHTTPLoader: NSObject, URLSessionDataDelegate, @unchecked Sen
     private var states: [Int: State] = [:]
     private var session: URLSession!
 
-    override init() {
-        super.init()
+    override convenience init() {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.urlCredentialStorage = nil
+        self.init(configuration: configuration)
+    }
+
+    /// Eigene Session mit eigener Konfiguration (Senderlogos: ohne Cache, ohne Cookies, neutrale Kopfzeilen).
+    init(configuration: URLSessionConfiguration) {
+        super.init()
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }
 
@@ -167,6 +180,29 @@ final class PlaylistHTTPLoader: NSObject, URLSessionDataDelegate, @unchecked Sen
         if active { task.cancel() }
     }
 
+    // MARK: - Weiterleitungen
+
+    /// Ob eine Weiterleitung erlaubt ist (`origin`: erste Anfrage, `from`: die weiterleitende Antwort, `to`: das Ziel,
+    /// `count`: die wievielte Weiterleitung).
+    private static func allowsRedirect(_ policy: RedirectPolicy, origin: Origin?, from: Origin?, to target: Origin?,
+                                       count: Int) -> Bool {
+        switch policy {
+        case .follow:
+            return true
+        case .sameOrigin:
+            guard let origin, let target else { return false }
+            return target == origin
+        case .sameHost(let maxRedirects):
+            guard let from, let target, count <= maxRedirects, target.host == from.host else { return false }
+            return target == from || (from.scheme == "http" && from.port == 80 && target.scheme == "https" && target.port == 443)
+        }
+    }
+
+    /// Dieselbe Regel für Adressen (Tests).
+    static func allowsRedirect(_ policy: RedirectPolicy, original: URL, from: URL, to: URL, count: Int) -> Bool {
+        allowsRedirect(policy, origin: Origin(original), from: Origin(from), to: Origin(to), count: count)
+    }
+
     // MARK: - URLSessionDataDelegate
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
@@ -206,17 +242,18 @@ final class PlaylistHTTPLoader: NSObject, URLSessionDataDelegate, @unchecked Sen
 
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
-        let (origin, policy) = lock.withLock { (states[task.taskIdentifier]?.origin, states[task.taskIdentifier]?.redirects) }
-        switch policy ?? .sameOrigin {
-        case .follow:
+        let (origin, policy, count) = lock.withLock { () -> (Origin?, RedirectPolicy?, Int) in
+            guard let state = states[task.taskIdentifier] else { return (nil, nil, 0) }
+            state.redirectCount += 1
+            return (state.origin, state.redirects, state.redirectCount)
+        }
+        let allowed = Self.allowsRedirect(policy ?? .sameOrigin, origin: origin, from: Origin(response.url) ?? origin,
+                                          to: Origin(request.url), count: count)
+        if allowed {
             completionHandler(request)
-        case .sameOrigin:
-            if let origin, let target = Origin(request.url), target == origin {
-                completionHandler(request)
-            } else {
-                fail(task, with: .redirectBlocked)
-                completionHandler(nil)
-            }
+        } else {
+            fail(task, with: .redirectBlocked)
+            completionHandler(nil)
         }
     }
 
