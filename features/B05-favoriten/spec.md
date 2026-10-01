@@ -400,6 +400,17 @@ Ergänzt beim Bau der Reparatur (sdd-build, 2026-09-30). Nicht gebaut, weil Prod
   Datei schon gekürzt gespeichert und geht beim ersten Aktualisieren danach einmal verloren (vorher ging
   er bei jedem Aktualisieren verloren); andere Steuerzeichen in Altbeständen erkennt der Schlüssel wieder.
 
+Ergänzt beim Abschluss der Reparatur (sdd-build, 2026-10-01). Nicht gebaut, weil es das in B04 festgelegte
+Verhalten aller Karten ändert:
+
+- **OF-10** · Soll die Senderkarte für VoiceOver auch dann „Favorit“ ansagen, solange ihr Logo noch lädt
+  (BUG-04, AK-05)? Während des Ladens – bis 10 s ohne Daten, 15 s insgesamt, bei vielen Logos eines Hosts
+  länger (B04 Review R-3) – meldet sich die Karte wie in AK-05 und B04 AK-22 beschrieben als Ladeanzeige
+  (`AXBusyIndicator`, Wert „0“); der Wert „Favorit“ fehlt dann, den Zustand verrät nur der Aktionsname
+  („Favorit entfernen“ statt „Favorit hinzufügen“). Belegt mit einer Prüfsonde am 01.10. (Logo-Host hängt:
+  nach 2 s und 5 s `AXBusyIndicator`/„0“, nach Ablauf der Frist `AXButton`/„Favorit“). Abhilfe wäre, den
+  Ladeindikator für VoiceOver auszublenden – für alle Karten der Senderliste und des Tabs.
+
 ## Fehlbestand
 
 Nicht vorhanden oder als Fehler eingestuft, aus dem Code belegt. Kein Kriterium: `sdd-qa` prüft

@@ -304,14 +304,16 @@ struct B04Root: View {
     /// Zeichnet Bedienelemente wie in einem aktiven Fenster, auch wenn der Test-Host nicht vorn ist (Nacharbeit R-1:
     /// hervorgehobene Tasten sind in inaktiven Fenstern grau).
     var forceActive = false
+    /// Erzwingt einen Fensterzustand (z. B. `.inactive`); hat Vorrang vor `forceActive`.
+    var controlState: ControlActiveState? = nil
 
     var body: some View {
         let stack = NavigationStack(path: $nav.path) {
             PlaylistsView()
         }
         .tint(.playerAccent)
-        if forceActive {
-            stack.environment(\.controlActiveState, .key)
+        if let state = controlState ?? (forceActive ? .key : nil) {
+            stack.environment(\.controlActiveState, state)
         } else {
             stack
         }
@@ -327,10 +329,10 @@ final class B04Window {
 
     init(_ container: ModelContainer, size: CGSize = CGSize(width: 900, height: 700),
          origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil,
-         multiview: MultiviewSession? = nil, forceActive: Bool = false) {
+         multiview: MultiviewSession? = nil, forceActive: Bool = false, controlState: ControlActiveState? = nil) {
         let multiview = multiview ?? MultiviewSession()
         self.multiview = multiview
-        let root = B04Root(nav: nav, forceActive: forceActive).environment(multiview).modelContainer(container)
+        let root = B04Root(nav: nav, forceActive: forceActive, controlState: controlState).environment(multiview).modelContainer(container)
         let hv = NSHostingView(rootView: root)
         let w = NSWindow(contentRect: NSRect(origin: origin, size: size),
                          styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
@@ -1089,8 +1091,9 @@ class B04TestCase: XCTestCase {
 
     func window(_ c: ModelContainer, size: CGSize = CGSize(width: 900, height: 700),
                 origin: CGPoint = CGPoint(x: 60, y: 60), appearance: NSAppearance.Name? = nil,
-                forceActive: Bool = false) -> B04Window {
-        let w = B04Window(c, size: size, origin: origin, appearance: appearance, forceActive: forceActive)
+                forceActive: Bool = false, controlState: ControlActiveState? = nil) -> B04Window {
+        let w = B04Window(c, size: size, origin: origin, appearance: appearance, forceActive: forceActive,
+                          controlState: controlState)
         windows.append(w)
         return w
     }

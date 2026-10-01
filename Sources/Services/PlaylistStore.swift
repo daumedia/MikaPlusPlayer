@@ -35,7 +35,10 @@ enum FavoriteCarryOver {
             }
             var rest = 0
             for favorite in unmatched {
-                if let hit = open.firstIndex(where: { channels[$0].name == favorite.name }) {
+                // Namen ohne Steuerzeichen vergleichen wie den Schlüssel: Ein vor der Bereinigung gespeicherter Name
+                // („ZDF HD\u{1B}“) träfe den bereinigten neuen sonst nie (B05 · BUG-09, Review F-04).
+                let name = Channel.removingControlCharacters(favorite.name)
+                if let hit = open.firstIndex(where: { Channel.removingControlCharacters(channels[$0].name) == name }) {
                     flags[open.remove(at: hit)] = true
                 } else {
                     rest += 1

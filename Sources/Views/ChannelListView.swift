@@ -270,7 +270,7 @@ private struct ChannelResultsList: View {
                 .multilineTextAlignment(.center)
             Button(action: showAllGroups) {
                 // B04 · Review R-1: Schrift `playerOnAccent` wie am gewählten Chip (Weiß auf dem Akzent: 3,16 : 1 bzw. 2,33 : 1).
-                Text("Alle Sender zeigen").foregroundStyle(Color.playerOnAccent)
+                Text("Alle Sender zeigen").playerOnAccentLabel()
             }
             .buttonStyle(.borderedProminent)
             .tint(.playerAccent)

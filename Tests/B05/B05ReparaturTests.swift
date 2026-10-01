@@ -208,4 +208,16 @@ final class B05ReparaturTests: B05TestCase {
         XCTAssertEqual(cleaned.group, "", "leer bleibt leer (nicht durch die Bereinigung entstanden)")
         XCTAssertEqual(cleaned.tvgID, "")
     }
+
+    /// Review F-04 (B05-Abschluss): Mehrere Kandidaten mit demselben Schlüssel, neue Stream-Adressen, alter Favorit mit
+    /// Steuerzeichen im gespeicherten Namen – der Stern geht an den Sender mit demselben Namen, unabhängig von der
+    /// Reihenfolge des Anbieters (vorher: erster Kandidat, weil „ZDF HD\u{1B}“ ≠ „ZDF HD“).
+    func testBUG09_NamensvergleichDerUebernahmeIgnoriertSteuerzeichenImAltbestand() {
+        let alt = FavoriteCarryOver.Previous(key: Channel.favoriteKey(name: "ZDF HD\u{1B}", tvgID: "zdf.de"),
+                                             streamURL: URL(string: B05QA.stream(1))!, name: "ZDF HD\u{1B}")
+        let hd = ParsedChannel(name: "ZDF HD", streamURL: URL(string: B05QA.stream(11))!, logoURL: nil, group: nil, tvgID: "zdf.de")
+        let sd = ParsedChannel(name: "ZDF SD", streamURL: URL(string: B05QA.stream(12))!, logoURL: nil, group: nil, tvgID: "zdf.de")
+        XCTAssertEqual(FavoriteCarryOver.flags(previous: [alt], new: [sd, hd]), [false, true], "SD zuerst: Stern an „ZDF HD“")
+        XCTAssertEqual(FavoriteCarryOver.flags(previous: [alt], new: [hd, sd]), [true, false], "HD zuerst: Stern an „ZDF HD“")
+    }
 }

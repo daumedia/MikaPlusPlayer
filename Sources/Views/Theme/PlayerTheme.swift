@@ -28,7 +28,8 @@ extension Color {
     /// Schrift auf einer Fläche in `playerAccent` (gewählter Gruppen-Chip, hervorgehobene Tasten wie „Playlist
     /// importieren“, „Alle Sender zeigen“, „Erneut versuchen“, „+“), in beiden Modi das Fast-Schwarz der Familie (#120F10,
     /// wie `--on-accent` der Website im Dunkelmodus). Weiß erreicht auf dem Akzent nur 3,76 : 1 (hell) bzw. 2,77 : 1
-    /// (dunkel); #120F10 erreicht 5,07 : 1 bzw. 6,89 : 1 (B04 · BUG-10, Review R-1, DS-01).
+    /// (dunkel); #120F10 erreicht 5,07 : 1 bzw. 6,89 : 1 (B04 · BUG-10, Review R-1, DS-01). Für Tasten über
+    /// `playerOnAccentLabel()`, das in inaktiven macOS-Fenstern die Systemschrift lässt.
     static let playerOnAccent = Color(light: (18, 15, 16), dark: (18, 15, 16))
 
     /// App-Hintergrund (warmes Hell-Grau / fast Schwarz).
@@ -79,9 +80,34 @@ struct PlayerCardModifier: ViewModifier {
     }
 }
 
+/// Beschriftung einer hervorgehobenen Taste (`.borderedProminent` + `.tint(.playerAccent)`) in `playerOnAccent`.
+/// Unter macOS zeichnet das System die Taste in einem inaktiven Fenster nicht in Akzentfarbe, sondern grau, und wählt die
+/// Schrift dazu selbst; dort bleibt die Systemschrift, sonst stünde Fast-Schwarz auf Dunkelgrau (gemessen 1,35 : 1 statt
+/// 6,88 : 1 im Dunkelmodus, B05-Abschluss zu B04 · Review R-1).
+struct PlayerOnAccentLabelModifier: ViewModifier {
+    #if os(macOS)
+    @Environment(\.controlActiveState) private var controlActiveState
+    #endif
+
+    func body(content: Content) -> some View {
+        #if os(macOS)
+        if controlActiveState == .inactive {
+            content
+        } else {
+            content.foregroundStyle(Color.playerOnAccent)
+        }
+        #else
+        content.foregroundStyle(Color.playerOnAccent)
+        #endif
+    }
+}
+
 extension View {
     /// Versieht den Inhalt mit dem Mika+ Card-Look.
     func playerCard() -> some View { modifier(PlayerCardModifier()) }
+
+    /// Beschriftung einer hervorgehobenen Taste in Akzentfarbe (siehe `PlayerOnAccentLabelModifier`).
+    func playerOnAccentLabel() -> some View { modifier(PlayerOnAccentLabelModifier()) }
 }
 
 /// Seiten-Header im Mika+ Stil: getrackte ALL-CAPS-Subline in Akzentfarbe
