@@ -1,5 +1,6 @@
 // B10 · Website — Browser-Tests über das Chrome DevTools Protocol (QA-Durchlauf 1, 2026-09-15;
-// ergänzt bei der Reparatur Teil 1, 2026-09-16: FB-20/BUG-09 — Seiten rendern unter CSP ohne Verstöße)
+// ergänzt bei der Reparatur Teil 1, 2026-09-16: FB-20/BUG-09 — Seiten rendern unter CSP ohne Verstöße;
+// Reparatur Teil 2, 2026-09-30: FAQ-Wortlaut „Where does my data go?“ nach BUG-02 umgestellt)
 //
 // Voraussetzung: Produktionsserver wie in tests/site.http.test.mjs, dazu ein Chromium-Headless-Binary.
 // Keine zusätzliche Abhängigkeit: Der Test startet das Binary selbst und spricht CDP über das in Node
@@ -291,7 +292,7 @@ test("AK-23/EC-11: ohne JavaScript — Texte vorhanden, Frage klappt nativ auf, 
     assert.ok(attrsAfter.includes("open"), `details ohne JS nicht geöffnet: ${attrsAfter}`);
     const { outerHTML } = await send("DOM.getOuterHTML", { nodeId: root.nodeId });
     assert.ok(outerHTML.includes("macOS says the app cannot be opened. What now?"));
-    assert.ok(outerHTML.includes("Nowhere. Playlists, credentials and favourites live in a local database"));
+    assert.ok(outerHTML.includes("To the servers your playlist names and to GitHub — not to us."), "BUG-02: FAQ ohne „Nowhere“");
 
     await navigate("/");
     const doc = await send("DOM.getDocument", { depth: -1 });

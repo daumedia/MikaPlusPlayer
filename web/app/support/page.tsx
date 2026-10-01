@@ -21,7 +21,7 @@ const codeClass = "rounded bg-ink/[0.06] px-1 font-mono text-[0.85em] text-ink";
  * the blocked attempt, confirmed with the login password.
  */
 const FIRST_LAUNCH_STEPS: readonly { id: string; body: ReactNode }[] = [
-  { id: "drag", body: "Open the DMG and drag Mika+Player to Applications." },
+  { id: "drag", body: "Open the DMG and drag MikaPlusPlayer to Applications." },
   {
     id: "checksum",
     body: (
@@ -42,7 +42,7 @@ const FIRST_LAUNCH_STEPS: readonly { id: string; body: ReactNode }[] = [
   },
   {
     id: "attempt",
-    body: "Open Mika+Player from the Applications folder once. macOS refuses and shows a warning — close it.",
+    body: "Open MikaPlusPlayer from the Applications folder once. macOS refuses and shows a warning — close it.",
   },
   {
     id: "open-anyway",
@@ -67,7 +67,6 @@ const KEYS: readonly { key: string; action: string }[] = [
   { key: "↑ ↓ + −", action: "Volume, in 5% steps" },
   { key: "M", action: "Mute" },
   { key: "F", action: "Full screen" },
-  { key: "P", action: "Picture in Picture" },
   { key: "Esc", action: "Leave full screen" },
 ];
 
@@ -85,9 +84,10 @@ export default function SupportPage() {
       <section id="first-launch" className="mt-14 scroll-mt-20">
         <h2 className="headline text-2xl">First launch on macOS</h2>
         <p className="mt-3 leading-relaxed text-ink-soft">
-          Mika+Player is signed ad-hoc rather than notarised, so macOS blocks the first launch.
-          Since macOS 15 Sequoia, Control-clicking the app and choosing Open no longer gets past
-          that — the way through is System Settings:
+          Mika+Player is signed ad-hoc rather than notarised, so macOS blocks the first launch. In
+          the Finder and in the warning the app is called MikaPlusPlayer. Since macOS 15 Sequoia,
+          Control-clicking the app and choosing Open no longer gets past that — the way through is
+          System Settings:
         </p>
         <ol className="mt-5 space-y-3">
           {FIRST_LAUNCH_STEPS.map((step, index) => (
@@ -100,8 +100,8 @@ export default function SupportPage() {
           ))}
         </ol>
         <p className="mt-5 text-sm leading-relaxed text-ink-soft">
-          On macOS 14 Sonoma, Control-clicking Mika+Player in Applications and choosing Open works
-          as well.
+          On macOS 14 Sonoma, Control-clicking MikaPlusPlayer in Applications and choosing Open
+          works as well.
         </p>
       </section>
 
@@ -142,6 +142,10 @@ export default function SupportPage() {
             </div>
           ))}
         </dl>
+        <p className="mt-4 text-sm leading-relaxed text-ink-soft">
+          Space, the volume keys and M confirm with a short on-screen indicator; F and Esc only
+          switch full screen.
+        </p>
       </section>
 
       {/* FAQ */}

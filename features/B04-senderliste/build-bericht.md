@@ -380,3 +380,111 @@ appintentsmetadataprocessor … warning: Metadata extraction skipped, no AppInte
   Test-Host (B02-Kontextmenü, siehe Tabelle unter 4) – sonst keine Tastatur- oder Mauseingaben von mir. Der Aktivierungshelfer
   holte den Test-Host auf Anforderung der B06/B08-Tests nach vorn und lehnte alle B07-Bridge-Befehle ab (Bildschirmaufnahmen,
   PiP-Fenster), die zugehörigen Tests wurden übersprungen.
+
+## Review 2026-09-30
+
+Unabhängiges Review der Reparatur. Geprüfter Stand: Commit-Objekt `296665a` (Stand davor `bb7ccd5`), eigener Worktree mit eigener
+DerivedData (Debug und Release), danach entfernt. Gelesen: `git diff bb7ccd5 296665a` für `ChannelListQuery`, `ChannelLogoLoader`,
+`ChannelListView`, `ChannelRowView`, `PlaylistHTTPLoader`, `PlaylistEvents`, `PlaylistImporter`, `AppDataReset`, `PlayerTheme`,
+`Tests/B04`, `Tests/B05/B05DatenschutzTests.swift`, `Tests/B03/B03OberflaecheTests.swift`; `qa-report.md` mit den Vermerken; dieser
+Bericht. Logo-Hosts nur als Mocks auf 127.0.0.1, keine Tonspur, keine Tasten. Parallel liefen die B05-Reparatur (Test-Host im
+Arbeitsbaum) und die Website-Reparatur; Last 9–20. Kein Gesamtlauf, nur gezielte Suiten und eigene Prüftests
+(`B04ReviewProbeTests`, P1–P10, nur im Worktree). Gefilterte Protokolle und Prüftests liegen außerhalb des Repositorys unter
+`~/.claude/projects/…/e8de96ed-…/review-b04-belege/`. Hinweis: `Sources/Views/ChannelRowView.swift` im Arbeitsbaum weicht inzwischen
+vom geprüften Stand ab (Stern-Meldung und VoiceOver der laufenden B05-Reparatur) – nicht Gegenstand dieses Reviews.
+
+**Läufe (macOS, `test-without-building`):**
+
+```
+Debug  B04Aufbau/Ergaenzung/Erkundung/Gruppen/Logo/Reparatur/Sicherheit/Suche
+       Executed 56 tests, with 2 tests skipped and 0 failures (0 unexpected) · ** TEST EXECUTE SUCCEEDED **
+       übersprungen nur selbst (SQLDebug, iOS-Datenbank); erwartete Fehlschläge nur BUG-08 ×2, BUG-09, BUG-11, OF-07 (AK-27)
+Debug  B04ErgaenzungTests/testAK31_AK33 mit -com.apple.CoreData.SQLDebug 1 (eigene xctestrun-Kopie): bestanden, BUG-14 (Spalten) erwartet
+Debug  B05 (7 Suiten) + B03OberflaecheTests: Executed 47 tests, with 2 tests skipped and 0 failures · ** TEST EXECUTE SUCCEEDED **
+Debug  B08OberflaecheTests/testAK01_AK02_AK09 (⊞ Liste + Favoriten-Tab), B08ReparaturTests/testBUG03: 2 bestanden
+Debug  B04ReviewProbeTests P1–P10: alle bestanden (Befunde nur protokolliert, siehe unten)
+Release (ENABLE_TESTABILITY=YES) B04LeistungTests 2 ×: je 2 Tests bestanden, ** TEST EXECUTE SUCCEEDED **
+```
+
+**Belege zu den Prüfpunkten**
+
+1. **Logo-Loader, Standardwerte am Grenzwert** (P1–P4, P10). Größe: genau 1.048.576 Bytes → Bild, 1.048.577 → Platzhalter, jeweils
+   mit `Content-Length` (Abbruch an der Kopfzeile) und ohne (Abbruch beim Empfang). Abmessung: 2.048 × 2.048 → 128 × 128 (23 ms),
+   2.049 × 2.048 → abgelehnt; die Grenze ist eine Fläche (4.096 × 1.024 → 128 × 32). 12.000 × 12.000 über das Netz → Platzhalter,
+   Speicher 49,9 → 50,2 MB (nicht dekodiert); zwölf 2.048²-Logos von zwölf Hosts gleichzeitig: Spitze +28,7 MB; L `testAK24_…` in der
+   Oberfläche 224 → 251 MB, normales Logo daneben angezeigt (vor der Reparatur +616 MB). Zeit: 8 s Stille → Bild, 11,5 s Stille →
+   Platzhalter nach **10,0 s**; letzte Daten nach 13,5 s (Lücken < 10 s) → Bild, nach 16 s → Platzhalter nach **15,0 s**; L EC-06
+   getrennt nach 15,5 s. Schemata: R `testBUG04_…`, X Angriff 7 (0 Anfragen für `javascript:`/`data:`/`file:`), L AK-22 alle fünf
+   Fehlerfälle als Platzhalter, 0 Ladeindikatoren, Schleife nach 4 Anfragen beendet. Weiterleitung: L AK-25 fremder Port 0
+   Anfragen, gleicher Host gefolgt und angezeigt; `localhost` statt 127.0.0.1 gilt als fremd (R `testBUG06_…`). Plattencache:
+   L AK-28 0 von 6 im `URLCache.shared`, 0 Zeilen `Cache.db`, im Arbeitsspeicher nur die zwei Bilder ohne `no-store`; nach dem
+   Löschen 0/0/0; X Angriff 8 und R `testBUG07_AlleDatenEntfernen…` grün. **RequestGate:** 14 Logos eines hängenden Hosts → höchstens
+   6 Verbindungen; ein Logo eines anderen Hosts kommt währenddessen nach **21 ms**; Abbrechen der 10 Wartenden eines Hosts schließt
+   alle Verbindungen (6 → 0), die nächste Anfrage dort kommt nach 21 ms. Ein langsamer Host blockiert die übrigen also nicht.
+2. **Was ein Logo-Host sieht** (P5, L AK-26): `GET <Pfad> · Host · Accept: */* · Accept-Language: * · Connection: keep-alive ·
+   Accept-Encoding: gzip, deflate · User-Agent: Mozilla/5.0` – gleich auf dem Weiterleitungsziel; ein `Set-Cookie` der Weiterleitung
+   wird weder auf dem Ziel noch später zurückgeschickt; kein Referer. Dazu wie bisher IP-Adresse, Zeitpunkt und welche Logos (also
+   Suche, Chip, Favoriten – OF-07). **B05-Anpassung sachlich richtig, keine Aufweichung:** Die geänderten Zeilen hielten den Ist-Stand
+   (App-Kennung, Systemsprache) außerhalb des `XCTExpectFailure` fest; jetzt stehen dort die neutralen Werte als strikte Gleichheit,
+   das `XCTExpectFailure` zu B05 · BUG-03 (Host erfährt die Favoriten) ist unverändert und schlägt weiter erwartet fehl.
+3. **Gruppen:** G AK-14 6 von 6 Sport-Sendern, Badge ungekürzt; G AK-15/19 Chip „Tab“ findet T1/T2, Chip ohne Treffer zeigt
+   „Keine Sender in dieser Gruppe“ + „In der Gruppe „News“ sind keine Sender.“, „Alle Sender zeigen“ führt zu 4 Sendern; G AK-17 nach
+   dem Aktualisieren Fenster 1 und 2 je `Alle, Doku, News, Sport`, weggefallene Auswahl aufgehoben, „News“ bleibt mit dem neuen
+   Sender; R `testBUG02_…` genau eine Meldung. P7: geschütztes Leerzeichen, Geviert-Leerzeichen und U+200B am Rand landen unter „Sport“.
+4. **Leistung.** `EXPLAIN QUERY PLAN` auf dem wörtlichen SQL der App (P6: Core-Data-Kollation `NSCollateLocaleSensitive` und
+   `NSCoreDataStringSearch` in SQLite nachgebildet, 17.000 + 3.000 Sender): Öffnen, Chip, Chip mit mehreren Werten (`IN`), Suche,
+   Suche + Chip und Gruppen je **`SEARCH t0 USING INDEX ZCHANNEL_ZPLAYLIST_INDEX (ZPLAYLIST=?)`**, Sortierung `USE TEMP B-TREE`;
+   Karte `SEARCH t0 USING INTEGER PRIMARY KEY`; frühere Kopie `ZPLAYLISTID` `SCAN t0`. Das echte SQL (SQLDebug) stimmt damit überein.
+   **Release, 17.000 Sender, Last 12–20**, längste Blockade: Öffnen 64/65 · 67/57 ms (20er-Liste 133/102 · 126/98); Zeichen
+   „Fußball 12“ 21–78 · 27–106 ms (Spitzen bei „F“, „Fu“, „Fußball 1“ – neue Kartenseite); Leeren 59/59 · 62/54; „a“ 54 · 62; Chip
+   69 · 81; Abwählen 58 · 58; Anzeige nach Chip 60 ms, Suche 210–251 ms. Abfragen: Kennungen 64–65 ms (als Objekte 236 ms).
+5. **Kontrast und VoiceOver:** gewählter Chip gerendert hell (233, 105, 91)/(23, 18, 20) **5,86 : 1**, dunkel **7,94 : 1** (aus dem
+   Code 5,07 / 6,89); `isAccessibilitySelected` am gewählten Chip `true`, an „Alle“ `false`.
+6. **Tests:** Jeder entfernte `XCTExpectFailure`-Block (AK-13 ×2, AK-14, AK-15/19, AK-17, AK-22, AK-24, AK-25/26, AK-28, AK-31/32) ist
+   durch strikte Zusicherungen auf das behobene Verhalten ersetzt; AK-23 (10 ± 3 s statt 60 ± 8 s) und Angriff 3 (genau 1 statt > 1
+   Anfrage) sind strenger; EC-06 tröpfelt alle 4 statt 10 s, damit die Gesamt- und nicht die Leerlauffrist geprüft wird (sachlich
+   nötig); AK-24 behält 150 MB; EC-07 misst bis zu 3 s nach, prüft dafür alle sechs Karten; BUG-14 ist auf den Spaltenteil (OF-08)
+   verengt; B03 AK-27 prüft jetzt den neuen Chip. Zu BUG-13 siehe R-2.
+7. **Regressionen:** Favoriten-Tab mit gemeinsamem Loader – B05 47 Tests grün, `testAK25_Angriff5_…` 3 Anfragen mit neutralen
+   Kopfzeilen; Stern – `B05SternTests` 6 grün, B04 AK-04 (Karte öffnet Player, Stern nicht) grün; ⊞ – B08 AK-01 (Liste und
+   Favoriten-Tab, Tooltip „Zu Multiview hinzufügen“, Liste bleibt stehen) und BUG-03 (grauer ⊞ öffnet nichts) grün.
+
+**Funde**
+
+- **R-1 · Kontrast · gering.** Die neue Taste „Alle Sender zeigen“ im Gruppen-Leerzustand (`ChannelListView.swift:271-273`,
+  `.borderedProminent` + `.tint(.playerAccent)`) hat weiße Schrift auf dem Akzent. Gerendert mit aktivem Fensterzustand (P9,
+  `controlActiveState = .key`, weil das Test-Fenster im Parallelbetrieb nicht aktiv war): hell (233, 105, 91)/Weiß **3,16 : 1**,
+  dunkel (242, 142, 134)/Weiß **2,33 : 1** – derselbe Fehler, den BUG-10 für den Chip behebt; die Kontrastprüfungen der Reparatur
+  erfassen nur den Chip. In inaktiven Fenstern ist die Taste grau (10,8–11,0 : 1, P8). Das Muster ist nicht neu (gleiches Styling
+  bei „Playlist importieren“ `PlaylistsView.swift:38,124` und `PlayerView.swift:317`, von DS-01 nicht erfasst), daher gering;
+  Vorschlag: Schrift `playerOnAccent` für alle vier, zusammen mit DS-01.
+- **R-2 · Testschärfe BUG-13 · gering.** Keine verdeckte Aufweichung – die Abweichung steht offen in Abschnitt 2 –, aber zwei Punkte:
+  (a) „Öffnen < 100 ms“ wird im Endstand erreicht (Release 57–67 ms, Bericht 60–67 ms), steht aber weiter in der nicht strikten
+  Erwartung; strikt gilt nur „≤ 20er-Liste + 50 ms“, und die 20er-Liste lädt absichtlich synchron (Annahme 9) und blockiert
+  98–133 ms – ein Rückfall bis rund 180 ms fiele nicht auf. (b) „< 50 ms je Zeichen“ ist nicht erreicht (Release bis 78 bzw. 106 ms
+  unter Last 20); die strikte Ersatzgrenze 150 ms ist dreimal so weit. Die Begründung „Grundlast, unabhängig von der Listengröße“ ist
+  plausibel (Spitzen nur beim Aufbau einer neuen Kartenseite, „a“ mit 20 Sendern laut Bericht 52–54 ms), die 20er-Referenz im Test
+  belegt sie aber nicht (ihre Zeichen treffen fast nichts: 9–37 ms). Vorschlag: Öffnen strikt < 100 ms, Zeichen strikt ≤ 100 ms.
+- **R-3 · Zeit bis Platzhalter · gering.** Weil die Fristen erst ab dem Senden laufen, wächst die Zeit bis zum Platzhalter mit der
+  Warteschlange: 14 Logos eines hängenden Hosts enden nach **10,0 / 20,0 / 30,0 s** (je 6; P4), bei tröpfelnden Hosts je 15 s.
+  Kein Dauer-Ladeindikator, andere Hosts unberührt, aber sichtbare Karten drehen bei einem toten Logo-Host (Firewall verwirft)
+  bis ⌈n/6⌉ × 10 s. Fehlgeschlagene Logos merkt sich der Loader nicht; jedes erneute Erscheinen fragt wieder an und wartet erneut.
+  Nicht im Bericht beziffert; Vorschlag: Obergrenze ab dem Einreihen (z. B. 30 s) oder kurzer Negativ-Cache.
+- **R-4 · Leeren des Logo-Speichers · gering.** Eine Anfrage, die vor `removeAll()` begann und danach endet, legt ihr Bild wieder ab
+  (P10: direkt nach `removeAll` leer, nach Ende der Anfrage wieder vorhanden; `ChannelLogoLoader.image(for:)` speichert ohne
+  Stand-Prüfung). Die Senderliste bricht ihre Anfragen beim Löschen vorher ab (L AK-28, X Angriff 8 grün); betroffen wären laufende
+  Anfragen anderer Ansichten (z. B. Favoriten-Tab) beim Löschen bzw. „Alle Daten entfernen“ – nur Arbeitsspeicher bis zum Beenden.
+  Vorschlag: Zähler, den `removeAll` erhöht und der vor dem Speichern verglichen wird.
+- **R-5 · Aussage zu Kopfzeilen · gering (Hinweis für OF-07).** `User-Agent: Mozilla/5.0` zusammen mit `Accept-Language: *` ist eine
+  ungewöhnliche, gleichbleibende Kombination: App-Name, Build, System und Sprache sind weg, die Anfragen bleiben aber als „dieselbe
+  Software“ wiedererkennbar. Annahme 2 („verraten nichts über Gerät oder App“) ist insoweit zu stark formuliert.
+
+Nicht als Fund: Ein Gruppenwert mit Zeilenumbruch am Rand ergibt weiter einen eigenen, gleich aussehenden Chip (P7: „Sport“ und
+„Sport\r“) – so von AK-11/EC-02 vorgesehen, von der Reparatur nicht verändert. Nicht geprüft: iOS (weder gebaut noch bedient).
+
+**Urteil: in Ordnung.** Alle behobenen BUGs sind mit eigenen Messungen am Grenzwert bestätigt (Größe, Abmessung, beide Fristen,
+Schemata, Weiterleitungen, kein Plattencache, Leeren, Index, Hintergrundabfragen, Kontrast und Auswahlmerkmal des Chips), die
+Anpassungen fremder Tests sind sachlich richtig, und B05, B03-Oberfläche und die ⊞-Tests von B08 zeigen keine Regression. Die fünf
+Funde sind gering; R-1 und R-2 sollten vor QA 2 erledigt werden (je wenige Zeilen). Aufgeräumt: Worktree `…/wt/review-b04` samt
+DerivedData (Debug, Release) mit `git worktree remove --force` entfernt, Build-Protokoll und Zwischenstände gelöscht; keine
+Simulatoren, keine Datenträgerabbilder, kein eigener Prozess mehr aktiv; die App wurde nie regulär gestartet.

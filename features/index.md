@@ -1,19 +1,19 @@
 # Features
 
-Stand: 2026-09-26 · Stack-Profil: `swiftui-ios` + `swiftui-macos` · Bestandsprojekt, erfasst mit `sdd-erfassen`
+Stand: 2026-10-01 · Stack-Profil: `swiftui-ios` + `swiftui-macos` · Bestandsprojekt, erfasst mit `sdd-erfassen`
 
 | ID | Feature | Prio | Status | Abhängig von | Zuletzt |
 |---|---|---|---|---|---|
 | B01 | Xtream-Codes-Login | P0 | review | — | 2026-09-16 · QA 2: production-ready ja, offen nur mittel/niedrig (BF-40, BF-43–BF-46); nicht ausgeliefert |
 | B02 | M3U-Import | P0 | building | — | 2026-09-28 · Reparatur verifiziert, Review: Nacharbeit (R-01–R-11 alle behoben, u. a. Sterne beim Aktualisieren 10/10 erhalten) eingespielt; QA 2 offen |
 | B03 | Playlist-Verwaltung | P0 | building | B01, B02 | 2026-09-28 · Reparatur verifiziert, Review: Nacharbeit (R-01–R-11 alle behoben, u. a. Sterne beim Aktualisieren 10/10 erhalten) eingespielt; QA 2 offen |
-| B04 | Senderliste | P0 | building | B03 | 2026-09-29 · QA 1: mittel (BF-73–BF-86); Reparatur läuft |
-| B05 | Favoriten | P1 | review | B03, B04 | 2026-09-26 · QA 1: production-ready ja, höchster Grad mittel (BF-87–BF-95); Teile über B02+B03 mitrepariert (unverifiziert) |
+| B04 | Senderliste | P0 | building | B03 | 2026-09-30 · Reparatur fertig und gereviewt: in Ordnung, 5 geringe Funde (R-1 Kontrast weiterer Tasten, R-2 Testgrenzen — Nacharbeit nach B05); BUG-06/-13/-14 teilweise (OF-07/OF-08); QA 2 offen |
+| B05 | Favoriten | P1 | building | B03, B04 | 2026-10-01 · Reparatur angehalten, **unverifiziert** (Code im Commit „B05 …"); BUG-01/-10/-11 über B02+B03 behoben; Bericht, Gesamtlauf, Review, QA 2 offen |
 | B06 | Wiedergabe | P0 | building | B04 | 2026-09-28 · Reparatur fertig (476 Tests grün) und gereviewt: in Ordnung, 4 geringe Funde; BUG-03 (libVLC) wartet auf OF-06; QA 2 offen |
 | B07 | Bild-in-Bild | P1 | building | B06 | 2026-09-29 · Reparatur fertig und gereviewt: in Ordnung (0 wichtige Funde); BUG-02/-06 warten auf OF-04/OF-03; QA 2 offen |
 | B08 | Multiview | P1 | building | B04, B06 | 2026-09-29 · Reparatur fertig und gereviewt: in Ordnung, Absturz (BF-111) in allen vier Wegen behoben; 2 geringe Funde; BUG-08/-09 warten auf OF; QA 2 offen |
 | B09 | Auto-Update | P1 | review | — | 2026-09-16 · QA 2: production-ready nein — kritisch nur noch BF-01 (Nutzer/GitHub); code-seitig 8 behoben, 6 neu mittel/niedrig |
-| B10 | Website | P2 | building | B09 | 2026-09-26 · QA 1: hoch; Reparatur Teil 1 fertig (7 BUGs), Teil 2 (Datenschutz, Aussagen) offen; QA 2 offen |
+| B10 | Website | P2 | review | B09 | 2026-09-30 · QA 2: production-ready nein — hoch nur BF-19 (Vercel) und BF-21 (Pflichtangaben), beide brauchen dich; 8 BUGs bestätigt behoben; neu BF-120 (next-Advisory, mittel) + 5 niedrig |
 
 ## Reihenfolge der Rückerfassung
 

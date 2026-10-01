@@ -32,12 +32,12 @@ export const FAQ: readonly FaqItem[] = [
   {
     question: "How large a playlist can it handle?",
     answer:
-      "Lists past 17,000 channels stay responsive because searching and filtering happen in the database rather than in memory. Importing a list that size takes a few seconds; browsing it afterwards does not.",
+      "Lists of 17,000 channels work, but version 1.1 is slow with them. Importing or refreshing a list that size takes several minutes — about four and a half minutes on our test Mac — and deleting it up to about two minutes; the app does not respond while that runs. Once the list is in, search and the channel filter run as database queries, but opening the list and the first letter you type still pause the app briefly, for up to about a second.",
   },
   {
     question: "Where does my data go?",
     answer:
-      "Nowhere. Playlists, credentials and favourites live in a local database on your Mac. The app talks to the provider you entered and, for updates, to GitHub. There is no account, no telemetry and no analytics.",
+      "To the servers your playlist names and to GitHub — not to us. The app fetches the channel list from your provider, plays each stream from the server the playlist points at, loads channel logos from wherever the playlist says, and asks GitHub about once a day for updates. Playlists, favourites and your provider credentials are stored unencrypted in a database file on your Mac, and deleting the app does not remove it. There is no account, no telemetry and no analytics. The privacy page lists every detail and how to remove everything.",
   },
   {
     question: "Is there an iPhone or iPad version?",
@@ -47,6 +47,6 @@ export const FAQ: readonly FaqItem[] = [
   {
     question: "How do updates arrive?",
     answer:
-      "The Mac app checks for updates through Sparkle and can install them on its own. Each update is verified against an EdDSA signature first. You can also trigger a check from the app menu.",
+      "Through Sparkle. The Mac app asks GitHub for a newer version automatically, about once a day, without asking you first. If there is one, it shows the release notes and you choose whether to install it, skip that version or be reminded later. Only if you tick the option to download and install updates automatically in that window does it install future updates on its own. Each update is verified against an EdDSA signature before it is installed. To check by hand, open the app menu and choose “Nach Updates suchen …” — the app’s labels are in German.",
   },
 ];

@@ -41,8 +41,10 @@ export default async function Home() {
           <div>
             <MultiviewDemo />
             <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-              Multiview, rebuilt on this page. Click a small tile — the border, the large picture
-              and the sound move with it, the same way they do in the app.
+              Multiview, rebuilt on this page. Click a small tile and the border, the sound and the
+              large picture move to it. In version 1.1 the picture follows for HLS streams; after a
+              click, an MPEG-TS stream (the Xtream default) can stay black in the large tile while
+              its sound plays, until you switch to grid and back.
             </p>
           </div>
         </div>
@@ -62,14 +64,19 @@ export default async function Home() {
             <p className="eyebrow">The app adds</p>
             <p className="mt-2 text-base leading-relaxed text-ink-soft">
               Search, group filters, favourites across playlists, two playback engines and a
-              Multiview window — all on your Mac, all local.
+              Multiview window. Your library is kept on your Mac — no account, no cloud.
             </p>
           </div>
           <div>
             <p className="eyebrow">It never does</p>
             <p className="mt-2 text-base leading-relaxed text-ink-soft">
-              Supply channels, sell subscriptions, or send your data anywhere. There is no account
-              and no analytics.
+              Supply channels, sell subscriptions, or send anything to the people who make it — no
+              telemetry, no analytics. It talks to the servers your playlist names and to GitHub
+              for updates; the{" "}
+              <Link href="/privacy" className="text-accent-ink underline underline-offset-4">
+                privacy page
+              </Link>{" "}
+              says exactly what goes where.
             </p>
           </div>
         </div>
@@ -102,13 +109,15 @@ export default async function Home() {
           <div>
             <p className="eyebrow">The channel list</p>
             <h2 className="headline mt-2 text-3xl sm:text-4xl">
-              Seventeen thousand channels, still usable
+              Seventeen thousand channels, searchable
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-ink-soft">
-              Providers hand out lists nobody can scroll. Search and the group chips your provider
-              supplies run as database queries, so the list narrows as fast as you can type. Star
-              what you actually watch and it collects in a favourites tab that spans every playlist
-              you have added.
+              Providers hand out lists nobody can scroll. Type a name or pick one of the group chips
+              your provider supplies, and the list narrows to what matches. On a list that size,
+              version 1.1 does pause: in our measurements with 17,000 channels, opening the list froze
+              the app for up to 0.9 seconds, and the first letter typed, clearing the search or
+              deselecting a group chip for 0.3 to 0.6 seconds. Star what you actually watch and it
+              collects in a favourites tab that spans every playlist you have added.
             </p>
             <p className="mt-4 text-lg leading-relaxed text-ink-soft">
               The ⊞ button on each row sends that channel to Multiview instead of playing it.
@@ -172,7 +181,7 @@ export default async function Home() {
             <h3 className="font-display text-base font-semibold">{MIN_MACOS} or later</h3>
             <p className="mt-2 text-sm leading-relaxed text-ink-soft">
               Universal build for Apple silicon and Intel. Distributed as a disk image, not through
-              the App Store.
+              the App Store. The app&apos;s interface is in German.
             </p>
           </div>
           <div className="card p-5">
