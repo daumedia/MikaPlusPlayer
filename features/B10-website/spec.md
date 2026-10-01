@@ -364,6 +364,15 @@ Nutzer:*
   jenseits der genannten Zahlen? Teil 2 nennt nur Einschränkungen, die einer Aussage der Seite widersprachen: das
   schwarze große Bild bei MPEG-TS im Multiview (B08 BUG-02) und die Dauer bei 17.000 Sendern. — Nutzer.
 
+Ergänzt bei der Klärung (`sdd-klaeren`, 2026-10-01), weil die Antwort auf BF-21 Angaben braucht, die nur der Betreiber hat:
+
+- **OF-12** · Welche Pflichtangaben trägt die Datenschutzerklärung (BF-21 / BUG-03)? Gebraucht werden: Verantwortlicher
+  (Name, Anschrift), ein nicht öffentlicher Kontaktweg (E-Mail statt „GitHub issue“), die Rechtsgrundlagen der Verarbeitung
+  (Update-Abfrage, Website-Aufruf, Download), die Speicherdauer der Vercel-Protokolle, ob mit Vercel ein Vertrag zur
+  Auftragsverarbeitung besteht, und die Betroffenenrechte samt Beschwerdestelle. Ergebnis gehört in
+  `web/app/privacy/page.tsx`, den Footer und neu `docs/datenschutz.md`. Keine Rechtsberatung durch die Kette. — Betreiber,
+  vor `/sdd-build B10`.
+
 ## Fehlbestand
 
 Nicht vorhanden oder nicht zutreffend, aus Code, Build oder Artefakt belegt. Kein Kriterium — `sdd-qa` prüft nichts
