@@ -105,7 +105,8 @@ struct PlaylistsView: View {
     }
 
     private var visiblePlaylists: [Playlist] {
-        deletingIDs.isEmpty ? playlists : playlists.filter { !deletingIDs.contains($0.id) }
+        // Review R-02: Playlists, deren Anlegen läuft oder gescheitert ist, erscheinen nicht.
+        playlists.filter { !$0.isUnfinished && !deletingIDs.contains($0.id) }
     }
 
     private var emptyState: some View {

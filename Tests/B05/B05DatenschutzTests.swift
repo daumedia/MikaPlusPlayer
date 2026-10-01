@@ -114,8 +114,10 @@ final class B05DatenschutzTests: B05TestCase {
         }
         XCTAssertEqual(paths, ["/logos/sender-11.png", "/logos/sender-17.png", "/logos/sender-3.png"])
         let h = reqs.first?.headers ?? [:]
-        XCTAssertTrue(h["user-agent"]?.hasPrefix("MikaPlusPlayer/") == true || h["user-agent"]?.hasPrefix("Mika+Player/") == true, "\(h)")
-        XCTAssertNotNil(h["accept-language"])
+        // Seit B04 · BUG-06 (Build 2026-09-29, gemeinsamer Logo-Loader für Senderliste und Tab): neutrale Kopfzeilen,
+        // kein App-Name, kein Build, keine Systemversion, keine Systemsprache.
+        XCTAssertEqual(h["user-agent"], "Mozilla/5.0", "\(h)")
+        XCTAssertEqual(h["accept-language"], "*", "\(h)")
         XCTAssertNil(h["cookie"])
         XCTAssertNil(h["referer"])
 

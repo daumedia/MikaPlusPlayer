@@ -550,9 +550,15 @@ final class B02OberflaecheTests: B02TestCase {
     @MainActor func testAK31_OeffnenEreignisImportiertImOffenenFenster() async throws {
         let dir = try tempDir("ak31")
         let visibleBefore = Set(NSApp.windows.filter(\.isVisible).map(ObjectIdentifier.init))
+        // Review R-06: Fenster der Hauptszene (SwiftUI-Szenenfenster außer „Multiview") vor dem ersten Ereignis. Ist eines
+        // offen, darf kein Fenster entstehen; sonst genau eines (für alle Ereignisse zusammen).
+        let sceneWindowsBefore = NSApp.windows.filter {
+            $0.isVisible && $0.sheetParent == nil && NSStringFromClass(Swift.type(of: $0)).contains("AppKitWindow") && $0.title != "Multiview"
+        }
         var created: [NSWindow] = []
         defer { created.forEach { $0.close() } }
         var lines: [String] = []
+        var rejectedTxt = false
         for file in ["qa-oeffnen.m3u", "qa-oeffnen.m3u8", "qa-oeffnen.txt"] {
             let url = dir.appendingPathComponent(file)
             try B02.zweiSenderData.write(to: url)
@@ -573,12 +579,27 @@ final class B02OberflaecheTests: B02TestCase {
             AEDisposeDesc(&reply)
             lines.append("\(file)|dispatchStatus=\(status)")
             await UIHarness.spin(2.0)
-            let newWindows = NSApp.windows.filter { $0.isVisible && !visibleBefore.contains(ObjectIdentifier($0)) && !created.contains($0) }
+            let newWindows = NSApp.windows.filter {
+                $0.isVisible && $0.sheetParent == nil && !($0 is NSPanel) && !visibleBefore.contains(ObjectIdentifier($0)) && !created.contains($0)
+            }
             created.append(contentsOf: newWindows)
             for nw in newWindows { AX.wake(nw) }
             await UIHarness.spin(0.3)
             let windowTexts = newWindows.map { texts($0).filter { $0.contains("Playlist") || $0.contains("Sender") || $0.contains("Fehler") } }
             lines.append("\(file)|neueFenster=\(newWindows.count)|titel=\(newWindows.map(\.title))|texte=\(windowTexts)")
+            if file.hasSuffix(".txt") {
+                // Review R-09: keine M3U-Playlist → Meldung statt Import; Meldung bestätigen, damit nichts offen bleibt.
+                let sheets = NSApp.windows.compactMap(\.attachedSheet)
+                for sheet in sheets { AX.wake(sheet) }
+                await UIHarness.spin(0.3)
+                let sheetTexts = sheets.flatMap { texts($0) }
+                rejectedTxt = sheetTexts.contains { $0.contains(ImportError.unsupportedFile.errorDescription ?? "?") }
+                lines.append("\(file)|meldung=\(sheetTexts.filter { $0.contains("Import") || $0.contains("M3U") })")
+                for sheet in sheets where texts(sheet).contains(where: { $0.contains("Import fehlgeschlagen") }) {
+                    _ = B03UI.pressButton(sheet, "OK")
+                }
+                await UIHarness.spin(0.5)
+            }
         }
         // BUG-06 behoben: Das Ereignis landet im offenen Fenster (höchstens eines entsteht, wenn keines offen war) und
         // importiert die Datei über denselben Weg wie der Datei-Reiter.
@@ -588,12 +609,16 @@ final class B02OberflaecheTests: B02TestCase {
         await UIHarness.spin(0.3)
         let imported = appWindows.flatMap { texts($0) }.filter { $0.contains("qa-oeffnen, 2 Sender") }
         let failures = appWindows.flatMap { texts($0) }.filter { $0.contains("Import fehlgeschlagen") }
+        let openSheets = NSApp.windows.compactMap(\.attachedSheet).count
         B02.evidence("AK-31-32-oeffnen.txt", "AK-31|testHost|" + lines.joined(separator: "\nAK-31|testHost|")
-                     + "\nAK-31|testHost|importiertSichtbar=\(imported.count)|fehler=\(failures)")
+                     + "\nAK-31|testHost|szenenfensterVorher=\(sceneWindowsBefore.count)|neueFenster=\(created.count)|importiertSichtbar=\(imported.count)|txtAbgelehnt=\(rejectedTxt)|fehler=\(failures)|offeneMeldungen=\(openSheets)")
         if let shown = appWindows.first(where: { texts($0).contains { $0.contains("qa-oeffnen") } }) { shot(shown, "AK-31-import-nach-oeffnen") }
-        XCTAssertLessThanOrEqual(created.count, 1, "kein leeres Fenster je Öffnen")
-        XCTAssertEqual(imported.count, 3, "jede geöffnete Datei als Playlist importiert")
+        XCTAssertEqual(created.count, sceneWindowsBefore.isEmpty ? 1 : 0,
+                       "kein zusätzliches Fenster (Hauptfenster vorher offen: \(!sceneWindowsBefore.isEmpty))")
+        XCTAssertEqual(imported.count, 2, "jede geöffnete M3U-Datei als Playlist importiert (.m3u, .m3u8)")
+        XCTAssertTrue(rejectedTxt, "Textdatei abgelehnt mit Meldung (Review R-09)")
         XCTAssertTrue(failures.isEmpty)
+        XCTAssertEqual(openSheets, 0, "keine Meldung bleibt offen")
     }
 
     /// AK-31 (d) / AK-32 ⚠ / BUG-07: Standard-App je Typ und ob sich Mika+Player als Öffner anbietet (LaunchServices, nur lesend).
@@ -601,6 +626,30 @@ final class B02OberflaecheTests: B02TestCase {
         let dir = try tempDir("ak32")
         var lines: [String] = []
         var offered: [String: Bool] = [:]
+        var offeredByThisBuild: [String: Bool] = [:]
+        let thisBuild = Bundle.main.bundleURL.resolvingSymlinksInPath().standardizedFileURL
+        func registered() -> Bool {
+            NSWorkspace.shared.urlsForApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "")
+                .contains { $0.resolvingSymlinksInPath().standardizedFileURL == thisBuild }
+        }
+        // Review R-05: Die LaunchServices-Liste prüft nur etwas, wenn dieses gebaute Bundle registriert ist. Kennt
+        // LaunchServices es noch nicht (z. B. Build-Ordner außerhalb des Repositorys), registriert der Test es für die
+        // Dauer der Prüfung selbst und nimmt die Registrierung danach wieder zurück (`lsregister -u`, nur dieser Pfad).
+        let registeredByTest = !registered()
+        if registeredByTest {
+            LSRegisterURL(thisBuild as CFURL, true)
+            _ = try? await waitFor("LaunchServices-Registrierung", timeout: 10) { registered() ? true : nil }
+        }
+        defer {
+            if registeredByTest {
+                let lsregister = Process()
+                lsregister.executableURL = URL(fileURLWithPath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister")
+                lsregister.arguments = ["-u", thisBuild.path]
+                try? lsregister.run()
+                lsregister.waitUntilExit()
+            }
+        }
+        let thisBuildRegistered = registered()
         for ext in ["m3u", "m3u8", "txt", "json", "html", "csv", "swift", "md", "log", "pls", "xspf", ""] {
             let url = dir.appendingPathComponent(ext.isEmpty ? "qa-ohne-endung" : "qa.\(ext)")
             try Data("#EXTM3U\n".utf8).write(to: url)
@@ -611,9 +660,11 @@ final class B02OberflaecheTests: B02TestCase {
                 let id = Bundle(url: std)?.bundleIdentifier ?? ""
                 return id.hasPrefix("com.apple.") || id.hasPrefix("lu.daumedia.") ? std.lastPathComponent : "<Drittanbieter-App>"
             }()
-            let mika = NSWorkspace.shared.urlsForApplications(toOpen: url).filter { Bundle(url: $0)?.bundleIdentifier?.hasPrefix("lu.daumedia.MikaPlusPlayer") == true }
+            let candidates = NSWorkspace.shared.urlsForApplications(toOpen: url)
+            let mika = candidates.filter { Bundle(url: $0)?.bundleIdentifier?.hasPrefix("lu.daumedia.MikaPlusPlayer") == true }
             let label = ext.isEmpty ? "(ohne Endung)" : ext
             offered[label] = !mika.isEmpty
+            offeredByThisBuild[label] = candidates.contains { $0.resolvingSymlinksInPath().standardizedFileURL == thisBuild }
             lines.append("\(label)|typ=\(type)|standardApp=\(stdName)|mikaPlusPlayerKandidaten=\(mika.count)")
         }
         // LaunchServices kennt alle je gebauten Kopien (auch ältere Stände in anderen Build-Ordnern). Maßgeblich für diesen
@@ -627,11 +678,23 @@ final class B02OberflaecheTests: B02TestCase {
             ownBuild[label] = declared.contains { type.conforms(to: $0) }
         }
         lines.append("diesesBundle|dokumenttypen=\(declared.map(\.identifier))|angeboten=\(ownBuild.filter(\.value).keys.sorted())")
+        // Review R-05: die wörtliche Reproduktion von BUG-07 – bietet LaunchServices **dieses** gebaute Bundle als Öffner an?
+        // (Andere, ältere Kopien in anderen Build-Ordnern zählen nicht.) Erfasst jeden Registrierungsweg, nicht nur
+        // `LSItemContentTypes`.
+        lines.append("diesesBundle|launchServices|angeboten=\(offeredByThisBuild.filter(\.value).keys.sorted())|registriert=\(thisBuildRegistered)|vomTestRegistriert=\(registeredByTest)")
         B02.evidence("AK-31-32-oeffnen.txt", "AK-31d/AK-32|" + lines.joined(separator: "\nAK-31d/AK-32|"))
         _ = offered
         // BUG-07 behoben: nur noch M3U-Playlists (.m3u, .m3u8), keine beliebigen Textdateien.
         XCTAssertEqual(declared.map(\.identifier), ["public.m3u-playlist"])
         for e in ["m3u", "m3u8"] { XCTAssertEqual(ownBuild[e], true, e) }
         for e in ["txt", "json", "html", "csv", "swift", "md", "log", "pls", "xspf", "(ohne Endung)"] { XCTAssertEqual(ownBuild[e], false, e) }
+        let docTypes = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDocumentTypes") as? [[String: Any]]) ?? []
+        XCTAssertTrue(docTypes.allSatisfy { $0["CFBundleTypeExtensions"] == nil && $0["CFBundleTypeOSTypes"] == nil && $0["CFBundleTypeMIMETypes"] == nil },
+                      "kein weiterer Registrierungsweg im Info.plist: \(docTypes)")
+        XCTAssertTrue(thisBuildRegistered, "dieses Bundle ist bei LaunchServices registriert (sonst prüft die Liste nichts)")
+        for e in ["m3u", "m3u8"] { XCTAssertEqual(offeredByThisBuild[e], true, "LaunchServices: \(e)") }
+        for e in ["txt", "json", "html", "csv", "swift", "md", "log", "pls", "xspf", "(ohne Endung)"] {
+            XCTAssertEqual(offeredByThisBuild[e], false, "LaunchServices bietet dieses Bundle für \(e) an")
+        }
     }
 }

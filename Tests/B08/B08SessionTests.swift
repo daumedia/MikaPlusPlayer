@@ -271,6 +271,9 @@ final class B08SessionTests: B08TestCase {
         }
         XCTAssertTrue(m404.contains("not found") || m404.contains("nicht gefunden"), m404)
         XCTAssertTrue(mPort.lowercased().contains("connect") || mPort.contains("Verbindung"), mPort)
+        // Seit B06 · BUG-01 gilt VLC erst mit dem ersten Bild als „spielt“ (≈ 0,3 s), nicht schon beim Puffern
+        let okTS = await B08QA.wait(5) { s1.slots[2].engine.state == .playing }
+        XCTAssertNotNil(okTS, "die anderen Kacheln laufen weiter")
         XCTAssertEqual(s1.slots[2].engine.state, .playing, "die anderen Kacheln laufen weiter")
         for m in [m404, mPort] {
             XCTAssertFalse(m.contains("127.0.0.1") || m.contains("/ak25") || m.contains(B08QA.pass), "AK-32: keine Adresse in der Meldung: \(m)")
@@ -292,21 +295,24 @@ final class B08SessionTests: B08TestCase {
         }
         let states = s2.slots.map { B08Engine.name($0.engine.state) }
         let failedCount = s2.slots.filter { if case .failed = $0.engine.state { return true } else { return false } }.count
+        // Seit B08 · BUG-07 (Build 2026-09-28): AVKit-Kacheln haben eine Frist ohne Fortschritt (Standard 30 s, hier
+        // verkürzt auf 5 s, damit das Beobachtungsfenster von 20 s bleibt; mit Standardfrist: B08ReparaturTests).
+        MultiviewSession.stallLimitForNewTiles = 5
+        defer { MultiviewSession.stallLimitForNewTiles = 30 }
         let s3 = session()
         add(s3, channel("Segmente 404 HLS", "/seg404/6/ak26seg/index.m3u8"))
         await B08QA.spin(20)
         B08QA.log("AK-26|AVKit Segmente 404 ab 6 s|\(B08Engine.describe(s3))|seg404=\(server.requests(containing: "ak26seg").filter { $0.status == 404 }.count)")
         let segState = B08Engine.name(s3.slots[0].engine.state)
-        XCTExpectFailure("BUG-07 · Kacheln zeigen VLC-Fehler und abgebrochene HLS-Segmente nicht an (Ursache B06 FB-01)") {
-            XCTAssertEqual(failedCount, 4, "erwartet: jede gescheiterte VLC-Kachel zeigt „Wiedergabe fehlgeschlagen“ – ist: \(states)")
-            XCTAssertTrue(segState.hasPrefix("failed"), "erwartet: Meldung bei 404-Segmenten – ist: \(segState)")
-        }
-        // Kachel: `.idle` und `.loading` zeigen beide die Ladeanzeige (MultiviewTile.stateOverlay)
-        XCTAssertTrue(["idle", "loading"].contains(states[0]), "404 TS: endlos Ladeanzeige – \(states[0])")
-        XCTAssertTrue(["idle", "loading"].contains(states[1]), "Port zu TS: endlos Ladeanzeige – \(states[1])")
-        XCTAssertEqual(states[2], "playing", "Abbruch während der Wiedergabe: Zustand bleibt „spielt“ (letztes Bild)")
-        XCTAssertEqual(states[3], "playing", "Server antwortet nie: „spielt“, schwarz ohne Ladeanzeige")
-        XCTAssertEqual(segState, "playing", "HLS mit 404-Segmenten bleibt ohne Meldung")
+        // VLC-Teil durch B06 · BUG-01 behoben (Build 2026-09-27): 404, Port zu und Abbruch melden sich; der Hänger zeigt
+        // bis zur Ladefrist von 40 s die Ladeanzeige (nach 25 s also noch `loading`, nicht mehr „spielt“).
+        XCTAssertEqual(failedCount, 3, "404, Port zu und Abbruch zeigen „Wiedergabe fehlgeschlagen“ – ist: \(states)")
+        XCTAssertTrue(states[0].hasPrefix("failed"), "404 TS: \(states[0])")
+        XCTAssertTrue(states[1].hasPrefix("failed"), "Port zu TS: \(states[1])")
+        XCTAssertTrue(states[2].hasPrefix("failed"), "Abbruch während der Wiedergabe: \(states[2])")
+        XCTAssertEqual(states[3], "loading", "Server antwortet nie: Ladeanzeige bis zur Frist, nicht „spielt“")
+        XCTAssertEqual(s3.slots[0].engine.state, .failed(AVKitPlaybackEngine.interruptedMessage),
+                       "HLS mit 404-Segmenten meldet sich nach der Frist – ist: \(segState)")
     }
 
     // MARK: AK-30 ⚠ · AK-31 ⚠ — N Kacheln = N Verbindungen mit Zugangsdaten; Anbieterlimit 1
@@ -334,7 +340,8 @@ final class B08SessionTests: B08TestCase {
         }
     }
 
-    func testAK31_AnbieterlimitEinsDreiKachelnLadenEndlos() async throws {
+    /// Seit B06 · BUG-01 (Build 2026-09-27) melden sich die abgelehnten Kacheln; offen bleibt die Rücksicht auf das Limit (AK-30).
+    func testAK31_AnbieterlimitEinsDreiKachelnMeldenAblehnung() async throws {
         let container = try B08QA.inMemoryContainer()
         let p = try await importXtream(container.mainContext, output: .mpegts)
         let chans = p.channels.sorted { $0.name < $1.name }
@@ -356,12 +363,9 @@ final class B08SessionTests: B08TestCase {
         B08QA.log("AK-31|limit 1|\(B08Engine.describe(s))|status je Stream=\(perStream.sorted { $0.key < $1.key })|403-Versuche=\(firstAttempts.sorted { $0.key < $1.key })|\(server.summary("/live/"))")
         let states = s.slots.map { B08Engine.name($0.engine.state) }
         XCTAssertEqual(states.first, "playing", "die erste Kachel spielt")
-        XCTAssertTrue(states.dropFirst().allSatisfy { ["idle", "loading"].contains($0) }, "drei Kacheln: Ladeanzeige ohne Ende – \(states)")
         XCTAssertEqual(reqs.filter { $0.status == 403 }.count >= 3, true)
-        XCTExpectFailure("BUG-06 · Kacheln über dem Anbieterlimit scheitern ohne Meldung (FB-06)") {
-            XCTAssertTrue(s.slots.dropFirst().allSatisfy { if case .failed = $0.engine.state { return true } else { return false } },
-                          "erwartet: Meldung (z. B. Verbindungslimit erreicht) – ist: \(states)")
-        }
+        XCTAssertTrue(s.slots.dropFirst().allSatisfy { $0.engine.state == .failed(VLCPlaybackEngine.Failure.cannotOpen.message) },
+                      "drei Kacheln melden die Ablehnung – ist: \(states)")
     }
 
     // MARK: AK-27 ⚠ · AK-28 ⚠ · EC-14 · Angriff 8 — Löschen und Aktualisieren der Playlist bei laufenden Kacheln

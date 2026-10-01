@@ -1,0 +1,102 @@
+B07 Build (Fehlerauftrag) · iOS-Sonde 2026-09-27 · eigener Simulator „B07-Build iPad Pro 11“ (iPad Pro 11-inch M4, iOS 26.5), am Ende gelöscht
+App: Debug-Build aus build/dd-ios (Arbeitsbaum mit B06- und B07-Reparatur), frisch installiert (Datenbank nur im Simulator), Playlist per URL-Import vom Mock
+Mock: iosserver.py (qa/werkzeuge) auf 127.0.0.1:18937, Medien ohne Tonspur (ffprobe: 0 Audiospuren); Bedienung: AXe (tap, type, key = HID), Bildschirmfotos simctl io, Protokoll simctl log show
+Hinweis: Im ersten BUG-03-Versuch traf der Tipp (640,125) zum Einblenden der Fensterknöpfe den Mittelknopf (Pause/Wiedergabe) des Fensters – die Zeilen dort sind deshalb nicht aussagekräftig; maßgeblich ist der „saubere Durchgang“.
+Die Knöpfe des schwebenden Fensters erscheinen nicht im Bedienungshilfen-Baum (nur PIPUIView); Lage aus dem Bildschirmfoto: Schließen (503,60), Zurück zur App (780,60), Mitte (642,118).
+
+== iPad (B07-Build iPad Pro 11, iOS 26.5) BUG-01: PiP, Zurück, anderer Sender ==
+tap 'Minimise Video' @ 734,176
+23:12:46.226 PiP: 1 PIPUIView
+tap '127.0.0.1' @ 32,54
+23:12:55.335 6 s nach Zurück (ab 23:12:49): PIPUIView=1
+tap 'QA HLS Zwei, QA' @ 417,524
+23:13:05.994 Tipp auf QA HLS Zwei
+23:13:17.608 10 s nach Öffnen: PIPUIView=0
+== iPad BUG-01: PiP, Zurück, dann „Zurück zur App“ im schwebenden Fenster ==
+tap 'Minimise Video' @ 734,176
+tap '127.0.0.1' @ 32,54
+23:13:34.204 nach Zurück: PIPUIView=1
+23:13:51.924 Tipp auf „Zurück zur App“ (780,60) im schwebenden Fenster
+23:14:00.393 8 s danach: PIPUIView=0
+2026-09-27 23:12:17.737342+0200 MikaPlusPlayer: (AVKit) [com.apple.avkit:AVKit] -[AVPictureInPicturePlatformAdapter pictureInPictureProxy:restoreUserInterfaceForPictureInPictureStopWithCompletio
+2026-09-27 23:12:18.275557+0200 MikaPlusPlayer: (AVKit) [com.apple.avkit:AVKit] -[AVPictureInPicturePlatformAdapter pictureInPictureProxy:didStopPictureInPictureWithAnimationType:reason:] pictur
+2026-09-27 23:13:52.359423+0200 MikaPlusPlayer: (AVKit) [com.apple.avkit:AVKit] -[AVPictureInPicturePlatformAdapter pictureInPictureProxy:restoreUserInterfaceForPictureInPictureStopWithCompletio
+2026-09-27 23:13:53.197631+0200 MikaPlusPlayer: (AVKit) [com.apple.avkit:AVKit] -[AVPictureInPicturePlatformAdapter pictureInPictureProxy:didStopPictureInPictureWithAnimationType:reason:] pictur
+== iPad BUG-04: MPEG-TS (VLC), Taste p ==
+tap 'QA TS, QA' @ 417,610
+23:14:25 p ohne Tab: 0 Hinweis
+23:14:35 Tab, dann p: 1 Hinweis
+== iPad BUG-03: Pause im schwebenden Fenster ==
+tap 'QA HLS Live, QA' @ 417,352
+tap 'Minimise Video' @ 734,176
+23:14:57 Tipp auf Pause (642,118) im schwebenden Fenster
+                    RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+                      RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+                        Button 'Maximise Video' val='' id='pip.exit' (710,152,48x48)
+                        Button 'Play' val='' id='play.fill' (12,1134,43x43)
+                        Button 'Bild-in-Bild beenden' val='' id='' (148,1134,207x43)
+tap 'Mika+Player' @ 417,605
+                    RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+                      RadioButton 'Playlists' val='1' id='list.and.film' (316,36,96x36)
+                        Button 'Play' val='' id='play.fill' (12,1134,43x43)
+23:15:23 erster Tipp auf Play (33,1155) in der App
+                        Button 'Play' val='' id='play.fill' (12,1134,43x43)
+-- sauberer Durchgang (Steuerung des Fensters über einen Tipp oben in der Mitte einblenden) --
+23:16:07 Pause im schwebenden Fenster
+23:16:09 App: Button 'Play'
+23:16:12 erster Tipp auf ▶ in der App
+23:16:15 App: 
+23:16:30 App (nach Einblenden): Button 'Pause'; Fenster zeigt ■ (Live läuft), Bild BUILD-IOS-ipad-09-….jpg
+Segmentabrufe ios1 in 4 s danach: 3
+tap 'Bild-in-Bild beenden' @ 251,1155
+23:16:48 PIPUIView=0
+== iPad: Tabwechsel im Player (Erkennung über den sichtbaren Tab) ==
+23:16:52 Favoriten-Tab: StaticText 'Favoriten'
+23:16:55 zurück im Playlists-Tab: Heading 'QA HLS Live' Button 'Pause' 
+tap '127.0.0.1' @ 32,54
+23:17:01 Zurück ohne Bild-in-Bild: Anfragen ios1 1–7 s danach: 0
+
+== Mock-Protokoll (Ausschnitt, 127.0.0.1:18937, Pfad ohne Zugangsdaten): BUG-01 iPad – Zurück 23:12:49, Tipp auf „QA HLS Zwei“ 23:13:07,5 ==
+23:12:44.244 /livehls/ios1/index.m3u8
+23:12:44.250 /livehls/ios1/seg00478.ts
+23:12:46.255 /livehls/ios1/index.m3u8
+23:12:46.265 /livehls/ios1/seg00479.ts
+23:12:48.261 /livehls/ios1/index.m3u8
+23:12:48.268 /livehls/ios1/seg00480.ts
+23:12:50.271 /livehls/ios1/index.m3u8
+23:12:50.274 /livehls/ios1/seg00481.ts
+23:12:52.277 /livehls/ios1/index.m3u8
+23:12:52.282 /livehls/ios1/seg00482.ts
+23:12:54.286 /livehls/ios1/index.m3u8
+23:12:54.294 /livehls/ios1/seg00483.ts
+23:12:56.294 /livehls/ios1/index.m3u8
+23:12:56.297 /livehls/ios1/seg00484.ts
+23:12:58.303 /livehls/ios1/index.m3u8
+23:12:58.308 /livehls/ios1/seg00485.ts
+23:13:00.313 /livehls/ios1/index.m3u8
+23:13:00.317 /livehls/ios1/seg00486.ts
+23:13:02.321 /livehls/ios1/index.m3u8
+23:13:02.325 /livehls/ios1/seg00487.ts
+23:13:04.328 /livehls/ios1/index.m3u8
+23:13:04.334 /livehls/ios1/seg00488.ts
+23:13:06.339 /livehls/ios1/index.m3u8
+23:13:06.345 /livehls/ios1/seg00489.ts
+23:13:07.601 /livehls/ios2/index.m3u8
+23:13:07.650 /livehls/ios2/seg00487.ts
+23:13:07.658 /livehls/ios2/seg00488.ts
+23:13:07.661 /livehls/ios2/seg00489.ts
+23:13:09.608 /livehls/ios2/index.m3u8
+23:13:09.611 /livehls/ios2/seg00490.ts
+23:13:11.617 /livehls/ios2/index.m3u8
+23:13:11.621 /livehls/ios2/seg00491.ts
+23:13:13.626 /livehls/ios2/index.m3u8
+23:13:13.635 /livehls/ios2/seg00492.ts
+23:13:15.635 /livehls/ios2/index.m3u8
+23:13:15.639 /livehls/ios2/seg00493.ts
+23:13:17.643 /livehls/ios2/index.m3u8
+23:13:17.645 /livehls/ios2/seg00494.ts
+== BUG-01 iPad – „Zurück zur App“ im verwaisten Fenster 23:13:51,9 (Anfragen ios2 ab 23:13:48) ==
+23:13:49.777 /livehls/ios2/index.m3u8
+23:13:49.784 /livehls/ios2/seg00510.ts
+23:13:51.783 /livehls/ios2/index.m3u8
+23:13:51.788 /livehls/ios2/seg00511.ts

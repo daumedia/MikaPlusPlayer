@@ -161,6 +161,7 @@ enum B06Media {
 /// · `/tslive/<id>[.ext]` roher TS in Echtzeit · `/401/…` (mit WWW-Authenticate) · `/403/…` · `/404/…` · `/html/…`
 /// · `/hang/…` · `/delay/<s>/<rest>` (nur erste Anfrage je Pfad) · `/abort/<s>/tslive/…` · `/abort/<s>/livehls/<id>/…`
 /// · `/m3uplaylist/list.m3u` · `/live/<user>/<pass>/<id>.ts|.m3u8` (Xtream-Form), `/live/<u>/<p>/404/<id>.<ext>`
+/// · `/stall/<s>/tslive/…` roher TS, der nach s Sekunden verstummt, ohne die Verbindung zu schließen (Build B06 · BUG-01)
 final class B06StreamServer: @unchecked Sendable {
     struct Request: Sendable {
         let conn: Int
@@ -209,6 +210,8 @@ final class B06StreamServer: @unchecked Sendable {
         var streamStart: Date?
         var pos = 0
         var limit: TimeInterval?
+        /// Build B06 · BUG-01: nach so vielen Sekunden nichts mehr senden, Verbindung aber offen lassen.
+        var stallAfter: TimeInterval?
         var streaming = false
         init(id: Int, conn: NWConnection) { self.id = id; self.conn = conn }
     }
@@ -383,6 +386,8 @@ final class B06StreamServer: @unchecked Sendable {
                 return route(st, path: "/" + p.dropFirst(2).joined(separator: "/"), headers: headers, head: head, leftover: leftover)
             }
             status(st, 404, leftover: leftover)
+        case "stall" where p.count >= 3 && p[2] == "tslive":
+            realtime(st, limit: nil, stallAfter: Double(p[1]) ?? 0)
         case "hls" where p.count == 2:
             if p[1] == "vod.m3u8" {
                 send(st, 200, "application/vnd.apple.mpegurl", (try? Data(contentsOf: media.dir.appendingPathComponent("hls/vod.m3u8"))) ?? Data(), leftover: leftover)
@@ -477,9 +482,10 @@ final class B06StreamServer: @unchecked Sendable {
     }
 
     /// Roher TS in Echtzeit (1 s Vorlauf), endlos bzw. bis `limit`; sendet nur weiter, wenn der Client liest.
-    private func realtime(_ st: State, limit: TimeInterval?) {
+    private func realtime(_ st: State, limit: TimeInterval?, stallAfter: TimeInterval? = nil) {
         st.streaming = true
         st.limit = limit
+        st.stallAfter = stallAfter
         let head = Data("HTTP/1.1 200 OK\r\nContent-Type: video/mp2t\r\nConnection: close\r\n\r\n".utf8)
         st.conn.send(content: head, completion: .contentProcessed { _ in })
         st.streamStart = Date()
@@ -499,6 +505,7 @@ final class B06StreamServer: @unchecked Sendable {
         }
         let elapsed = now.timeIntervalSince(t0)
         if let limit = st.limit, elapsed >= limit { return close(st, "abort-after-\(Int(limit))s") }
+        if let stall = st.stallAfter, elapsed >= stall { return }
         guard !st.inFlight else { return }
         let rate = media.tsRate
         guard Double(st.bytesSent) < elapsed * rate + rate else { return }
@@ -880,6 +887,8 @@ class B06TestCase: XCTestCase {
     }
 
     override func tearDown() async throws {
+        // Build B06 · BUG-01: kürzere VLC-Fristen gelten nur für den Test, der sie setzt.
+        VLCPlaybackEngine.limitsForNewEngines = .standard
         for w in windows { B06UI.close(w) }
         windows.removeAll()
         for e in engines { e.setMuted(true); e.pause() }

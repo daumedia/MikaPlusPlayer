@@ -113,6 +113,13 @@ enum PlaybackEngineFactory {
         }
     }
 
+    /// Ob das Gerät Bild-in-Bild kann, auch wenn die Engine des Senders es nicht bietet (VLC). Dann erklärt der
+    /// Player, warum es fehlt (B07 · BUG-04).
+    @MainActor
+    static var deviceSupportsPictureInPicture: Bool {
+        AVKitPlaybackEngine.deviceSupportsPictureInPicture
+    }
+
     /// Erzeugt eine VLC-Engine, sofern VLCKit zur Compile-Zeit verfügbar ist.
     @MainActor
     private static func makeVLCEngine() -> (any PlaybackEngine)? {

@@ -452,7 +452,8 @@ final class B03OberflaecheTests: B03QATestCase {
         B03QA.log("EC-05|vorher=\(before.prefix(14))|nachher=\(afterRefresh.prefix(16))")
         XCTAssertTrue(afterRefresh.contains { $0.contains("MIKA+PLAYER · 9 SENDER") }, "Kopfzeile aktualisiert")
         XCTAssertTrue(afterRefresh.contains { $0.contains("Delta") }, "Liste aktualisiert")
-        XCTAssertFalse(afterRefresh.contains { $0 == "Neu" }, "Gruppen-Chips nicht aktualisiert (B04)")
+        // Seit B04 · BUG-02 (Build 2026-09-29) folgen die Gruppen-Chips dem Aktualisieren.
+        XCTAssertTrue(afterRefresh.contains { $0 == "Neu" }, "Gruppen-Chips aktualisiert (B04)")
 
         // AK-27: Löschen bei offener Liste
         try await PlaylistImporter(modelContext: ctx).delete(m)

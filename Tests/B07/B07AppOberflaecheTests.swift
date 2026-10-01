@@ -96,9 +96,9 @@ final class B07AppOberflaecheTests: B07TestCase {
         B07QA.log("AK-15c|Ergebnis: parallel≈\(Int(overlap)) s, altes Fenster weg=\(goneAt.map(B07QA.f1) ?? "nein (45 s)"), engineA nach B=\(aliveAfterB)")
         if let a = weakA { a.stopPictureInPicture() }
         weakPlayerA?.pause()
-        XCTExpectFailure("BUG-01 · Nach „Zurück“ mit aktivem Bild-in-Bild zwei Streams gleichzeitig (echte Oberfläche)") {
-            XCTAssertEqual(overlap, 0, "keine zwei Streams gleichzeitig")
-        }
+        // Behoben (BUG-01, 2026-09-27): Sender B beendet die verwaiste Wiedergabe von A samt Fenster.
+        XCTAssertEqual(overlap, 0, "keine zwei Streams gleichzeitig")
+        XCTAssertNotNil(goneAt, "das alte Bild-in-Bild-Fenster schließt")
         B07UI.close(w); windows.removeAll()
         await B07QA.spin(1)
         session.clear()

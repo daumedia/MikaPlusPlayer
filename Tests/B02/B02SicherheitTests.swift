@@ -239,10 +239,20 @@ final class B02SicherheitTests: B02TestCase {
         let store = try OSLogStore(scope: .currentProcessIdentifier)
         var total = 0, hits = 0, privateVisible = false, appSubsystem = 0
         var subsystems: [String: Int] = [:]
+        var older = 0
+        var olderApp: [String] = []
         for case let e in try store.getEntries(at: store.position(date: start)) {
             // `position(date:)` liefert im Gesamtlauf auch ältere Einträge des Prozesses (z. B. Wiederherstellungs-
             // Meldungen aus B09-Tests); gezählt wird nur das Zeitfenster dieses Tests.
-            guard let log = e as? OSLogEntryLog, log.date >= start else { continue }
+            guard let log = e as? OSLogEntryLog else { continue }
+            guard log.date >= start else {
+                // Review R-07: belegen, was das Zeitfenster ausschließt.
+                older += 1
+                if log.subsystem.hasPrefix("lu.daumedia.MikaPlusPlayer") && log.subsystem != "lu.daumedia.MikaPlusPlayerTests" {
+                    olderApp.append("\(ISO8601DateFormatter().string(from: log.date))|\(log.subsystem)|\(log.category)|\(log.composedMessage.prefix(120))")
+                }
+                continue
+            }
             total += 1
             if log.composedMessage.contains(privMarker) { privateVisible = true }
             if log.subsystem.hasPrefix("lu.daumedia.MikaPlusPlayer") && log.subsystem != "lu.daumedia.MikaPlusPlayerTests" { appSubsystem += 1 }
@@ -252,6 +262,8 @@ final class B02SicherheitTests: B02TestCase {
             }
         }
         B02.evidence("AK-41-protokoll.txt", "AK-41|testHost(xcodebuild)|eintraege=\(total)|trefferMitPasswort=\(hits)|subsysteme=\(subsystems)|privateDatenSichtbar=\(privateVisible)|eintraegeDerApp=\(appSubsystem)")
+        B02.log("AK-41|R-07|vorStart=\(older)|davonDerApp=\(olderApp.count)|ohneZeitfenster eintraegeDerApp=\(appSubsystem + olderApp.count)")
+        for line in olderApp.prefix(12) { B02.log("AK-41|R-07|ausgeschlossen|\(line)") }
         XCTAssertGreaterThan(total, 0)
         XCTAssertEqual(appSubsystem, 0, "die App selbst protokolliert beim M3U-Import nichts")
         XCTAssertTrue(subsystems.keys.allSatisfy { $0 == "com.apple.CFNetwork" }, "\(subsystems)")

@@ -155,11 +155,10 @@ final class B07VerlassenTests: B07TestCase {
             // Aufräumen: Fenster schließen (danach soll nichts weiterlaufen)
             weakA?.stopPictureInPicture(); weakPlayerA?.pause()
         }
-        XCTExpectFailure("BUG-01 · Nach „Zurück“ mit aktivem Bild-in-Bild spielt macOS verwaist und unsteuerbar weiter, beim nächsten Sender zwei Streams") {
-            XCTAssertFalse(stillPlaying && !appHasControl, "keine Wiedergabe, die die App nicht mehr steuern kann")
-            XCTAssertEqual(pipWindowsAfterStop, 0, "Beenden aus der App wirkt")
-            XCTAssertEqual(maxOverlap, 0, "keine zwei Streams gleichzeitig")
-        }
+        // Behoben (BUG-01, 2026-09-27): Beenden aus der App wirkt auch ohne Player, keine zwei Streams.
+        XCTAssertFalse(stillPlaying && !appHasControl, "keine Wiedergabe, die die App nicht mehr steuern kann")
+        XCTAssertEqual(pipWindowsAfterStop, 0, "Beenden aus der App wirkt")
+        XCTAssertEqual(maxOverlap, 0, "keine zwei Streams gleichzeitig")
     }
 
     func testAK15a_Mac_ZurueckMitPiP_DenselbenSenderErneutOeffnen() async throws {
@@ -172,7 +171,7 @@ final class B07VerlassenTests: B07TestCase {
 
     // MARK: AK-16 · Pause im schwebenden Fenster
 
-    func testAK16_PauseImPiPFenster_AppZeigtWeiterLaeuft_ErsterDruckVerpufft() async throws {
+    func testAK16_PauseImPiPFenster_AppZeigtAngehalten_ErsterDruckSetztFort() async throws {
         let c = channel("QA Pause", "/livehls/ak16/index.m3u8")
         let w = playerWindow(c)
         try await activate(w)
@@ -198,15 +197,14 @@ final class B07VerlassenTests: B07TestCase {
         B07QA.log("AK-16|Leertaste 1 → rate=\(r1) knopf='\(label1)' | Leertaste 2 → rate=\(r2) knopf='\(playPauseLabel(w))'|beep=\(b1 + b2)")
         XCTAssertEqual(b1 + b2, [])
         B07QA.log("AK-16|Befund: knopf='\(label0)' ersterDruckRate=\(r1) zweiterDruckRate=\(r2)")
-        XCTExpectFailure("BUG-03 · Pause im Bild-in-Bild-Fenster: App zeigt weiter „läuft“, erster Druck verpufft") {
-            XCTAssertTrue(label0.contains("play.fill"), "Knopf zeigt nach Pause im Fenster „Abspielen“")
-            XCTAssertEqual(r1, 1, accuracy: 0.01, "erster Druck setzt fort")
-        }
+        // Behoben (BUG-03, 2026-09-27): Die App folgt der Pause im Fenster, der erste Druck setzt fort.
+        XCTAssertTrue(label0.contains("play.fill"), "Knopf zeigt nach Pause im Fenster „Abspielen“")
+        XCTAssertEqual(r1, 1, accuracy: 0.01, "erster Druck setzt fort")
     }
 
     // MARK: AK-17 / EC-10 · Zweites Bild-in-Bild
 
-    func testAK17_EC10_ZweiterPlayerStartetPiP_ErsterPausiertZeigtAberLaeuft() async throws {
+    func testAK17_EC10_ZweiterPlayerStartetPiP_ErsterPausiertUndZeigtEs() async throws {
         let c1 = channel("QA Eins", "/livehls/a17/index.m3u8")
         let c2 = channel("QA Zwei", "/livehls/b17/index.m3u8")
         let w1 = playerWindow(c1, origin: CGPoint(x: 60, y: 120), size: CGSize(width: 560, height: 360))
@@ -230,10 +228,9 @@ final class B07VerlassenTests: B07TestCase {
         XCTAssertTrue(e2.isPictureInPictureActive, "der zuletzt gestartete gewinnt")
         XCTAssertEqual(B07Engine.avPlayer(e1)?.rate ?? -1, 0, "Stream des ersten pausiert (Systemverhalten)")
         B07QA.log("AK-17|Befund: erster isPaused(App)=\(e1.isPaused) rate=\(B07Engine.avPlayer(e1)?.rate ?? -1) knopf='\(label1)'")
-        XCTExpectFailure("BUG-03 · Zweites Bild-in-Bild pausiert den ersten Player, dessen Anzeige bleibt „läuft“") {
-            XCTAssertTrue(e1.isPaused || (B07Engine.avPlayer(e1)?.rate ?? 0) > 0.5, "Anzeige und Wiedergabe stimmen überein")
-            XCTAssertTrue(label1.contains("play.fill"), "Knopf des ersten zeigt „Abspielen“")
-        }
+        // Behoben (BUG-03, 2026-09-27): Anzeige und Wiedergabe des ersten Players stimmen überein.
+        XCTAssertTrue(e1.isPaused || (B07Engine.avPlayer(e1)?.rate ?? 0) > 0.5, "Anzeige und Wiedergabe stimmen überein")
+        XCTAssertTrue(label1.contains("play.fill"), "Knopf des ersten zeigt „Abspielen“")
     }
 
     // MARK: EC-03 · Tabwechsel bei aktivem Bild-in-Bild

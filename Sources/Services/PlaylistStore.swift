@@ -47,6 +47,105 @@ enum FavoriteCarryOver {
         }
         return flags
     }
+
+    /// Stand der Übernahme nach einem Ersetzen: welche alten Sender beim Lesen Favorit waren, die neue Liste in
+    /// Anbieterreihenfolge mit den IDs der angelegten Sender und die daraus gesetzten Sterne. Grundlage, um Sterne
+    /// nachzuziehen, die während des Ersetzens in der Ansicht gesetzt oder entfernt wurden (Review R-01).
+    struct State: Sendable {
+        struct ReadFavorite: Sendable {
+            let channelID: UUID
+            let previous: Previous
+        }
+
+        /// Favoriten der alten Liste, so wie `replaceChannels` sie gelesen hat
+        let read: [ReadFavorite]
+        let channels: [ParsedChannel]
+        let newIDs: [UUID]
+        /// Sterne der neuen Sender, wie sie in der Datenbank stehen (nach jedem Nachziehen aktualisiert)
+        var flags: [Bool]
+
+        /// Favoriten der alten Liste, als wären `edits` vor dem Lesen gespeichert worden.
+        func previous(applying edits: [FavoriteEdit]) -> [Previous] {
+            var final: [UUID: Bool] = [:]
+            for edit in edits { final[edit.channelID] = edit.isFavorite }
+            var result: [Previous] = []
+            var known = Set<UUID>()
+            for favorite in read {
+                known.insert(favorite.channelID)
+                if final[favorite.channelID] != false { result.append(favorite.previous) }
+            }
+            var added = Set<UUID>()
+            for edit in edits where final[edit.channelID] == true && !known.contains(edit.channelID) {
+                if added.insert(edit.channelID).inserted { result.append(edit.previous) }
+            }
+            return result
+        }
+    }
+}
+
+/// Eine Stern-Änderung in der Ansicht: der Sender (wie beim Lesen erkannt) und sein Stern **danach**.
+struct FavoriteEdit: Sendable, Equatable {
+    let channelID: UUID
+    let previous: FavoriteCarryOver.Previous
+    var isFavorite: Bool
+}
+
+/// Stern setzen und entfernen – der eine Weg dafür (`ChannelRowView`), Review R-01.
+///
+/// Während eine Playlist aktualisiert wird, liest `PlaylistStore.replaceChannels` die Favoriten der alten Sender und
+/// ersetzt danach alle Sender in einem Speichervorgang. Ein Stern, den die Ansicht in dieser Zeit an einem alten Sender
+/// speichert, stünde sonst nur an einem Sender, den das Ersetzen löscht. Deshalb wird jede Änderung an Sendern einer
+/// Playlist, die gerade aktualisiert wird, zusätzlich hier festgehalten; `PlaylistImporter.refresh` zieht sie nach dem
+/// Ersetzen auf die neuen Sender nach (`PlaylistStore.reconcileFavorites`), bevor die Ansicht die neuen Sender zeigt.
+/// Der Stern bleibt dabei die ganze Zeit bedienbar, und das Aktualisieren läuft weiter im Hintergrund.
+@MainActor
+enum FavoriteEdits {
+    private static var journals: [UUID: [FavoriteEdit]] = [:]
+
+    /// Schaltet den Stern um und speichert – wie bisher in `ChannelRowView` – und hält die Änderung fest, falls die
+    /// Playlist des Senders gerade aktualisiert wird.
+    static func toggle(_ channel: Channel, in context: ModelContext) {
+        channel.isFavorite.toggle()
+        record(channel)
+        try? context.save()
+    }
+
+    static func record(_ channel: Channel) {
+        guard let playlistID = channel.playlistID, journals[playlistID] != nil else { return }
+        let edit = FavoriteEdit(
+            channelID: channel.id,
+            previous: FavoriteCarryOver.Previous(key: channel.favoriteKey, streamURL: channel.streamURL, name: channel.name),
+            isFavorite: channel.isFavorite)
+        if let index = journals[playlistID]?.firstIndex(where: { $0.channelID == edit.channelID }) {
+            journals[playlistID]?[index].isFavorite = edit.isFavorite
+        } else {
+            journals[playlistID]?.append(edit)
+        }
+    }
+
+    static func begin(_ playlistID: UUID) { journals[playlistID] = [] }
+
+    /// Die seit dem letzten Aufruf festgehaltenen Änderungen; das Festhalten läuft weiter.
+    static func take(_ playlistID: UUID) -> [FavoriteEdit] {
+        guard let edits = journals[playlistID] else { return [] }
+        journals[playlistID] = []
+        return edits
+    }
+
+    static func end(_ playlistID: UUID) { journals[playlistID] = nil }
+
+    /// Fasst Änderungen zusammen: je Sender zählt der letzte Stand, die Reihenfolge der ersten Änderung bleibt.
+    static func merge(_ earlier: [FavoriteEdit], _ later: [FavoriteEdit]) -> [FavoriteEdit] {
+        var result = earlier
+        for edit in later {
+            if let index = result.firstIndex(where: { $0.channelID == edit.channelID }) {
+                result[index].isFavorite = edit.isFavorite
+            } else {
+                result.append(edit)
+            }
+        }
+        return result
+    }
 }
 
 /// Einziger Schreibweg für Playlists und Sender, abseits des Main-Actors (B02 · BUG-04, B03 · BUG-01).
@@ -85,8 +184,9 @@ actor PlaylistStore {
         }
     }
 
-    enum ReplaceOutcome: Sendable, Equatable {
-        case replaced(channelCount: Int)
+    enum ReplaceOutcome: Sendable {
+        /// Ersetzt; `carryOver` dient dem Nachziehen von Sternen aus der Laufzeit (`reconcileFavorites`).
+        case replaced(channelCount: Int, carryOver: FavoriteCarryOver.State)
         /// Die Playlist wurde inzwischen gelöscht (oder wird gerade gelöscht) – nichts geändert.
         case playlistGone
     }
@@ -94,16 +194,30 @@ actor PlaylistStore {
     /// Playlists, deren Löschen läuft. Ein Ersetzen, das danach an die Reihe kommt, ändert nichts mehr.
     private var deleting: Set<UUID> = []
 
+    /// Nur für Tests: läuft auf diesem Actor direkt nach dem gespeicherten Ersetzen, bevor `replaceChannels`
+    /// zurückkehrt (Review R-01: Sterne im Moment zwischen Ersetzen und Abholen durch die Ansicht).
+    private var afterReplaceSaved: (@Sendable () -> Void)?
+    func setAfterReplaceSavedForTesting(_ hook: (@Sendable () -> Void)?) { afterReplaceSaved = hook }
+
     // MARK: - Anlegen
 
-    /// Legt Playlist und Sender an. Scheitert ein Block oder wird die aufrufende Aufgabe abgebrochen, wird die
-    /// Playlist samt bereits gespeicherter Sender wieder entfernt.
+    /// `channelCount` einer Playlist, deren Anlegen noch läuft oder gescheitert ist (Review R-02). Kein gültiger Wert
+    /// einer fertigen Playlist.
+    static let unfinishedChannelCount = -1
+
+    /// Legt Playlist und Sender in Blöcken an. Bis zum letzten Block trägt die Playlist `unfinishedChannelCount`: Die
+    /// Übersicht blendet sie aus, und nur der letzte Block setzt die Senderzahl. Scheitert ein Block oder wird die
+    /// aufrufende Aufgabe abgebrochen, wird die Playlist samt bereits gespeicherter Sender sofort wieder entfernt. Gelingt
+    /// auch das nicht (z. B. Datenträger voll), bleibt sie unsichtbar und `removeUnfinished` entfernt sie beim nächsten
+    /// Anlegen bzw. beim nächsten Start (Review R-02).
+    /// - Throws: `CancellationError` beim Abbruch, sonst `PlaylistStoreError.createFailed`.
     func create(_ draft: Draft, channels: [ParsedChannel], in container: ModelContainer) throws {
+        _ = try? removeUnfinished(in: container)
         let context = ModelContext(container)
         context.autosaveEnabled = false
         let playlist = Playlist(id: draft.id, name: draft.name, sourceURL: draft.sourceURL,
                                 lastRefreshed: draft.lastRefreshed, isXtream: draft.isXtream,
-                                xtreamOutput: draft.xtreamOutput)
+                                xtreamOutput: draft.xtreamOutput, channelCount: Self.unfinishedChannelCount)
         context.insert(playlist)
         do {
             var start = channels.startIndex
@@ -118,9 +232,13 @@ actor PlaylistStore {
                     batch.append(channel)
                 }
                 playlist.channels.append(contentsOf: batch)
-                playlist.channelCount = end - channels.startIndex
+                if end == channels.endIndex { playlist.channelCount = channels.count }
                 try context.save()
                 start = end
+            }
+            if channels.isEmpty {
+                playlist.channelCount = 0
+                try context.save()
             }
         } catch {
             context.rollback()
@@ -131,8 +249,33 @@ actor PlaylistStore {
                 cleanup.delete(leftover)
                 try? cleanup.save()
             }
-            throw error
+            if error is CancellationError { throw error }
+            throw PlaylistStoreError.createFailed
         }
+    }
+
+    /// Entfernt Playlists, deren Anlegen nicht fertig geworden ist (`unfinishedChannelCount`), samt ihrer Sender.
+    /// Läuft vor jedem Anlegen und beim Start; Anlegen läuft nur über diesen Actor und ohne Unterbrechung, also ist
+    /// eine solche Playlist hier nie eine, die gerade entsteht.
+    /// - Returns: Anzahl entfernter Playlists.
+    @discardableResult
+    func removeUnfinished(in container: ModelContainer) throws -> Int {
+        let context = ModelContext(container)
+        context.autosaveEnabled = false
+        let marker = Self.unfinishedChannelCount
+        let leftovers = try context.fetch(FetchDescriptor<Playlist>(predicate: #Predicate { $0.channelCount == marker }))
+        guard !leftovers.isEmpty else { return 0 }
+        for playlist in leftovers {
+            Self.detachAndDeleteChannels(of: playlist, in: context)
+            context.delete(playlist)
+        }
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw PlaylistStoreError.saveFailed
+        }
+        return leftovers.count
     }
 
     // MARK: - Ersetzen (Aktualisieren)
@@ -149,10 +292,12 @@ actor PlaylistStore {
         try credentialUpdate?.apply(credentialStore, for: id)
 
         let old = playlist.channels
-        let previous = old.filter(\.isFavorite).map {
-            FavoriteCarryOver.Previous(key: $0.favoriteKey, streamURL: $0.streamURL, name: $0.name)
+        let read = old.filter(\.isFavorite).map {
+            FavoriteCarryOver.State.ReadFavorite(
+                channelID: $0.id,
+                previous: FavoriteCarryOver.Previous(key: $0.favoriteKey, streamURL: $0.streamURL, name: $0.name))
         }
-        let flags = FavoriteCarryOver.flags(previous: previous, new: channels)
+        let flags = FavoriteCarryOver.flags(previous: read.map(\.previous), new: channels)
         playlist.channels = []
         for channel in old { context.delete(channel) }
         var fresh: [Channel] = []
@@ -172,7 +317,43 @@ actor PlaylistStore {
             context.rollback()
             throw PlaylistStoreError.saveFailed
         }
-        return .replaced(channelCount: fresh.count)
+        let state = FavoriteCarryOver.State(read: read, channels: channels, newIDs: fresh.map(\.id), flags: flags)
+        afterReplaceSaved?()
+        return .replaced(channelCount: fresh.count, carryOver: state)
+    }
+
+    /// Zieht Stern-Änderungen nach, die die Ansicht während des Ersetzens an alten Sendern gespeichert hat (Review R-01):
+    /// Die Übernahme wird so berechnet, als wären `edits` vor dem Lesen gespeichert worden, und nur die Sterne, die sich
+    /// dadurch ändern, werden an den neuen Sendern gesetzt bzw. entfernt. `edits` enthält alle Änderungen seit Beginn
+    /// des Aktualisierens (je Sender der letzte Stand); Änderungen, die das Lesen schon gesehen hat, ändern nichts.
+    /// - Returns: der neue Stand für einen weiteren Aufruf.
+    func reconcileFavorites(of id: UUID, state: FavoriteCarryOver.State, edits: [FavoriteEdit],
+                            in container: ModelContainer) throws -> FavoriteCarryOver.State {
+        guard !deleting.contains(id) else { return state }
+        let target = FavoriteCarryOver.flags(previous: state.previous(applying: edits), new: state.channels)
+        var changes: [UUID: Bool] = [:]
+        for index in target.indices where target[index] != state.flags[index] {
+            changes[state.newIDs[index]] = target[index]
+        }
+        var next = state
+        next.flags = target
+        guard !changes.isEmpty else { return next }
+        let context = ModelContext(container)
+        context.autosaveEnabled = false
+        let ids = Array(changes.keys)
+        let channels = try context.fetch(FetchDescriptor<Channel>(predicate: #Predicate {
+            $0.playlistID == id && ids.contains($0.id)
+        }))
+        for channel in channels {
+            if let value = changes[channel.id] { channel.isFavorite = value }
+        }
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw PlaylistStoreError.favoritesNotSaved
+        }
+        return next
     }
 
     // MARK: - Löschen
@@ -217,6 +398,18 @@ actor PlaylistStore {
         }
     }
 
+    // MARK: - Start
+
+    /// Wartung beim Start (Review R-10): unfertige Playlists entfernen (R-02), dann Zugangsdaten umstellen und
+    /// verdichten (B01/B02 · BUG-01, R-08) – auf diesem Actor, also abseits des Main-Threads und nie gleichzeitig mit
+    /// Anlegen, Aktualisieren oder Löschen.
+    func launchMaintenance(container: ModelContainer, storeURL: URL, credentials: XtreamCredentialStore,
+                           defaults: UserDefaults?) -> AppPersistence.CredentialMigrationResult {
+        _ = try? removeUnfinished(in: container)
+        return AppPersistence.migrateCredentials(container: container, storeURL: storeURL, store: credentials,
+                                                 defaults: defaults)
+    }
+
     /// Verdichtet die Datenbankdatei nach dem Löschen, damit gelöschte Namen und Adressen nicht in freien Seiten
     /// oder im Write-Ahead-Log stehen bleiben (B03 · BUG-07). Ohne Wirkung bei einer Datenbank im Speicher.
     func compact(_ container: ModelContainer) {
@@ -253,14 +446,29 @@ actor PlaylistStore {
     }
 }
 
+extension Playlist {
+    /// Anlegen läuft noch oder ist gescheitert (`PlaylistStore.unfinishedChannelCount`); die Übersicht blendet sie aus.
+    var isUnfinished: Bool { channelCount == PlaylistStore.unfinishedChannelCount }
+}
+
 enum PlaylistStoreError: LocalizedError, Equatable {
     case saveFailed
+    /// Anlegen gescheitert; sichtbar bleibt nichts, ein Rest in der Datei wird spätestens beim nächsten Anlegen bzw.
+    /// Start entfernt (Review R-02).
+    case createFailed
+    /// Die neue Senderliste ist gespeichert, Stern-Änderungen aus der Laufzeit nicht (Review R-01).
+    case favoritesNotSaved
 
     var errorDescription: String? {
         switch self {
         case .saveFailed:
             return "Die Playlist konnte nicht gespeichert werden. Die bisherige Senderliste bleibt erhalten. "
                 + "Bitte freien Speicherplatz prüfen und erneut versuchen."
+        case .createFailed:
+            return "Die Playlist konnte nicht gespeichert werden. Bitte freien Speicherplatz prüfen und erneut versuchen."
+        case .favoritesNotSaved:
+            return "Die Playlist wurde aktualisiert, aber Sterne, die während des Aktualisierens gesetzt oder entfernt "
+                + "wurden, konnten nicht gespeichert werden. Bitte die Favoriten dieser Playlist prüfen."
         }
     }
 }

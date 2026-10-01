@@ -17,9 +17,9 @@ final class Channel {
     var isFavorite: Bool
 
     var playlist: Playlist?
-    /// Denormalisierte ID der Playlist – ermöglicht schnelle, robuste
-    /// `#Predicate`-Filter ohne optionales Relationship-Keypath-Traversal
-    /// (wichtig bei sehr großen Playlists, z. B. 17k Xtream-Sender).
+    /// Denormalisierte ID der Playlist (Kopie von `playlist.id`). Ohne Index in der Datenbank: Die Senderliste filtert
+    /// deshalb über die Beziehung `playlist`, deren Spalte indiziert ist (B04 · BUG-12, `ChannelListQuery`). Benutzt wird
+    /// die Kopie weiter z. B. beim Festhalten von Stern-Änderungen (`FavoriteEdits`).
     var playlistID: UUID?
 
     init(

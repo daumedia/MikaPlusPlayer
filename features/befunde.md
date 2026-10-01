@@ -107,6 +107,7 @@ des Auditberichts, den `/sdd-erfassen abschluss` daraus baut.
 | BF-116 | B08 | Derselbe Sender ohne Hinweis zweimal im Multiview — wartet auf OF-01 · BUG-08 | niedrig | `MultiviewSession.swift:54-67` | 2026-09-26 |
 | BF-117 | B08 | ⊞ ohne Zugangsdaten öffnet leeres Multiview ohne Meldung — wartet auf OF-02 · BUG-09 | niedrig | `MultiviewSession.swift:57`, `ChannelRowView.swift:75-76` | 2026-09-26 |
 | BF-118 | B08 | Multiview bis 105 × 106 pt verkleinerbar, kleine Kacheln laufen über, Umschalter verschwindet · BUG-10 | niedrig | `MikaPlusPlayerApp.swift:58`, `MultiviewScreen.swift:13-27` | 2026-09-26 |
+| BF-119 | B09 | Test-Host und Debug-Build teilen die Bundle-ID der echten App: Testläufe schreiben in deren Einstellungen und Cache; nach einem Neustart hat macOS am 2026-09-29 den Test-Host aus `build/dd-test` per Fensterwiederherstellung als normale App gestartet, der die Datenbank am alten Ort (`default.store`, Testdaten vom 15.09.) in den app-eigenen Ordner übernommen und das Original entfernt hat | mittel | `project.yml` (Test-Host = App-Bundle), `AppEnvironment.swift`, `AppPersistence.swift` | 2026-09-29 |
 
 ## Behoben
 

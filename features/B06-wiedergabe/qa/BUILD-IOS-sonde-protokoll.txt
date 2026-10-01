@@ -1,0 +1,29 @@
+B06 · Build 2026-09-27 · iOS-Sonde (Kopie im Scratchpad, eigene Simulatoren „B06-Build iPhone 17“ und „B06-Build iPad Air 11“, iOS 27.0, hell)
+Sonde: Tab-Ansicht wie ContentView, Player über navigationDestination; Öffnen/Zurück/Tabwechsel programmatisch über den Pfad bzw. die Tab-Auswahl.
+Streams: Python-Mock 127.0.0.1:18990, Medien ohne Tonspur (ffprobe: nur Video), keine Zugangsdaten.
+Ablauf je Gerät: TS öffnen 8 s → Zurück · HLS öffnen 8 s → Zurück · TS öffnen 6 s → anderer Tab 4 s → zurück 5 s → Zurück · TS 404 · TS Hänger
+
+== iphone ==
+Markierungen (s ab erstem Öffnen): PUSH ts1 0.0, SHOT IOS-BUILD-01-ts-spielt-hell 8.1, POP ts1 9.7, PUSH hls 18.2, POP hls 26.3, PUSH ts2 34.3, TAB 1 40.4, TAB 0 44.5, POP ts2 49.5, PUSH 404 55.5, SHOT IOS-BUILD-02-vlc-404-fehleransicht-hell 60.5, POP 404 62.1, PUSH hang 64.1, SHOT IOS-BUILD-03-ladekreis-hell 67.1, POP hang 68.7, DONE 71.7
+ios1: Anfragen bis Zurück=1 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=0 | geschlossen nach Zurück (s)=[0.03]
+ioshls: Anfragen bis Zurück=10 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=1 | geschlossen nach Zurück (s)=[29.0]
+ios2: Anfragen bis Zurück=1 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=0 | geschlossen nach Zurück (s)=[0.01]
+ios2 Tabwechsel: neue Anfragen im anderen Tab und 4 s nach Rückkehr=0 | Verbindung über den Tabwechsel offen=1 (dieselbe Engine, kein neuer Aufbau)
+höchstens gleichzeitig offene TS-Ströme=1
+
+== ipad ==
+Markierungen (s ab erstem Öffnen): PUSH ts1 0.0, SHOT IOS-BUILD-01-ts-spielt-hell 8.0, POP ts1 10.3, PUSH hls 18.0, POP hls 26.1, PUSH ts2 34.2, TAB 1 40.2, TAB 0 44.3, POP ts2 49.3, PUSH 404 55.3, SHOT IOS-BUILD-02-vlc-404-fehleransicht-hell 60.4, POP 404 62.1, PUSH hang 64.0, SHOT IOS-BUILD-03-ladekreis-hell 67.1, POP hang 68.6, DONE 71.6
+ios1: Anfragen bis Zurück=1 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=0 | geschlossen nach Zurück (s)=[0.39]
+ioshls: Anfragen bis Zurück=10 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=1 | geschlossen nach Zurück (s)=[29.2]
+ios2: Anfragen bis Zurück=1 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=0 | geschlossen nach Zurück (s)=[0.13]
+ios2 Tabwechsel: neue Anfragen im anderen Tab und 4 s nach Rückkehr=0 | Verbindung über den Tabwechsel offen=1 (dieselbe Engine, kein neuer Aufbau)
+höchstens gleichzeitig offene TS-Ströme=1
+
+Hinweis: Die HLS-Verbindung ohne Anfrage nach Zurück ist eine leere Keep-alive-Verbindung von AVFoundation (keine Anfrage, keine Daten, nach ≈ 29 s geschlossen), wie B08 H-1.
+
+== ipad, Wiederholung (im ersten Lauf zeigte das Bild zu „TS spielt“ nach dem ersten App-Start noch die Liste; die Verbindungswerte waren gleich) ==
+ios1: Anfragen bis Zurück=1 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=0 | geschlossen nach Zurück (s)=[0.02]
+ioshls: Anfragen bis Zurück=10 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=1 | geschlossen nach Zurück (s)=[28.5]
+ios2: Anfragen bis Zurück=1 | Anfragen ab 1 s nach Zurück=0 | Verbindungen=1 | noch offen >3 s nach Zurück=0 | geschlossen nach Zurück (s)=[0.02]
+ios2 Tabwechsel: neue Anfragen im anderen Tab und 4 s nach Rückkehr=0 | Verbindung über den Tabwechsel offen=1 (dieselbe Engine, kein neuer Aufbau)
+höchstens gleichzeitig offene TS-Ströme=1

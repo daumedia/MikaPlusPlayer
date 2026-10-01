@@ -53,7 +53,7 @@ final class B04LogoTests: B04TestCase {
 
     // MARK: - AK-22
 
-    func testAK22_OhneLogoOderUnerreichbarDrehtDerLadeindikatorDauerhaft() throws {
+    func testAK22_OhneLogoOderUnerreichbarErscheintDerPlatzhalter() throws {
         let (c, _) = try fileContainer("ak22")
         let pl = try B04QA.seed(c.mainContext, name: "QA Ladeindikator", items: [
             .init("B1 ohne Logo", "Logos", logo: nil),
@@ -65,20 +65,24 @@ final class B04LogoTests: B04TestCase {
         ])
         let w = window(c, size: CGSize(width: 900, height: 760))
         w.open(pl, wait: 10.0)
-        w.shot("AK-22-ladeindikator")
+        w.shot("BUILD-AK-22-platzhalter")
         let busy = w.busyRows.sorted()
-        B04QA.log("AK-22|nach10s|busy=\(busy)|spinner=\(w.spinnerCount)|schleifenanfragen=\(host.requests("/redirect-loop").count)")
+        let schleife = host.requests("/redirect-loop").count
+        B04QA.log("AK-22|nach10s|busy=\(busy)|spinner=\(w.spinnerCount)|schleifenanfragen=\(schleife)")
         B04QA.spin(8.0)
         let busy2 = w.busyRows.sorted()
-        B04QA.log("AK-22|nach18s|busy=\(busy2)")
-        B04QA.evidence("AK-22-ladeindikator.txt", "nach 10 s: \(busy.joined(separator: ", ")) · nach 18 s: \(busy2.joined(separator: ", "))")
-        XCTAssertEqual(busy2, ["B1 ohne Logo, Logos", "B2 Port geschlossen, Logos", "B3 https ohne Gegenstelle, Logos",
-                               "B4 Host unbekannt, Logos", "B5 Weiterleitungsschleife, Logos"],
-                       "fünf Karten drehen dauerhaft")
-        XCTAssertFalse(busy2.contains("B6 Bild kommt, Logos"))
-        XCTExpectFailure("BUG-04 · Ladeindikator dreht dauerhaft statt Platzhalter (FB-04)") {
-            XCTAssertEqual(busy2, [], "bei fehlender Adresse und bei Verbindungsfehlern erscheint der Platzhalter")
+        let punkte = w.rows.map { "\($0.label)=\(logoTreffer(w, $0.label))" }
+        B04QA.log("AK-22|nach18s|busy=\(busy2)|logopunkte=\(punkte)")
+        // Seit B04 · BUG-04 (Build 2026-09-29): ohne Adresse und bei jedem Fehler der Platzhalter, kein Ladeindikator.
+        XCTAssertEqual(busy2, [], "bei fehlender Adresse und bei Verbindungsfehlern erscheint der Platzhalter")
+        XCTAssertEqual(w.spinnerCount, 0)
+        XCTAssertEqual(w.rows.count, 6)
+        XCTAssertGreaterThan(logoTreffer(w, "B6 Bild kommt"), 400, "das erreichbare Logo wird angezeigt")
+        for platzhalter in ["B1", "B2", "B3", "B4", "B5"] {
+            XCTAssertLessThan(logoTreffer(w, platzhalter), 40, "\(platzhalter): graues TV-Symbol statt Bild")
         }
+        XCTAssertLessThanOrEqual(schleife, 1 + ChannelLogoLoader.Limits.standard.maxRedirects,
+                                 "eine Weiterleitungsschleife endet nach wenigen Anfragen")
     }
 
     // MARK: - AK-23
@@ -118,7 +122,7 @@ final class B04LogoTests: B04TestCase {
                        + "\(abbrueche3.count) beim Verlassen")
     }
 
-    func testAK23_ZeitgrenzeSechzigSekundenOhneDaten() throws {
+    func testAK23_ZeitgrenzeOhneDatenDannPlatzhalter() throws {
         let (c, _) = try fileContainer("ak23b")
         let pl = try B04QA.seed(c.mainContext, name: "QA Timeout", items: [
             .init("C1 antwortet nie", "Logos", logo: "\(host.base)/hang?c=1"),
@@ -126,52 +130,50 @@ final class B04LogoTests: B04TestCase {
         let w = window(c, size: CGSize(width: 900, height: 400))
         w.open(pl, wait: 2.0)
         let anfrage = try XCTUnwrap(host.requests("/hang").first)
-        XCTAssertEqual(w.busyRows.count, 1)
-        // 60-s-Leerlaufgrenze von URLSession abwarten
-        let abbruch = B04QA.wait(75, poll: 1.0) { !self.host.events("/hang", kind: "closedBeforeResponse").isEmpty }
+        XCTAssertEqual(w.busyRows.count, 1, "Ladeindikator, solange die Anfrage läuft")
+        // Seit B04 · BUG-04/BUG-05 (Build 2026-09-29): Leerlauffrist 10 s statt 60 s, danach der Platzhalter.
+        let abbruch = B04QA.wait(30, poll: 0.5) { !self.host.events("/hang", kind: "closedBeforeResponse").isEmpty }
         let ereignis = host.events("/hang", kind: "closedBeforeResponse").first
         let dauer = ereignis.map { $0.time.timeIntervalSince(anfrage.time) } ?? -1
-        B04QA.spin(2.0)
+        B04QA.spin(1.0)
         B04QA.log("AK-23|timeout|abgebrochenNach=\(B04QA.f1(dauer))s|busyDanach=\(w.busyRows)|spinner=\(w.spinnerCount)")
-        B04QA.evidence("AK-23-timeout.txt", "Host antwortet nie: App schloss die Verbindung nach \(B04QA.f1(dauer)) s; Ladeindikator dreht weiter (\(w.busyRows.count) Karte)")
         XCTAssertTrue(abbruch, "Anfrage wird abgebrochen")
-        XCTAssertEqual(dauer, 60, accuracy: 8, "Abbruch nach rund 60 s ohne Daten")
-        XCTAssertEqual(w.busyRows.count, 1, "Ladeindikator bleibt danach stehen (wie AK-22)")
+        XCTAssertEqual(dauer, ChannelLogoLoader.Limits.standard.idleTimeout, accuracy: 3, "Abbruch nach der Leerlauffrist")
+        XCTAssertEqual(w.busyRows.count, 0, "danach der Platzhalter statt des Ladeindikators")
+        XCTAssertEqual(host.requests("/hang").count, 1, "kein erneuter Versuch, solange die Karte sichtbar bleibt")
     }
 
     // MARK: - AK-24
 
-    func testAK24_KeineGrenzeFuerDateigroesseUndBildabmessung() throws {
+    func testAK24_GrenzenFuerDateigroesseUndBildabmessung() throws {
         let (c, _) = try fileContainer("ak24")
         B04QA.log("AK-24|bilder|bigdim=\(B04Image.bigDimension.count) Bytes|bigfile=\(B04Image.bigFile.count) Bytes")
         let pl = try B04QA.seed(c.mainContext, name: "QA Groß", items: [
             .init("D1 12000x12000", "Logos", logo: "\(host.base)/bigdim.png"),
             .init("D2 27 MB", "Logos", logo: "\(host.base)/bigfile.png"),
+            .init("D3 normal", "Logos", logo: "\(host.base)/nocache/d3.png"),
         ])
-        let w = window(c, size: CGSize(width: 900, height: 300))
+        let w = window(c, size: CGSize(width: 900, height: 360))
         let vorher = B04QA.footprintMB()
         w.open(pl, wait: 12.0)
         let waehrend = B04QA.footprintMB()
         B04QA.spin(8.0)
         let spaeter = B04QA.footprintMB()
+        let karten = w.rows.map { "\($0.label)|busy=\($0.busy)|logopunkte=\(logoTreffer(w, $0.label))" }
         w.back(wait: 4.0)
         B04QA.spin(4.0)
         let nachher = B04QA.footprintMB()
-        B04QA.spin(22.0)
-        let nachher30 = B04QA.footprintMB()
-        let bytes = host.events.filter { $0.kind == "served" }.map { "\($0.target)=\($0.detail)" }
-        B04QA.log("AK-24|speicherMB|vorher=\(B04QA.f0(vorher))|geladen=\(B04QA.f0(waehrend))|nach8s=\(B04QA.f0(spaeter))|nachVerlassen8s=\(B04QA.f0(nachher))|nachVerlassen30s=\(B04QA.f0(nachher30))|antworten=\(bytes)")
-        B04QA.evidence("AK-24-speicher.txt",
-                       "12.000 × 12.000 px (\(B04Image.bigDimension.count) Bytes) und \(B04Image.bigFile.count) Bytes: "
-                       + "Speicher \(B04QA.f0(vorher)) → \(B04QA.f0(waehrend)) MB (nach 8 s \(B04QA.f0(spaeter)) MB), "
-                       + "8 s nach dem Verlassen \(B04QA.f0(nachher)) MB, 30 s danach \(B04QA.f0(nachher30)) MB")
+        let bytes = host.events.map { "\($0.target)=\($0.kind) \($0.detail)" }
+        B04QA.log("AK-24|speicherMB|vorher=\(B04QA.f0(vorher))|geladen=\(B04QA.f0(waehrend))|nach8s=\(B04QA.f0(spaeter))|nachVerlassen8s=\(B04QA.f0(nachher))|karten=\(karten)|ereignisse=\(bytes)")
         XCTAssertEqual(host.requests("/bigdim").count, 1)
         XCTAssertEqual(host.requests("/bigfile").count, 1)
-        XCTAssertGreaterThan(max(waehrend, spaeter) - vorher, 150, "beide Antworten werden vollständig geladen und dekodiert")
-        XCTExpectFailure("BUG-05 · keine Grenze für Dateigröße, Bildabmessung oder Dauer eines Logos (FB-05)") {
-            XCTAssertLessThan(max(waehrend, spaeter) - vorher, 150,
-                              "Logos werden begrenzt (Größe/Abmessung), der Speicher steigt nicht um Hunderte MB")
-        }
+        // Seit B04 · BUG-05 (Build 2026-09-29): Größen- und Abmessungsgrenze, das Bild wird nie voll dekodiert.
+        XCTAssertLessThan(max(waehrend, spaeter) - vorher, 150,
+                          "Logos werden begrenzt (Größe/Abmessung), der Speicher steigt nicht um Hunderte MB")
+        XCTAssertTrue(karten.contains { $0.hasPrefix("D1 12000x12000, Logos|busy=false") }, "Platzhalter statt Ladeindikator: \(karten)")
+        XCTAssertTrue(karten.contains { $0.hasPrefix("D2 27 MB, Logos|busy=false") }, "Platzhalter statt Ladeindikator: \(karten)")
+        XCTAssertTrue(karten.contains { $0.hasPrefix("D3 normal, Logos|busy=false|logopunkte=") && (Int($0.split(separator: "=").last ?? "") ?? 0) > 400 },
+                      "ein normales Logo daneben wird angezeigt: \(karten)")
     }
 
     // MARK: - AK-25 / AK-26
@@ -188,43 +190,38 @@ final class B04LogoTests: B04TestCase {
             .init("E2 Weiterleitung fremder Host und Port", "Logos",
                   logo: "\(host.base)/redirect?to=\(ziel.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ziel)"),
             .init("E3 Weiterleitungsschleife", "Logos", logo: "\(host.base)/redirect-loop?e=3"),
+            .init("E4 Weiterleitung selber Host", "Logos", logo: "\(host.base)/redirect?to=%2Fnocache%2Fe4.png"),
         ])
-        let w = window(c, size: CGSize(width: 900, height: 500))
+        let w = window(c, size: CGSize(width: 900, height: 560))
         let start = Date()
         w.open(pl, wait: 5.0)
         let schleife = host.requests("/redirect-loop")
         let dauerSchleife = (schleife.last?.time.timeIntervalSince(schleife.first?.time ?? start) ?? -1)
         B04QA.log("AK-25|anfragenHost1=\(host.requests.map(\.target))")
         B04QA.log("AK-25|anfragenHost2=\(zweiter.requests.map(\.target))|schleife=\(schleife.count) Anfragen in \(B04QA.f1(dauerSchleife * 1000)) ms|busy=\(w.busyRows)")
-        XCTAssertEqual(zweiter.requests.count, 1, "die App folgt der Weiterleitung auf anderen Host und Port ohne Rückfrage")
-        XCTAssertGreaterThan(schleife.count, 15, "Weiterleitungsschleife wird vielfach verfolgt")
-        XCTAssertLessThan(dauerSchleife, 2.0, "Schleife in Millisekunden")
-        XCTAssertTrue(w.busyRows.contains { $0.hasPrefix("E3") }, "danach dreht der Ladeindikator weiter")
+        B04QA.log("AK-25|karten=\(w.rows.map { "\($0.label)|busy=\($0.busy)|logopunkte=\(logoTreffer(w, $0.label))" })")
+        // Seit B04 · BUG-06 (Build 2026-09-29): Weiterleitungen nur auf denselben Host und Port, höchstens drei.
+        XCTAssertEqual(zweiter.requests.count, 0, "Weiterleitungen auf fremde Hosts werden nicht gefolgt")
+        XCTAssertLessThanOrEqual(schleife.count, 1 + ChannelLogoLoader.Limits.standard.maxRedirects, "Schleife endet nach wenigen Anfragen")
+        XCTAssertEqual(w.busyRows, [], "danach Platzhalter statt Ladeindikator (BUG-04)")
+        XCTAssertLessThan(logoTreffer(w, "E2"), 40, "fremde Weiterleitung: Platzhalter")
+        XCTAssertEqual(host.requests("/nocache/e4.png").count, 1, "Weiterleitung auf demselben Host wird gefolgt")
+        XCTAssertGreaterThan(logoTreffer(w, "E4"), 400, "und das Logo angezeigt")
 
-        // AK-26: der tatsächliche Payload beider Hosts
+        // AK-26: der tatsächliche Payload an den Logo-Host
         let kopf1 = try XCTUnwrap(host.requests("/nocache/e1.png").first)
-        let kopf2 = try XCTUnwrap(zweiter.requests.first)
-        for (name, req) in [("Logo-Host", kopf1), ("Weiterleitungsziel", kopf2)] {
-            B04QA.log("AK-26|\(name)|kopfzeilen=\(req.headers)")
-            B04QA.evidence("AK-26-kopfzeilen.txt", "\(name): \(req.rawHead.replacingOccurrences(of: "\r\n", with: " · "))")
-            let ua = req.headers["User-Agent"] ?? ""
-            XCTAssertTrue(ua.hasPrefix("Mika+Player/"), "\(name): App-Name und Build im User-Agent (\(ua))")
-            XCTAssertTrue(ua.contains("CFNetwork/") && ua.contains("Darwin/"), "\(name): Betriebssystemversion im User-Agent")
-            XCTAssertNotNil(req.headers["Accept-Language"], "\(name): Systemsprache")
-            XCTAssertEqual(req.headers["Accept"], "*/*")
-            XCTAssertEqual(req.headers["Accept-Encoding"], "gzip, deflate")
-            XCTAssertNil(req.headers["Cookie"], "\(name): keine Cookies")
-            XCTAssertNil(req.headers["Referer"], "\(name): kein Referer")
-        }
-        // http:// ohne Verschlüsselung ist erlaubt (ATS)
+        B04QA.log("AK-26|Logo-Host|kopfzeilen=\(kopf1.headers)")
+        B04QA.evidence("BUILD-AK-26-kopfzeilen.txt", "Logo-Host: \(kopf1.rawHead.replacingOccurrences(of: "\r\n", with: " · "))")
+        let ua = kopf1.headers["User-Agent"] ?? ""
+        XCTAssertEqual(ua, "Mozilla/5.0", "neutraler User-Agent")
+        XCTAssertFalse(ua.contains("Mika") || ua.contains("CFNetwork") || ua.contains("Darwin"), "keine App- und Systemdaten (\(ua))")
+        XCTAssertEqual(kopf1.headers["Accept-Language"], "*", "keine Systemsprache")
+        XCTAssertNil(kopf1.headers["Cookie"], "keine Cookies")
+        XCTAssertNil(kopf1.headers["Referer"], "kein Referer")
+        // Nur HTTPS ist eine offene Produktfrage (spec.md OF-07): http:// bleibt erlaubt (ATS unverändert)
         let ats = Bundle.main.object(forInfoDictionaryKey: "NSAppTransportSecurity") as? [String: Any]
         B04QA.log("AK-25|ATS=\(ats ?? [:])")
-        XCTAssertEqual(ats?["NSAllowsArbitraryLoads"] as? Bool, true, "HTTP-Logos erlaubt (Info.plist)")
-
-        XCTExpectFailure("BUG-06 · Logos gehen ungefragt an beliebige Hosts, unverschlüsselt und über Weiterleitungen (FB-06)") {
-            XCTAssertEqual(zweiter.requests.count, 0, "Weiterleitungen auf fremde Hosts werden nicht gefolgt")
-            XCTAssertNil(kopf1.headers["User-Agent"], "keine App- und Systemdaten an Logo-Hosts")
-        }
+        XCTAssertEqual(ats?["NSAllowsArbitraryLoads"] as? Bool, true, "HTTP-Logos weiter erlaubt (Info.plist, OF-07)")
     }
 
     // MARK: - AK-27
@@ -259,14 +256,15 @@ final class B04LogoTests: B04TestCase {
         XCTAssertFalse(beimOeffnen.contains { $0.contains("religion") || $0.contains("sport") }, "vorher nicht sichtbar")
         XCTAssertGreaterThan(nachChip.count, 3, "der Host sieht, nach welcher Gruppe gefiltert wurde")
         XCTAssertTrue(nachChip.allSatisfy { $0.contains("sport") }, "nur Logos der Gruppe")
-        XCTExpectFailure("BUG-06 · Logo-Hosts erfahren ungefragt, welche Sender der Nutzer gerade ansieht (FB-06)") {
+        // BUG-06, Teil „Logos abschaltbar“: nicht gebaut, wartet auf spec.md OF-07 (Produktentscheidung).
+        XCTExpectFailure("BUG-06 (Teil) · Logo-Hosts erfahren, welche Sender der Nutzer gerade ansieht – Abschalten wartet auf OF-07") {
             XCTAssertEqual(nachSuche, [], "Filtern löst keine Anfragen an Dritte aus bzw. ist abschaltbar")
         }
     }
 
     // MARK: - AK-28
 
-    func testAK28_LogoAntwortenLiegenImPlattencacheUndUeberlebenDasLoeschen() throws {
+    func testAK28_KeinPlattencacheUndLoeschenLeertDieLogos() throws {
         let (c, _) = try fileContainer("ak28")
         let ctx = c.mainContext
         let adressen = [
@@ -286,52 +284,51 @@ final class B04LogoTests: B04TestCase {
         XCTAssertEqual(Set(ersteAnfragen).count, 6)
 
         var imCache: [String: String] = [:]
+        var imSpeicher: [String: Bool] = [:]
         for (name, adresse) in adressen {
             let url = URL(string: adresse)!
             let antwort = URLCache.shared.cachedResponse(for: URLRequest(url: url))
             imCache[name] = antwort.map { "\(($0.response as? HTTPURLResponse)?.statusCode ?? -1)/\($0.data.count) Bytes" } ?? "nicht im Cache"
+            imSpeicher[name] = ChannelLogoLoader.shared.cachedImage(for: url) != nil
         }
         let dbZeilen = B04QA.cacheRows(prefix: host.base)
-        B04QA.log("AK-28|imCache=\(imCache.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" })")
+        B04QA.log("AK-28|URLCache=\(imCache.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" })")
+        B04QA.log("AK-28|Arbeitsspeicher=\(imSpeicher.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" })")
         B04QA.log("AK-28|CacheDb=\(B04QA.hostCacheDB.path)|zeilen=\(dbZeilen.count)|\(dbZeilen.prefix(8))")
-        B04QA.evidence("AK-28-cache.txt",
-                       "URLCache: " + imCache.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-                       + " · Cache.db-Zeilen: \(dbZeilen.count)")
-        XCTAssertEqual(imCache.count, 6)
-        XCTAssertFalse(imCache["F3 no-store"]?.hasPrefix("nicht") ?? true, "Antwort mit no-store liegt im Cache")
-        XCTAssertFalse(imCache["F5 404"]?.hasPrefix("nicht") ?? true, "404-Antwort liegt im Cache")
-        XCTAssertFalse(imCache["F4 HTML"]?.hasPrefix("nicht") ?? true, "HTML-Antwort liegt im Cache")
-        XCTAssertGreaterThanOrEqual(dbZeilen.count, 6, "Einträge in Cache.db auf der Platte")
+        // Seit B04 · BUG-07 (Build 2026-09-29): nichts im gemeinsamen URLCache und in Cache.db; nur fertige Bilder im
+        // Arbeitsspeicher, `no-store` und Fehlerantworten nie.
+        XCTAssertTrue(imCache.values.allSatisfy { $0 == "nicht im Cache" }, "\(imCache)")
+        XCTAssertEqual(dbZeilen.count, 0, "keine Einträge in Cache.db")
+        XCTAssertEqual(imSpeicher, ["F1 max-age": true, "F2 ohne Cache-Header": true, "F3 no-store": false,
+                                    "F4 HTML": false, "F5 404": false, "F6 JSON": false])
 
-        // Zweites Öffnen: max-age wird nicht erneut angefragt, alles andere schon
+        // Zweites Öffnen: Bilder aus dem Arbeitsspeicher, no-store und Fehler werden erneut angefragt
         host.resetLog()
         w.back(wait: 1.0)
         w.open(pl, wait: 4.0)
         let zweiteAnfragen = Set(host.requests.map(\.path))
         B04QA.log("AK-28|zweitesOeffnen|anfragen=\(zweiteAnfragen.sorted())")
-        XCTAssertFalse(zweiteAnfragen.contains("/maxage/f1.png"), "max-age-Logo kommt aus dem Cache")
-        XCTAssertTrue(zweiteAnfragen.contains("/nostore/f3.png"), "no-store wird erneut angefragt – und erneut gespeichert")
+        XCTAssertFalse(zweiteAnfragen.contains("/maxage/f1.png"), "Logo kommt aus dem Arbeitsspeicher")
+        XCTAssertFalse(zweiteAnfragen.contains("/nocache/f2.png"), "Logo kommt aus dem Arbeitsspeicher")
+        XCTAssertTrue(zweiteAnfragen.contains("/nostore/f3.png"), "no-store wird nicht aufbewahrt")
 
-        // Playlist löschen: die Cache-Einträge bleiben
+        // Playlist löschen: die Logos gehen mit
         w.back(wait: 1.0)
         try B04QA.run(60) { try await PlaylistImporter(modelContext: ctx).delete(pl) }
         B04QA.spin(1.0)
         let nachLoeschen = B04QA.cacheRows(prefix: host.base)
         let nochImCache = adressen.values.filter { URLCache.shared.cachedResponse(for: URLRequest(url: URL(string: $0)!)) != nil }
-        B04QA.log("AK-28|nachLoeschen|CacheDbZeilen=\(nachLoeschen.count)|nochImCache=\(nochImCache.count)|kanaeleInDB=\(try ctx.fetch(FetchDescriptor<Channel>()).count)")
-        B04QA.evidence("AK-28-cache.txt", "Nach dem Löschen der Playlist: \(nachLoeschen.count) Cache.db-Zeilen, \(nochImCache.count) von 6 Adressen weiter im URLCache, 0 Sender in der Datenbank")
+        let nochImSpeicher = adressen.values.filter { ChannelLogoLoader.shared.cachedImage(for: URL(string: $0)!) != nil }
+        B04QA.log("AK-28|nachLoeschen|CacheDbZeilen=\(nachLoeschen.count)|nochImURLCache=\(nochImCache.count)|nochImArbeitsspeicher=\(nochImSpeicher.count)|kanaeleInDB=\(try ctx.fetch(FetchDescriptor<Channel>()).count)")
         XCTAssertEqual(try ctx.fetch(FetchDescriptor<Channel>()).count, 0)
-        XCTAssertGreaterThanOrEqual(nochImCache.count, 5, "Logo-Adressen und Antworten überstehen das Löschen")
-
-        XCTExpectFailure("BUG-07 · Logo-Antworten im Plattencache, auch no-store, und über das Löschen hinaus (FB-07)") {
-            XCTAssertTrue(imCache["F3 no-store"]?.hasPrefix("nicht") ?? false, "no-store wird nicht gespeichert")
-            XCTAssertEqual(nochImCache.count, 0, "Löschen der Playlist entfernt die Logo-Einträge")
-        }
+        XCTAssertEqual(nachLoeschen.count, 0)
+        XCTAssertEqual(nochImCache.count, 0)
+        XCTAssertEqual(nochImSpeicher.count, 0, "Löschen der Playlist entfernt die Logos")
     }
 
     // MARK: - EC-05
 
-    func testEC05_LogoAdresseMitFileSchema() throws {
+    func testEC05_LogoAdresseMitFileSchemaZeigtPlatzhalter() throws {
         let (c, _) = try fileContainer("ec05")
         let datei = "file:///System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns"
         let pl = try B04QA.seed(c.mainContext, name: "QA file", items: [
@@ -341,11 +338,10 @@ final class B04LogoTests: B04TestCase {
         ])
         let w = window(c, size: CGSize(width: 900, height: 400))
         w.open(pl, wait: 4.0)
-        w.shot("EC-05-file-logo")
+        w.shot("BUILD-EC-05-file-logo")
         B04QA.log("EC-05|busy=\(w.busyRows)|netzanfragen=\(host.requests.map(\.path))|logopunkteG1=\(logoTreffer(w, "G1"))")
-        XCTAssertFalse(w.busyRows.contains { $0.hasPrefix("G1") }, "lokale Datei wird geladen, der Ladeindikator verschwindet")
+        XCTAssertFalse(w.busyRows.contains { $0.hasPrefix("G1") }, "kein Ladeindikator")
         XCTAssertEqual(Set(host.requests.map(\.path)), ["/nocache/g2.png", "/404"], "kein Netzwerkaufruf für die file-Adresse")
-        // Wird das Bild angezeigt? Farbsättigung des Logofelds gegen die Karte mit Platzhalter halten
         func saettigung(_ label: String) -> Double {
             guard let row = w.rows.first(where: { $0.label.hasPrefix(label) }) else { return -1 }
             let r = w.inWindow(row.frame)
@@ -353,31 +349,30 @@ final class B04LogoTests: B04TestCase {
         }
         let s1 = saettigung("G1"), s3 = saettigung("G3")
         B04QA.log("EC-05|saettigung|fileLogo=\(String(format: "%.3f", s1))|platzhalter=\(String(format: "%.3f", s3))")
-        B04QA.evidence("EC-05-file-logo.txt", "file://-Logo: Sättigung \(String(format: "%.3f", s1)) gegenüber Platzhalter \(String(format: "%.3f", s3)); Netzanfragen: \(host.requests.map(\.path))")
-        XCTAssertGreaterThan(s1, s3 + 0.02, "das lokale Bild wird angezeigt, nicht der graue Platzhalter")
+        // Seit B04 (Build 2026-09-29): nur http/https-Logos; file: ergibt den Platzhalter (OF-06 bleibt zur Bestätigung).
+        XCTAssertLessThan(abs(s1 - s3), 0.02, "das lokale Bild wird nicht angezeigt, sondern der graue Platzhalter")
     }
 
     // MARK: - EC-06
 
-    func testEC06_TroepfelnderHostHaeltDieVerbindungOffen() throws {
+    func testEC06_TroepfelnderHostWirdNachDerGesamtfristGetrennt() throws {
         let (c, _) = try fileContainer("ec06")
         let pl = try B04QA.seed(c.mainContext, name: "QA Tröpfeln", items: [
-            .init("H1 tröpfelt", "Logos", logo: "\(host.base)/trickle?i=10"),
+            .init("H1 tröpfelt", "Logos", logo: "\(host.base)/trickle?i=4"),
         ])
         let w = window(c, size: CGSize(width: 900, height: 400))
         w.open(pl, wait: 2.0)
         let anfrage = try XCTUnwrap(host.requests("/trickle").first)
-        B04QA.spin(75.0)
+        XCTAssertEqual(w.busyRows.count, 1)
+        B04QA.wait(30, poll: 0.5) { !self.host.events("/trickle", kind: "closedBeforeResponse").isEmpty }
+        B04QA.spin(1.0)
         let abbruch = host.events("/trickle", kind: "closedBeforeResponse").first
-        B04QA.log("EC-06|nach75s|busy=\(w.busyRows)|abbruch=\(abbruch.map { B04QA.f1($0.time.timeIntervalSince(anfrage.time)) + "s" } ?? "keiner")|ereignisse=\(host.events("/trickle").map(\.kind))")
-        B04QA.evidence("EC-06-troepfeln.txt", "1 Byte je 10 s: nach 75 s \(abbruch == nil ? "keine" : "eine") Trennung, Karte \(w.busyRows.isEmpty ? "ohne" : "mit") Ladeindikator")
-        XCTAssertNil(abbruch, "die 60-s-Leerlaufgrenze greift nicht, solange Daten tröpfeln")
-        XCTAssertEqual(w.busyRows.count, 1, "Ladeindikator dreht weiter")
-        // Beim Verlassen bricht die App ab
-        w.back(wait: 2.0)
-        let danach = host.events("/trickle", kind: "closedBeforeResponse").first
-        B04QA.log("EC-06|nachVerlassen|abbruch=\(danach != nil)")
-        XCTAssertNotNil(danach, "beim Verlassen der Liste wird die Verbindung geschlossen")
+        let dauer = abbruch.map { $0.time.timeIntervalSince(anfrage.time) } ?? -1
+        B04QA.log("EC-06|busy=\(w.busyRows)|abbruch=\(B04QA.f1(dauer))s|ereignisse=\(host.events("/trickle").map(\.kind))")
+        // Seit B04 · BUG-05 (Build 2026-09-29): Gesamtfrist 15 s je Logo, auch wenn Daten tröpfeln.
+        XCTAssertNotNil(abbruch, "die Verbindung wird getrennt, obwohl Daten tröpfeln")
+        XCTAssertLessThanOrEqual(dauer, ChannelLogoLoader.Limits.standard.totalTimeout + 2, "spätestens nach der Gesamtfrist")
+        XCTAssertEqual(w.busyRows.count, 0, "danach der Platzhalter")
     }
 
     // MARK: - EC-07
@@ -398,13 +393,27 @@ final class B04LogoTests: B04TestCase {
         let alle = host.requests.map(\.path)
         let mehrfach = Dictionary(grouping: alle, by: { $0 }).filter { $0.value.count > 1 }
         B04QA.log("EC-07|ersteKarten=\(ersteKarten.count)|ersteAnfragen=\(ersteAnfragen)|gesamt=\(alle.count)|mehrfach=\(mehrfach.mapValues(\.count))")
-        B04QA.log("EC-07|nachZurueck|busy=\(w.busyRows)|logopunkte0=\(logoTreffer(w, "Sender 00"))")
+        // Build 2026-09-29: Die Rahmen der Karten im Accessibility-Baum folgen dem Zurückscrollen nicht immer sofort (einmal
+        // 0 Logopunkte gemessen, obwohl die Aufnahme direkt danach alle Logos zeigte) – bis zu 3 s nachmessen.
+        var logopunkte0 = logoTreffer(w, "Sender 00")
+        if logopunkte0 <= 400 {
+            let zeilen = w.rows.prefix(3).map { "\($0.label)@\(w.inWindow($0.frame))" }
+            B04QA.log("EC-07|ersteMessung=\(logopunkte0)|zeilen=\(zeilen)")
+            B04QA.wait(3, poll: 0.3) { logopunkte0 = self.logoTreffer(w, "Sender 00"); return logopunkte0 > 400 }
+        }
+        B04QA.log("EC-07|nachZurueck|busy=\(w.busyRows)|logopunkte0=\(logopunkte0)")
         w.shot("EC-07-zurueckgescrollt")
         B04QA.evidence("EC-07-neuladen.txt",
                        "40 Sender, Logos 4 s verzögert: beim Öffnen \(ersteAnfragen.count) Anfragen, nach Wegscrollen und "
                        + "Zurückscrollen \(alle.count) Anfragen, davon mehrfach: \(mehrfach.mapValues(\.count))")
         XCTAssertFalse(mehrfach.isEmpty, "die weggescrollten, abgebrochenen Logos werden erneut angefragt")
-        XCTAssertGreaterThan(logoTreffer(w, "Sender 00"), 400, "das Logo der obersten Karte ist nach dem Zurückscrollen da")
+        XCTAssertGreaterThan(logopunkte0, 400, "das Logo der obersten Karte ist nach dem Zurückscrollen da")
+        // Build 2026-09-30: Alle sichtbaren Karten zeigen ihr Logo, keine den Platzhalter. (Im Gesamtlauf vom 30.09. zeigten
+        // „Sender 00“ und „Sender 02“ den Platzhalter: Ihre neuen Anfragen warteten hinter anderen auf eine Verbindung und
+        // liefen in der Warteschlange ab – behoben mit `RequestGate`, die Fristen beginnen jetzt mit dem Senden.)
+        let sichtbar = (0..<6).map { String(format: "Sender %02d", $0) }
+        let ohneLogo = sichtbar.filter { logoTreffer(w, $0) <= 400 }
+        XCTAssertEqual(ohneLogo, [], "alle sechs sichtbaren Karten zeigen ihr Logo")
         XCTAssertLessThanOrEqual(w.busyRows.count, 3, "die übrigen Karten lösen sich auf (6 Verbindungen je Host, 4 s Verzögerung)")
     }
 }

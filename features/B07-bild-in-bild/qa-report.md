@@ -159,6 +159,30 @@ beenden und die Engine stoppen. Die Reparatur gehört zu BF-97 (`stop()` im Prot
 
 **Gegenprüfung 2026-09-26:** bestätigt ✅ — In einer eigenen Kopie (Test-Host, Datenbank im Speicher, Medien ohne Tonspur, nur 127.0.0.1) traten alle fünf Beleg-Tests wie beschrieben ein (Fenster nach „Zurück“ mit Rate 1,0, `stopPictureInPicture()` wirkungslos, 42/60/45 s parallel, nach „Zurück zur App“ unsichtbar Rate 1,0 mit 20 Segmenten in 40 s, nach „Schließen“ Rate 0 und trotzdem 10 Segmente in 20 s), und eine eigene Gegenprobe ohne starke Testreferenz auf die Engine (die QA-Tests halten `eA` bis zum Testende) zeigte dasselbe: in der echten `ContentView` 30 von 30 s parallel, nach „Zurück zur App“ 30 s unsichtbar weiter (15 Segmente), im Stapel in 2 von 3 Läufen 30 s parallel (im dritten blieb das Fenster pausiert stehen, ebenfalls ohne Steuerung in der App); Grad angemessen
 
+**Behoben 2026-09-27:** Zuerst die ursprüngliche Reproduktion auf dem B06-Stand (Arbeitsbaum, Test-Host mit Helfer für
+das Systemfenster): „Schließen“ und „Zurück zur App“ im verwaisten Fenster beendeten die Wiedergabe schon (S AK-15d/e:
+Rate 0, 0 Segmente in 8 s bzw. 40 s – `DetachedPlayback` stoppt beim Ende von Bild-in-Bild), offen blieben die zwei
+Streams (V AK-15b 60 s, O AK-15c 45 s parallel, altes Fenster blieb) und das wirkungslose `stopPictureInPicture()`.
+Behoben: (1) Startet oder setzt ein Player eine Wiedergabe fort, endet die verwaiste samt Fenster
+(`DetachedPlayback.stopAll()` in `PlayerView.startIfNeeded`). (2) `stop()` gibt den Bild-in-Bild-Controller ab – am Mac
+schließt das Fenster sonst nicht, weil die Videofläche in keinem Fenster mehr hängt; an einer übernommenen Engine wirkt
+auch `stopPictureInPicture()` so. (3) `restoreUserInterfaceForPictureInPictureStop` ist implementiert: offener Player →
+Bild kehrt zurück (EC-08 unverändert), verlassener Player → kein Wiederherstellen, die Wiedergabe endet (Player
+wiederherstellen → `spec.md` OF-05). (4) In der echten Oberfläche erkannte der Player am Mac „Zurück“ aus der
+Senderliste nicht (`isPresented` beim Verschwinden noch wahr) – dort griff weder B06 noch (1); `ContentView` führt jetzt
+den sichtbaren Tab (`ShellTabs`), der Player unterscheidet damit „Zurück“ vom Tabwechsel. Reproduktion greift nicht mehr:
+Mock-Protokoll (Anfragen je Sekunde ab 6 s vor dem Öffnen von B) A=[2,0,2,0,2,0,0,0,…], B=[0,0,0,0,0,0,5,0,2,0,2,…]; altes
+Fenster nach 0,2 s zu, nach der ersten Anfrage von B **0** Anfragen an A, **0** Sekunden mit zwei Streams; nach dem Ende
+0 Anfragen (R `testBUG01_ZurueckMitPiP_AndererSender_AltesEndetNieZweiStreams`); ebenso in der echten `ContentView`
+(R `testBUG01_EchteOberflaeche_…`, Fenster nach 0,2 s zu; O AK-15c jetzt „parallel ≈ 0 s“, Fenster nach 3,1 s – Messraster
+3 s); `stopPictureInPicture()` ohne Player: Fenster nach 0,3 s zu, 0 Anfragen (R `testBUG01_BeendenOhnePlayer_…`,
+V AK-15a/b); Delegate mit/ohne Player true/false (R `testBUG01_ZurueckZurApp_…`); Tabwechsel pausiert weiter nur,
+„Zurück“ beendet (R `testBUG01_EchteOberflaeche_TabwechselPausiert_ZurueckBeendet`). iPad (eigener Simulator): nach
+„Zurück“ läuft das Fenster weiter; „QA HLS Zwei“ öffnen → letzte Anfrage an den alten Sender 1,3 s vor der ersten des
+neuen, danach keine, Fenster weg; „Zurück zur App“ im verwaisten Fenster → Delegate aufgerufen, Fenster weg, 0 Anfragen
+(`qa/BUILD-IOS-sonde-protokoll.txt`, Bilder `qa/BUILD-IOS-ipad-04/05/06-…`). V AK-15a/b, O AK-15c, S AK-15d/e ohne
+`XCTExpectFailure`. In der App selbst gibt es nach „Zurück“ weiterhin keinen Knopf für das schwebende Fenster (OF-04).
+
 ### BUG-02 · iOS/iPadOS: „Zurück“ beendet Bild-in-Bild sofort und ohne Rückmeldung, entgegen der Absicht im Code — mittel
 
 **Betrifft:** AK-14 (FB-03) · Zielverhalten wartet auf **OF-04**
@@ -176,6 +200,9 @@ Wiederherstellungs-Delegate
 **Vorschlag:** Mit BUG-01 gemeinsam lösen (eine Lebensdauer für beide Plattformen); wird „beenden“ gewählt, den Kommentar anpassen
 und das Ende sichtbar machen.
 **Test:** keiner im Test-Target (nur im iOS-Simulator bedienbar); Protokoll `qa/ios-protokoll.txt`, `qa/AK-14-ipad-systemprotokoll-auszug.txt`
+
+**Nicht behoben:** Das Zielverhalten wartet auf **OF-04** (weiterlaufen mit Steuerung oder sauber beenden) – nicht Teil
+dieses Fehlerauftrags. Stand nach den Reparaturen B06 und B07 siehe `build-bericht.md`, Abschnitt 2 (iPad-Sonde).
 
 ### BUG-03 · Der Wiedergabezustand der App folgt dem Player nicht, wenn das System ihn anhält — mittel
 
@@ -195,6 +222,18 @@ das System den ersten, dessen Knopf zeigt weiter „Pause“
 **Vorschlag:** `isPaused` aus `AVPlayer.timeControlStatus`/`rate` ableiten (Beobachtung), `togglePlayPause` nach dem tatsächlichen
 Zustand entscheiden.
 **Test:** S `testAK16_PauseKnopfDesSystemfensters_…`, `testEC07_…`, V `testAK16_…`, `testAK17_EC10_…` (je `XCTExpectFailure("BUG-03 …")`)
+
+**Behoben 2026-09-27:** `AVKitPlaybackEngine` beobachtet `timeControlStatus` des `AVPlayer` und führt `isPaused` nach:
+Hält das System an (Pause oder Schließen im schwebenden Fenster, zweites Bild-in-Bild), zeigt der Knopf ▶; setzt es fort,
+❚❚. `togglePlayPause()` gleicht vorher mit dem Player ab, der erste Druck setzt also fort. Ausnahmen: ohne Element (vor
+`load`, nach `stop`) gilt der eigene Zustand; am natürlichen Ende einer Datei bleibt die Anzeige „läuft“ (B06 EC-04,
+`testEC04_MP4BisZumEndeBleibtLaeuft` weiter grün). Reproduktion greift nicht mehr: Pause von außen → `isPaused` nach
+0,05 s, Fortsetzen von außen → nach 0,05 s, erster Druck spielt sofort (R `testBUG03_…`); echter Pause-Knopf des
+Systemfensters (S `testAK16_PauseKnopfDesSystemfensters_AppZeigtAngehalten`), Pause am Player (V
+`testAK16_PauseImPiPFenster_AppZeigtAngehalten_ErsterDruckSetztFort`), zweites Bild-in-Bild (V
+`testAK17_EC10_ZweiterPlayerStartetPiP_ErsterPausiertUndZeigtEs`) und Schließen im Fenster (S `testEC07_…`, jetzt
+`isPaused == (rate == 0)`) ohne `XCTExpectFailure`. iPad: Pause im schwebenden Fenster → App zeigt ▶, erster Tipp spielt
+(`qa/BUILD-IOS-ipad-08-…`, `-09-…`, `qa/BUILD-IOS-sonde-protokoll.txt`).
 
 ### BUG-04 · Im Xtream-Standardformat (MPEG-TS/VLC) gibt es kein Bild-in-Bild, und weder App noch Website sagen es — mittel
 
@@ -216,6 +255,16 @@ window … On iPhone and iPad it starts on its own“ und „P opens Picture in 
 (mit der B10-Reparatur Teil 2). Überschneidet sich mit BF-25 (Release) und BF-103 (P ohne Rückmeldung), die dort gezählt sind.
 **Test:** K `testAK09_TSUeberVLC_…`, I `testAK09_ImportSheet…` (je `XCTExpectFailure("BUG-04 …")`), K `testAK09_XtreamStandardformatLandetBeiVLC`
 
+**Behoben 2026-09-27 (App-Teil):** Import-Sheet: Der Hinweis zum Format MPEG-TS lautet jetzt „Originalformat des
+Anbieters – benötigt VLCKit. Bild-in-Bild gibt es nur mit HLS.“ (`XtreamOutput.hint`; der HLS-Hinweis ist unverändert).
+Player: P bei einem Sender über VLC blendet auf Geräten mit Bild-in-Bild 3 s lang „Bild-in-Bild gibt es nur mit HLS,
+nicht mit MPEG-TS.“ ein (HUD mit Symbol; Geräte ohne Bild-in-Bild wie bisher ohne Meldung, AK-08). Einen Knopf gibt es
+bei VLC weiter nicht (AK-09). Belegt: I `testAK09_ImportSheetStandardMPEGTS_MitHinweisBildInBildNurHLS`, K
+`testAK09_TSUeberVLC_KeinKnopf_PZeigtHinweisNurHLS` (Hinweis erscheint, verschwindet nach wenigen Sekunden, kein Warnton)
+ohne `XCTExpectFailure`; iPad: Hinweis im Sheet und nach Tab + p im Player (`qa/BUILD-IOS-ipad-01-…`, `-07-…`).
+**Nicht behoben (Website-Teil):** `web/content/features.ts`, `web/app/support/page.tsx` gehören zur B10-Reparatur Teil 2.
+Offen: Wer am iPad ohne Tastatur schaut, sieht den Player-Hinweis nie → `spec.md` OF-06.
+
 ### BUG-05 · iPad: Das Bild-in-Bild-Fenster verdeckt den eigenen Knopf „Bild-in-Bild schließen“ — mittel
 
 **Betrifft:** AK-04 (iPad-Teil)
@@ -232,6 +281,14 @@ die aber erst nach einem Tab ankommt (BF-102)
 Platzhalter selbst antippbar machen.
 **Test:** keiner im Test-Target; Bilder `AK-04-ipad-tipp-auf-knopf-unter-pip.png`, `AK-04-ipad-knopf-nach-verschieben-beendet.png`
 
+**Behoben 2026-09-27:** Auf iOS/iPadOS zeigt die untere Leiste des Players, solange Bild-in-Bild läuft, zusätzlich den
+Knopf „Bild-in-Bild beenden“ (Symbol `pip.exit` mit deutschem Text) neben Pause und Ton. Liegt das schwebende Fenster
+oben (Standard), bleibt er frei; liegt es unten links, bleibt der Knopf oben rechts frei (nicht nachgestellt). Nachgestellt im eigenen
+iPad-Simulator (iPad Pro 11, iOS 26.5): Fenster oben rechts über „Maximise Video“ (710,152), neuer Knopf bei
+(148,1134, 207 × 43 pt) frei; ein Tipp darauf beendet Bild-in-Bild, das Video kehrt in den Player zurück, der obere
+Knopf zeigt wieder „Minimise Video“ (`qa/BUILD-IOS-ipad-02-…`, `-03-…`, `qa/BUILD-IOS-sonde-protokoll.txt`). Kein Test
+im Test-Target (macOS-only; der Knopf ist iOS-only).
+
 ### BUG-06 · Englische Systemtexte in der deutschen Oberfläche: „Minimise Video“, „Maximise Video“, „This video is playing in picture in picture.“ — niedrig
 
 **Betrifft:** AK-01, AK-03 · wartet auf **OF-03**
@@ -243,6 +300,9 @@ Platzhalter des Systems „This video is playing in picture in picture.“, weil
 **Ort:** `Sources/Views/PlayerView.swift:119-124` (Knopf ohne `accessibilityLabel`); keine `de.lproj` bzw. `.xcstrings` unter `Sources/`
 **Vorschlag:** Nach OF-03 `accessibilityLabel("Bild-in-Bild öffnen/schließen")` setzen und Deutsch als Lokalisierung aufnehmen.
 **Test:** K `testAK01_…`, `testAK03_AK04_…` (Ist-Werte im Protokoll)
+
+**Nicht behoben:** wartet auf **OF-03** (eigene deutsche Beschriftung bzw. Lokalisierung) – nicht Teil dieses
+Fehlerauftrags. Die Beschriftungen des Knopfs und der Platzhalter des Systems sind unverändert englisch.
 
 ## Bestätigte Befunde anderer Features (nicht neu gezählt)
 

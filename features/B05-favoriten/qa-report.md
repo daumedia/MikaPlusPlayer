@@ -169,6 +169,12 @@ erste Kandidat; entfernte Sterne kommen nicht zurück. Nachweis: `B05Aktualisier
 `testAK19_…` (Tab ohne zusätzliche Karte), `B05TabTests.testEC01_…` (eine Karte). Die Befund-Semantik der übrigen Tests
 bleibt: BUG-05 (OF-03) weiter mit `XCTExpectFailure`.
 
+**Behoben 2026-09-27 (Verifikation der Reparatur B02/B03):** Reproduktion (Schritte 1–3) im Gesamtlauf erneut ausgeführt
+(`testAK15_EC01_EC03_…M3U`, `testAK15_EC02_…Xtream`, `B05TabTests.testEC01_…`): M3U 3 Favoriten → nach unverändertem
+Aktualisieren **3** („Leer-ID A", „News", „ZDF HD"; vorher 8), nach Entfernen zusätzlicher Sterne und erneutem Aktualisieren
+weiter 3 (vorher wieder 8); nur „ZDF SD" markiert → danach nur „ZDF SD" (vorher alle drei ZDF-Varianten). Xtream 2 → **2**
+(vorher 6), Tab zeigt dieselben Karten wie vorher; EC-01: eine Karte vorher, eine nachher. Der Vermerk vom 26.09. stimmt.
+
 ### BUG-02 · Speicherfehler beim Umschalten wird verschluckt — mittel
 
 **Betrifft:** AK-27 (FB-02)
@@ -202,6 +208,14 @@ kann daraus das Nutzungsprofil ablesen, bei Religion, Politik oder Erwachsenenka
 **Vorschlag:** Logos im Tab aus einem lokalen Zwischenspeicher zeigen (beim Anzeigen in der Senderliste abgelegt) oder eine
 Einstellung „Logos laden“; Datenschutzseite und FAQ an das Verhalten angleichen (BF-20).
 **Test:** `B05DatenschutzTests.testAK25_Angriff5_TabFragtGenauDieLogosDerFavoritenAn`
+
+**Nicht behoben (B04-Reparatur 2026-09-29, geprüft):** Der Favoriten-Tab lädt Logos jetzt über denselben `ChannelLogoLoader` wie
+die Senderliste (dieselbe Karte `ChannelRowView`): neutrale Kopfzeilen (`user-agent: Mozilla/5.0`, `accept-language: *` statt
+App-Kennung und Systemsprache), keine Weiterleitung auf fremde Hosts, kein Plattencache, Grenzen für Größe und Dauer; erneutes
+Öffnen des Tabs fragt schon geladene Logos nicht erneut an (Arbeitsspeicher). **Der Kern bleibt:** Beim ersten Öffnen erhält der
+Logo-Host genau die Logos der Favoriten (Reproduktion erneut ausgeführt: 3 Anfragen, `/logos/sender-11.png`, `-17`, `-3`). Ob Logos
+abschaltbar sind oder nur mit Zustimmung laden, ist eine Produktentscheidung → B04 `spec.md` OF-07. Der Test behält sein
+`XCTExpectFailure`; seine Kopfzeilen-Zusicherungen stehen auf den neuen Werten.
 
 ### BUG-04 · Favoriten-Zustand für VoiceOver nicht wahrnehmbar — mittel
 
@@ -307,6 +321,11 @@ nach Neustart; die nicht strikte Fehlererwartung ist durch eine feste Prüfung e
 aber durch dieselbe Reparatur behoben; der Test musste angepasst werden, weil er „solange die App läuft, steht der Name
 im -wal" als Ist festschrieb.
 
+**Behoben 2026-09-27 (Verifikation der Reparatur B02/B03):** Weil der Rest in der QA nur in 3 von 11 Läufen auftrat, wurde die
+Reproduktion wie dort **elfmal** ausgeführt (`-test-iterations 11`), zusätzlich einmal im Gesamtlauf: in allen 12 Läufen
+**0** Vorkommen in Store, -wal und -shm – nach dem Löschen bei offenem Container, nach der Freigabe und nach „Neustart"
+(`freelist_count=0`). Der Vermerk vom 26.09. stimmt.
+
 ### BUG-11 · Scheitert das Speichern beim Aktualisieren, zeigt die App trotzdem den neuen Stand — mittel
 
 **Betrifft:** Randfall zu AK-17 (dort nur HTTP-Fehler, leere Liste, fehlende Zugangsdaten aufgezählt); verwandt mit B03 EC-03 (dort
@@ -332,6 +351,16 @@ unberührt (kein ungespeicherter Stand, den ein späteres Speichern mitschreiben
 Playlist konnte nicht gespeichert werden. Die bisherige Senderliste bleibt erhalten. …" statt des SQLite-Texts.
 Nachweis: `B05AktualisierenTests.testAK17_Randfall_SpeicherfehlerBeimAktualisieren` mit
 `TEST_RUNNER_B05_FULL_VOLUME` (Abbild 40 MB, vollgeschrieben), siehe build-bericht.md.
+
+**Behoben 2026-09-27 (Verifikation der Reparatur B02/B03):** Reproduktion (Schritte 1–3) erneut ausgeführt, 8-MB-HFS+-Abbild
+wie in der QA (`hdiutil attach -nobrowse`, danach ausgehängt und gelöscht), `TEST_RUNNER_B05_FULL_VOLUME=<Mountpoint>`,
+`-only-testing:…/testAK17_Randfall_SpeicherfehlerBeimAktualisieren`, Debug: SQLite meldet „database or disk is full" (13), die
+Meldung lautet „Die Playlist konnte nicht gespeichert werden. Die bisherige Senderliste bleibt erhalten. Bitte freien
+Speicherplatz prüfen und erneut versuchen." (vorher „… NSSQLiteErrorDomain error 13."); der Tab zeigt danach unverändert
+`["ZDF HD, Deutschland"]` (vorher `["ZDF HD", "ZDF SD"]`), dieselben Senderobjekte, `hasChanges = false` (vorher `true`); Datei
+nach „Neustart" `["ZDF HD"]`. Nach Freigabe des Platzes und einem Stern auf „arte" steht in der Datei genau `["ZDF HD", "arte"]`
+bei 3 Sendern – nichts Ungespeichertes wird nachgeschrieben. **Korrektur zum Vermerk vom 26.09.:** Der dort genannte Lauf mit
+40-MB-Abbild ist nicht belegt (der Verifikationsabschnitt des Build-Berichts war ein Platzhalter); maßgeblich ist dieser Lauf.
 
 ## Hinweise (kein Kriterium durchgefallen)
 

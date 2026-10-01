@@ -290,6 +290,26 @@ der QA von B07.
   weiterlaufen mit echter Steuerbarkeit (wie heute halb auf dem Mac) oder sauber beenden (wie heute
   abrupt auf iOS)? Die Reparatur von FB-03 braucht diese Entscheidung.
 
+Aus der Reparatur BUG-01 bis BUG-05 (sdd-build, 2026-09-27), ohne Rückfrage offen gelassen:
+
+- **OF-05** · „Zurück zur App" im schwebenden Fenster, nachdem der Player verlassen wurde: Die Reparatur
+  beendet die Wiedergabe (Fenster zu, Verbindung zu), statt den Player wieder zu öffnen. Wiederherstellen
+  hieße, den Sender programmatisch in den richtigen Tab-Stapel zu legen; die Navigation hat dafür keine
+  gebundenen Pfade (`ContentView`, `ChannelListView`, `FavoritesView`). Gewünscht? Hängt an OF-04.
+- **OF-06** · Hinweis „Bild-in-Bild gibt es nur mit HLS" im Player: Er erscheint nur auf die Taste P. Wer
+  am iPad ohne Tastatur einen MPEG-TS-Sender schaut, sieht ihn nie; einen Knopf gibt es bei VLC nach AK-09
+  nicht. Soll ein (abgeschwächter) Knopf mit dieser Erklärung erscheinen?
+- **OF-07** · Verwaiste Bild-in-Bild-Wiedergabe und Multiview (macOS): Nur ein startender oder fortgesetzter
+  Einzel-Player beendet sie. Eine neue Multiview-Kachel lässt sie weiterlaufen – dann laufen Kachel(n) und
+  schwebendes Fenster parallel. Soll auch Multiview sie beenden?
+- **OF-08** · Playlist löschen, während ihr Sender nach „Zurück" im schwebenden Fenster läuft: Die
+  übernommene Wiedergabe kennt ihre Playlist nicht und läuft weiter, bis Bild-in-Bild endet (gelesen:
+  `PlaylistEvents.willDelete` beobachten nur `PlayerView`, `ChannelListView` und `MultiviewSession`; Bezug
+  B03 BUG-05, BF-56). Soll das Löschen sie beenden?
+- **OF-09** · Tabwechsel mit aktivem Bild-in-Bild (EC-03), dann im anderen Tab einen Sender öffnen: Der erste
+  Player liegt weiter in seinem Stapel und gilt nicht als verlassen; sein schwebendes Fenster läuft neben dem neuen
+  Sender weiter (gelesen: `stopAll()` beendet nur übernommene Wiedergaben). Soll auch das enden?
+
 ## Fehlbestand
 
 Nicht vorhanden oder als Fehler eingestuft, aus dem Code belegt. Kein Kriterium: `sdd-qa` prüft

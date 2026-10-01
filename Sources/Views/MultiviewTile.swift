@@ -8,8 +8,13 @@ import SwiftUI
 struct MultiviewTile: View {
     let slot: MultiviewSession.Slot
     let isFocused: Bool
+    /// B08 · BUG-06: Läuft ein anderer Stream desselben Anbieters, erklärt die Fehleransicht das Verbindungslimit.
+    var showsConnectionHint = false
     let onFocus: () -> Void
     let onClose: () -> Void
+
+    /// Hinweis unter der Fehlermeldung, wenn ein Stream scheitert, während ein anderer desselben Anbieters läuft.
+    static let connectionLimitHint = "Möglicherweise erlaubt dein Abo nicht so viele Streams gleichzeitig."
 
     var body: some View {
         ZStack {
@@ -42,6 +47,9 @@ struct MultiviewTile: View {
                 Label("Wiedergabe fehlgeschlagen", systemImage: "exclamationmark.triangle")
             } description: {
                 Text(message)
+                if showsConnectionHint {
+                    Text(Self.connectionLimitHint)
+                }
             }
             .background(.ultraThinMaterial)
         case .playing:
@@ -63,7 +71,8 @@ struct MultiviewTile: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title3)
                         .foregroundStyle(.white)
-                        .padding(6)
+                        // Feste Größe: Die kleinen Kacheln im Fokus-Layout beginnen unterhalb dieses Knopfs (BUG-04).
+                        .frame(width: MultiviewMetrics.closeButtonSize, height: MultiviewMetrics.closeButtonSize)
                         .background(.black.opacity(0.5), in: Circle())
                 }
                 .buttonStyle(.plain)
@@ -71,7 +80,7 @@ struct MultiviewTile: View {
             }
             Spacer()
         }
-        .padding(8)
+        .padding(MultiviewMetrics.chromePadding)
     }
 }
 

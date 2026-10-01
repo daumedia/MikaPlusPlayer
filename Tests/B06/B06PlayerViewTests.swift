@@ -217,7 +217,7 @@ final class B06PlayerViewTests: B06TestCase {
         B06QA.log("AK-13|c ungültig|\(lc)")
         B06QA.log("AK-13|d xtream404|\(ld.map { $0.replacingOccurrences(of: B06QA.pass, with: "<pass>") })")
         B06QA.shot(wA, "AK-13-fehleransicht-avkit-404")
-        B06QA.shot(wB, "AK-04-AK-13-zugangsdaten-fehlen-mit-readme-hinweis")
+        B06QA.shot(wB, "BUILD-BUG-04-zugangsdaten-fehlen-ohne-readme-hinweis")
         B06QA.shot(wC, "AK-04-adresse-ungueltig")
         let hint = "Hinweis: Rohe MPEG-TS-Streams (.ts) benötigen VLCKit – siehe README."
         func has(_ l: [String], _ t: String) -> Bool { l.contains { $0.contains(t) } }
@@ -225,7 +225,8 @@ final class B06PlayerViewTests: B06TestCase {
         XCTAssertFalse(has(la, hint))
         XCTAssertFalse(has(la, "pause.fill") || has(la, "arrow.up.left.and.arrow.down.right"), "keine Steuerung in der Fehleransicht")
         XCTAssertTrue(has(lb, "Die Zugangsdaten dieser Xtream-Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren."))
-        XCTAssertTrue(has(lb, hint), "Ist: README-Hinweis bei fehlenden Zugangsdaten (FB-04)")
+        // Behoben (BUG-04): mit eingebundenem VLCKit nie ein README-Hinweis
+        XCTAssertFalse(has(lb, hint), "kein README-Hinweis bei fehlenden Zugangsdaten")
         XCTAssertFalse(busyB, "ohne Ladekreis")
         XCTAssertTrue(has(lc, "Die Stream-Adresse ist ungültig."))
         for l in [la, lb, lc, ld] {
@@ -239,29 +240,43 @@ final class B06PlayerViewTests: B06TestCase {
         await B06QA.spin(1.0)
         XCTAssertTrue(B06UI.has(wB, "Die Zugangsdaten dieser Xtream-Playlist fehlen"))
         XCTAssertFalse(mock.requests(containing: "/live/").contains { $0.target.contains("104") })
-        XCTExpectFailure("BUG-04 · README-Hinweis erscheint bei fehlenden Zugangsdaten, obwohl VLCKit eingebunden ist (FB-04)") {
-            XCTAssertFalse(has(lb, hint))
-        }
+        XCTAssertFalse(B06UI.labels(wB).contains { $0.contains(hint) }, "auch nach „Erneut versuchen“ kein README-Hinweis")
     }
 
-    func testAK10_AK11_VLCFehlerInDerAnsicht() async throws {
+    /// Behoben (BUG-01): VLC-Fehler und Hänger erreichen die Fehleransicht. Hänger mit kurzer Ladefrist (4 s).
+    func testAK10_AK11_VLCFehlerInDerAnsichtMitMeldung() async throws {
+        VLCPlaybackEngine.limitsForNewEngines = .init(load: 4, stall: 4)
         let w404 = player(channel("QA TS 404", "/404/ak10ui.ts"), origin: CGPoint(x: 40, y: 80), size: CGSize(width: 560, height: 360))
         let wHang = player(channel("QA TS Hänger", "/hang/ak11ui.ts"), origin: CGPoint(x: 620, y: 80), size: CGSize(width: 560, height: 360))
-        await B06QA.spin(0.8)
+        let t404 = await B06Engine.wait(3) { B06UI.has(w404, "Erneut versuchen") }
         let hangControls = controlsVisible(wHang)
-        B06QA.shot(wHang, "AK-11-vlc-haenger-steuerung-wie-laeuft")
-        await B06QA.spin(11)
-        let l404 = B06UI.labels(w404)
-        B06QA.log("AK-10|ansicht nach 12s|busy=\(busy(w404))|labels=\(l404)|anfragen=\(mock.requests(containing: "ak10ui").count)")
-        B06QA.log("AK-11|ansicht|steuerungNach0,8s=\(hangControls)|nach12s labels=\(B06UI.labels(wHang))")
-        B06QA.shot(w404, "AK-10-vlc-404-ladekreis-ohne-meldung")
-        B06QA.shot(wHang, "AK-11-vlc-haenger-schwarz-ohne-meldung")
-        XCTAssertTrue(busy(w404), "Ist: Ladekreis ohne Ende")
-        XCTAssertTrue(hangControls, "Ist: Hänger zeigt Steuerung wie ein laufender Stream")
-        XCTExpectFailure("BUG-01 · VLC-Fehler erreichen die Oberfläche nie (FB-01)") {
-            XCTAssertTrue(B06UI.has(w404, "Erneut versuchen"))
-            XCTAssertTrue(B06UI.has(wHang, "Erneut versuchen"))
+        let hangBusy = busy(wHang)
+        B06QA.log("AK-11|ansicht vor der Frist|ladekreis=\(hangBusy)|steuerung=\(hangControls)")
+        let tHang = await B06Engine.wait(7) { B06UI.has(wHang, "Erneut versuchen") }
+        await B06QA.spin(0.5)
+        let l404 = B06UI.labels(w404), lHang = B06UI.labels(wHang)
+        B06QA.log("AK-10|ansicht|meldungNach=\(t404.map(B06QA.f1) ?? "-")s|labels=\(l404)|anfragen=\(mock.requests(containing: "ak10ui").count)")
+        B06QA.log("AK-11|ansicht|meldungNach≈\(tHang.map { B06QA.f1($0 + 3) } ?? "-")s ab Öffnen|labels=\(lHang)")
+        B06QA.shot(w404, "BUILD-BUG-01-vlc-404-fehleransicht")
+        B06QA.shot(wHang, "BUILD-BUG-01-vlc-haenger-fehleransicht")
+        XCTAssertNotNil(t404, "404: Fehleransicht nach < 3 s")
+        XCTAssertTrue(l404.contains { $0.contains("Wiedergabe fehlgeschlagen") })
+        XCTAssertTrue(l404.contains { $0.contains(VLCPlaybackEngine.Failure.cannotOpen.message) })
+        XCTAssertTrue(hangBusy, "Hänger: Ladekreis bis zur Frist")
+        XCTAssertFalse(hangControls, "Hänger: keine Steuerung wie bei einem laufenden Stream")
+        XCTAssertNotNil(tHang, "Hänger: Fehleransicht nach der Frist")
+        XCTAssertTrue(lHang.contains { $0.contains(VLCPlaybackEngine.Failure.noResponse.message) })
+        XCTAssertFalse(busy(w404) || busy(wHang), "kein Ladekreis mehr")
+        for l in [l404, lHang] {
+            XCTAssertFalse(l.contains { $0.contains("README") }, "kein README-Hinweis (BUG-04)")
+            for secret in ["127.0.0.1", "ak10ui", "ak11ui", "/hang/", "/404/"] { XCTAssertFalse(l.contains { $0.contains(secret) }, "AK-31: \(secret)") }
         }
+        // „Erneut versuchen“ lädt neu: kurz Ladekreis, neue Anfrage, wieder die Meldung
+        let before = mock.requests(containing: "ak10ui").count
+        B06UI.press(try XCTUnwrap(B06UI.find(w404, role: "AXButton", "Erneut versuchen")))
+        let again = await B06Engine.wait(4) { self.mock.requests(containing: "ak10ui").count > before && B06UI.has(w404, "Erneut versuchen") }
+        B06QA.log("AK-08|VLC „Erneut versuchen“|anfragen vorher=\(before) nachher=\(mock.requests(containing: "ak10ui").count)")
+        XCTAssertNotNil(again)
     }
 
     // MARK: AK-08 / Angriff 3
@@ -500,7 +515,8 @@ final class B06PlayerViewTests: B06TestCase {
 
     // MARK: AK-23 ⚠ · zwei Fenster
 
-    func testAK23_ZweiFensterVollbildTrifftSchluesselfenster() async throws {
+    /// Behoben (BUG-06): die Vollbild-Aktion schaltet das Fenster des Players, nicht das Schlüsselfenster.
+    func testAK23_ZweiFensterVollbildTrifftPlayerFenster() async throws {
         let wA = player(channel("QA Fenster A", "/livehls/ak23/index.m3u8"), origin: CGPoint(x: 60, y: 120))
         _ = await B06Engine.wait(8) { self.av?.currentItem?.status == .readyToPlay }
         let wB = B06UI.window(Text("Fenster B (Senderliste)").frame(maxWidth: .infinity, maxHeight: .infinity), origin: CGPoint(x: 740, y: 120), title: "B06-QA Fenster B")
@@ -510,26 +526,25 @@ final class B06PlayerViewTests: B06TestCase {
         _ = await B06Engine.wait(6) { wB.styleMask.contains(.fullScreen) || wA.styleMask.contains(.fullScreen) }
         await B06QA.spin(1.5)
         let aFS = wA.styleMask.contains(.fullScreen), bFS = wB.styleMask.contains(.fullScreen)
-        B06QA.shot(wB, "AK-23-fenster-b-im-vollbild")
-        B06QA.shot(wA, "AK-23-fenster-a-player-ohne-titel")
+        let titelImVollbild = wA.title
+        B06QA.shot(wA, "BUILD-BUG-06-fenster-a-player-im-vollbild")
         B06QA.log("AK-23|A vollbild=\(aFS) titel='\(wA.title)'|B vollbild=\(bFS)|knopfA=\(button(wA, "arrow.down.right.and.arrow.up.left") != nil ? "Vollbild-aus-Symbol" : "Vollbild-an-Symbol")")
-        XCTAssertTrue(bFS, "Ist: Fenster B geht ins Vollbild")
-        XCTAssertFalse(aFS)
-        XCTAssertEqual(wA.title, "", "Fenster A verliert den Titel")
-        // dieselbe Aktion noch einmal holt B zurück
+        XCTAssertTrue(aFS, "Fenster A (Player) geht ins Vollbild")
+        XCTAssertFalse(bFS, "Fenster B bleibt unberührt")
+        XCTAssertEqual(titelImVollbild, "")
+        // dieselbe Aktion noch einmal holt A zurück
         B06UI.press(try XCTUnwrap(button(wA, "arrow.down.right.and.arrow.up.left") ?? button(wA, "arrow.up.left.and.arrow.down.right")))
-        _ = await waitFullscreen(wB, false)
-        B06QA.log("AK-23|zweite Aktion|B vollbild=\(wB.styleMask.contains(.fullScreen))|A titel='\(wA.title)'")
+        let zurueck = await waitFullscreen(wA, false)
+        B06QA.log("AK-23|zweite Aktion|A vollbild=\(wA.styleMask.contains(.fullScreen)) titel='\(wA.title)'|B vollbild=\(wB.styleMask.contains(.fullScreen))")
+        XCTAssertNotNil(zurueck)
         XCTAssertFalse(wB.styleMask.contains(.fullScreen))
-        XCTExpectFailure("BUG-06 · Vollbild-Aktion des Players schaltet das Schlüsselfenster statt des Player-Fensters (FB-06)") {
-            XCTAssertTrue(aFS)
-            XCTAssertFalse(bFS)
-        }
+        XCTAssertEqual(wA.title, "QA Fenster A", "Titel zurück")
     }
 
     // MARK: AK-24 ⚠ · grüner Knopf
 
-    func testAK24_GruenerKnopfVerstimmtPlayer() async throws {
+    /// Behoben (BUG-06): Vollbild über grünen Knopf/Menü – der Player folgt dem Fenster.
+    func testAK24_GruenerKnopfPlayerFolgtFenster() async throws {
         let w = player(channel("QA Grün", "/livehls/ak24/index.m3u8"))
         try await activate(w)
         _ = await B06Engine.wait(8) { self.av?.currentItem?.status == .readyToPlay }
@@ -537,28 +552,34 @@ final class B06PlayerViewTests: B06TestCase {
         _ = await waitFullscreen(w, true)
         B06UI.press(try XCTUnwrap(button(w, "pause.fill")))   // Steuerung einblenden
         await B06QA.spin(0.3)
-        let fr = button(w, "arrow.up.left.and.arrow.down.right").map(B06UI.frame)
+        let enterButton = button(w, "arrow.up.left.and.arrow.down.right")
+        let fr = button(w, "arrow.down.right.and.arrow.up.left").map(B06UI.frame)
         let screen = w.screen?.frame ?? .zero
-        B06QA.shot(w, "AK-24-gruener-knopf-player-in-fensterdarstellung")
-        B06QA.log("AK-24|grüner Knopf|vollbild=\(w.styleMask.contains(.fullScreen))|titel='\(w.title)'|knopfSymbol=\(fr != nil ? "Vollbild-an" : "Vollbild-aus")|abstandRechts=\(fr.map { screen.maxX - $0.maxX } ?? -1)")
-        XCTAssertNotNil(fr, "Player hält sich nicht für Vollbild")
-        XCTAssertEqual(screen.maxX - (fr?.maxX ?? 0), 12, accuracy: 2, "normaler Abstand 12 pt")
-        XCTAssertEqual(w.title, "QA Grün")
+        B06QA.shot(w, "BUILD-BUG-06-gruener-knopf-player-im-vollbild")
+        B06QA.log("AK-24|grüner Knopf|vollbild=\(w.styleMask.contains(.fullScreen))|titel='\(w.title)'|knopfSymbol=\(fr != nil ? "Vollbild-aus" : "Vollbild-an")|abstandRechts=\(fr.map { screen.maxX - $0.maxX } ?? -1)")
+        XCTAssertNil(enterButton, "Player weiß, dass das Fenster im Vollbild ist")
+        XCTAssertNotNil(fr)
+        XCTAssertEqual(screen.maxX - (fr?.maxX ?? 0), 24, accuracy: 2, "Vollbild-Abstand 24 pt")
+        XCTAssertEqual(w.title, "", "Titel wie im Vollbild des Players ausgeblendet")
         B06UI.key(w, .space)   // weiterlaufen lassen
         B06UI.key(w, .char("f"))
-        await B06QA.spin(2.0)
-        let afterF1 = w.styleMask.contains(.fullScreen)
-        B06QA.log("AK-24|erstes F|vollbild=\(afterF1)|titel='\(w.title)'")
-        XCTAssertTrue(afterF1, "erstes F verlässt das Vollbild nicht")
-        XCTAssertEqual(w.title, "")
-        B06UI.key(w, .char("f"))
         let off = await waitFullscreen(w, false)
-        B06QA.log("AK-24|zweites F|vollbild=\(w.styleMask.contains(.fullScreen))|nach=\(off.map(B06QA.f1) ?? "-")")
-        XCTAssertNotNil(off, "erst das zweite F verlässt das Vollbild")
-        XCTExpectFailure("BUG-06 · Vollbild über grünen Knopf/Menü ist dem Player unbekannt (FB-06)") {
-            XCTAssertNil(fr)
-            XCTAssertFalse(afterF1)
-        }
+        B06QA.log("AK-24|erstes F|vollbild=\(w.styleMask.contains(.fullScreen))|nach=\(off.map(B06QA.f1) ?? "-")|titel='\(w.title)'")
+        XCTAssertNotNil(off, "schon das erste F verlässt das Vollbild")
+        XCTAssertEqual(w.title, "QA Grün")
+        // Umgekehrt: F → Vollbild, grüner Knopf verlässt es → Player zurück in der Fensterdarstellung
+        B06UI.key(w, .char("f"))
+        let wiederVollbild = await waitFullscreen(w, true)
+        XCTAssertNotNil(wiederVollbild)
+        w.toggleFullScreen(nil)
+        let gruenAus = await waitFullscreen(w, false)
+        XCTAssertNotNil(gruenAus)
+        B06UI.key(w, .space)
+        await B06QA.spin(0.3)
+        B06QA.log("AK-24|Verlassen über grünen Knopf|titel='\(w.title)'|knopf=\(button(w, "arrow.up.left.and.arrow.down.right") != nil ? "Vollbild-an" : "Vollbild-aus")")
+        XCTAssertEqual(w.title, "QA Grün")
+        XCTAssertNotNil(button(w, "arrow.up.left.and.arrow.down.right"), "Knopf zeigt wieder „Vollbild“")
+        B06UI.key(w, .space)
     }
 
     // MARK: AK-27 / AK-19 · Tabwechsel (VLC)
@@ -592,9 +613,9 @@ final class B06PlayerViewTests: B06TestCase {
         B06UI.key(w, .space)
     }
 
-    // MARK: AK-28 ⚠ · Verlassen
+    // MARK: AK-28 · Verlassen (behoben in Build B06 · BUG-02)
 
-    func testAK28_VerlassenBeendetEngineUndVerbindungNicht() async throws {
+    func testAK28_VerlassenBeendetEngineUndVerbindung() async throws {
         let nav = B06Nav()
         let w = B06UI.window(B06StackHost(nav: nav).modelContainer(container), title: "B06-QA Zurück")
         windows.append(w)
@@ -623,11 +644,11 @@ final class B06PlayerViewTests: B06TestCase {
         }
         B06QA.log("AK-28|TS|\(timeline)")
         let tsOpen = mock.connections(containing: "ak28.ts").last?.closed == nil
-        B06QA.log("AK-28|HLS-Player lebt nach Öffnen des TS-Senders=\(weakAV != nil)")
-        XCTExpectFailure("BUG-02 · Verlassen beendet Engine und Verbindung nicht (FB-02)") {
-            XCTAssertEqual(hlsAfter.count, 0, "nach Zurück keine weiteren HLS-Abrufe")
-            XCTAssertFalse(tsOpen, "TS-Verbindung nach Zurück geschlossen")
-        }
+        B06QA.log("AK-28|HLS-Player lebt nach Öffnen des TS-Senders=\(weakAV != nil)|element=\(weakAV?.currentItem == nil ? "frei" : "geladen")")
+        XCTAssertEqual(hlsAfter.count, 0, "nach Zurück keine weiteren HLS-Abrufe")
+        XCTAssertFalse(tsOpen, "TS-Verbindung nach Zurück geschlossen")
+        XCTAssertNil(weakAV?.currentItem, "AVPlayer ohne Element (replaceCurrentItem(nil))")
+        XCTAssertEqual(mock.connections(containing: "ak28.ts").count, 1, "eine Verbindung je Öffnen")
     }
 
     /// Wie lange liest die pausierte, verlassene VLC-Engine weiter? (Loopback-Puffer füllen sich erst nach MB)
@@ -652,17 +673,16 @@ final class B06PlayerViewTests: B06TestCase {
         }
         B06QA.log("AK-28b|TS nach Zurück (Rate \(Int(mock.media.tsRate)) B/s)|\(line)")
         let open = mock.connections(containing: "ak28b").last?.closed == nil
-        // Lebensdauer schwankt (Erfassung: 0,2 s bis > 90 s); nicht strikt
-        let options = XCTExpectedFailure.Options()
-        options.isStrict = false
-        XCTExpectFailure("BUG-02 · verlassene VLC-Engine hält die Verbindung (FB-02) – nicht in jedem Lauf", options: options) {
-            XCTAssertFalse(open)
-        }
+        let closedAfter = mock.connections(containing: "ak28b").last?.closed.map { $0.timeIntervalSince(t0) }
+        B06QA.log("AK-28b|Verbindung geschlossen nach \(closedAfter.map(B06QA.f1) ?? "-")s ab Zurück")
+        // Behoben (BUG-02): in jedem Lauf zu, binnen Sekunden
+        XCTAssertFalse(open)
+        XCTAssertLessThan(closedAfter ?? 99, 3.0)
     }
 
-    // MARK: AK-29 ⚠ · Verlassen, während VLC lädt
+    // MARK: AK-29 · Verlassen, während VLC lädt (behoben in Build B06 · BUG-02)
 
-    func testAK29_VerlassenWaehrendTSLaedtStreamLaeuftWeiter() async throws {
+    func testAK29_VerlassenWaehrendTSLaedtStartetNicht() async throws {
         let nav = B06Nav()
         let w = B06UI.window(B06StackHost(nav: nav).modelContainer(container), title: "B06-QA Laden")
         windows.append(w)
@@ -679,11 +699,11 @@ final class B06PlayerViewTests: B06TestCase {
         let state = v.map { "\(B06Engine.vlcState($0)) isPlaying=\(B06Engine.vlcIsPlaying($0))" } ?? "freigegeben"
         let playingNow = v.map(B06Engine.vlcIsPlaying) ?? false
         B06QA.log("AK-29|9s nach Zurück (Server liefert ab +2,4s)|vlc=\(state)|engine.isPaused=\(e.isPaused)|bytesLetzte5s=\(last5)|rate/s=\(Int(mock.media.tsRate))|verbindung=\(c?.closed == nil ? "offen" : "zu")|seitZurück=\(B06QA.f1(now.timeIntervalSince(tBack)))")
-        XCTAssertTrue(e.isPaused, "App hält ihn für pausiert")
-        XCTExpectFailure("BUG-02 · Nach Verlassen während des Ladens startet VLC den Stream trotzdem mit voller Datenrate (FB-02)") {
-            XCTAssertFalse(playingNow)
-            XCTAssertLessThan(last5, Int(mock.media.tsRate))
-        }
+        XCTAssertTrue(e.isPaused, "Engine beendet")
+        XCTAssertEqual(e.state, .idle)
+        XCTAssertFalse(playingNow, "VLC startet nach dem Verlassen nicht")
+        XCTAssertLessThan(last5, Int(mock.media.tsRate), "keine Daten mehr")
+        XCTAssertNotNil(c?.closed, "Verbindung zu")
     }
 
     // MARK: EC-13 · Fenster schließen

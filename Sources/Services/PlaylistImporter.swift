@@ -16,6 +16,8 @@ enum ImportError: LocalizedError, Equatable {
     case tooManyChannels(Int)
     /// Zugangsdaten einer M3U-Playlist fehlen im Schlüsselbund (B02 · BUG-01)
     case missingCredentials
+    /// „Öffnen mit" mit einer Datei, die keine M3U-Playlist ist (Review R-09)
+    case unsupportedFile
 
     var errorDescription: String? {
         switch self {
@@ -35,6 +37,8 @@ enum ImportError: LocalizedError, Equatable {
             return "Die Senderliste ist zu groß (mehr als \(maximum.formatted(.number.locale(Locale(identifier: "de_DE")))) Sender)."
         case .missingCredentials:
             return "Die Zugangsdaten dieser Playlist fehlen auf diesem Gerät. Bitte die Playlist löschen und neu importieren."
+        case .unsupportedFile:
+            return "Nur M3U-Playlists (.m3u, .m3u8) lassen sich importieren."
         }
     }
 }
@@ -76,6 +80,7 @@ final class PlaylistImporter {
     private let loginThrottle: XtreamLoginThrottle
     private let loader: PlaylistHTTPLoader
     private let store: PlaylistStore
+    private let logoLoader: ChannelLogoLoader
 
     /// True, während ein Import/Refresh läuft (für UI-Spinner).
     var isWorking = false
@@ -91,7 +96,8 @@ final class PlaylistImporter {
         m3uLimits: M3ULimits = .standard,
         loginThrottle: XtreamLoginThrottle = .shared,
         loader: PlaylistHTTPLoader = .shared,
-        store: PlaylistStore = .shared
+        store: PlaylistStore = .shared,
+        logoLoader: ChannelLogoLoader = .shared
     ) {
         self.modelContext = modelContext
         self.credentialStore = credentialStore
@@ -100,6 +106,7 @@ final class PlaylistImporter {
         self.loginThrottle = loginThrottle
         self.loader = loader
         self.store = store
+        self.logoLoader = logoLoader
     }
 
     // MARK: - Import
@@ -213,6 +220,8 @@ final class PlaylistImporter {
     ///
     /// Läuft für diese Playlist schon eine Aktualisierung, kehrt der Aufruf ohne Wirkung zurück (B03 · BUG-04).
     /// Wird die Playlist währenddessen gelöscht, endet der Aufruf ohne Meldung und ohne Spuren (AK-26, BUG-08).
+    /// Sterne, die während des Laufs gesetzt oder entfernt werden, gehen auf die neuen Sender über (Review R-01,
+    /// `FavoriteEdits`).
     func refresh(_ playlist: Playlist) async throws {
         guard let url = playlist.sourceURL else { return }
         let id = playlist.id
@@ -221,6 +230,9 @@ final class PlaylistImporter {
         defer { Self.refreshing.remove(id) }
         isWorking = true
         defer { isWorking = false }
+        // Review R-01: Sterne, die während des Laufs gesetzt oder entfernt werden, festhalten und nachziehen.
+        FavoriteEdits.begin(id)
+        defer { FavoriteEdits.end(id) }
 
         let persistentID = playlist.persistentModelID
         let parsed: [ParsedChannel]
@@ -273,8 +285,30 @@ final class PlaylistImporter {
         let outcome = try await store.replaceChannels(
             of: id, persistentID: persistentID, with: parsed, refreshedAt: refreshedAt, newSourceURL: newSourceURL,
             credentialUpdate: credentialUpdate, credentialStore: credentialStore, in: modelContext.container)
-        guard case .replaced = outcome else { return }
+        guard case .replaced(_, var carryOver) = outcome else { return }
+
+        // Review R-01: Solange die Ansicht noch die alten Sender zeigt, landen Sterne an Sendern, die das Ersetzen
+        // gelöscht hat. Alle seit Beginn festgehaltenen Änderungen werden auf die neuen Sender nachgezogen – so lange,
+        // bis während des Nachziehens keine neue mehr dazukommt. Erst danach zeigt die Ansicht die neuen Sender.
+        var edits: [FavoriteEdit] = []
+        var reconcileError: Error?
+        while true {
+            let more = FavoriteEdits.take(id)
+            guard !more.isEmpty else { break }
+            edits = FavoriteEdits.merge(edits, more)
+            do {
+                carryOver = try await store.reconcileFavorites(of: id, state: carryOver, edits: edits,
+                                                               in: modelContext.container)
+            } catch {
+                reconcileError = error
+                break
+            }
+        }
+        FavoriteEdits.end(id)
         synchronizeView(id, refreshedAt: refreshedAt)
+        // B04 · BUG-02: offene Senderlisten (auch in anderen Fenstern) berechnen Chips und Treffer neu.
+        PlaylistEvents.postDidReplaceChannels([id])
+        if let reconcileError { throw reconcileError }
     }
 
     /// Holt den neuen Stand in den Kontext der Ansicht: Das erneute Abrufen aktualisiert die gehaltene Playlist
@@ -299,8 +333,9 @@ final class PlaylistImporter {
 
     /// Zentraler Löschweg für alle Importwege (B03 · BUG-01, -05, -06, -07, -08):
     /// Ansichten beenden Wiedergabe und Verbindungen, die Sender werden abseits des Main-Actors entfernt, dann die
-    /// Playlist, ihr Schlüsselbund-Eintrag, etwaige Cache-Einträge ihrer Adresse und Cookies ihres Hosts; zuletzt
-    /// wird die Datei verdichtet. Fehler werden gemeldet, nicht verschluckt.
+    /// Playlist, ihr Schlüsselbund-Eintrag, etwaige Cache-Einträge ihrer Adresse, Cookies ihres Hosts und die
+    /// zwischengespeicherten Senderlogos (B04 · BUG-07); zuletzt wird die Datei verdichtet. Fehler werden gemeldet,
+    /// nicht verschluckt.
     func delete(_ playlist: Playlist) async throws {
         let id = playlist.id
         let persistentID = playlist.persistentModelID
@@ -332,6 +367,8 @@ final class PlaylistImporter {
         for address in [sourceURL, secretSource].compactMap({ $0 }) {
             URLCache.shared.removeCachedResponse(for: URLRequest(url: address))
         }
+        // B04 · BUG-07: zwischengespeicherte Senderlogos (nur Arbeitsspeicher) gehen mit.
+        logoLoader.removeAll()
         await store.endDelete([id])
         await store.compact(modelContext.container)
         if let credentialError {

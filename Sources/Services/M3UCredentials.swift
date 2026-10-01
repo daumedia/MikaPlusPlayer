@@ -7,6 +7,10 @@ struct M3USecret: Codable, Equatable, Sendable {
     var sourceURL: String
     var username: String?
     var password: String
+    /// Nur wenn die Adresse Benutzerinfo **und** ein anderes Passwort in der Query trägt (Review R-03): Zugangsdaten
+    /// der Benutzerinfo. Sonst `nil` – dann gilt `username`/`password` auch für die Benutzerinfo.
+    var infoUsername: String? = nil
+    var infoPassword: String? = nil
 }
 
 /// Trennt Zugangsdaten aus M3U-Adressen heraus und setzt sie beim Abspielen wieder ein.
@@ -27,7 +31,11 @@ enum M3UCredentials {
         static let queryPassword = "_mikaplus_query_passwort_"
         static let infoUser = "_mikaplus_info_benutzer_"
         static let infoPassword = "_mikaplus_info_passwort_"
-        static let all = [pathUser, pathPassword, queryUser, queryPassword, infoUser, infoPassword]
+        /// Benutzerinfo mit eigenen Zugangsdaten (`M3USecret.infoUsername`/`infoPassword`, Review R-03)
+        static let secondInfoUser = "_mikaplus_info2_benutzer_"
+        static let secondInfoPassword = "_mikaplus_info2_passwort_"
+        static let all = [pathUser, pathPassword, queryUser, queryPassword, infoUser, infoPassword,
+                          secondInfoUser, secondInfoPassword]
     }
 
     private static let userQueryNames: Set<String> = ["username", "user"]
@@ -46,7 +54,12 @@ enum M3UCredentials {
         } else {
             username = comps.user
         }
-        let secret = M3USecret(sourceURL: url.absoluteString, username: username, password: password)
+        var secret = M3USecret(sourceURL: url.absoluteString, username: username, password: password)
+        // Review R-03: Benutzerinfo mit eigenem Passwort neben `password=` in der Query → beide in den Schlüsselbund.
+        if queryPassword != nil, let infoPassword, infoPassword != password {
+            secret.infoPassword = infoPassword
+            secret.infoUsername = comps.user
+        }
         return (redact(url, secret: secret), secret)
     }
 
@@ -57,14 +70,24 @@ enum M3UCredentials {
         let password = secret.password
         var changed = false
 
-        // Benutzerinfo
-        if comps.password.map({ $0 == password }) == true {
-            comps.percentEncodedPassword = Marker.infoPassword
+        // Benutzerinfo; trägt die Adresse dort eigene Zugangsdaten (Review R-03), bekommen diese eigene Platzhalter
+        let secondPassword = secret.infoPassword
+        let secondUser = secondPassword == nil ? nil : secret.infoUsername.flatMap { $0.isEmpty ? nil : $0 }
+        if let secondPassword, comps.password == secondPassword {
+            comps.percentEncodedPassword = Marker.secondInfoPassword
             changed = true
-        }
-        if let user, comps.user == user {
-            comps.percentEncodedUser = Marker.infoUser
-            changed = true
+            if let secondUser, comps.user == secondUser {
+                comps.percentEncodedUser = Marker.secondInfoUser
+            }
+        } else {
+            if comps.password.map({ $0 == password }) == true {
+                comps.percentEncodedPassword = Marker.infoPassword
+                changed = true
+            }
+            if let user, comps.user == user {
+                comps.percentEncodedUser = Marker.infoUser
+                changed = true
+            }
         }
 
         // Pfadabschnitte: Passwort überall, Benutzername direkt davor
@@ -112,6 +135,13 @@ enum M3UCredentials {
         guard Marker.all.contains(where: { s.contains($0) }) else { return stored }
         let user = secret.username ?? ""
         if user.isEmpty, [Marker.pathUser, Marker.queryUser, Marker.infoUser].contains(where: { s.contains($0) }) { return nil }
+        if s.contains(Marker.secondInfoPassword) || s.contains(Marker.secondInfoUser) {
+            guard let secondPassword = secret.infoPassword else { return nil }
+            let secondUser = secret.infoUsername ?? ""
+            if secondUser.isEmpty, s.contains(Marker.secondInfoUser) { return nil }
+            s = s.replacingOccurrences(of: Marker.secondInfoPassword, with: userInfo(secondPassword, allowed: .urlPasswordAllowed))
+            s = s.replacingOccurrences(of: Marker.secondInfoUser, with: userInfo(secondUser, allowed: .urlUserAllowed))
+        }
         s = s.replacingOccurrences(of: Marker.pathPassword, with: XtreamURLEncoding.pathSegment(secret.password))
         s = s.replacingOccurrences(of: Marker.pathUser, with: XtreamURLEncoding.pathSegment(user))
         s = s.replacingOccurrences(of: Marker.queryPassword, with: queryValue(secret.password))

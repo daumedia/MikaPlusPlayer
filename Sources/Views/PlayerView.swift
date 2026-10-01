@@ -27,6 +27,16 @@ struct PlayerView: View {
     /// Kurzzeitig eingeblendetes Feedback (HUD) bei Tastatur-/Button-Aktionen.
     @State private var hud: HUDKind?
     @State private var hudTask: Task<Void, Never>?
+    /// B06 · BUG-02: wahr, solange der Player im Navigationsstapel liegt – auch in einem gerade verdeckten Tab.
+    /// Wird er falsch, hat der Nutzer den Player verlassen („Zurück").
+    @Environment(\.isPresented) private var isPresented
+    /// B07 · BUG-01: sichtbarer Tab des Fensters (nur in `ContentView`) und der Tab, in dem dieser Player liegt.
+    @Environment(ShellTabs.self) private var shellTabs: ShellTabs?
+    @State private var ownTab: ShellTabs.Tab?
+    #if os(macOS)
+    /// B06 · BUG-06: das Fenster, in dem dieser Player liegt.
+    @State private var hostWindow = PlayerHostWindow()
+    #endif
 
     /// Schrittweite der Lautstärke-Tasten (5 %).
     private let volumeStep = 0.05
@@ -36,6 +46,8 @@ struct PlayerView: View {
         case playPause(Bool)   // isPaused
         case mute(Bool)        // isMuted
         case volume(Double)    // 0…1
+        /// Kurze Erklärung mit Symbol, z. B. warum es kein Bild-in-Bild gibt (B07 · BUG-04).
+        case notice(symbol: String, text: String)
     }
 
     var body: some View {
@@ -50,14 +62,21 @@ struct PlayerView: View {
             } else if let resolveError {
                 failureView(resolveError)
             } else {
-                ProgressView().tint(.white)
+                loadingIndicator
             }
         }
+        #if os(macOS)
+        .background(PlayerWindowReader { attach(to: $0) })
+        #endif
         .contentShape(Rectangle())
         .onTapGesture { toggleControls() }
         .focusable()
         .focusEffectDisabled()
         .focused($keyboardFocused)
+        #if os(iOS)
+        // B06 · BUG-08: am iPad nimmt sonst die Tab-Leiste den Tastaturfokus.
+        .defaultFocus($keyboardFocused, true)
+        #endif
         .onKeyPress { handleKey($0) }
         #if os(macOS)
         .onContinuousHover { handleHover($0) }
@@ -67,6 +86,11 @@ struct PlayerView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
+        // B06 · BUG-09: Leiste über der schwarzen Fläche dunkel, damit der Sendername auch im hellen
+        // Erscheinungsbild lesbar ist.
+        .toolbarBackground(Color.black, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar(isFullscreen ? .hidden : .visible, for: .tabBar)
         .statusBarHidden(isFullscreen)
         .persistentSystemOverlays(isFullscreen ? .hidden : .automatic)
@@ -74,11 +98,32 @@ struct PlayerView: View {
         // Obere Fenster-Toolbar/Titelleiste im Vollbild ausblenden – erscheint
         // wieder, sobald der Mauszeiger nahe den oberen Rand kommt.
         .toolbar(macToolbarVisibility, for: .windowToolbar)
+        // B06 · BUG-06: Vollbild des eigenen Fensters mitführen – auch über den grünen Knopf, das Menü oder einen
+        // Tabwechsel.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { note in
+            windowFullscreenChanged(note, entered: true)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didExitFullScreenNotification)) { note in
+            windowFullscreenChanged(note, entered: false)
+        }
+        // B06 · BUG-02: Fenster schließen (⌘W) ist ebenfalls Verlassen.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { note in
+            guard hostWindow.contains(note) else { return }
+            leavePlayer()
+        }
         #endif
         .onAppear {
+            if ownTab == nil { ownTab = shellTabs?.selected }
             startIfNeeded()
             scheduleAutoHide()
             keyboardFocused = true
+            #if os(iOS)
+            refocusAfterPush()
+            #endif
+        }
+        .onChange(of: isPresented) { _, presented in
+            // B06 · BUG-02: „Zurück" – Wiedergabe und Verbindung beenden.
+            if !presented { leavePlayer() }
         }
         .onReceive(NotificationCenter.default.publisher(for: PlaylistEvents.willDelete)) { note in
             handlePlaylistDeletion(PlaylistEvents.ids(in: note))
@@ -86,11 +131,16 @@ struct PlayerView: View {
         .onDisappear {
             autoHideTask?.cancel()
             hudTask?.cancel()
-            resetOrientation()
-            // Bei aktivem PiP NICHT pausieren – sonst würgt der Ansichtswechsel
-            // (App in den Hintergrund / Auto-PiP) die schwebende Wiedergabe ab.
-            if engine?.isPictureInPictureActive != true {
-                engine?.pause()
+            leaveFullscreenOnDisappear()
+            if stillInStack {
+                // Noch im Stapel, z. B. Tabwechsel (AK-27): nur anhalten, dieselbe Engine setzt bei der Rückkehr fort.
+                // Bei aktivem PiP NICHT pausieren – sonst würgt der Ansichtswechsel die schwebende Wiedergabe ab.
+                if engine?.isPictureInPictureActive != true {
+                    engine?.pause()
+                }
+            } else {
+                // B06 · BUG-02: Player verlassen (bzw. nie im Stapel, z. B. als Wurzel eines Fensters).
+                leavePlayer()
             }
         }
     }
@@ -101,9 +151,7 @@ struct PlayerView: View {
     private func stateOverlay(_ engine: any PlaybackEngine) -> some View {
         switch engine.state {
         case .loading, .idle:
-            ProgressView()
-                .controlSize(.large)
-                .tint(.white)
+            loadingIndicator
         case .failed(let message):
             failureView(message)
         case .playing:
@@ -153,9 +201,36 @@ struct PlayerView: View {
                 controlIcon(engine?.isMuted == true ? "speaker.slash.fill" : "speaker.wave.2.fill")
             }
             .buttonStyle(.plain)
+            #if os(iOS)
+            // B07 · BUG-05: Am iPad liegt das Bild-in-Bild-Fenster oft über dem Knopf oben rechts. Solange es offen
+            // ist, beendet es ein zweiter Knopf unten links – ohne das Fenster erst zu verschieben.
+            if engine?.isPictureInPictureActive == true {
+                Button(action: togglePiP) {
+                    Label("Bild-in-Bild beenden", systemImage: "pip.exit")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(.black.opacity(0.5), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            #endif
             Spacer()
         }
         .padding(isFullscreen ? 24 : 12)
+    }
+
+    /// Ladeanzeige: groß und weiß auf der schwarzen Fläche (Design-System „Laden (Video)").
+    /// B06 · BUG-09: `.tint(.white)` färbt den kreisförmigen Indikator am Mac nicht (grau). Das dunkle
+    /// Farbschema lässt ihn unabhängig vom Erscheinungsbild der App gleich zeichnen, `brightness(1)` macht ihn
+    /// dann weiß und lässt die Deckkraft des Systems stehen.
+    private var loadingIndicator: some View {
+        ProgressView()
+            .controlSize(.large)
+            .tint(.white)
+            .environment(\.colorScheme, .dark)
+            .brightness(1)
     }
 
     private func controlIcon(_ name: String) -> some View {
@@ -182,6 +257,17 @@ struct PlayerView: View {
                         .foregroundStyle(.white)
                 case .volume(let value):
                     volumeHUD(value)
+                case .notice(let symbol, let text):
+                    VStack(spacing: 10) {
+                        Image(systemName: symbol)
+                            .font(.system(size: 32, weight: .bold))
+                            .accessibilityHidden(true)   // sonst liest VoiceOver den englischen Symbolnamen
+                        Text(text)
+                            .font(.callout.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: 260)
                 }
             }
             .padding(28)
@@ -220,7 +306,7 @@ struct PlayerView: View {
             Label("Wiedergabe fehlgeschlagen", systemImage: "exclamationmark.triangle")
         } description: {
             Text(message)
-            if isRawTransportStream {
+            if showsMissingVLCKitHint {
                 Text("Hinweis: Rohe MPEG-TS-Streams (.ts) benötigen VLCKit – siehe README.")
                     .font(.footnote)
             }
@@ -234,8 +320,14 @@ struct PlayerView: View {
         .background(.ultraThinMaterial)
     }
 
-    private var isRawTransportStream: Bool {
-        StreamType(url: channel.streamURL) == .transportStream
+    /// B06 · BUG-04: Der README-Hinweis gilt nur für einen Build ohne VLCKit (README „Ohne VLCKit"). Mit VLCKit
+    /// hat ein Fehler eine andere Ursache, und Endnutzer haben keine README.
+    private var showsMissingVLCKitHint: Bool {
+        #if canImport(VLCKitSPM) || canImport(MobileVLCKit) || canImport(VLCKit)
+        return false
+        #else
+        return StreamType(url: channel.streamURL) == .transportStream
+        #endif
     }
 
     /// Abspielbare Adresse – bei Xtream mit Zugangsdaten aus dem Schlüsselbund (B01 · BUG-01).
@@ -294,6 +386,10 @@ struct PlayerView: View {
     private func toggleControls() {
         withAnimation(.easeInOut(duration: 0.2)) { showControls.toggle() }
         if showControls { scheduleAutoHide() }
+        #if os(iOS)
+        // B06 · BUG-08: ein Tipp aufs Bild holt den Tastaturfokus zurück (iPad).
+        keyboardFocused = true
+        #endif
     }
 
     /// Blendet die Steuerung nach kurzer Inaktivität automatisch aus.
@@ -307,8 +403,9 @@ struct PlayerView: View {
     }
 
     private func toggleFullscreen() {
-        withAnimation(.easeInOut(duration: 0.25)) { isFullscreen.toggle() }
-        applyFullscreenSideEffects(isFullscreen)
+        let target = !isFullscreen
+        withAnimation(.easeInOut(duration: 0.25)) { isFullscreen = target }
+        applyFullscreenSideEffects(target)
         showControls = true
         scheduleAutoHide()
         // macOS: Beim nativen Fullscreen-Wechsel wechselt das Key-Window – Fokus halten.
@@ -363,7 +460,12 @@ struct PlayerView: View {
     }
 
     private func togglePiP() {
-        engine?.togglePictureInPicture()
+        if let engine, !engine.supportsPictureInPicture, PlaybackEngineFactory.deviceSupportsPictureInPicture {
+            // B07 · BUG-04: Das Gerät kann Bild-in-Bild, dieser Sender (MPEG-TS über VLC) nicht – kurz sagen, warum.
+            showHUD(.notice(symbol: "pip", text: "Bild-in-Bild gibt es nur mit HLS, nicht mit MPEG-TS."), seconds: 3)
+        } else {
+            engine?.togglePictureInPicture()
+        }
         flashControls()
     }
 
@@ -380,11 +482,11 @@ struct PlayerView: View {
     }
 
     /// Zeigt das HUD-Feedback und blendet es nach kurzer Zeit wieder aus.
-    private func showHUD(_ kind: HUDKind) {
+    private func showHUD(_ kind: HUDKind, seconds: Double = 0.9) {
         withAnimation(.easeInOut(duration: 0.15)) { hud = kind }
         hudTask?.cancel()
         hudTask = Task {
-            try? await Task.sleep(for: .seconds(0.9))
+            try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
             withAnimation(.easeInOut(duration: 0.3)) { hud = nil }
         }
@@ -400,18 +502,49 @@ struct PlayerView: View {
         let mask: UIInterfaceOrientationMask = fullscreen ? .landscapeRight : .portrait
         scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask))
         #elseif os(macOS)
-        // Natives Fenster-Vollbild umschalten, falls noch nicht im passenden Zustand.
-        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
-            let isWindowFullscreen = window.styleMask.contains(.fullScreen)
-            if isWindowFullscreen != fullscreen { window.toggleFullScreen(nil) }
-        }
+        // B06 · BUG-06: natives Vollbild immer des Fensters, in dem dieser Player liegt – nicht des Schlüsselfensters.
+        guard let window = hostWindow.window else { return }
+        if window.styleMask.contains(.fullScreen) != fullscreen { window.toggleFullScreen(nil) }
         #endif
     }
 
-    private func resetOrientation() {
+    /// Beim Verschwinden (Verlassen, Tabwechsel) das Vollbild beenden und den Zustand mitführen (BUG-06).
+    private func leaveFullscreenOnDisappear() {
         guard isFullscreen else { return }
         applyFullscreenSideEffects(false)
+        isFullscreen = false
     }
+
+    #if os(macOS)
+    /// Merkt sich das Fenster des Players und übernimmt dessen Vollbild-Zustand (BUG-06).
+    private func attach(to window: NSWindow) {
+        hostWindow.window = window
+        let windowFullscreen = window.styleMask.contains(.fullScreen)
+        if windowFullscreen != isFullscreen { isFullscreen = windowFullscreen }
+    }
+
+    /// Das Fenster des Players hat das Vollbild betreten bzw. verlassen – egal, wodurch (BUG-06).
+    private func windowFullscreenChanged(_ note: Notification, entered: Bool) {
+        guard hostWindow.contains(note), isFullscreen != entered else { return }
+        withAnimation(.easeInOut(duration: 0.25)) { isFullscreen = entered }
+        showControls = true
+        scheduleAutoHide()
+        keyboardFocused = true
+    }
+    #endif
+
+    #if os(iOS)
+    /// B06 · BUG-08: Am iPad übernimmt nach dem Einblenden des Players die Tab-Leiste den Fokus; den Fokus deshalb
+    /// nach dem Übergang erneut anfordern.
+    private func refocusAfterPush() {
+        Task { @MainActor in
+            for delay in [0.35, 1.0] {
+                try? await Task.sleep(for: .seconds(delay))
+                keyboardFocused = true
+            }
+        }
+    }
+    #endif
 
     #if os(iOS)
     private var activeWindowScene: UIWindowScene? {
@@ -433,7 +566,27 @@ struct PlayerView: View {
         resolveError = StreamURLResolver.ResolveError.playlistDeleted.localizedDescription
     }
 
+    /// Liegt der Player beim Verschwinden noch im Stapel (Tabwechsel)? In `ContentView` entscheidet der sichtbare
+    /// Tab: Ist der eigene Tab weiter sichtbar, wurde der Player verlassen – auch wenn `isPresented` am Mac (tiefer
+    /// Stapel) noch wahr meldet (B07 · BUG-01). Ohne `ShellTabs` (eigene Fenster, Tests) gilt `isPresented`.
+    private var stillInStack: Bool {
+        if let shellTabs, let ownTab { return shellTabs.selected != ownTab }
+        return isPresented
+    }
+
+    /// B06 · BUG-02: Der Nutzer verlässt den Player. Wiedergabe und Verbindung enden (AVKit: Element frei,
+    /// VLC: stoppen und Player abbauen) – außer Bild-in-Bild läuft: dann spielt das schwebende Fenster weiter, bis
+    /// Bild-in-Bild endet, und die Wiedergabe endet dann ebenfalls (`DetachedPlayback`).
+    private func leavePlayer() {
+        guard let current = engine else { return }
+        engine = nil
+        DetachedPlayback.shared.adopt(current)
+    }
+
     private func startIfNeeded() {
+        // B07 · BUG-01: Eine Wiedergabe, die nach „Zurück" im Bild-in-Bild-Fenster weiterläuft, endet, sobald ein
+        // Player startet oder fortsetzt – nie zwei Streams zugleich.
+        DetachedPlayback.shared.stopAll()
         if engine == nil {
             guard let url = playableURL() else { return }
             let newEngine = PlaybackEngineFactory.engine(for: url)
@@ -446,3 +599,42 @@ struct PlayerView: View {
         }
     }
 }
+
+#if os(macOS)
+/// Schwache Referenz auf das Fenster eines Players (B06 · BUG-06). Bleibt über einen Tabwechsel erhalten, in dem
+/// die Ansicht kurz ohne Fenster ist.
+final class PlayerHostWindow {
+    weak var window: NSWindow?
+
+    func contains(_ note: Notification) -> Bool {
+        guard let window, let other = note.object as? NSWindow else { return false }
+        return other === window
+    }
+}
+
+/// Meldet das Fenster, in dem die Ansicht liegt (B06 · BUG-06).
+private struct PlayerWindowReader: NSViewRepresentable {
+    let onWindow: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> WindowReportingView {
+        let view = WindowReportingView()
+        view.onWindow = onWindow
+        return view
+    }
+
+    func updateNSView(_ nsView: WindowReportingView, context: Context) {
+        nsView.onWindow = onWindow
+    }
+
+    final class WindowReportingView: NSView {
+        var onWindow: ((NSWindow) -> Void)?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            // Nicht während eines SwiftUI-Updates Zustand ändern.
+            DispatchQueue.main.async { [weak self] in self?.onWindow?(window) }
+        }
+    }
+}
+#endif

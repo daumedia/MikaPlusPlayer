@@ -8,7 +8,7 @@ import SwiftData
 /// Die Datei wird an Ort und Stelle gelesen (`LSSupportsOpeningDocumentsInPlace = YES`, iOS mit security-scoped
 /// Zugriff). Legt iOS doch eine Kopie in `Documents/Inbox` ab (ältere Wege wie „Kopieren nach …"), wird diese nach dem
 /// Import entfernt, damit keine Liste doppelt auf dem Gerät bleibt.
-private struct PlaylistDocumentHandler: ViewModifier {
+struct PlaylistDocumentHandler: ViewModifier {
     @Environment(\.modelContext) private var modelContext
     @State private var errorMessage: String?
 
@@ -16,6 +16,12 @@ private struct PlaylistDocumentHandler: ViewModifier {
         content
             .onOpenURL { url in
                 guard url.isFileURL else { return }
+                // Review R-09: nur M3U-Playlists wie im Datei-Reiter; `open -a` o. Ä. kann beliebige Dateien übergeben.
+                guard Self.isPlaylistFile(url) else {
+                    Self.removeInboxCopy(url)
+                    errorMessage = ImportError.unsupportedFile.errorDescription
+                    return
+                }
                 importFile(url)
             }
             .alert("Import fehlgeschlagen", isPresented: Binding(
@@ -38,6 +44,12 @@ private struct PlaylistDocumentHandler: ViewModifier {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    /// Dieselben Endungen wie der Datei-Reiter des Import-Sheets (`.m3u`, `.m3u8`); das deckt `public.m3u-playlist`,
+    /// den einzigen Dokumenttyp im Info.plist.
+    static func isPlaylistFile(_ url: URL) -> Bool {
+        ["m3u", "m3u8"].contains(url.pathExtension.lowercased())
     }
 
     /// Entfernt nur Kopien im eigenen `Documents/Inbox` (iOS), nie die Datei des Nutzers.

@@ -63,26 +63,33 @@ enum AppPersistence {
     struct LaunchStore {
         let container: ModelContainer
         let outcome: StoreOpenOutcome
+        /// Umstellungen nach dem Öffnen, im Hintergrund (Review R-10); die Oberfläche wartet darauf.
+        let maintenance: LaunchMaintenance
     }
 
     private static let log = Logger(subsystem: "lu.daumedia.MikaPlusPlayer", category: "Persistenz")
 
     /// Einziger Einstieg beim Start: Speicherort vorbereiten (B01), öffnen oder wiederherstellen (B09),
-    /// danach die einmaligen Umstellungen (B01).
+    /// danach die einmaligen Umstellungen (B01) – seit Review R-10 im Hintergrund, nicht mehr vor dem ersten Fenster.
+    @MainActor
     static func openAppStore() -> LaunchStore {
         let schema = AppSchema.schema
         let config = configuration(schema: schema)
         guard !config.isStoredInMemoryOnly else {
-            return LaunchStore(container: inMemoryContainer(schema: schema), outcome: .inMemoryForTests)
+            return LaunchStore(container: inMemoryContainer(schema: schema), outcome: .inMemoryForTests,
+                               maintenance: LaunchMaintenance())
         }
         let (container, outcome) = openStore(at: config.url, schema: schema)
+        let maintenance = LaunchMaintenance()
         switch outcome {
         case .opened, .recovered:
-            finishLaunch(container: container, storeURL: config.url)
+            if !AppEnvironment.isRunningTests {
+                maintenance.start(container: container, storeURL: config.url, credentials: .standard, defaults: .standard)
+            }
         case .inMemoryFallback, .inMemoryForTests:
             break
         }
-        return LaunchStore(container: container, outcome: outcome)
+        return LaunchStore(container: container, outcome: outcome, maintenance: maintenance)
     }
 
     /// Öffnet die Datei mit Migrationsplan. Scheitert das, wird sie samt `-wal`/`-shm` unverändert nach
@@ -193,11 +200,25 @@ enum AppPersistence {
         return ModelConfiguration(schema: schema, url: storeURL)
     }
 
-    /// Einmalige Umstellungen nach dem Öffnen des Containers. Als Test-Host ohne Wirkung.
-    static func finishLaunch(container: ModelContainer, storeURL: URL) {
-        guard !AppEnvironment.isRunningTests else { return }
-        migrateCredentials(container: container, storeURL: storeURL, store: .standard)
-        purgeLegacyHTTPCacheOnce(defaults: .standard, cache: .shared)
+    /// Speicherort der Datenbank der App, ohne etwas anzulegen oder zu übernehmen (für „Alle Daten entfernen" im
+    /// B09-Rückfall, Review R-04).
+    static func appStoreURL() -> URL {
+        let applicationSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return storeURL(applicationSupport: applicationSupport, bundleID: Bundle.main.bundleIdentifier ?? "lu.daumedia.MikaPlusPlayer")
+    }
+
+    /// Einmalige Umstellungen nach dem Öffnen des Containers (Review R-10: aufgerufen von `LaunchMaintenance`, abseits
+    /// des Main-Threads): unfertige Playlists entfernen (R-02), Zugangsdaten umstellen und verdichten (B01/B02 · BUG-01,
+    /// R-08), alten HTTP-Cache einmal leeren (B01 · BUG-03). Läuft auf `PlaylistStore`, also nie gleichzeitig mit
+    /// Anlegen, Aktualisieren oder Löschen.
+    @discardableResult
+    static func finishLaunch(container: ModelContainer, storeURL: URL, store: PlaylistStore = .shared,
+                             credentials: XtreamCredentialStore, defaults: UserDefaults?,
+                             cache: URLCache? = nil) async -> CredentialMigrationResult {
+        let result = await store.launchMaintenance(container: container, storeURL: storeURL, credentials: credentials,
+                                                   defaults: defaults)
+        if let defaults, let cache { purgeLegacyHTTPCacheOnce(defaults: defaults, cache: cache) }
+        return result
     }
 
     // MARK: - BUG-04 Speicherort
@@ -261,22 +282,37 @@ enum AppPersistence {
         var failedPlaylists = 0
     }
 
+    /// Merker „Umstellung gespeichert, Verdichten steht noch aus" (Review R-08): gesetzt vor dem ersten Speichern einer
+    /// Umstellung, entfernt nach gelungenem Verdichten. Endet die App dazwischen, verdichtet der nächste Start.
+    static let compactionPendingDefaultsKey = "B02.credentialCompactionPending"
+
     /// Stellt Xtream-Playlists mit Zugangsdaten in `sourceURL`/`streamURL` um: Zugangsdaten in den
     /// Schlüsselbund, Adressen ohne Geheimnis. Sender bleiben dieselben Objekte, Favoriten bleiben.
     /// Seit B02 · BUG-01 ebenso M3U-Playlists, deren Adresse Zugangsdaten trägt (`M3UCredentials`).
     /// Danach wird die Datei verdichtet und das Write-Ahead-Log geleert, damit weder freigegebene Seiten
-    /// noch alte Log-Einträge den Klartext behalten.
+    /// noch alte Log-Einträge den Klartext behalten. Mit `defaults` (App) wird ein ausstehendes Verdichten gemerkt und
+    /// beim nächsten Aufruf nachgeholt, auch wenn dann nichts mehr umzustellen ist (Review R-08).
     /// Gelingt der Schlüsselbund-Eintrag nicht, bleibt die Playlist unverändert und spielbar.
     @discardableResult
     static func migrateCredentials(container: ModelContainer, storeURL: URL?,
-                                   store: XtreamCredentialStore) -> CredentialMigrationResult {
+                                   store: XtreamCredentialStore, defaults: UserDefaults? = nil) -> CredentialMigrationResult {
         var result = CredentialMigrationResult()
+        var compactionPending = defaults?.bool(forKey: compactionPendingDefaultsKey) ?? false
+        let willSave = {
+            guard !compactionPending, let defaults else { return }
+            defaults.set(true, forKey: compactionPendingDefaultsKey)
+            compactionPending = true
+        }
+        let finish = {
+            guard result.migratedPlaylists > 0 || compactionPending, let storeURL else { return }
+            if compactStore(at: storeURL) { defaults?.removeObject(forKey: compactionPendingDefaultsKey) }
+        }
         let context = ModelContext(container)
         context.autosaveEnabled = false
-        migrateM3UCredentials(context: context, store: store, result: &result)
+        migrateM3UCredentials(context: context, store: store, willSave: willSave, result: &result)
         let descriptor = FetchDescriptor<Playlist>(predicate: #Predicate { $0.isXtream == true })
         guard let playlists = try? context.fetch(descriptor) else {
-            if result.migratedPlaylists > 0, let storeURL { compactStore(at: storeURL) }
+            finish()
             return result
         }
 
@@ -305,6 +341,7 @@ enum AppPersistence {
                 }
             }
             playlist.sourceURL = storedSource
+            willSave()
             do {
                 try context.save()
                 result.migratedPlaylists += 1
@@ -315,15 +352,13 @@ enum AppPersistence {
             }
         }
 
-        if result.migratedPlaylists > 0, let storeURL {
-            compactStore(at: storeURL)
-        }
+        finish()
         return result
     }
 
     /// B02 · BUG-01: M3U-Playlists mit Zugangsdaten in der Adresse → Schlüsselbund, Adresse und Stream-Adressen mit
     /// Platzhaltern. Dieselben Sender-Objekte, Favoriten bleiben.
-    private static func migrateM3UCredentials(context: ModelContext, store: XtreamCredentialStore,
+    private static func migrateM3UCredentials(context: ModelContext, store: XtreamCredentialStore, willSave: () -> Void,
                                               result: inout CredentialMigrationResult) {
         let descriptor = FetchDescriptor<Playlist>(predicate: #Predicate { $0.isXtream == false })
         guard let playlists = try? context.fetch(descriptor) else { return }
@@ -344,6 +379,7 @@ enum AppPersistence {
                 }
             }
             playlist.sourceURL = split.stored
+            willSave()
             do {
                 try context.save()
                 result.migratedPlaylists += 1
@@ -384,16 +420,19 @@ enum AppPersistence {
 
     /// `VACUUM` und `PRAGMA wal_checkpoint(TRUNCATE)` über eine eigene Verbindung (dieselbe
     /// SQLite-Bibliothek wie Core Data). `Z_PK` ist `INTEGER PRIMARY KEY`, die Objekt-IDs bleiben erhalten.
-    static func compactStore(at storeURL: URL) {
+    /// - Returns: true, wenn `VACUUM` gelungen ist.
+    @discardableResult
+    static func compactStore(at storeURL: URL) -> Bool {
         var db: OpaquePointer?
         guard sqlite3_open_v2(storeURL.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK else {
             sqlite3_close(db)
-            return
+            return false
         }
         defer { sqlite3_close(db) }
         sqlite3_busy_timeout(db, 2_000)
-        sqlite3_exec(db, "VACUUM;", nil, nil, nil)
+        let vacuum = sqlite3_exec(db, "VACUUM;", nil, nil, nil)
         sqlite3_exec(db, "PRAGMA wal_checkpoint(TRUNCATE);", nil, nil, nil)
+        return vacuum == SQLITE_OK
     }
 
     // MARK: - BUG-03 alter HTTP-Plattencache
@@ -443,4 +482,43 @@ extension AppPersistence.StoreOpenOutcome {
             return AppPersistence.StoreNotice(title: "Datenbank nicht verfügbar", message: message, folder: folder)
         }
     }
+}
+
+// MARK: - Review R-10 · Umstellungen beim Start im Hintergrund
+
+/// Einmalige Umstellungen beim Start (`AppPersistence.finishLaunch`) laufen im Hintergrund auf `PlaylistStore`, statt
+/// den Main-Thread vor dem ersten Fenster zu blockieren (Review R-10: 11 s bei 90.000 Sendern mit Zugangsdaten). Bis sie
+/// fertig sind, zeigt das Fenster einen Hinweis statt der Playlists; Importe, Aktualisieren und Löschen warten ohnehin
+/// hinter ihnen, weil sie über denselben Actor laufen.
+@MainActor
+@Observable
+final class LaunchMaintenance {
+    private(set) var isRunning = false
+    /// Ergebnis der Umstellung, sobald fertig (Protokoll/Tests).
+    private(set) var result: AppPersistence.CredentialMigrationResult?
+
+    func start(container: ModelContainer, storeURL: URL, store: PlaylistStore = .shared,
+               credentials: XtreamCredentialStore, defaults: UserDefaults?, cache: URLCache? = .shared) {
+        guard !isRunning else { return }
+        isRunning = true
+        let defaultsBox = UncheckedSendableBox(defaults)
+        let cacheBox = UncheckedSendableBox(cache)
+        Task.detached(priority: .userInitiated) {
+            let result = await AppPersistence.finishLaunch(container: container, storeURL: storeURL, store: store,
+                                                           credentials: credentials, defaults: defaultsBox.value,
+                                                           cache: cacheBox.value)
+            await self.finish(result)
+        }
+    }
+
+    private func finish(_ result: AppPersistence.CredentialMigrationResult) {
+        self.result = result
+        isRunning = false
+    }
+}
+
+/// `UserDefaults`/`URLCache` sind threadsicher, aber nicht als `Sendable` markiert.
+private struct UncheckedSendableBox<Value>: @unchecked Sendable {
+    let value: Value
+    init(_ value: Value) { self.value = value }
 }

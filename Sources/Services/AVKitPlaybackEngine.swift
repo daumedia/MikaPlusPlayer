@@ -10,6 +10,8 @@ import Combine
 @Observable
 final class AVKitPlaybackEngine: PlaybackEngine {
     private(set) var state: PlaybackState = .idle
+    /// B07 · BUG-03: folgt dem Player – auch wenn das System ihn ohne die App anhält oder fortsetzt
+    /// (Pause und Schließen im Bild-in-Bild-Fenster, ein zweites Bild-in-Bild). Siehe `observePlayback()`.
     private(set) var isPaused = false
     private(set) var volume: Double = 1.0
     private(set) var isMuted = false
@@ -27,9 +29,22 @@ final class AVKitPlaybackEngine: PlaybackEngine {
     @ObservationIgnored private var automaticPiP = false
     @ObservationIgnored private var statusObserver: AnyCancellable?
     @ObservationIgnored private var errorObserver: AnyCancellable?
+    @ObservationIgnored private var playbackObserver: AnyCancellable?
+    /// B08 · BUG-07: Frist ohne Fortschritt während der Wiedergabe; danach gilt der Stream als unterbrochen. `nil`
+    /// (Standard, Player): AVKit entscheidet selbst, wann es aufgibt (B06 AK-06). Multiview-Kacheln setzen eine Frist
+    /// (`MultiviewSession`), weil AVKit bei Live-HLS, dessen Segmente fehlen, nie aufgibt und die Kachel sonst ohne
+    /// Meldung ein Standbild zeigt.
+    @ObservationIgnored private var stallLimit: TimeInterval?
+    @ObservationIgnored private var stallWatch: Task<Void, Never>?
+    @ObservationIgnored private var lastPlaybackTime = -Double.infinity
+    @ObservationIgnored private var lastProgressAt = Date()
+
+    /// Meldung, wenn die Wiedergabe länger als `stallLimit` keinen Fortschritt macht (wie `VLCPlaybackEngine`).
+    static let interruptedMessage = "Die Verbindung zum Sender wurde unterbrochen."
 
     init() {
         playerLayer.player = player
+        observePlayback()
     }
 
     func load(_ url: URL) {
@@ -40,14 +55,17 @@ final class AVKitPlaybackEngine: PlaybackEngine {
         player.replaceCurrentItem(with: item)
         player.play()
         isPaused = false
+        startStallWatch()
     }
 
     func play() { player.play(); isPaused = false }
     func pause() { player.pause(); isPaused = true }
 
     /// Hält an und gibt das Element frei – das beendet auch das Nachladen und die Verbindung (B03 · BUG-05).
+    /// Läuft Bild-in-Bild noch, endet es mit (B07 · BUG-01), auch wenn der Player schon verlassen ist.
     func stop() {
-        stopPictureInPicture()
+        endPictureInPicture()
+        stallWatch?.cancel()
         player.pause()
         player.replaceCurrentItem(with: nil)
         statusObserver?.cancel()
@@ -55,7 +73,54 @@ final class AVKitPlaybackEngine: PlaybackEngine {
         isPaused = true
         state = .idle
     }
-    func togglePlayPause() { isPaused ? play() : pause() }
+
+    /// B08 · BUG-07: Setzt die Frist ohne Fortschritt (`nil` = keine eigene Frist). Gilt ab dem nächsten `load`.
+    func limitStalls(to seconds: TimeInterval?) {
+        stallLimit = seconds
+    }
+
+    private func startStallWatch() {
+        stallWatch?.cancel()
+        lastPlaybackTime = -.infinity
+        lastProgressAt = Date()
+        guard stallLimit != nil else { return }
+        stallWatch = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard let self, !Task.isCancelled else { return }
+                self.checkStall()
+            }
+        }
+    }
+
+    /// Fortschritt = die Wiedergabezeit läuft weiter. Laden, eigene Pause und das Ende einer Datei zählen nicht.
+    private func checkStall() {
+        let now = Date()
+        guard let limit = stallLimit, state == .playing, let item = player.currentItem,
+              player.timeControlStatus != .paused else {
+            lastProgressAt = now
+            return
+        }
+        let time = item.currentTime().seconds
+        if time.isFinite, time != lastPlaybackTime {
+            lastPlaybackTime = time
+            lastProgressAt = now
+        } else if now.timeIntervalSince(lastProgressAt) >= limit {
+            // Wie ein Fehler der Engine: Nachladen und Verbindung beenden, Meldung zeigen.
+            stallWatch?.cancel()
+            statusObserver?.cancel()
+            errorObserver?.cancel()
+            player.pause()
+            player.replaceCurrentItem(with: nil)
+            state = .failed(Self.interruptedMessage)
+        }
+    }
+
+    /// Entscheidet nach dem tatsächlichen Zustand des Players (B07 · BUG-03).
+    func togglePlayPause() {
+        syncPausedWithPlayer()
+        isPaused ? play() : pause()
+    }
 
     func setVolume(_ value: Double) {
         volume = min(1, max(0, value))
@@ -75,6 +140,11 @@ final class AVKitPlaybackEngine: PlaybackEngine {
     // MARK: - Picture-in-Picture
 
     var supportsPictureInPicture: Bool {
+        Self.deviceSupportsPictureInPicture
+    }
+
+    /// Ob das Gerät System-Bild-in-Bild kann – unabhängig vom Sender (iPhone-Simulatoren z. B. nicht).
+    static var deviceSupportsPictureInPicture: Bool {
         AVPictureInPictureController.isPictureInPictureSupported()
     }
 
@@ -85,7 +155,33 @@ final class AVKitPlaybackEngine: PlaybackEngine {
     }
 
     func stopPictureInPicture() {
-        pipController?.stopPictureInPicture()
+        // B07 · BUG-01: Ohne Player (von `DetachedPlayback` übernommen) bleibt der normale Stopp wirkungslos –
+        // Bild-in-Bild dann endgültig beenden; `DetachedPlayback` beendet daraufhin die Wiedergabe.
+        if DetachedPlayback.shared.holds(self) {
+            endPictureInPicture()
+        } else {
+            pipController?.stopPictureInPicture()
+        }
+    }
+
+    /// B07 · BUG-01: Beendet Bild-in-Bild endgültig. Hängt die Videofläche nicht mehr in einem Fenster (Player
+    /// verlassen), bleibt `stopPictureInPicture()` wirkungslos – das schwebende Fenster schließt erst, wenn der
+    /// Controller frei ist. Deshalb wird er hier abgegeben; `setupPictureInPictureIfNeeded()` legt bei Bedarf
+    /// einen neuen an.
+    private func endPictureInPicture() {
+        guard let controller = pipController else { return }
+        if controller.isPictureInPictureActive { controller.stopPictureInPicture() }
+        controller.delegate = nil
+        pipController = nil
+        pipDelegate = nil
+        isPictureInPictureActive = false
+    }
+
+    /// B07 · BUG-01: „Zurück zur App" im Bild-in-Bild-Fenster. Liegt die Wiedergabe noch in einem offenen Player,
+    /// holt das System das Bild dorthin zurück. Wurde der Player verlassen (`DetachedPlayback`), gibt es keinen
+    /// Player mehr: Bild-in-Bild endet ohne Rückkehr, und `DetachedPlayback` beendet die Wiedergabe.
+    fileprivate func canRestoreUserInterface() -> Bool {
+        !DetachedPlayback.shared.holds(self)
     }
 
     func setAutomaticPictureInPicture(_ enabled: Bool) {
@@ -123,6 +219,30 @@ final class AVKitPlaybackEngine: PlaybackEngine {
 
     // MARK: - Status-Beobachtung
 
+    /// B07 · BUG-03: `isPaused` aus dem Player ableiten statt nur aus eigenen Aufrufen. Beobachtet wird
+    /// `timeControlStatus` (angehalten ↔ spielt/wartet); Laden und Puffern zählen nicht als Pause.
+    private func observePlayback() {
+        playbackObserver = player.publisher(for: \.timeControlStatus, options: [.new])
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.syncPausedWithPlayer() }
+    }
+
+    /// Übernimmt den Zustand des Players. Ohne Element (vor `load`, nach `stop`) gilt der eigene Zustand. Am
+    /// natürlichen Ende einer Datei bleibt die Anzeige „läuft" (Standbild, B06 EC-04).
+    private func syncPausedWithPlayer() {
+        guard let item = player.currentItem else { return }
+        let paused = player.timeControlStatus == .paused
+        guard paused != isPaused else { return }
+        if paused, Self.reachedEnd(of: item) { return }
+        isPaused = paused
+    }
+
+    private static func reachedEnd(of item: AVPlayerItem) -> Bool {
+        let duration = item.duration
+        guard duration.isNumeric, duration.seconds > 0 else { return false }   // Live: kein Ende
+        return item.currentTime().seconds >= duration.seconds - 0.5
+    }
+
     private func observe(_ item: AVPlayerItem) {
         statusObserver = item.publisher(for: \.status)
             .receive(on: RunLoop.main)
@@ -154,8 +274,10 @@ final class AVKitPlaybackEngine: PlaybackEngine {
     }
 
     deinit {
+        stallWatch?.cancel()
         statusObserver?.cancel()
         errorObserver?.cancel()
+        playbackObserver?.cancel()
     }
 }
 
@@ -179,5 +301,12 @@ private final class PiPDelegate: NSObject, AVPictureInPictureControllerDelegate 
     func pictureInPictureController(_ controller: AVPictureInPictureController,
                                     failedToStartPictureInPictureWithError error: Error) {
         MainActor.assumeIsolated { engine?.isPictureInPictureActive = false }
+    }
+
+    /// „Zurück zur App" im schwebenden Fenster (B07 · BUG-01).
+    func pictureInPictureController(_ controller: AVPictureInPictureController,
+                                    restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
+        let restored = MainActor.assumeIsolated { engine?.canRestoreUserInterface() ?? false }
+        completionHandler(restored)
     }
 }

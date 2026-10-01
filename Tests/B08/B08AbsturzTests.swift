@@ -6,21 +6,26 @@ import AppKit
 /// B08 · AK-23 ⚠ / FB-01 — Absturz im Raster-Layout, nachgestellt am echten Fenster „Multiview" (Nutzerwege: roter Knopf,
 /// X-Knopf per Mausklick).
 ///
-/// **Opt-in**, weil ein Absturz den Test-Host beendet: Jeder Fall läuft nur, wenn `TEST_RUNNER_B08_ABSTURZ` seinen Namen
-/// enthält (oder `alle`), und zwar einzeln je `xcodebuild`-Aufruf, z. B.
-/// `TEST_RUNNER_B08_ABSTURZ=x-3auf2 xcodebuild test-without-building … -only-testing:MikaPlusPlayerTests/B08AbsturzTests`.
-/// Solange FB-01 besteht, endet der Test-Host bei den Fällen mit „stürzt ab" mit `Fatal error: Index out of range`
-/// (`MultiviewScreen.swift:79`); nach der Reparatur bestehen die Tests (Session leer bzw. erwartete Anzahl, kein Absturz).
+/// Bis zur Reparatur (B08 · BUG-01, Build 2026-09-28) waren die Fälle **opt-in**, weil der Absturz den Test-Host beendete
+/// (`Fatal error: Index out of range`, `MultiviewScreen.swift:79`). Seitdem laufen sie im Gesamtlauf mit: Session leer
+/// bzw. erwartete Anzahl, kein Absturz – ein Rückfall beendet den Test-Host und fällt so im Gesamtlauf auf. Nur EC-15
+/// (beendet die App absichtlich) bleibt opt-in: `TEST_RUNNER_B08_ABSTURZ=beenden-raster`.
 /// Kein Ton: Die Kacheln zeigen auf `/hang/…` (der Mock antwortet nie, es fließen keine Mediendaten).
 @MainActor
 final class B08AbsturzTests: B08UITestCase {
 
+    /// Nur noch für EC-15 (beendet die App): opt-in.
     private func gate(_ fall: String) throws {
         let env = ProcessInfo.processInfo.environment["B08_ABSTURZ"] ?? ""
         guard env.split(separator: ",").contains(where: { $0 == fall || $0 == "alle" }) else {
-            throw XCTSkip("Absturz-Nachstellung „\(fall)“ nur mit TEST_RUNNER_B08_ABSTURZ=\(fall) (beendet den Test-Host)")
+            throw XCTSkip("„\(fall)“ nur mit TEST_RUNNER_B08_ABSTURZ=\(fall) (beendet den Test-Host)")
         }
         B08QA.log("AK-23|FALL \(fall)|Build \(Bundle.main.bundleIdentifier ?? "-")|Konfiguration \(Self.configuration)")
+    }
+
+    /// Seit der Reparatur im Gesamtlauf: protokolliert nur Fall und Konfiguration.
+    private func fall(_ name: String) {
+        B08QA.log("AK-23|FALL \(name)|Build \(Bundle.main.bundleIdentifier ?? "-")|Konfiguration \(Self.configuration)")
     }
 
     static var configuration: String {
@@ -52,10 +57,10 @@ final class B08AbsturzTests: B08UITestCase {
         await humanClick(w, screen: p)
     }
 
-    // Fälle mit Absturz laut Spec
+    // Fälle, die vor der Reparatur abstürzten (AK-23)
 
     func testAK23_RasterMitVierFensterSchliessen() async throws {
-        try gate("schliessen-raster-4")
+        fall("schliessen-raster-4")
         let (w, s) = try await grid(4)
         B08QA.log("AK-23|roter Knopf im Raster mit 4")
         w.standardWindowButton(.closeButton)?.performClick(nil)
@@ -64,7 +69,7 @@ final class B08AbsturzTests: B08UITestCase {
     }
 
     func testAK23_RasterMitEinemFensterSchliessen() async throws {
-        try gate("schliessen-raster-1")
+        fall("schliessen-raster-1")
         let (w, s) = try await grid(1)
         B08QA.log("AK-23|roter Knopf im Raster mit 1")
         w.standardWindowButton(.closeButton)?.performClick(nil)
@@ -73,7 +78,7 @@ final class B08AbsturzTests: B08UITestCase {
     }
 
     func testAK23_RasterXVonDreiAufZwei() async throws {
-        try gate("x-3auf2")
+        fall("x-3auf2")
         let (w, s) = try await grid(3)
         await clickLastX(w)
         await B08QA.spin(2)
@@ -81,17 +86,17 @@ final class B08AbsturzTests: B08UITestCase {
     }
 
     func testAK23_RasterXVonEinsAufNull() async throws {
-        try gate("x-1auf0")
+        fall("x-1auf0")
         let (w, s) = try await grid(1)
         await clickLastX(w)
         await B08QA.spin(2)
         XCTAssertTrue(s.isEmpty)
     }
 
-    // Gegenproben ohne Absturz laut Spec
+    // Gegenproben (schon vor der Reparatur ohne Absturz)
 
     func testAK23_Gegenprobe_RasterXVonVierAufDrei() async throws {
-        try gate("x-4auf3")
+        fall("x-4auf3")
         let (w, s) = try await grid(4)
         await clickLastX(w)
         await B08QA.spin(2)
@@ -100,7 +105,7 @@ final class B08AbsturzTests: B08UITestCase {
     }
 
     func testAK23_Gegenprobe_RasterXVonZweiAufEins() async throws {
-        try gate("x-2auf1")
+        fall("x-2auf1")
         let (w, s) = try await grid(2)
         await clickLastX(w)
         await B08QA.spin(2)
@@ -109,7 +114,7 @@ final class B08AbsturzTests: B08UITestCase {
     }
 
     func testAK23_Gegenprobe_FokusMitVierFensterSchliessen() async throws {
-        try gate("fokus-schliessen-4")
+        fall("fokus-schliessen-4")
         let (w, s) = try await grid(4)
         s.layout = .focus
         await B08QA.spin(1)

@@ -1,0 +1,2 @@
+2026-09-30T18:47:08Z [Debug] Akzentfarbe aus PlayerTheme (aufgelöst): hell (239, 68, 68) → Schrift (18, 15, 16) 5.07 : 1, dunkel (248, 113, 113) → Schrift (18, 15, 16) 6.89 : 1 (15-pt-Text medium, WCAG AA 4,5 : 1)
+  Gerendert (Fensteraufnahme, gewählter Chip „Sport“): hell: Fläche (233, 105, 91), Schrift (23, 18, 20), 5.86 : 1 · dunkel: Fläche (242, 142, 134), Schrift (23, 18, 20), 7.94 : 1
