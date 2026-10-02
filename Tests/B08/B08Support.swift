@@ -894,12 +894,12 @@ enum B08UI {
 @MainActor
 enum B08App {
     static func windowMenuItem() -> NSMenuItem? {
-        let windowMenu = NSApp.windowsMenu ?? NSApp.mainMenu?.items.first { $0.submenu?.title == "Window" }?.submenu
+        let windowMenu = NSApp.windowsMenu ?? NSApp.mainMenu?.items.first { ["Window", "Fenster"].contains($0.submenu?.title ?? "") }?.submenu
         return windowMenu?.items.first { $0.title == "Multiview" }
     }
 
     static func windowMenuTitles() -> [String] {
-        let windowMenu = NSApp.windowsMenu ?? NSApp.mainMenu?.items.first { $0.submenu?.title == "Window" }?.submenu
+        let windowMenu = NSApp.windowsMenu ?? NSApp.mainMenu?.items.first { ["Window", "Fenster"].contains($0.submenu?.title ?? "") }?.submenu
         return windowMenu?.items.map { $0.isSeparatorItem ? "—" : $0.title } ?? []
     }
 

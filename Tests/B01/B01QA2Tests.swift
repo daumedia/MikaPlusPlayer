@@ -1166,7 +1166,9 @@ final class B01QA2Tests: B01MockTestCase {
         let status = SecItemCopyMatching(q as CFDictionary, &out)
         let services = ((out as? [[String: Any]]) ?? []).compactMap { $0[kSecAttrService as String] as? String }
         let current = XtreamCredentialStore.standard.service
-        let testServices = services.filter { $0 != "lu.daumedia.MikaPlusPlayer.xtream" && $0 != current }
+        // App-Dienste: Release und (B09 · BF-119) Debug-Build; beides keine Rückstände von Tests.
+        let appServices: Set<String> = ["lu.daumedia.MikaPlusPlayer.xtream", "lu.daumedia.MikaPlusPlayer.debug.xtream"]
+        let testServices = services.filter { !appServices.contains($0) && $0 != current }
         let grouped = Dictionary(grouping: testServices) { svc -> String in
             if svc.contains(".xtream.tests.") { return "xtream.tests" }
             if svc.contains("b01-build-tests") { return "b01-build-tests" }

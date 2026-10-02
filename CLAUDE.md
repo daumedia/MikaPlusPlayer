@@ -45,12 +45,15 @@ DerivedData-Pfaden und überfluten die Ausgabe. Auf `^\*\* BUILD (SUCCEEDED|FAIL
 ## Release (macOS, DMG + Auto-Update)
 
 ```sh
-bash scripts/release.sh    # Build (Release) -> dist/*.dmg -> signierter appcast.xml
+NOTARY_PROFILE=<Profil> bash scripts/release.sh   # Archiv/Export (Developer ID) -> DMG -> notarisiert, geheftet -> signierter appcast.xml
 ```
 
-Einzelschritte: `scripts/build-macos.sh`, `scripts/make-dmg.sh`. Der EdDSA-Privatkey zum Signieren der Updates liegt
-in der **macOS-Keychain** (familienweit geteilt, Public Key in `Info.plist` als `SUPublicEDKey`). Danach GitHub-Release
-anlegen, DMG hochladen, `appcast.xml` auf `main` pushen. Repo-Pfad/Feed in `Info.plist` (`SUFeedURL`) und
+Einzelschritte: `scripts/build-macos.sh` (Archivieren + Export Developer ID), `scripts/make-dmg.sh`; Gegenprüfungen
+`scripts/b09_release_check.sh` (vor-build, nach-build, nach-heften, feed, nach-merge; `PROBEMODUS=1` ohne Developer ID
+nur für Proben). Der EdDSA-Privatkey zum Signieren der Updates liegt
+in der **macOS-Keychain** (familienweit geteilt, Public Key in `Info.plist` als `SUPublicEDKey`); ab 1.2 verlangt die
+App einen signierten Feed (`SURequireSignedFeed`). Danach Pflichtproben, GitHub-Release anlegen, DMG hochladen,
+`appcast.xml` per PR auf `main`, dann `b09_release_check.sh nach-merge`. Repo-Pfad/Feed in `Info.plist` (`SUFeedURL`) und
 `scripts/release.sh` (`GH_REPO`).
 
 ## Architektur (das Big Picture)
@@ -101,10 +104,20 @@ via dynamische `@Query` (Filter/Sortierung in der DB), nicht in-memory. Favorite
 Komponenten (`.playerCard()`, `PlayerHeader`, `PlayerBadge`). Akzentfarbe `Color.playerAccent`.
 
 ## Signing-Konventionen (kein Apple-Team nötig zum lokalen Laufen)
-- **macOS**: Manual + `CODE_SIGN_IDENTITY = "-"` ("Sign to Run Locally"), Sandbox **deaktiviert** (DMG-Distribution
-  + Sparkle), `disable-library-validation` an.
+- **macOS Debug**: Manual + `CODE_SIGN_IDENTITY = "-"` ("Sign to Run Locally"), Sandbox **deaktiviert**
+  (DMG-Distribution + Sparkle). **Eigene Bundle-ID `lu.daumedia.MikaPlusPlayer.debug`** für Debug-Build und Test-Host
+  (B09 · OF-10/BF-119): Datenbank, Einstellungen, Sparkle-Zustand und Schlüsselbund-Dienst (`<Bundle-ID>.xtream`) der
+  installierten App bleiben unberührt; die alte `default.store` übernimmt nur die Release-ID. Sparkle startet im
+  Test-Host nicht und in Debug ohne automatische Prüfung (`MIKA_SPARKLE_AUTOMATIC_CHECKS`).
+- **macOS Release**: **Developer ID Application** (Team `CWJM4J4HFN`), Hardened Runtime, kein `get-task-allow`,
+  **kein** `disable-library-validation` mehr. Verteilt über Archivieren + Exportieren, DMG signiert, notarisiert,
+  geheftet (`scripts/release.sh`, braucht `NOTARY_PROFILE`). Ein ad-hoc-signierter Release-Build startet nicht mehr
+  (VLCKit ohne gleiche Team-ID) – Release-Messungen mit Developer ID oder als Kopie mit eigener Bundle-ID.
 - **iOS**: Automatic mit `DEVELOPMENT_TEAM` in `project.yml` (aktuell `CWJM4J4HFN`); Gerät & Simulator signieren automatisch.
 - Bundle-ID-Prefix `lu.daumedia`. ATS erlaubt HTTP (`NSAllowsArbitraryLoads`) für HTTP-Streams.
+- **Sprache**: Entwicklungssprache `de` (`project.yml` `options.developmentLanguage`) und `CFBundleLocalizations [de]`
+  (B09 · OF-01) – projektweit, auch iOS. System-Fehlertexte und Bedienungshilfe-Namen von Symbolen kommen damit
+  deutsch; Tests nehmen englischen **oder** deutschen Wortlaut an (`Tests/Support/SystemSprache.swift`).
 
 ## SDD-Artefakte
 Artefaktpfad: `docs/` · Features: `features/` (Statustabelle `features/index.md`).

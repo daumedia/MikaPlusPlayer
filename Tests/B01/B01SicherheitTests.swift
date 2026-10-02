@@ -252,7 +252,10 @@ final class B01SicherheitTests: B01MockTestCase {
         let support = try XCTUnwrap(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first)
         let url = AppPersistence.storeURL(applicationSupport: support, bundleID: Bundle.main.bundleIdentifier ?? "-")
         print("B01BUILD|AK-28|url=<Application Support>/\(url.pathComponents.suffix(2).joined(separator: "/"))|testHostInMemory=\(AppPersistence.configuration(schema: B01.schema).isStoredInMemoryOnly)")
-        XCTAssertEqual(url.pathComponents.suffix(2), ["lu.daumedia.MikaPlusPlayer", "MikaPlusPlayer.store"])
+        // B09 · BF-119: Test-Host (Debug) mit eigener Bundle-ID; das Release legt die Datei unter der Release-ID an.
+        XCTAssertEqual(url.pathComponents.suffix(2), ["lu.daumedia.MikaPlusPlayer.debug", "MikaPlusPlayer.store"])
+        XCTAssertEqual(AppPersistence.storeURL(applicationSupport: support, bundleID: AppEnvironment.releaseBundleID).pathComponents.suffix(2),
+                       ["lu.daumedia.MikaPlusPlayer", "MikaPlusPlayer.store"])
         XCTAssertNotEqual(url.lastPathComponent, "default.store")
         XCTAssertTrue(AppEnvironment.isRunningTests)
         XCTAssertTrue(AppPersistence.configuration(schema: B01.schema).isStoredInMemoryOnly, "Test-Host darf die echte Datei nicht öffnen")

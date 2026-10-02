@@ -53,8 +53,8 @@ final class B03OberflaecheTests: B03QATestCase {
                   "Importiere eine M3U/M3U8-Playlist per URL oder Datei, um loszulegen.", "Playlist importieren"] {
             XCTAssertTrue(labels.contains { $0.contains(t) }, t)
         }
-        let plus = B03UI.element(w, "Add", role: "AXButton")
-        XCTAssertNotNil(plus, "„+“-Button (AX „Add“)")
+        let plus = SystemSprache.namensVarianten("Add").lazy.compactMap { B03UI.element(w, $0, role: "AXButton") }.first // B09 · OF-01: englisch oder deutsch
+        XCTAssertNotNil(plus, "„+“-Button (AX „Add“/„Hinzufügen“)")
 
         let importButton = try XCTUnwrap(B03UI.element(w, "Playlist importieren", role: "AXButton"))
         B03UI.click(importButton, in: w)
@@ -65,7 +65,7 @@ final class B03OberflaecheTests: B03QATestCase {
         XCTAssertTrue(sheetLabels.contains { $0.contains("Playlist importieren") })
         B03UI.click(try XCTUnwrap(B03UI.element(sheet, "Abbrechen", role: "AXButton")), in: sheet)
         _ = try await waitFor("Sheet zu") { w.attachedSheet == nil ? true : nil }
-        B03UI.click(try XCTUnwrap(B03UI.element(w, "Add", role: "AXButton")), in: w)
+        B03UI.click(try XCTUnwrap(plus), in: w)
         let sheet2 = try await waitFor("Sheet über „+“") { w.attachedSheet }
         await B03UI.spin(0.3)
         XCTAssertTrue(B03UI.labels(sheet2).contains { $0.contains("Playlist importieren") })

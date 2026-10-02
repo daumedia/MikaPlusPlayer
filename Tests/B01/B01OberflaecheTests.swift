@@ -171,7 +171,8 @@ final class B01OberflaecheTests: B01MockTestCase {
 
     @MainActor private func openSheet(_ w: NSWindow, via label: String = "Playlist importieren") async throws -> NSWindow {
         AX.wake(w)
-        let btn = try XCTUnwrap(AX.find(w, role: "AXButton", contains: label), "Button \(label)")
+        let btn = try XCTUnwrap(SystemSprache.namensVarianten(label).lazy.compactMap { AX.find(w, role: "AXButton", contains: $0) }.first,
+                                "Button \(label)") // B09 · OF-01: englisch oder deutsch
         AX.click(btn, in: w)
         let sheet = try await waitFor("Sheet") { w.attachedSheet }
         AX.wake(sheet)

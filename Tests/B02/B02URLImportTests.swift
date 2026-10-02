@@ -173,7 +173,7 @@ final class B02URLImportTests: B02TestCase {
             let r = await B02.importURL(server.url(tc.path), c.mainContext)
             let stored = (try? r.get())?.sourceURL?.absoluteString
             B02.log("AK-11|\(tc.path)|ergebnis=\(B02.message(r) ?? "OK")|quelle=\(server.requests.count)|ziel=\(ziel.requests.map(\.target))|gespeichert=\(stored ?? "-")")
-            XCTAssertEqual(B02.message(r), tc.message, tc.path)
+            XCTAssertEqual(SystemSprache.englisch(B02.message(r)), tc.message, tc.path)  // B09 · OF-01: Systemtext englisch oder deutsch
             XCTAssertEqual(server.requests.count, tc.sourceCount, tc.path)
             XCTAssertEqual(ziel.requests.map(\.target), tc.zielTargets, tc.path)
             if tc.message == nil { XCTAssertEqual(stored, server.url(tc.path), tc.path) }
@@ -203,7 +203,7 @@ final class B02URLImportTests: B02TestCase {
             let t = Date()
             let r = await B02.importURL(input, c.mainContext)
             B02.log("AK-12|eingabe=\(input.debugDescription)|meldung=\(B02.message(r) ?? "OK")|dauer=\(B02.f2(Date().timeIntervalSince(t)))s|anfragenAmServer=\(server.connectionCount)")
-            XCTAssertEqual(B02.message(r), expected, input)
+            XCTAssertEqual(SystemSprache.englisch(B02.message(r)), expected, input)  // B09 · OF-01: Systemtext englisch oder deutsch
             XCTAssertEqual(server.connectionCount, 0, input)
         }
         XCTAssertEqual(B02.count(Playlist.self, c.mainContext), 0)
@@ -340,8 +340,8 @@ final class B02URLImportTests: B02TestCase {
         let port = await B02.importURL("http://127.0.0.1:\(closedPort)/liste.m3u", c.mainContext)
         let host = await B02.importURL("http://b02-qa-nicht-vorhanden.invalid/liste.m3u", c.mainContext)
         B02.log("AK-28|portZu=\(B02.message(port) ?? "OK")|hostUnbekannt=\(B02.message(host) ?? "OK")")
-        XCTAssertEqual(B02.message(port), "Netzwerkfehler: Could not connect to the server.")
-        XCTAssertEqual(B02.message(host), "Netzwerkfehler: A server with the specified hostname could not be found.")
+        XCTAssertEqual(SystemSprache.englisch(B02.message(port)), "Netzwerkfehler: Could not connect to the server.")  // B09 · OF-01: Systemtext englisch oder deutsch
+        XCTAssertEqual(SystemSprache.englisch(B02.message(host)), "Netzwerkfehler: A server with the specified hostname could not be found.")
     }
 
     // MARK: AK-33

@@ -35,9 +35,9 @@ final class B02LangsamTests: B02TestCase {
         B02.evidence("AK-40-messung.txt", "AK-28|haengt|dauer=\(B02.f2(h.1))s|\(h.0)")
         B02.evidence("AK-40-messung.txt", "AK-38|troepfelt-10x10s|bytes=\(body.count)|dauer=\(B02.f2(t.1))s|\(t.0)")
         B02.evidence("AK-40-messung.txt", "AK-12/EC-17|ftp|dauer=\(B02.f2(f.1))s|\(f.0)|verbindungenAmZiel=\(ftpTarget.connectionCount)|anfragenAmZiel=\(ftpTarget.requests.count)")
-        XCTAssertEqual(h.0, "Netzwerkfehler: The request timed out.")
+        XCTAssertEqual(SystemSprache.englisch(h.0), "Netzwerkfehler: The request timed out.")  // B09 · OF-01: Systemtext englisch oder deutsch
         XCTAssertEqual(h.1, 60, accuracy: 3)
-        XCTAssertEqual(f.0, "Netzwerkfehler: The request timed out.")
+        XCTAssertEqual(SystemSprache.englisch(f.0), "Netzwerkfehler: The request timed out.")
         XCTAssertEqual(f.1, 60, accuracy: 5)
         // BUG-03 behoben: Nach der Anlaufzeit gilt ein Mindestdurchsatz (dazu eine Gesamtfrist von 180 s) – die
         // tröpfelnde Antwort hält den Import nicht mehr offen.

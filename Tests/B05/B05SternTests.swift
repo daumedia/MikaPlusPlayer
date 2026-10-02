@@ -45,7 +45,7 @@ final class B05SternTests: B05TestCase {
             let card = try XCTUnwrap(w.card("ZDF"))
             let actions = B05AX.customActions(card.element).map(\.name)
             // Seit B05 · BUG-04 (Build 2026-09-30): Stern-Aktion deutsch und nach Zustand benannt (vorher „Favourite“).
-            XCTAssertEqual(actions, ["Rectangle Split Two By Two", "Favorit entfernen"], "Aktionen der Karte")
+            XCTAssertEqual(actions.map(SystemSprache.englischerName), ["Rectangle Split Two By Two", "Favorit entfernen"], "Aktionen der Karte") // B09 · OF-01: englisch oder deutsch
             XCTAssertEqual(B05AX.text(card.element, "accessibilityValue"), "Favorit")
             XCTAssertEqual(B05AX.text(card.element, "accessibilityHelp"), "Zu Multiview hinzufügen")
             B05QA.evidence("AK-01-05-accessibility.txt", "AK-01|\(w === list ? "liste" : "tab")|\(B05AX.describe(card.element))")
@@ -197,7 +197,7 @@ final class B05SternTests: B05TestCase {
         XCTAssertEqual(kids, 0, "Karte ist ein einziges Element")
         XCTAssertEqual(list.card("arte").map { B05AX.labelOnly($0.element) }, "arte", "ohne Gruppe nur der Name")
         XCTAssertEqual(B05AX.text(card.element, "accessibilityValue"), "", "kein Favorit: kein Wert")
-        XCTAssertEqual(B05AX.customActions(card.element).map(\.name), ["Rectangle Split Two By Two", "Favorit hinzufügen"])
+        XCTAssertEqual(B05AX.customActions(card.element).map(\.name).map(SystemSprache.englischerName), ["Rectangle Split Two By Two", "Favorit hinzufügen"]) // B09 · OF-01: englisch oder deutsch
 
         // Aktion „Favorit hinzufügen“ wie aus dem VoiceOver-Aktionen-Menü
         let add = try XCTUnwrap(B05AX.customActions(card.element).first { $0.name == "Favorit hinzufügen" })
@@ -209,7 +209,7 @@ final class B05SternTests: B05TestCase {
         XCTAssertEqual(list.starColor("ZDF"), "akzent")
         XCTAssertEqual(B05AX.labelOnly(cardAfter.element), "ZDF, Vollprogramm", "Etikett bleibt")
         XCTAssertEqual(B05AX.text(cardAfter.element, "accessibilityValue"), "Favorit", "VoiceOver sagt „Favorit“ an")
-        XCTAssertEqual(B05AX.customActions(cardAfter.element).map(\.name), ["Rectangle Split Two By Two", "Favorit entfernen"])
+        XCTAssertEqual(B05AX.customActions(cardAfter.element).map(\.name).map(SystemSprache.englischerName), ["Rectangle Split Two By Two", "Favorit entfernen"])
         XCTAssertNotEqual(before, after, "Accessibility der Karte unterscheidet „kein Favorit“ und „Favorit“")
 
         // „Favorit entfernen“ schaltet zurück

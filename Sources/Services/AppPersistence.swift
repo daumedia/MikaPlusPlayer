@@ -43,6 +43,9 @@ enum AppPersistence {
         case notOurs
         /// Kopie gescheitert; alte Datei unangetastet, Teilkopie entfernt
         case copyFailed
+        /// andere Bundle-ID als die Release-App (Debug-Build, B09 · BF-119): `default.store` gehört der installierten
+        /// App und bleibt unangetastet
+        case otherBundleID
     }
 
     // MARK: - B09 · BUG-13 Öffnen beim Start
@@ -57,7 +60,8 @@ enum AppPersistence {
         case recovered(movedTo: URL, reason: String)
         /// Weder die Datei noch eine neue ließ sich öffnen. Diese Sitzung speichert nichts.
         /// `movedTo` ist gesetzt, wenn die alte Datei vorher beiseitegelegt wurde.
-        case inMemoryFallback(movedTo: URL?, reason: String)
+        /// `keptInPlace`: Die Datei war da, ließ sich aber nicht beiseitelegen und liegt unverändert am bisherigen Ort.
+        case inMemoryFallback(movedTo: URL?, keptInPlace: Bool, reason: String)
     }
 
     struct LaunchStore {
@@ -105,7 +109,8 @@ enum AppPersistence {
         log.error("Datenbank ließ sich nicht öffnen: \(reason, privacy: .private)")
 
         var movedTo: URL?
-        if storeFilesExist(at: storeURL) {
+        let filesExisted = storeFilesExist(at: storeURL)
+        if filesExisted {
             do {
                 movedTo = try moveStoreAside(storeURL, now: now)
             } catch {
@@ -116,7 +121,8 @@ enum AppPersistence {
             log.notice("Datenbank beiseitegelegt und neu angelegt")
             return (container, .recovered(movedTo: movedTo, reason: reason))
         }
-        return (inMemoryContainer(schema: schema), .inMemoryFallback(movedTo: movedTo, reason: reason))
+        return (inMemoryContainer(schema: schema), .inMemoryFallback(movedTo: movedTo, keptInPlace: filesExisted && movedTo == nil,
+                                                                       reason: reason))
     }
 
     static func diskContainer(at storeURL: URL, schema: Schema) throws -> ModelContainer {
@@ -195,8 +201,7 @@ enum AppPersistence {
             return ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         }
         let applicationSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let bundleID = Bundle.main.bundleIdentifier ?? "lu.daumedia.MikaPlusPlayer"
-        let (storeURL, _) = prepareStore(applicationSupport: applicationSupport, bundleID: bundleID)
+        let (storeURL, _) = prepareStore(applicationSupport: applicationSupport, bundleID: AppEnvironment.bundleID)
         return ModelConfiguration(schema: schema, url: storeURL)
     }
 
@@ -204,7 +209,7 @@ enum AppPersistence {
     /// B09-Rückfall, Review R-04).
     static func appStoreURL() -> URL {
         let applicationSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return storeURL(applicationSupport: applicationSupport, bundleID: Bundle.main.bundleIdentifier ?? "lu.daumedia.MikaPlusPlayer")
+        return storeURL(applicationSupport: applicationSupport, bundleID: AppEnvironment.bundleID)
     }
 
     /// Einmalige Umstellungen nach dem Öffnen des Containers (Review R-10: aufgerufen von `LaunchMaintenance`, abseits
@@ -229,7 +234,9 @@ enum AppPersistence {
             .appendingPathComponent(storeFileName)
     }
 
-    /// Legt den App-Ordner an und übernimmt bei Bedarf die alte `default.store`.
+    /// Legt den App-Ordner an und übernimmt bei Bedarf die alte `default.store` – nur, wenn die **übergebene**
+    /// Bundle-ID die der Release-App ist (B09 · BF-119: ein Debug-Build zieht die Daten der installierten App nicht an
+    /// sich; die Regel hängt am Parameter, damit die Übernahme-Tests mit übergebener Release-ID gültig bleiben).
     @discardableResult
     static func prepareStore(applicationSupport: URL, bundleID: String) -> (URL, LegacyStoreOutcome) {
         let fileManager = FileManager.default
@@ -238,6 +245,7 @@ enum AppPersistence {
 
         let legacyURL = applicationSupport.appendingPathComponent(legacyStoreFileName)
         guard fileManager.fileExists(atPath: legacyURL.path) else { return (storeURL, .noLegacyStore) }
+        guard bundleID == AppEnvironment.releaseBundleID else { return (storeURL, .otherBundleID) }
         guard !fileManager.fileExists(atPath: storeURL.path) else { return (storeURL, .newStoreExists) }
         guard let model = NSManagedObjectModel.makeManagedObjectModel(for: modelTypes),
               isStoreOfThisApp(at: legacyURL, model: model) else { return (storeURL, .notOurs) }
@@ -460,26 +468,56 @@ extension AppPersistence {
 }
 
 extension AppPersistence.StoreOpenOutcome {
+    /// Plattform des Hinweises: macOS nennt den Ordner, iOS nicht (Ordner im App-Container, für Nutzer unerreichbar).
+    enum NoticePlatform {
+        case macOS, iOS
+
+        static var current: NoticePlatform {
+            #if os(macOS)
+            .macOS
+            #else
+            .iOS
+            #endif
+        }
+    }
+
+    /// Hinweis für den Nutzer auf dieser Plattform; `nil`, wenn nichts zu melden ist.
+    var notice: AppPersistence.StoreNotice? { notice(for: .current) }
+
     /// Hinweis für den Nutzer; `nil`, wenn nichts zu melden ist.
-    var notice: AppPersistence.StoreNotice? {
+    ///
+    /// B09 · OF-08 (2026-10-01): Beiseitegelegte Datenbanken bleiben bis „Alle Daten entfernen …“ liegen. Der Hinweis
+    /// sagt deshalb auch, dass die Zugangsdaten im Schlüsselbund erhalten bleiben, und nennt den Löschweg.
+    func notice(for platform: NoticePlatform) -> AppPersistence.StoreNotice? {
+        let keychain = "Die Zugangsdaten der bisherigen Playlists bleiben im Schlüsselbund gespeichert."
+        let menu = platform == .macOS ? "im App-Menü" : "im Menü der Playlist-Übersicht"
         switch self {
         case .opened, .inMemoryForTests:
             return nil
         case .recovered(let movedTo, _):
             let folder = movedTo.deletingLastPathComponent()
+            let location = platform == .macOS
+                ? "sondern unverändert nach „\(folder.path)“ verschoben"
+                : "sondern unverändert beiseitegelegt"
             return AppPersistence.StoreNotice(
                 title: "Datenbank neu angelegt",
                 message: "Die gespeicherten Playlists ließen sich nicht öffnen. Die bisherige Datenbank wurde nicht gelöscht, "
-                    + "sondern unverändert nach „\(folder.path)“ verschoben. Die App startet mit einer leeren Datenbank; "
-                    + "Playlists müssen neu importiert werden.",
-                folder: folder)
-        case .inMemoryFallback(let movedTo, _):
+                    + "\(location). Die App startet mit einer leeren Datenbank; Playlists müssen neu importiert werden. "
+                    + "\(keychain) Beides entfernt „Alle Daten entfernen …“ \(menu).",
+                folder: platform == .macOS ? folder : nil)
+        case .inMemoryFallback(let movedTo, let keptInPlace, _):
             let folder = movedTo?.deletingLastPathComponent()
             var message = "Die Datenbank ließ sich weder öffnen noch neu anlegen. Änderungen in dieser Sitzung werden nicht gespeichert."
             if let folder {
-                message += " Die bisherige Datenbank liegt unverändert in „\(folder.path)“."
+                message += platform == .macOS
+                    ? " Die bisherige Datenbank liegt unverändert in „\(folder.path)“."
+                    : " Die bisherige Datenbank wurde unverändert beiseitegelegt."
+            } else if keptInPlace {
+                message += " Die bisherige Datenbank liegt unverändert am bisherigen Ort."
             }
-            return AppPersistence.StoreNotice(title: "Datenbank nicht verfügbar", message: message, folder: folder)
+            message += " \(keychain) Gespeicherte Daten entfernt „Alle Daten entfernen …“ \(menu)."
+            return AppPersistence.StoreNotice(title: "Datenbank nicht verfügbar", message: message,
+                                              folder: platform == .macOS ? folder : nil)
         }
     }
 }

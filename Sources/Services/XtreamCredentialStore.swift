@@ -15,8 +15,8 @@ import Security
 ///   Xtream-Playlists neu importiert werden.
 /// - Nicht synchronisiert (`kSecAttrSynchronizable` bleibt aus).
 ///
-/// macOS: Die Mac-App ist ad-hoc signiert und hat keine Schlüsselbund-Zugriffsgruppe, der
-/// Data-Protection-Schlüsselbund steht ihr daher nicht zur Verfügung (`errSecMissingEntitlement`).
+/// macOS: Die Mac-App hat keine Schlüsselbund-Zugriffsgruppe (Debug ad hoc, Release mit Developer ID ohne
+/// Provisioning-Profil), der Data-Protection-Schlüsselbund steht ihr daher nicht zur Verfügung (`errSecMissingEntitlement`).
 /// Der Eintrag landet im Anmelde-Schlüsselbund; die Zugriffsklasse wird dort nicht ausgewertet.
 /// Schutz vor anderen Prozessen gibt die Zugriffsliste des Eintrags, die nur dieser App vertraut.
 struct XtreamCredentialStore: Sendable {
@@ -25,10 +25,14 @@ struct XtreamCredentialStore: Sendable {
     /// Dienst der App. Läuft die App als Test-Host, bekommt jeder Lauf einen eigenen Dienstnamen,
     /// damit Tests nie Einträge des Nutzers lesen oder verändern.
     static let standard = XtreamCredentialStore(
-        service: AppEnvironment.isRunningTests
-            ? "lu.daumedia.MikaPlusPlayer.xtream.tests.\(UUID().uuidString)"
-            : "lu.daumedia.MikaPlusPlayer.xtream"
-    )
+        service: serviceName(bundleID: AppEnvironment.bundleID, isRunningTests: AppEnvironment.isRunningTests))
+
+    /// B09 · BF-119: `<Bundle-ID>.xtream` – für das Release unverändert `lu.daumedia.MikaPlusPlayer.xtream` (keine
+    /// Migration), für den Debug-Build `lu.daumedia.MikaPlusPlayer.debug.xtream`. Im Test-Host je Lauf ein eigener
+    /// Name mit dem bisherigen Präfix, auf das die Wächter der Tests prüfen.
+    static func serviceName(bundleID: String, isRunningTests: Bool) -> String {
+        isRunningTests ? "lu.daumedia.MikaPlusPlayer.xtream.tests.\(UUID().uuidString)" : "\(bundleID).xtream"
+    }
 
     enum KeychainError: LocalizedError {
         case status(OSStatus)
