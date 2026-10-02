@@ -194,7 +194,7 @@ final class B04SucheTests: B04TestCase {
         let lang = sichtbar(String(repeating: "a", count: 10_000))
         B04QA.log("AK-08|d|10000Zeichen=\(lang.count)|texte=\(w.staticTexts.suffix(2))")
         XCTAssertEqual(lang, [], "kein Treffer, kein Fehler")
-        XCTAssertTrue(w.staticTexts.contains { $0.hasPrefix("No Results") }, "Suchansicht erscheint")
+        XCTAssertTrue(w.staticTexts.contains { SystemSprache.istSuchLeerzustand($0) }, "Suchansicht erscheint") // B09 · OF-01: englisch oder deutsch
     }
 
     // MARK: - AK-09

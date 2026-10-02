@@ -131,7 +131,7 @@ final class B06EngineZustandTests: B06TestCase {
                 XCTAssertEqual(e.state, .playing, "EC-03: abgeschlossene TS-Datei mit Byte-Range spielt über AVKit")
                 continue
             }
-            if text != expected[label] { abweichend.append("\(label): \(text ?? B06Engine.name(e.state))") }
+            if SystemSprache.englisch(text) != expected[label] { abweichend.append("\(label): \(text ?? B06Engine.name(e.state))") } // B09 · OF-01: englisch oder deutsch
             XCTAssertLessThan(t ?? 99, 2.0, "\(label): Fehler schnell sichtbar")
             // AK-31: kein Host, Benutzer, Passwort, keine Adresse im Text
             for secret in [B06QA.pass, B06QA.user, "127.0.0.1", "b06-qa.invalid", "/live/"] {

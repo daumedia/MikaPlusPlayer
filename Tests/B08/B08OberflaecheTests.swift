@@ -207,7 +207,7 @@ final class B08OberflaecheTests: B08UITestCase {
         // Etiketten: Reihenfolge des Hinzufügens, Lautsprecher-Symbol
         let texts = B08UI.elements(w) { B08UI.role($0) == "AXStaticText" }.sorted { B08UI.frame($0).midY > B08UI.frame($1).midY }
         let names = texts.map(B08UI.label).filter { $0.contains("HLS") || $0.contains("TS") }
-        let icons = B08UI.elements(w) { B08UI.role($0) == "AXImage" }.map(B08UI.label)
+        let icons = B08UI.elements(w) { B08UI.role($0) == "AXImage" }.map(B08UI.label).map(SystemSprache.englischerName) // B09 · OF-01: englisch oder deutsch
         B08QA.log("AK-10|etiketten oben→unten=\(names)|symbole=\(icons)")
         XCTAssertEqual(Array(names.prefix(4)), ["Eins HLS", "Zwei TS", "Drei HLS", "Vier TS"], "großes Etikett, dann die kleinen in Reihenfolge des Hinzufügens")
         XCTAssertEqual(icons.filter { $0 == "Volume High" }.count, 1, "genau ein Lautsprecher-Symbol (fokussiert)")
@@ -298,7 +298,7 @@ final class B08OberflaecheTests: B08UITestCase {
         app.setFocus(2)
         await B08QA.spin(1)
         B08UI.shot(w, "AK-14-raster-fokus-unten-links")
-        let icons = B08UI.elements(w) { B08UI.role($0) == "AXImage" && B08UI.label($0) == "Volume High" }.map(B08UI.frame)
+        let icons = B08UI.elements(w) { B08UI.role($0) == "AXImage" && SystemSprache.englischerName(B08UI.label($0)) == "Volume High" }.map(B08UI.frame) // B09 · OF-01: englisch oder deutsch
         B08QA.log("AK-14|Raster|setFocus(2)|\(B08Engine.describe(app))|Lautsprecher-Symbol bei=\(icons)")
         XCTAssertEqual(app.slots.map(\.engine.isMuted), [true, true, false, true])
         XCTAssertEqual(icons.count, 1)
@@ -391,7 +391,7 @@ final class B08OberflaecheTests: B08UITestCase {
             app.layout = .focus; await B08QA.spin(2.5)
             series.append(B08UI.shot(w, "AK-15-\(kind.lowercased())-nach-raster-und-zurueck").map { B08UI.blackRatio($0, rect: region) } ?? -1)
             results[kind] = series
-            let labels = B08UI.labels(w).filter { $0.contains(kind) || $0 == "Volume High" || $0 == "Mute" }
+            let labels = B08UI.labels(w).map(SystemSprache.englischerName).filter { $0.contains(kind) || $0 == "Volume High" || $0 == "Mute" } // B09 · OF-01: englisch oder deutsch
             B08QA.log("AK-15|\(kind)|Schwarzanteil Hauptbild vorher, 1 s, 5 s, 10 s, 15 s, nach Größenänderung, nach Raster↔Fokus=\(series.map(B08QA.f2))|etiketten=\(labels)")
         }
         let vlc = results["VLC"]!, hls = results["HLS"]!
@@ -565,8 +565,8 @@ final class B08OberflaecheTests: B08UITestCase {
         let leaks = labels.filter { l in forbidden.contains { l.contains($0) } }
         B08QA.log("AK-32|labels=\(labels)|ladeanzeigen=\(busy)|lecks=\(leaks)|\(B08Engine.describe(app))")
         XCTAssertTrue(labels.contains("Wiedergabe fehlgeschlagen"))
-        XCTAssertTrue(labels.contains("The requested URL was not found on this server."))
-        XCTAssertTrue(labels.contains("Could not connect to the server."))
+        XCTAssertTrue(labels.map(SystemSprache.englisch).contains("The requested URL was not found on this server.")) // B09 · OF-01: englisch oder deutsch
+        XCTAssertTrue(labels.map(SystemSprache.englisch).contains("Could not connect to the server."))
         XCTAssertEqual(leaks, [], "weder Adresse noch Benutzername oder Passwort")
         // Seit B06 · BUG-01 (Build 2026-09-27): die VLC-Kachel mit 404 zeigt die Fehleransicht statt der Ladeanzeige
         XCTAssertTrue(labels.contains(VLCPlaybackEngine.Failure.cannotOpen.message), "404 TS: Meldung")

@@ -16,7 +16,7 @@ final class B01LangsamTests: B01MockTestCase {
         let elapsed = Date().timeIntervalSince(start)
         let msg = B01.message(r) ?? "ok"
         print("B01QA|AK-20|timeout|\(String(format: "%.1f", elapsed))s|\(msg)")
-        XCTAssertEqual(msg, "Netzwerkfehler: The request timed out.")
+        XCTAssertEqual(SystemSprache.englisch(msg), "Netzwerkfehler: The request timed out.")  // B09 · OF-01: Systemtext englisch oder deutsch
         XCTAssertGreaterThanOrEqual(elapsed, 59.5)
         XCTAssertLessThan(elapsed, 75)
         XCTAssertFalse(msg.contains("qa-pass-ak20") || msg.contains("qa-user-ak20") || msg.contains("player_api"))

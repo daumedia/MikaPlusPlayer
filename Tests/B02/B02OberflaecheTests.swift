@@ -44,7 +44,8 @@ final class B02OberflaecheTests: B02TestCase {
     @MainActor private func openSheet(_ w: NSWindow, tab: String = "URL") async throws -> NSWindow {
         AX.wake(w)
         let label = playlistCount() == 0 ? "Playlist importieren" : "Add"
-        AX.click(try XCTUnwrap(AX.find(w, role: "AXButton", contains: label), label), in: w)
+        AX.click(try XCTUnwrap(SystemSprache.namensVarianten(label).lazy.compactMap { AX.find(w, role: "AXButton", contains: $0) }.first, label),
+                 in: w) // B09 · OF-01: englisch oder deutsch
         let sheet = try await waitFor("Sheet") { w.attachedSheet }
         AX.wake(sheet)
         await UIHarness.spin(0.2)

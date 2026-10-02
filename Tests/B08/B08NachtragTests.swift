@@ -89,7 +89,7 @@ final class B08NachtragTests: B08UITestCase {
         await queuedClick(w, screen: tileCenter(fromX: xs[2], size: CGSize(width: 240, height: 135)))
         let nachKlick = B08Engine.describe(app)
         B08UI.shot(w, "AK-14-fokus-klick-kleine-kachel")
-        let etiketten = B08UI.labels(w).filter { $0.contains("HLS") || $0.contains("TS") || $0 == "Volume High" || $0 == "Mute" }
+        let etiketten = B08UI.labels(w).map(SystemSprache.englischerName).filter { $0.contains("HLS") || $0.contains("TS") || $0 == "Volume High" || $0 == "Mute" } // B09 · OF-01: englisch oder deutsch
         B08QA.log("AK-14|Fokus|Mausklick auf 2. kleine Kachel|\(nachKlick)|etiketten oben→unten=\(etiketten)")
         XCTAssertEqual(app.focusedIndex, 2, "Klick auf die kleine Kachel fokussiert sie")
         XCTAssertEqual(app.slots.map(\.engine.isMuted), [true, true, false], "nur sie hat Ton")

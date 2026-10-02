@@ -7,10 +7,11 @@ import SwiftData
 import XCTest
 @testable import MikaPlusPlayer
 
-/// B09 · Auto-Update — QA Durchlauf 2 (2026-09-16).
+/// B09 · Auto-Update — QA Durchlauf 2 (2026-09-16), nachgeführt im Bau Durchlauf 2 (2026-10-02).
 ///
 /// Nachprüfung der Reparatur (BUG-13, BUG-18, EC-01/OF-10) und Belege für neue Befunde (BUG-19 bis BUG-23).
-/// Tests, die einen offenen Befund belegen, formulieren das erwartete Verhalten und stehen in `XCTExpectFailure`.
+/// Tests, die einen offenen Befund belegen, formulieren das erwartete Verhalten und stehen in `XCTExpectFailure`
+/// (noch: BUG-20 = B01 BF-46, nicht im Auftrag). BUG-19, -21, -22, -23 sind seit dem Bau vom 2026-10-02 feste Prüfungen.
 ///
 /// Nichts davon berührt die Datenbank des Nutzers, den echten Schlüsselbund-Dienst der App, das echte Repository
 /// oder das Netz: Temp-Ordner, eigener Schlüsselbund-Dienst je Test, kopierte Skripte, Wegwerf-Schlüssel.
@@ -99,7 +100,10 @@ final class B09QA2Tests: XCTestCase {
         let (container, outcome) = AppPersistence.openStore(at: storeURL, schema: AppSchema.schema)
         guard case .recovered = outcome else { return XCTFail("erwartet .recovered, erhalten \(outcome)") }
         XCTAssertEqual(try container.mainContext.fetchCount(FetchDescriptor<Playlist>()), 0, "neue Datenbank leer")
-        XCTAssertFalse(outcome.notice?.message.contains("Schlüsselbund") ?? true, "Hinweis erwähnt den Schlüsselbund nicht")
+        // Durchlauf 2 (OF-08, 2026-10-02): Der Hinweis nennt die Zugangsdaten im Schlüsselbund und den Löschweg.
+        // Der verwaiste Eintrag selbst bleibt (BUG-20 = B01 BF-46, nicht im Auftrag) → XCTExpectFailure unten.
+        XCTAssertTrue(outcome.notice?.message.contains("Schlüsselbund") ?? false, "Hinweis nennt die Zugangsdaten im Schlüsselbund")
+        XCTAssertTrue(outcome.notice?.message.contains("„Alle Daten entfernen …“") ?? false, "Hinweis nennt den Löschweg")
 
         // Nutzer importiert dieselben Zugangsdaten neu → neue Playlist-ID, zweiter Eintrag
         try store.save(secret, for: UUID())
@@ -128,6 +132,8 @@ final class B09QA2Tests: XCTestCase {
 
     // MARK: - AK-01 / EC-01 / BUG-21 · Menü und Updater im Test-Host
 
+    static let updateTitles = ["Nach Updates suchen …", "Automatisch nach Updates suchen", "Updates automatisch installieren"]
+
     private func updateMenuItem() async throws -> (appMenu: NSMenu, index: Int, item: NSMenuItem)? {
         let frist = Date().addingTimeInterval(10)
         while Date() < frist {
@@ -142,30 +148,38 @@ final class B09QA2Tests: XCTestCase {
         return nil
     }
 
-    /// AK-01 · „Nach Updates suchen …“ steht direkt unter „About …“ und ist aktiv (Test-Host = echte App-Szene).
-    func testAK01_MenueeintragDirektUnterAboutUndAktiv() async throws {
-        guard let (appMenu, index, item) = try await updateMenuItem() else {
+    /// AK-01 / AK-31 · Die drei Update-Einträge stehen direkt unter „Über …“ (deutsch, OF-01; englisch angenommen, falls
+    /// das System die App-Sprache nicht übernimmt). Im Test-Host läuft Sparkle nicht (BF-49): alle drei inaktiv.
+    /// Aktiv sind sie im Debug- und Release-Build (Selbsttest im Build-Bericht).
+    func testAK01_AK31_UpdateEintraegeDirektUnterUeberImTestHostInaktiv() async throws {
+        guard let (appMenu, index, _) = try await updateMenuItem() else {
             return XCTFail("Menüeintrag nicht gefunden: \(NSApp.mainMenu?.items.first?.submenu?.items.map(\.title) ?? [])")
         }
-        print("B09QA2|AK-01|appMenu=\(appMenu.items.map { $0.isSeparatorItem ? "—" : $0.title })|index=\(index)|enabled=\(item.isEnabled)")
+        let titel = appMenu.items.map { $0.isSeparatorItem ? "—" : $0.title }
+        print("B09QA2|AK-01|appMenu=\(titel)|index=\(index)|enabled=\(appMenu.items.map(\.isEnabled))|state=\(appMenu.items.map(\.state.rawValue))")
         XCTAssertEqual(index, 1, "zweite Position")
-        XCTAssertTrue(appMenu.items[0].title.hasPrefix("About"), "darüber steht About")
-        XCTAssertTrue(item.isEnabled, "aktiv")
+        XCTAssertTrue(appMenu.items[0].title.hasPrefix("Über") || appMenu.items[0].title.hasPrefix("About"), "darüber steht „Über …“")
+        XCTAssertEqual(Array(titel.dropFirst().prefix(3)), Self.updateTitles, "drei Update-Einträge in dieser Reihenfolge")
+        for item in appMenu.items[1...3] {
+            XCTAssertFalse(item.isEnabled, "„\(item.title)“ im Test-Host inaktiv")
+        }
     }
 
-    /// EC-01 / OF-10 · Der Test-Host ist die App mit der Bundle-ID der installierten App und startet Sparkle.
-    /// Belegt über den Menüeintrag: `canCheckForUpdates` wird erst in `SPUUpdater.startUpdater` wahr
-    /// (Sparkle 2.9.3 `SPUUpdater.m:168`). Ab dann prüft Sparkle nach seinem Zeitplan gegen den echten Feed und
-    /// schreibt in `~/Library/Preferences/lu.daumedia.MikaPlusPlayer.plist`.
-    func testEC01_BUG21_TestHostStartetSparkleInDerDomaeneDerInstalliertenApp() async throws {
-        XCTAssertEqual(Bundle.main.bundleIdentifier, "lu.daumedia.MikaPlusPlayer", "Test-Host teilt die Bundle-ID (Einstellungsdomäne) der installierten App")
+    /// EC-01 / OF-10 / BF-49 / BF-119 · Der Test-Host trägt die eigene Debug-Bundle-ID (Einstellungsdomäne getrennt von
+    /// der installierten App) und startet Sparkle nicht: `canCheckForUpdates` wird erst in `SPUUpdater.startUpdater` wahr
+    /// (Sparkle 2.9.3 `SPUUpdater.m:168`), der Menüeintrag bleibt deshalb inaktiv. Vorher (QA 2, BUG-21) schrieb der
+    /// Test-Host in `~/Library/Preferences/lu.daumedia.MikaPlusPlayer.plist` und fragte den echten Feed ab.
+    func testEC01_BUG21_TestHostStartetSparkleNichtUndHatEigeneBundleID() async throws {
+        XCTAssertEqual(Bundle.main.bundleIdentifier, "lu.daumedia.MikaPlusPlayer.debug", "Test-Host mit eigener Bundle-ID")
+        XCTAssertEqual(UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)["ApplePersistenceIgnoreState"] as? String,
+                       "YES", "Test-Host ignoriert gespeicherten Fensterzustand")
+        XCTAssertEqual(ProcessInfo.processInfo.environment["MIKA_TEST_HOST"], "1", "Umgebungsmarke der Testaktion")
         XCTAssertEqual(Bundle(identifier: "org.sparkle-project.Sparkle")?.isLoaded, true, "Sparkle im Test-Host geladen")
         let item = try await updateMenuItem()?.item
         let updaterGestartet = item?.isEnabled ?? false
         print("B09QA2|EC-01|bundleID=\(Bundle.main.bundleIdentifier ?? "-")|updaterGestartet=\(updaterGestartet)|SUFeedURL=\(Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") ?? "-")")
-        XCTExpectFailure("BUG-21 offen: Der Test-Host startet Sparkle (echter Feed, Einstellungen der installierten App)") {
-            XCTAssertFalse(updaterGestartet, "Sparkle-Updater im Test-Host gestartet")
-        }
+        XCTAssertNotNil(item, "Menüeintrag vorhanden")
+        XCTAssertFalse(updaterGestartet, "Sparkle-Updater im Test-Host gestartet")
     }
 
     // MARK: - BUG-19 · Gegenprüfung blockiert Releases, sobald generate_appcast alte Einträge kürzt
@@ -203,34 +217,37 @@ final class B09QA2Tests: XCTestCase {
         let keyFile = try tempDir("key").appendingPathComponent("test.key")
         try Data(key.rawRepresentation.base64EncodedString().utf8).write(to: keyFile)
 
-        // genau die Aufrufe aus scripts/release.sh
+        // genau die Aufrufe aus scripts/release.sh (Durchlauf 2, BF-47: mit --maximum-versions 0)
+        let release = try String(contentsOf: B09ReleaseConfigTests.repoRoot().appendingPathComponent("scripts/release.sh"), encoding: .utf8)
+        XCTAssertTrue(release.contains(#""$GEN" ${KEY_ARGS[@]+"${KEY_ARGS[@]}"} --maximum-versions 0 \"#), "release.sh ruft generate_appcast wie hier auf")
         let gen = try shell(tools.appendingPathComponent("generate_appcast").path,
-                            ["--ed-key-file", keyFile.path, "--download-url-prefix",
+                            ["--ed-key-file", keyFile.path, "--maximum-versions", "0", "--download-url-prefix",
                              "https://github.com/daumedia/MikaPlusPlayer/releases/download/v1.4/", stage.path], in: stage)
         XCTAssertEqual(gen.status, 0, gen.output)
         _ = try shell(tools.appendingPathComponent("sign_update").path, ["--ed-key-file", keyFile.path, stage.appendingPathComponent("appcast.xml").path], in: stage)
         let neu = try String(contentsOf: stage.appendingPathComponent("appcast.xml"), encoding: .utf8)
         print("B09QA2|BUG-19|generate_appcast|\(gen.output.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "\n").last ?? "")|versionen=\(Self.feedVersions(neu))")
-        XCTAssertTrue(gen.output.contains("removed 1 old update"), "generate_appcast kürzt auf 3 Versionen je Zweig (Standard)")
+        XCTAssertTrue(gen.output.contains("removed 0 old updates"), "mit --maximum-versions 0 bleibt jeder Eintrag: \(gen.output)")
+        XCTAssertEqual(Self.feedVersions(neu), [2, 3, 4, 5])
 
         let check = try shell("/bin/bash", [repo.appendingPathComponent("scripts/b09_release_check.sh").path, "feed"], in: repo,
                               environment: scriptEnvironment(["FEED": stage.appendingPathComponent("appcast.xml").path,
                                                               "BASE_FEED": baseURL.path, "DMG": dmg.path]))
         print("B09QA2|BUG-19|feed-check|exit=\(check.status)|\(check.output.components(separatedBy: "\n").filter { $0.contains("BEFUND") }.joined(separator: " / "))")
-        XCTExpectFailure("BUG-19 offen: Feed-Gegenprüfung verlangt alle bisherigen Einträge, generate_appcast behält aber nur 3 je Zweig") {
-            XCTAssertEqual(check.status, 0, "korrekter Feed (Build 5, signiert, gültig) wird als Befund abgewiesen")
-        }
+        // Durchlauf 2 (BF-47): behoben — der korrekt signierte Feed mit Build 5 wird angenommen.
+        XCTAssertEqual(check.status, 0, "korrekter Feed (Build 5, signiert, gültig) wird als Befund abgewiesen\n\(check.output)")
     }
 
     // MARK: - BUG-22 / BUG-23 · Eingaben, die die Gegenprüfung vor dem Build durchlässt
 
     func testBUG22_VorBuildLaesstLeereAnzeigeversionDurch() throws {
         let repo = try makeCheckRepo(build: "3", marketing: "", publicKey: Curve25519.Signing.PrivateKey().publicKey.rawRepresentation.base64EncodedString(), git: true)
-        let result = try shell("/bin/bash", [repo.appendingPathComponent("scripts/b09_release_check.sh").path, "vor-build"], in: repo, environment: scriptEnvironment([:]))
+        let result = try shell("/bin/bash", [repo.appendingPathComponent("scripts/b09_release_check.sh").path, "vor-build"], in: repo, environment: scriptEnvironment(["PROBEMODUS": "1"]))
         print("B09QA2|BUG-22|vor-build|exit=\(result.status)|\(result.output.components(separatedBy: "\n").filter { $0.contains("MARKETING") || $0.contains("Tag v") }.joined(separator: " / "))")
-        XCTExpectFailure("BUG-22 offen: leere MARKETING_VERSION ergibt DMG „MikaPlusPlayer-v.dmg“, Tag „v“ und leere Anzeigeversion im Feed") {
-            XCTAssertEqual(result.status, 1, "leere Anzeigeversion muss ein Befund sein")
-        }
+        // Durchlauf 2 (BF-50): behoben.
+        XCTAssertEqual(result.status, 1, "leere Anzeigeversion muss ein Befund sein")
+        XCTAssertTrue(result.output.contains("[BEFUND] MARKETING_VERSION ist leer oder keine Versionsnummer: „“"), result.output)
+        XCTAssertEqual(result.output.components(separatedBy: "[BEFUND]").count - 1, 1, "genau dieser Befund\n\(result.output)")
     }
 
     func testBUG23_VorBuildPrueftDownloadAdressenBestehenderEintraegeNicht() throws {
@@ -239,11 +256,12 @@ final class B09QA2Tests: XCTestCase {
             .replacingOccurrences(of: "https://github.com/daumedia/MikaPlusPlayer/releases/download/v1.1/", with: "https://angreifer.example/download/")
         try feed.write(to: repo.appendingPathComponent("appcast.xml"), atomically: true, encoding: .utf8)
         try gitCommit(repo)
-        let result = try shell("/bin/bash", [repo.appendingPathComponent("scripts/b09_release_check.sh").path, "vor-build"], in: repo, environment: scriptEnvironment([:]))
+        let result = try shell("/bin/bash", [repo.appendingPathComponent("scripts/b09_release_check.sh").path, "vor-build"], in: repo, environment: scriptEnvironment(["PROBEMODUS": "1"]))
         print("B09QA2|BUG-23|vor-build|exit=\(result.status)|befunde=\(result.output.components(separatedBy: "\n").filter { $0.contains("BEFUND") })")
-        XCTExpectFailure("BUG-23 offen: fremde Download-Adresse in einem bestehenden Feed-Eintrag wird nicht erkannt und beim Release mitsigniert") {
-            XCTAssertEqual(result.status, 1, "fremder Download-Host im versionierten Feed muss ein Befund sein")
-        }
+        // Durchlauf 2 (BF-48): behoben.
+        XCTAssertEqual(result.status, 1, "fremder Download-Host im versionierten Feed muss ein Befund sein")
+        XCTAssertTrue(result.output.contains("[BEFUND] versionierte appcast.xml: Download-Adresse außerhalb von https://github.com/daumedia/MikaPlusPlayer/releases/download/: https://angreifer.example/download/"), result.output)
+        XCTAssertEqual(result.output.components(separatedBy: "[BEFUND]").count - 1, 1, "genau dieser Befund\n\(result.output)")
     }
 
     // MARK: - Hilfen (Attrappen)

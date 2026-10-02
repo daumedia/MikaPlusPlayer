@@ -183,6 +183,8 @@ Tonspur. Nicht geprüft: HEVC, AC-3, verschlüsseltes HLS, echte Anbieter-Stream
 **Ort:** `Sources/App/MikaPlusPlayerApp.swift:39-45` (`.disabled(!updater.canCheckForUpdates)` im `CommandGroup` des `App.body`).
 **Vorschlag:** den Menüeintrag als eigene `View` mit dem beobachteten Objekt bauen (Muster aus Sparkles SwiftUI-Doku: `CheckForUpdatesView` mit eigenem Modell im `CommandGroup`) und das Verhalten an der Menüleiste nachprüfen.
 
+**Vermerk `sdd-build` Durchlauf 2 (2026-10-02, BF-18):** Update-Einträge als eigene Ansicht `Sources/Views/UpdateMenu.swift`, die den Zustand in ihrem eigenen Rumpf liest (Entwurf Entscheidung 6); `SparkleUpdater` spiegelt vier Werte per KVO (Prüfung möglich, automatisch prüfen, automatisch installieren, automatisch installieren erlaubt). Tests: `B09UpdaterTests.testBF18_MenueAnsichtBeobachtetAlleWerteImEigenenRumpf` (jede der vier Änderungen macht den Rumpf der Menü-Ansicht ungültig), `testAK31_MenueZustaende`. Beobachtung an der echten Menüleiste: siehe Abschlussbericht `build-bericht.md`, Durchlauf 2, Selbsttest. **Bewusst nicht umgesetzt:** „inaktiv während einer vom Nutzer gestarteten Prüfung“ – Sparkle meldet dann absichtlich „Prüfung möglich“ (OF-11, zurückgestellt bis nach dem Bau); inaktiv ist der Eintrag während einer geplanten Hintergrundprüfung.
+
 ### BUG-19 · Feed-Gegenprüfung blockiert jedes Release, sobald `generate_appcast` alte Einträge kürzt — mittel
 **Betrifft:** AK-17, BUG-11
 **Reproduktion:**
@@ -193,6 +195,8 @@ Tonspur. Nicht geprüft: HEVC, AC-3, verschlüsseltes HLS, echte Anbieter-Stream
 **Tatsächlich:** `generate_appcast` behält standardmäßig 3 Versionen je Zweig (`--maximum-versions`, `main.swift:77`, `Appcast.swift:144-145`); `b09_release_check.sh feed` verlangt alle bisherigen Einträge. Ab dem dritten Release nach dem nächsten (Build 5) bricht jedes Release ab, die Meldung legt einen Altstand nahe. Test `B09QA2Tests.testBUG19_…` (`XCTExpectFailure`).
 **Ort:** `scripts/b09_release_check.sh:173-180`; `scripts/release.sh:57-59` (ohne `--maximum-versions`).
 **Vorschlag:** `--maximum-versions 0` übergeben oder die Prüfung auf „neuer Eintrag vorhanden, verbleibende Einträge unverändert, entfernte nur die ältesten“ umstellen.
+
+**Vermerk `sdd-build` Durchlauf 2 (2026-10-02, BF-47):** `release.sh` ruft `generate_appcast` mit `--maximum-versions 0` auf (Sparkle 2.9.3 `main.swift`: „If this value is 0, then all items in the appcast are preserved“); die Feed-Prüfung verlangt weiter genau versionierten Feed + neuen Eintrag. Test `B09QA2Tests.testBUG19_…` ohne `XCTExpectFailure`: dieselben Aufrufe wie `release.sh` (Abgleich am Skripttext), „removed 0 old updates“, Einträge 2, 3, 4, 5, Gegenprüfung Exit 0. Gegen das alte Skript rot (Bau-Nachweis).
 
 ### BUG-20 · Zugangsdaten beiseitegelegter Playlists bleiben ohne Löschweg im Schlüsselbund — mittel
 **Betrifft:** EC-07, BUG-13 · Katalog *Löschen*
@@ -205,6 +209,8 @@ Tonspur. Nicht geprüft: HEVC, AC-3, verschlüsseltes HLS, echte Anbieter-Stream
 **Ort:** `Sources/Services/AppPersistence.swift:87-109` (Wiederherstellung ohne Blick auf `XtreamCredentialStore`), `Sources/Views/StoreRecoveryAlert.swift`.
 **Vorschlag:** Beim Beiseitelegen die Playlist-IDs der alten Datei lesen und die Einträge entweder beim späteren Aufräumen mitlöschen oder im Hinweis/einer Einstellung anbieten (Zusammenhang OF-08) – nicht stillschweigend löschen, solange die Datei wiederherstellbar sein soll.
 
+**Vermerk `sdd-build` Durchlauf 2 (2026-10-02, OF-08):** Nicht im Auftrag (BUG-20 = B01 BF-46, wird in der B01-Runde zum Akzeptieren vorgelegt). Umgesetzt ist die Hinweis-Besserung aus OF-08: Der Hinweis nennt jetzt die Zugangsdaten im Schlüsselbund und „Alle Daten entfernen …“ als Löschweg (macOS: App-Menü, iOS: Menü der Playlist-Übersicht, ohne Pfad). Test: `testEC07_BUG20_…` prüft den Hinweis jetzt positiv; der verwaiste Eintrag bleibt als `XCTExpectFailure`.
+
 ### BUG-21 · Test-Host startet Sparkle in der Einstellungsdomäne der installierten App — niedrig
 **Betrifft:** EC-01, OF-10
 **Reproduktion:** `xcodebuild test … -scheme MikaPlusPlayer-macOS`; Test `B09QA2Tests.testEC01_BUG21_…`; Zeitstempel von `~/Library/Preferences/lu.daumedia.MikaPlusPlayer.plist` vor/nach dem Lauf.
@@ -213,12 +219,16 @@ Tonspur. Nicht geprüft: HEVC, AC-3, verschlüsseltes HLS, echte Anbieter-Stream
 **Ort:** `Sources/App/MikaPlusPlayerApp.swift:23` (`SparkleUpdater()` unbedingt), `project.yml` (Debug gleiche Bundle-ID).
 **Vorschlag:** `SparkleUpdater` im Test-Host (`AppEnvironment.isRunningTests`) nicht starten.
 
+**Vermerk `sdd-build` Durchlauf 2 (2026-10-02, BF-49, BF-119):** Sparkle wird im Test-Host angelegt, aber nicht gestartet (`SPUStandardUpdaterController(startingUpdater: false)`); Debug-Build und Test-Host tragen `lu.daumedia.MikaPlusPlayer.debug` (eigene Einstellungsdomäne, Datenbank, Schlüsselbund-Dienst `….debug.xtream`, keine Übernahme der alten `default.store`); die Testaktion startet mit `-ApplePersistenceIgnoreState YES` und `MIKA_TEST_HOST=1`. Test `testEC01_BUG21_TestHostStartetSparkleNichtUndHatEigeneBundleID` (vorher `XCTExpectFailure`): Bundle-ID `….debug`, Startargument und Marke gesetzt, Menüeintrag inaktiv. Dazu `B09Bau2Tests` (Erkennung über die Marke, Dienstname, Altbestand nur für die Release-ID).
+
 ### BUG-22 · Gegenprüfung lässt eine leere Anzeigeversion durch — niedrig
 **Betrifft:** BUG-11
 **Reproduktion:** Attrappe mit `MARKETING_VERSION: ""`, Build 3 → `release.sh` Exit 0, `dist/MikaPlusPlayer-v.dmg`, Feed-Eintrag mit leerer `shortVersionString` und URL `…/download/v/MikaPlusPlayer-v.dmg`; `vor-build`: `[  ok  ] MARKETING_VERSION= noch nicht im Feed`, `[  ok  ] Tag v noch nicht vorhanden`. Test `testBUG22_…`.
 **Erwartet:** Befund, Abbruch vor dem Build.
 **Ort:** `scripts/b09_release_check.sh:55, 90-94`.
 **Vorschlag:** leere oder nicht numerische Anzeigeversion als `[BEFUND]` werten.
+
+**Vermerk `sdd-build` Durchlauf 2 (2026-10-02, BF-50):** `vor-build` wertet eine leere oder nicht numerische `MARKETING_VERSION` als `[BEFUND]` („leer oder keine Versionsnummer“). Test `testBUG22_…` ohne `XCTExpectFailure`, genau dieser eine Befund (Probemodus). Gegen das alte Skript rot.
 
 ### BUG-23 · Fremde Download-Adresse in bestehendem Feed-Eintrag wird nicht erkannt und mitsigniert — mittel
 **Betrifft:** BUG-11, BUG-07, BUG-08 (Feed-Pflicht)
@@ -230,6 +240,8 @@ Tonspur. Nicht geprüft: HEVC, AC-3, verschlüsseltes HLS, echte Anbieter-Stream
 **Ort:** `scripts/b09_release_check.sh:70-76` (vor-build) und `176-180` (feed vergleicht nur mit dem ebenfalls veränderten Basis-Feed).
 **Vorschlag:** alle Enclosure-URLs gegen das erwartete Präfix prüfen und bestehende Einträge zusätzlich gegen den Stand des letzten Release-Tags vergleichen.
 
+**Vermerk `sdd-build` Durchlauf 2 (2026-10-02, BF-48):** `vor-build` (versionierte `appcast.xml`) und `feed` (neuer Feed) prüfen **alle** Enclosure-Adressen gegen `https://github.com/daumedia/MikaPlusPlayer/releases/download/v<…>/<datei>`. Test `testBUG23_…` ohne `XCTExpectFailure`, genau dieser Befund. Der Vergleich mit dem Stand des letzten Release-Tags (zweiter Teil des Vorschlags) ist nicht umgesetzt – der Entwurf verlangt nur die Adressprüfung; ab 1.2 verwirft die App einen nach der Signatur veränderten Feed ohnehin (Feed-Pflicht).
+
 ### BUG-24 · `release.sh` bricht ohne `generate_appcast` stumm ab — niedrig
 **Betrifft:** AK-19
 **Reproduktion:** Attrappe ohne `build/dd/SourcePackages/artifacts`, `GENERATE_APPCAST` nicht gesetzt → nach Build, DMG und nach-build-Prüfung Exit 1 ohne Meldung; `bash -x` endet bei `+ GEN=`.
@@ -237,6 +249,8 @@ Tonspur. Nicht geprüft: HEVC, AC-3, verschlüsseltes HLS, echte Anbieter-Stream
 **Tatsächlich:** `set -euo pipefail` beendet das Skript bereits in `GEN="${…:-$(find … | head -1)}"`, weil `find` auf dem fehlenden Ordner scheitert; die Prüfzeile danach wird nie erreicht. Schon in `c01f1cf` so (AK-19 war nur gelesen). `appcast.xml` bleibt unverändert.
 **Ort:** `scripts/release.sh:43-44`.
 **Vorschlag:** `find … 2>/dev/null || true` in der Ersetzung.
+
+**Vermerk `sdd-build` Durchlauf 2 (2026-10-02, BF-51):** Werkzeugsuche als `{ find … 2>/dev/null || true; } | head -1`; `release.sh` meldet „FEHLER: generate_appcast nicht gefunden.“ direkt nach dem Build, vor DMG und Notarisierung. Test `B09ReleaseSkriptTests.testBF51_ReleaseMeldetFehlendesGenerateAppcast` (Exit 1, Meldung, keine Einreichung beim Notardienst, `appcast.xml` unverändert).
 
 ## Durchlauf 2 · Hinweise (kein BUG)
 
@@ -369,6 +383,7 @@ Stand: 2026-09-15 · Geprüft gegen `spec.md` vom 2026-09-15 · **Durchlauf 1**
 > `~/Library/Application Support/default.store` (mtime 23:00) und `…/Preferences/lu.daumedia.MikaPlusPlayer.plist`
 > (mtime 23:10) lagen beide **vor** dem QA-Lauf (23:33); die Kopie schrieb nur in die eigene Domäne
 > `…qa09`, die anschließend gelöscht wurde. Es wurde **kein** Stream abgespielt (kein Ton).
+
 
 ### Fazit
 

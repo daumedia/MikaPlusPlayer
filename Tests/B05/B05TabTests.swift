@@ -94,7 +94,7 @@ final class B05TabTests: B05TestCase {
         let inputs = w.elements.filter { ["AXTextField", "AXSearchField", "AXComboBox", "AXPopUpButton", "AXCheckBox", "AXRadioButton"].contains(B05AX.role($0)) }
         XCTAssertTrue(inputs.isEmpty, "keine Suche, kein Filter: \(inputs.map(B05AX.describe))")
         for card in w.cards {
-            XCTAssertEqual(B05AX.customActions(card.element).map(\.name), ["Rectangle Split Two By Two", "Favorit entfernen"], card.label)
+            XCTAssertEqual(B05AX.customActions(card.element).map(\.name).map(SystemSprache.englischerName), ["Rectangle Split Two By Two", "Favorit entfernen"], card.label) // B09 · OF-01: englisch oder deutsch
             XCTAssertEqual(B05AX.text(card.element, "accessibilityValue"), "Favorit", card.label)
         }
         w.shot("AK-08-favoriten-zwei-playlists")
@@ -240,7 +240,9 @@ final class B05TabTests: B05TestCase {
         }
         if let main = NSApp.mainMenu { walk(main, "") }
         let windowTitles = Set(NSApp.windows.map(\.title))
-        titles = titles.filter { t in !(t.hasPrefix("Window › ") && windowTitles.contains(String(t.dropFirst("Window › ".count)))) }
+        titles = titles.filter { t in  // B09 · OF-01: Menü „Window“ heißt jetzt „Fenster“
+            !SystemSprache.namensVarianten("Window").contains { m in t.hasPrefix("\(m) › ") && windowTitles.contains(String(t.dropFirst("\(m) › ".count))) }
+        }
         let hits = titles.filter { $0.localizedCaseInsensitiveContains("favorit") || $0.localizedCaseInsensitiveContains("export")
             || $0.localizedCaseInsensitiveContains("sicher") }
         B05QA.evidence("AK-21-menue.txt", "hauptmenue-eintraege=\(titles.count)|treffer favorit/export/sicher=\(hits)")

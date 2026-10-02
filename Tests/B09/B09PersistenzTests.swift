@@ -178,16 +178,18 @@ final class B09PersistenzTests: XCTestCase {
 
         let (container, outcome) = AppPersistence.openStore(at: storeURL, schema: AppSchema.schema)
         print("B09BUILD|BUG-13|schreibgeschuetzt|\(outcome)")
-        guard case .inMemoryFallback(let movedTo, _) = outcome else {
+        guard case .inMemoryFallback(let movedTo, let keptInPlace, _) = outcome else {
             return XCTFail("erwartet .inMemoryFallback, erhalten \(outcome)")
         }
         XCTAssertNil(movedTo)
+        XCTAssertTrue(keptInPlace, "Beiseitelegen gescheitert: Datei liegt am bisherigen Ort (OF-08)")
         XCTAssertEqual(try Data(contentsOf: storeURL), garbage, "Datei unangetastet")
         XCTAssertFalse(FileManager.default.fileExists(atPath: setAsideFolder(for: storeURL).path))
         container.mainContext.insert(Playlist(name: "nur im Speicher"))
         try container.mainContext.save()
         XCTAssertEqual(try container.mainContext.fetchCount(FetchDescriptor<Playlist>()), 1)
         XCTAssertEqual(outcome.notice?.title, "Datenbank nicht verfügbar")
+        XCTAssertTrue(outcome.notice?.message.contains("am bisherigen Ort") ?? false, "Hinweis sagt, wo die Datei liegt (OF-08)")
     }
 
     // MARK: - Plan

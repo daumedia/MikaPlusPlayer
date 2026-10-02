@@ -220,7 +220,7 @@ final class B06PlayerViewTests: B06TestCase {
         B06QA.shot(wB, "BUILD-BUG-04-zugangsdaten-fehlen-ohne-readme-hinweis")
         B06QA.shot(wC, "AK-04-adresse-ungueltig")
         let hint = "Hinweis: Rohe MPEG-TS-Streams (.ts) benötigen VLCKit – siehe README."
-        func has(_ l: [String], _ t: String) -> Bool { l.contains { $0.contains(t) } }
+        func has(_ l: [String], _ t: String) -> Bool { l.contains { SystemSprache.englisch($0).contains(t) } } // B09 · OF-01: englisch oder deutsch
         XCTAssertTrue(has(la, "Wiedergabe fehlgeschlagen") && has(la, "The requested URL was not found on this server.") && has(la, "Erneut versuchen"))
         XCTAssertFalse(has(la, hint))
         XCTAssertFalse(has(la, "pause.fill") || has(la, "arrow.up.left.and.arrow.down.right"), "keine Steuerung in der Fehleransicht")
@@ -757,7 +757,7 @@ final class B06PlayerViewTests: B06TestCase {
         // Engine-Fehlers; „Erneut versuchen“ fragt den Anbieter nicht mehr an (weder mit noch ohne Zugangsdaten).
         XCTAssertEqual(resolved, "Fehler: Die Playlist dieses Senders wurde gelöscht.")
         XCTAssertTrue(labels.contains { $0.contains("Die Playlist dieses Senders wurde gelöscht.") }, "\(labels)")
-        XCTAssertFalse(labels.contains { $0.contains("The requested URL was not found on this server.") }, "kein alter Engine-Fehler")
+        XCTAssertFalse(labels.contains { SystemSprache.englisch($0).contains("The requested URL was not found on this server.") }, "kein alter Engine-Fehler") // B09 · OF-01: englisch oder deutsch
         XCTAssertEqual(reqs.count, before, "nach dem Löschen kein neuer Abruf")
         XCTAssertFalse(reqs.dropFirst(before).contains { $0.contains(B06QA.user) }, "nach dem Löschen keine Zugangsdaten mehr im Abruf")
     }

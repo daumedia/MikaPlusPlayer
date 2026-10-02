@@ -185,9 +185,9 @@ final class B01ImportTests: B01MockTestCase {
         // freien Port ermitteln: Mock starten und sofort stoppen
         let closed = MockXtreamServer(); try closed.start(); let closedPort = closed.port; closed.stop()
         let r1 = await B01.importXtream(host: "127.0.0.1:\(closedPort)", pass: "qa-pass-ak20", context: container.mainContext)
-        XCTAssertEqual(B01.message(r1), "Netzwerkfehler: Could not connect to the server.")
+        XCTAssertEqual(SystemSprache.englisch(B01.message(r1)), "Netzwerkfehler: Could not connect to the server.")  // B09 · OF-01: Systemtext englisch oder deutsch
         let r2 = await B01.importXtream(host: "qa-host.invalid", pass: "qa-pass-ak20", context: container.mainContext)
-        XCTAssertEqual(B01.message(r2), "Netzwerkfehler: A server with the specified hostname could not be found.")
+        XCTAssertEqual(SystemSprache.englisch(B01.message(r2)), "Netzwerkfehler: A server with the specified hostname could not be found.")
     }
 
     /// AK-21: Leerzeichen im Host oder nur „http://" → „Host ungültig…", keine Anfrage.

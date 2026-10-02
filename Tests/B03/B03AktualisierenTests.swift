@@ -420,7 +420,7 @@ final class B03AktualisierenTests: B03QATestCase {
         let after = snapshot(p, url)
         let leaks = forbidden.filter { message.contains($0) }
         B03QA.log("AK-18-21|\(label)|meldung=\(message)|alteListe=\(before == after)|hasChanges=\(ctx.hasChanges)|verboten=\(leaks)")
-        XCTAssertEqual(message, expected, label)
+        XCTAssertEqual(SystemSprache.englisch(message), expected, label)  // B09 · OF-01: Systemtext englisch oder deutsch
         XCTAssertEqual(after, before, "\(label): alte Liste unverändert")
         XCTAssertFalse(ctx.hasChanges, "\(label): Kontext unverändert")
         XCTAssertEqual(leaks, [], "\(label): AK-30")

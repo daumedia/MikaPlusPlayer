@@ -2,6 +2,9 @@ name: MikaPlusPlayer
 
 options:
   bundleIdPrefix: lu.daumedia
+  # B09 · OF-01 (2026-10-01): Die App ist deutschsprachig (Entwicklungssprache de, Info.plist CFBundleLocalizations [de]),
+  # damit Sparkle-Dialoge und System-Menüeinträge deutsch erscheinen – projektweit, auch für iOS.
+  developmentLanguage: de
   deploymentTarget:
     iOS: "17.0"
     macOS: "14.0"
@@ -34,7 +37,8 @@ targetTemplates:
       base:
         PRODUCT_NAME: MikaPlusPlayer
         PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer
-        MARKETING_VERSION: "1.1"
+        # B09 · OF-06: das nächste Release (Übergangs-Release für BF-01) heißt 1.2.
+        MARKETING_VERSION: "1.2"
         # B09 · BUG-04: Build-Nummer (CFBundleVersion) – Sparkle vergleicht NUR diese.
         # Muss bei jedem Release über der höchsten sparkle:version in appcast.xml liegen
         # (v1.1 = 2); scripts/b09_release_check.sh bricht sonst ab.
@@ -45,6 +49,9 @@ targetTemplates:
         ENABLE_PREVIEWS: YES
         ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # B09 · Entwurf Entscheidung 8: Vorgabe für Sparkles automatische Prüfung (Info.plist SUEnableAutomaticChecks).
+        # Release prüft automatisch; der macOS-Debug-Build überschreibt mit NO. Wirkt nur dort, wo Sparkle läuft.
+        MIKA_SPARKLE_AUTOMATIC_CHECKS: "YES"
       configs:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
@@ -72,13 +79,20 @@ targets:
     deploymentTarget: "14.0"
     settings:
       base:
-        # "Sign to Run Locally" (ad-hoc) -> kein Team nötig.
+        # Debug: "Sign to Run Locally" (ad hoc) -> lokal ohne Zertifikat lauffähig.
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: "CWJM4J4HFN"
         # Sandbox ist in den Entitlements deaktiviert (DMG-Distribution + Sparkle).
         CODE_SIGN_ENTITLEMENTS: Sources/Resources/MikaPlusPlayer.entitlements
       configs:
+        Debug:
+          # B09 · BF-119 / OF-10: eigene Bundle-ID für Debug-Build und Test-Host. Datenbank, Einstellungen,
+          # Sparkle-Zustand und Schlüsselbund-Einträge der installierten App bleiben unberührt. Nur am macOS-Target
+          # (nicht im Template), damit iOS unverändert bleibt; Release behält lu.daumedia.MikaPlusPlayer.
+          PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.MikaPlusPlayer.debug
+          # B09 · Entwurf Entscheidung 8: Debug prüft nicht planmäßig gegen den echten Feed.
+          MIKA_SPARKLE_AUTOMATIC_CHECKS: "NO"
         Release:
           # B09 · BUG-02: Release mit Hardened Runtime und ohne Debug-Berechtigung.
           # Ohne CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO bettet Xcode get-task-allow=true ein
@@ -86,6 +100,9 @@ targets:
           # Debug bleibt unverändert (Debugger, Test-Host).
           ENABLE_HARDENED_RUNTIME: YES
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+          # B09 · BF-03: Release mit Developer ID (Team CWJM4J4HFN); verteilt wird über Archivieren und Exportieren
+          # (scripts/ExportOptions-DeveloperID.plist, scripts/release.sh). Debug und Test-Bundle bleiben ad hoc.
+          CODE_SIGN_IDENTITY: "Developer ID Application"
     dependencies:
       - package: VLCKitSPM
         product: VLCKitSPM
@@ -126,3 +143,10 @@ schemes:
     test:
       targets:
         - MikaPlusPlayerTests
+      # B09 · BF-119: Der Test-Host speichert keinen wiederherstellbaren Fensterzustand (AppKit, für automatisierte
+      # Tests dokumentiert) und ist über eine eigene Umgebungsmarke erkennbar. Hinweis: Mit eigenen Argumenten
+      # übernimmt die Testaktion keine Argumente der Run-Aktion mehr; TEST_RUNNER_…-Variablen von xcodebuild bleiben.
+      commandLineArguments:
+        "-ApplePersistenceIgnoreState YES": true
+      environmentVariables:
+        MIKA_TEST_HOST: "1"

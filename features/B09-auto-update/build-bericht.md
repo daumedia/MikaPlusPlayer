@@ -355,3 +355,273 @@ appintentsmetadataprocessor warning: Metadata extraction skipped, no AppIntents.
 
 Keine neuen Warnungen auf beiden Plattformen. Kein Ton: keine Wiedergabe in der App, die VLC-Stichprobe lief mit einer Datei
 ohne Tonspur und `--no-audio`.
+
+---
+
+# Durchlauf 2 · 2026-10-02 — Fehlerauftrag und Zielentwurf
+
+Eingang: Fehlerauftrag (`qa-report.md` Durchlauf 2, Status `review`) mit den am 2026-10-01/02 zur Behebung freigegebenen
+Befunden BF-01, BF-03, BF-05, BF-07, BF-08, BF-09, BF-18, BF-47, BF-48, BF-49, BF-50, BF-51, BF-119 **und** der Zielentwurf
+`design.md` vom 2026-10-02 (AK-01, AK-02, AK-12, AK-31, OF-08), vom Betreiber am 2026-10-02 ausdrücklich als Bauauftrag
+freigegeben. Nicht im Auftrag: BF-06 (eigener Schlüssel, eigener Bau nach 1.2), OF-11 bis OF-14 (bis nach dem Bau
+zurückgestellt; der Bau folgt dem Entwurf). Branch `sdd/b09-bau` auf dem Stand von PR #12 (`e12fff8`), nicht committet.
+Bestandsfeature ohne `tasks.md`: Arbeitsplan und Abschlussbericht stehen hier (Konvention der Durchläufe in diesem Projekt).
+
+## Arbeitsplan (wird während des Baus abgehakt)
+
+**Ebene 1 · Konfiguration**
+- [x] E1.1 `project.yml`: Entwicklungssprache `de`; Debug-Bundle-ID `lu.daumedia.MikaPlusPlayer.debug` nur am macOS-Target; Release-Signatur Developer ID; Vorgabe automatische Prüfung je Konfiguration; `MARKETING_VERSION` 1.2; Testaktion mit „Fensterzustand ignorieren“ und Umgebungsmarke (BF-03, BF-119, OF-01, OF-06, OF-10)
+- [x] E1.2 `Info.plist`: `CFBundleLocalizations [de]`, `SURequireSignedFeed`, `SUEnableAutomaticChecks` aus der Build-Einstellung (AK-01, AK-02, AK-12, BF-08)
+- [x] E1.3 Entitlements ohne `disable-library-validation` (BF-09)
+- [x] E1.4 Git-Attribut für `appcast.xml`; Exportoptionen unter `scripts/` (AK-12, BF-03)
+- [x] E1.5 Tests: `B09ReleaseConfigTests` streng (FB05 nur Release-Block, FB08, FB04), neue Konfigurationstests — zuerst rot
+
+**Ebene 2 · App-Code**
+- [x] E2.1 `SparkleUpdater`: vier gespiegelte Werte, Schreibwege nur auf Nutzeraktion, Start nicht im Test-Host (BF-18, BF-49, AK-31)
+- [x] E2.2 Update-Menü als eigene Ansicht mit Schaltfläche und zwei Schaltern (BF-18, AK-01, AK-31)
+- [x] E2.3 Test-Host-Erkennung zusätzlich über die Umgebungsmarke (BF-119)
+- [x] E2.4 Schlüsselbund-Dienstname aus der Bundle-ID (Test-Host unverändert) (BF-119)
+- [x] E2.5 Altbestands-Übernahme nur für die übergebene Release-ID; Hinweistexte nach OF-08
+- [x] E2.6 Tests je Punkt, zuerst rot
+
+**Ebene 3 · Release-Skripte**
+- [x] E3.1 `release.sh`: Projekt erzeugen, Archivieren, Exportieren, DMG signieren, Notarisieren (Ergebnis „Accepted“, Protokoll), Heften, `generate_appcast` mit Obergrenze, Feed signieren, Folgeschritte samt Pflichtproben; fehlendes `generate_appcast` gemeldet (BF-03, BF-05, BF-47, BF-51, BF-01)
+- [x] E3.2 `b09_release_check.sh`: Stufen vor-build, nach-build, nach-heften, feed, nach-merge; „offen“ → Befund; leere Version, fremde Download-Adressen, Eintragszahl (BF-03, BF-09, BF-47, BF-48, BF-50, BF-01)
+- [x] E3.3 Prüfnähte und Probemodus; Release-Skript-Tests und `B09QA2Tests` streng — zuerst rot
+
+**Ebene 4 · Folgen für andere Features und Tests**
+- [x] E4.1 Tests mit englischen Systemtexten und Bedienungshilfe-Namen sprachfest (Lokalisierung `de`)
+- [x] E4.2 Tests mit fester Bundle-ID bzw. Schlüsselbund-Dienst (Debug-ID)
+- [x] E4.3 `B09QA2Tests`: Menü am Test-Host inaktiv, EC-01 mit Debug-ID
+- [x] E4.4 Gesamtlauf macOS, iOS-Bau, Warnungen
+
+**Ebene 5 · Echte Signatur und Selbsttest**
+- [x] E5.1 Archivieren und Exportieren mit Developer ID, Gegenprüfung nach-build
+- [ ] E5.2 DMG signieren ✅, Test-Notarisierung (nicht veröffentlicht) ❌ offen – notarytool-Profil nicht vorhanden, Heften ❌, Gegenprüfung nach-heften (ausgeführt, meldet genau die fehlende Notarisierung)
+- [x] E5.3 Selbsttest am Debug-Build (eigene ID): Menü, Schalter, Sprache (auch mit englischer Systemsprache)
+
+**Ebene 6 · Dokumentation**
+- [x] E6.1 `CLAUDE.md` und README nachführen (OF-10, Signatur, Sprache)
+- [x] E6.2 Vermerke in `qa-report.md`, Abschlussbericht hier
+
+## 1 · Umgesetzt (Durchlauf 2)
+
+Je Punkt: was, wo, welcher Test war vorher rot. „Rot“ heißt: gegen den Stand vor der Änderung ausgeführt und
+fehlgeschlagen (Ebene 1: alte Konfiguration; Ebene 2: Platzhalter mit neuer Schnittstelle und altem Verhalten;
+Ebene 3: neue Tests gegen die alten Skripte aus `HEAD`).
+
+**Ebene 1 · Konfiguration** (rot: 14 Fehlschläge in 9 Tests von `B09ReleaseConfigTests`, danach 18/18 grün)
+- **BF-03 / BF-05** · `project.yml`: macOS-Release `CODE_SIGN_IDENTITY: "Developer ID Application"` (Team `CWJM4J4HFN`,
+  manuell); Debug und Test-Bundle bleiben ad hoc. `scripts/ExportOptions-DeveloperID.plist` (Methode `developer-id`,
+  Ziel Export, Team, manuelle Signatur, Zertifikat „Developer ID Application“, keine Geheimnisse). Tests
+  `testFB05_releaseSignedWithDeveloperID` (vorher `XCTExpectFailure`, jetzt auf den Release-Block beschränkt),
+  `testBF03_exportOptionsForDeveloperID`.
+- **BF-09** · `MikaPlusPlayer.entitlements` ohne `disable-library-validation`. Test `testFB04_libraryValidationNotDisabled`
+  (vorher `XCTExpectFailure`).
+- **BF-08 / AK-12** · `Info.plist` `SURequireSignedFeed = true` (zusammen mit `SUVerifyUpdateBeforeExtraction`, sonst
+  startet Sparkle nicht); `SUSignedFeedFailureExpirationInterval` bewusst nicht gesetzt (20 Tage, OF-15). `.gitattributes`
+  `appcast.xml -text`. Tests `testFB08_signedFeedRequired` (vorher `XCTExpectFailure`), `testAK12_appcastIsNotTransformedByGit`.
+- **OF-01 / AK-01 / AK-02** · `options.developmentLanguage: de`, `Info.plist` `CFBundleLocalizations [de]`, kein
+  `CFBundleAllowMixedLocalizations`. Test `testAK01_appDeclaresGermanOnly`. Am gebauten Bundle: `CFBundleDevelopmentRegion`
+  löst zu `de` auf (Debug, Release, iOS).
+- **BF-119 / OF-10** · Debug-Bundle-ID `lu.daumedia.MikaPlusPlayer.debug` nur unter `configs.Debug` des macOS-Targets;
+  Testaktion mit `-ApplePersistenceIgnoreState YES` und `MIKA_TEST_HOST=1`. Tests `testBF119_debugUsesOwnBundleID`,
+  `testBF119_testActionIgnoresSavedStateAndMarksTestHost`.
+- **Entwurf Entscheidung 8 / AK-03** · Vorgabe der automatischen Prüfung je Konfiguration über die Build-Einstellung
+  `MIKA_SPARKLE_AUTOMATIC_CHECKS` (Template `YES`, macOS-Debug `NO`), `Info.plist` `SUEnableAutomaticChecks =
+  $(MIKA_SPARKLE_AUTOMATIC_CHECKS)` – Sparkle liest Text als Wahrheitswert (`SUHost.m` `convertObjectToBoolNumber`,
+  gelesen). Der Entwurf ließ den Weg offen (Build-Einstellung oder Startargument); gewählt ist die Build-Einstellung,
+  weil sie im exportierten Bundle steht. Test `testAK03_automaticChecksDefaultPerConfiguration`; am Bundle: Debug `NO`,
+  Release `YES`.
+- **OF-06** · `MARKETING_VERSION` 1.2 (Build bleibt 3). Test `testOF06_marketingVersionIs12`.
+
+**Ebene 2 · App-Code** (rot: 15 Tests gegen Platzhalter, danach alle B09-Suiten grün)
+- **BF-18 / AK-31** · `SparkleUpdater` spiegelt vier Werte per KVO (Prüfung möglich, automatisch prüfen, automatisch
+  installieren, automatisch installieren erlaubt); Schreibwege `setAutomaticallyChecksForUpdates`/`…DownloadsUpdates`
+  setzen nur Sparkles eigene Einstellung, nur auf Nutzeraktion, nie beim Start (Entscheidung 7). Neue Ansicht
+  `Sources/Views/UpdateMenu.swift` mit „Nach Updates suchen …“, „Automatisch nach Updates suchen“, „Updates automatisch
+  installieren“ (gesperrt ohne Häkchen, solange Sparkle automatisches Installieren nicht erlaubt); liest den Zustand im
+  eigenen Rumpf (Entscheidung 6). Tests `B09UpdaterTests` (+5): vier Werte gespiegelt, nichts beim Anlegen geschrieben,
+  Menüzustände, jede der vier Änderungen macht den Rumpf der Menü-Ansicht ungültig.
+- **BF-49** · Sparkle wird im Test-Host angelegt, aber nicht gestartet; Menü dann inaktiv, Schreibwege wirkungslos.
+  Tests `testBF49_…`, `B09QA2Tests.testEC01_BUG21_…` (vorher `XCTExpectFailure`), `testAK01_AK31_…` (drei Einträge
+  direkt unter „Über …“, im Test-Host inaktiv).
+- **BF-119** · `AppEnvironment`: Erkennung zusätzlich über `MIKA_TEST_HOST=1`, `releaseBundleID`, `bundleID`;
+  `XtreamCredentialStore.serviceName(bundleID:isRunningTests:)` = `<Bundle-ID>.xtream` (Release unverändert, keine
+  Migration; Test-Host unverändert `…xtream.tests.<UUID>`); `AppPersistence.prepareStore` übernimmt die alte
+  `default.store` nur für die übergebene Release-ID (neuer Ausgang `.otherBundleID`). Tests `B09Bau2Tests` (3).
+- **OF-08** · Hinweise „Datenbank neu angelegt“ / „Datenbank nicht verfügbar“ nennen die Zugangsdaten im Schlüsselbund
+  und „Alle Daten entfernen …“ (macOS: App-Menü; iOS: Menü der Playlist-Übersicht, ohne Pfad und ohne Ordner); ist das
+  Beiseitelegen gescheitert, sagt der Hinweis „liegt unverändert am bisherigen Ort“ (neuer Wert `keptInPlace` am
+  Ausgang `.inMemoryFallback`, nur wenn eine Datei da war). Tests `B09Bau2Tests` (4), `B09PersistenzTests` (angepasst),
+  `testEC07_BUG20_…` (Hinweis jetzt positiv geprüft).
+
+**Ebene 3 · Release-Skripte** (rot: 14 Tests gegen die Skripte aus `HEAD`, danach 22/22 grün)
+- **BF-03 / BF-05** · `build-macos.sh`: `xcodegen` → `xcodebuild archive` → `-exportArchive` mit den Exportoptionen →
+  `build/MikaPlusPlayer.app` (per `ditto`). `release.sh`: vor-build → Build → nach-build → DMG → DMG mit Developer ID,
+  Zeitstempel und Bezeichner `lu.daumedia.MikaPlusPlayer.dmg` signieren → `notarytool submit --keychain-profile
+  "$NOTARY_PROFILE" --wait --output-format json`, Auswertung des Felds `status` („Accepted“), Protokoll immer nach
+  `dist/notarisierung-v<Version>.json` → `stapler staple` + `validate` → nach-heften → `generate_appcast` → `sign_update`
+  → feed → Folgeschritte (Pflichtproben, Release, PR, nach-merge). Prüfnähte `NOTARYTOOL`, `STAPLER`, `CODESIGN`,
+  `DMG_SIGN_IDENTITY`; `PROBEMODUS=1` ohne Developer ID und Notarisierung. Tests: `testBF03_ReleaseNotarisiertUndHeftetVorDemFeed`
+  (Reihenfolge der sechs Schritte, genaue Einreichung, Protokoll, DMG-Bezeichner), `testBF03_ReleaseBrichtAbWennNotarisierungAbgelehnt`
+  („Invalid“ bei Exit 0 → Abbruch, Protokoll da, kein Heften, Feed unverändert).
+- **b09_release_check.sh** · „offen“ wird Befund (außer im Probemodus): je Komponente (App, Sparkle, Autoupdate,
+  Updater.app, beide XPC-Dienste, VLCKit) Developer ID, Team, sicherer Zeitstempel, Runtime bei Programmen; Entitlements
+  ohne `get-task-allow` und `disable-library-validation`; Bundle-ID, Feed-Pflicht, Sprache `de`/`[de]`. Neue Stufen
+  **nach-heften** (DMG = geprüftes Bundle, Developer ID, Ticket, Gatekeeper für DMG und App) und **nach-merge**
+  (ausgelieferte Datei an daumedia- und Mukaarts-Adresse byte-gleich mit der gemergten, Signatur gültig, bis 330 s Warten
+  auf den Zwischenspeicher, Adressen über `FEED_URLS` ersetzbar); vor-build verlangt ein gültiges Notar-Profil
+  (`NOTARY_PROFILE`). Tests `testBF03_VorBuildVerlangtNotarProfil`, `testBF03_BF09_NachBuildStrengOhneProbemodus`,
+  `testOF01_BF08_NachBuildPrueftSpracheFeedPflichtUndBundleID`, `testBF03_NachHeftenVerlangtSignaturTicketUndGatekeeper`,
+  `testAK12_NachMergeVergleichtAusgelieferteDateiUndSignatur` (CRLF-Fassung wird erkannt).
+- **BF-47** · `generate_appcast --maximum-versions 0` (behält alle Einträge); Feed-Prüfung unverändert „versionierter
+  Feed + neuer Eintrag“. Test `testBUG19_…` (vorher `XCTExpectFailure`).
+- **BF-48** · alle Enclosure-Adressen in versioniertem und neuem Feed unter `…/releases/download/v<…>/<datei>`.
+  Test `testBUG23_…` (vorher `XCTExpectFailure`).
+- **BF-50** · leere oder nicht numerische Anzeigeversion ist Befund. Test `testBUG22_…` (vorher `XCTExpectFailure`).
+- **BF-51** · Werkzeugsuche scheitert nicht mehr stumm; Meldung direkt nach dem Build. Test `testBF51_…`.
+- **BF-01** · Übergangs-Release vorbereitet: Version 1.2, Feed-Pflicht, nach-merge prüft auch die Mukaarts-Adresse.
+  Veröffentlicht wird erst mit `/sdd-deploy` (nicht Teil des Baus).
+- **BF-07** · nicht im Code: Ruleset auf `main` ist eine GitHub-Einstellung (nur auf Anweisung per `gh`) → offen, Abschnitt 2.
+
+**Ebene 4 · Folgen** · Tests von B01–B08 nehmen englischen **oder** deutschen Systemwortlaut an; gemeinsame Hilfe
+`Tests/Support/SystemSprache.swift` (deutsche Fassungen am Test-Host beobachtet: Sonde und Gesamtlauf 1, z. B.
+„Verbindung zum Server konnte nicht hergestellt werden.“, Symbol `plus` → „Hinzufügen“, `rectangle.split.2x2` → „In Zwei
+Mal Zwei Geteiltes Rechteck“, `speaker.wave.2.fill` → „Laut“, `speaker.slash.fill` → „Ton Aus“, Suche → „Keine Ergebnisse
+für „…““, Menü „Fenster“). Angepasst: `B01ImportTests`, `B01LangsamTests`, `B01OberflaecheTests`, `B01QA2OberflaecheTests`,
+`B01SicherheitTests` (Pfad mit Debug-ID), `B01QA2Tests` (Debug-Dienst als App-Dienst), `B02LangsamTests`,
+`B02OberflaecheTests`, `B02URLImportTests`, `B03AktualisierenTests`, `B03OberflaecheTests`, `B04GruppenTests`,
+`B04SucheTests`, `B05SternTests`, `B05TabTests`, `B06EngineZustandTests`, `B06PlayerViewTests`, `B08HauptfensterTests`,
+`B08NachtragTests`, `B08OberflaecheTests`, `B08Support`.
+
+**Ebene 6 · Dokumentation** · `CLAUDE.md` (Signing Debug/Release, Debug-Bundle-ID, Sprache, Release-Befehl), `README.md`
+(Code-Signing, Tests, Entitlements, Release-Abschnitt neu), Vermerke in `qa-report.md` (BUG-18 bis BUG-24).
+
+## 2 · Offene Kriterien und nicht behobene Befunde (Durchlauf 2)
+
+- **Notarisierung nicht ausgeführt (BF-03, Teil)** · Das notarytool-Profil „MikaPlusPlayer“ ist auf diesem Rechner nicht
+  vorhanden („No Keychain password item found for profile: MikaPlusPlayer“, mehrfach geprüft, auch ohne Sandbox; im
+  Anmelde-Schlüsselbund kein Eintrag des Notardienstes). Ein Anlegen über `!` scheitert, weil `store-credentials` interaktiv
+  fragt. Belegt ist der Weg bis zum **signierten, nicht notarisierten** DMG; `nach-heften` meldet genau die drei
+  erwarteten Befunde (kein Ticket, Gatekeeper lehnt DMG und App ab). Schritte: Profil im Terminal anlegen (App-spezifisches
+  Passwort), dann Test-Notarisierung nachholen – spätestens `/sdd-deploy` (`release.sh` verlangt das Profil in vor-build).
+- **Pflichtproben vor dem Veröffentlichen** · Kurztest Wiedergabe mit dem echten Anbieter (OF-09, Betreiber),
+  Übergangsprobe 1.1 → 1.2 über einen Test-Feed (Entscheidung 14), Offline-Erststart (Entscheidung 2) – brauchen ein
+  notarisiertes DMG; nicht ausgeführt. `release.sh` nennt sie als Schritt a).
+- **BF-07** · Ruleset auf `main` nicht angelegt (GitHub-Einstellung, nur auf Anweisung).
+- **BF-06** · nicht im Auftrag (eigener Schlüssel ab dem Release nach 1.2).
+- **BUG-20 (= B01 BF-46)** · verwaiste Schlüsselbund-Einträge nach dem Beiseitelegen: nicht im Auftrag, `XCTExpectFailure` bleibt.
+- **BUG-23, zweiter Teil** · Vergleich bestehender Feed-Einträge mit dem Stand des letzten Release-Tags: nicht umgesetzt
+  (Entwurf verlangt nur die Adressprüfung).
+- **OF-11 bis OF-14** · bis nach dem Bau zurückgestellt; der Bau folgt dem Entwurf: Während einer **vom Nutzer gestarteten**
+  Prüfung bleibt „Nach Updates suchen …“ aktiv (beobachtet, OF-11); Sparkles Fehlermeldung zur Feed-Pflicht ist englisch
+  („The update feed is improperly signed …“, Titel und Knopf deutsch, beobachtet, OF-13); das Installationsfenster
+  (Updater.app) ließ sich ohne echtes Update nicht beobachten (OF-13). → `/sdd-klaeren B09` vor der QA.
+- **Gesamtlauf** · 2 Tests rot, einzeln nachgeprüft grün (Abschnitt 5).
+
+## 3 · Getroffene Annahmen (Durchlauf 2)
+
+1. `xcodegen` läuft weiter in `build-macos.sh`, nicht als eigener Schritt 0 in `release.sh` vor der Gegenprüfung; vor-build
+   liest nur `project.yml`, `Info.plist`, `appcast.xml` und Git, die Reihenfolge ist daher gleichwertig, und die
+   Attrappen-Tests ersetzen `build-macos.sh` als Ganzes.
+2. Die Sparkle-Werkzeuge werden **nach** dem Build gesucht (die Paketauflösung legt sie an), aber vor DMG und Notarisierung.
+3. Im Probemodus wird das DMG ad hoc signiert (`codesign --sign -` auf ein DMG funktioniert, geprüft); Notarisieren und
+   Heften laufen dort nur mit übersteuerten Werkzeugen.
+4. vor-build prüft das Notar-Profil mit `notarytool history` (Netzabfrage, prüft auch die Gültigkeit), nicht über den
+   Schlüsselbund direkt.
+5. nach-merge wartet bis 330 s (GitHub `max-age=300` + Puffer) je Adresse, Abfrage alle 30 s.
+6. `TeamIdentifier=not set` (ad hoc) wird als „kein Team“ gemeldet.
+7. Die Hinweistexte sprechen von „Zugangsdaten der bisherigen Playlists“ (Xtream **und** M3U mit Zugangsdaten, B02),
+   nicht nur von Xtream wie im Entwurf.
+8. Englische Erwartungswerte in fremden Tests bleiben stehen; die Hilfe übersetzt beobachtete deutsche Systemtexte zurück
+   (Kriterien anderer Features werden nicht still umformuliert; deren Sprachfragen klärt `/sdd-klaeren`).
+
+## 4 · Systemweite Änderungen (Durchlauf 2)
+
+| Datei / Stelle | Feature | Änderung |
+|---|---|---|
+| `project.yml` `options.developmentLanguage: de` | **alle, iOS** | Systemtexte (Fehlermeldungen von Foundation/AVFoundation, Bedienungshilfe-Namen von Symbolen, Systemmenüs, Suchleerzustand) erscheinen deutsch – auch bei englischer Systemsprache (beobachtet mit `-AppleLanguages (en)`). Apples deutsche Systemtexte duzen („Du bist nicht berechtigt …“, „Überprüfe die Schreibweise …“). |
+| `Sources/Resources/Info.plist` | alle (iOS ignoriert `SU*`) | `CFBundleLocalizations [de]`, `SURequireSignedFeed`, `SUEnableAutomaticChecks` aus Build-Einstellung |
+| `project.yml` macOS-Debug `PRODUCT_BUNDLE_IDENTIFIER` | **alle macOS-Tests** | Test-Host und Debug-Build `lu.daumedia.MikaPlusPlayer.debug`: eigene Einstellungen, Datenbank, Caches, Schlüsselbund-Dienst; Debug-Builds erscheinen im Finder unter „Öffnen mit“ für `.m3u` als weitere „Mika+Player“ (Standard bleibt Music; geprüft per `NSWorkspace`) |
+| `project.yml` Testaktion | alle Tests | eigene Startargumente/Umgebung: Argumente der Run-Aktion gelten im Test nicht mehr |
+| `project.yml` Release `CODE_SIGN_IDENTITY` + Entitlements | **B06, B07, B08**, Messungen | Release braucht das Developer-ID-Zertifikat; ein ad-hoc-signierter Release-Build startet ohne `disable-library-validation` nicht (VLCKit) – Release-Messungen nur mit Developer ID oder als Kopie mit eigener Bundle-ID (so im Selbsttest) |
+| `Sources/App/AppEnvironment.swift` | alle | `detectTests`, `testHostMarker`, `releaseBundleID`, `bundleID` |
+| `Sources/Services/XtreamCredentialStore.swift` | B01, B02, B03 | Dienstname aus der Bundle-ID; Release unverändert |
+| `Sources/Services/AppPersistence.swift` | alle | Altbestand nur für Release-ID (`.otherBundleID`), `.inMemoryFallback(movedTo:keptInPlace:reason:)`, Hinweise je Plattform (`notice(for:)`) |
+| `Sources/Services/SparkleUpdater.swift`, `Sources/Views/UpdateMenu.swift` (neu), `MikaPlusPlayerApp.swift` | B09 | vier gespiegelte Werte, Menü-Ansicht, kein Start im Test-Host |
+| `scripts/*.sh`, `scripts/ExportOptions-DeveloperID.plist` (neu), `.gitattributes` (neu) | Release | siehe Abschnitt 1; `release.sh` braucht künftig `NOTARY_PROFILE` |
+| `Tests/Support/SystemSprache.swift` (neu) + 21 Testdateien B01–B08 | Tests | englisch **oder** deutsch |
+| `README.md`, `CLAUDE.md` | Doku | nachgeführt |
+| `features/B09-auto-update/qa-report.md` | Doku | nur Vermerke (BUG-18 bis BUG-24), kein Umschreiben |
+| `features/index.md` | Doku | Status `building` |
+
+Nicht angefasst: `appcast.xml`, `web/`, `spec.md`, `design.md`, `befunde.md`, Schlüsselbund-Einträge des Nutzers,
+EdDSA-Schlüssel (nicht benutzt), Datenbank und Einstellungen der installierten App. `dist/` vor dem DMG-Schritt gesichert
+und danach prüfsummengleich zurückgelegt (`make-dmg.sh` löscht `dist/*.dmg`, auch das v1.1-DMG – Bestandsverhalten).
+`build/dd` (veraltet, vom alten Repo-Pfad `…/DEV/SwiftProjects/…`, Archivieren scheiterte daran mit „There is no
+XCFramework found at …/SwiftProjects/…“) nach `build/dd-alt-swiftprojects` beiseitegelegt, **nicht** gelöscht (bestand vor
+dem Bau; zum Löschen freigegeben, sobald der Betreiber zustimmt). Eigene Hilfsordner `build/dd-b09`, `build/dd-b09g`,
+`build/dd-ios` entfernt (vorher bei LaunchServices abgemeldet). Neu unter `build/`:
+`dd` (frisch), `MikaPlusPlayer.xcarchive`, `export/`, `MikaPlusPlayer.app` (Developer ID, nicht notarisiert).
+
+## 5 · Tests und Selbsttest (Durchlauf 2)
+
+**Ausgang** (vor dem Bau): B09-Suiten 35 Tests, 0 Fehlschläge, 8 erwartete Fehlschläge; Warnungen in `Sources/` 0,
+in `Tests/` 21 (alle vorbestehend).
+
+**Gesamtlauf 1** (nur Ebene 1): 526 Tests, 36 rot – alle aus den erwarteten Folgen (englische Systemtexte, Debug-ID,
+B09-Tests gegen die schon geänderten Skripte) bis auf `B03OberflaecheTests.testAK14_…` (zeitabhängig, s. u.).
+
+**Gesamtlauf 2** (Ebenen 1–4): **546 Tests, 19 übersprungen, 2 rot** (4 Prüfungen): `B03OberflaecheTests.testAK12_AK13_EC09_…`
+und `B06ReparaturTests.testBUG06_…` („SYSTEMBEEP-UNTERDRUECKT NSWindow keyDown“). Einzeln je zweimal nachgeprüft:
+B06 zweimal grün; B03 einmal rot (204 s), einmal grün (73 s). Die B03-Oberflächentests sind zeitabhängig unzuverlässig:
+Laufzeiten schon vor B09 zwischen 66 und 472 s (B05-Läufe vom 2026-10-01: AK-14 215–394 s, AK-22 bis 336 s), in jedem der
+vier Gesamtläufe dieses Baus und davor scheiterte höchstens einer davon, jeweils ein anderer. Keine neuen Warnungen
+(`Sources/` 0, `Tests/` unverändert 21). iOS-Simulator-Build grün, 0 Warnungen. B09: **62 Tests** (vorher 35).
+
+**Echte Signatur (Ebene 5)** · `build-macos.sh`: Archivieren und Export mit Developer ID in 1½ min (ohne Profil,
+ohne Schlüsselbund-Rückfrage). `b09_release_check.sh nach-build` streng: **keine Beanstandung** – App, Sparkle.framework,
+Autoupdate, Updater.app, Downloader.xpc, Installer.xpc und VLCKit.framework je „Developer ID Application“, Team
+`CWJM4J4HFN`, sicherer Zeitstempel, Runtime bei Programmen; Entitlements nur `app-sandbox=false`; Bundle-ID, Version 1.2/3,
+Feed-Pflicht, `de`/`[de]`; Release `SUEnableAutomaticChecks=YES`; universell (x86_64, arm64). Damit belegt: Der Export
+ergibt für das XcodeGen-Projekt ein App-Archiv und signiert Sparkles Hilfsprogramme (Risiken aus dem Entwurf). Sparkles
+Downloader-Dienst hat schon im Paket keine Entitlements (nichts verloren). DMG mit Developer ID, Zeitstempel, Bezeichner
+signiert; `nach-heften`: DMG = geprüftes Bundle (CDHash), Developer ID, Team ok; Ticket und Gatekeeper fehlen (nicht notarisiert).
+
+**BF-09 am Start belegt** · Kopie des exportierten Bundles mit Bundle-ID `….b09probe`, äußere Signatur mit Developer ID
+erneuert (Runtime, Entitlements der App), `HOME` im Arbeitsordner, `-SUEnableAutomaticChecks NO`, Feed auf einen toten
+Port: läuft nach 8 s, `Sparkle.framework/Versions/B/Sparkle` und `VLCKit.framework/Versions/A/VLCKit` geladen, kein
+dyld-Fehler, 0 Netzverbindungen. Danach Einstellungsdomäne, Registrierung und Kopie entfernt. Wiedergabe unter
+Runtime nicht geprüft (OF-09-Kurztest, Betreiber).
+
+**Selbsttest am Debug-Build** (`build/dd-test`, Bundle-ID `….debug`, lokaler Feed `127.0.0.1:18931` mit 12 s Verzögerung,
+unsigniert; Menü über die Bedienungshilfen gelesen und bedient; Debug-Einstellungen vorher gesichert und danach
+zurückgespielt):
+- App-Menü: „Über „Mika+Player““, „Nach Updates suchen …“, „Automatisch nach Updates suchen“, „Updates automatisch
+  installieren“, Trenner, „Alle Daten entfernen …“, „Dienste“, „„Mika+Player“ ausblenden“ … – **deutsch** (AK-01).
+- Ruhezustand Debug: Suchen aktiv, automatisch prüfen **ohne** Häkchen (Vorgabe Debug „aus“ greift), Installieren ausgegraut.
+- Schalter: automatisch prüfen an → ✓, `SUEnableAutomaticChecks=1`, Installieren bedienbar; Installieren an → ✓,
+  `SUAutomaticallyUpdate=1`; automatisch prüfen aus → Installieren ausgegraut ohne ✓, `SUAutomaticallyUpdate` bleibt 1;
+  wieder an → Installieren ✓ zurück (Entwurf, OF-12).
+- **BF-18 an der echten Menüleiste:** Beim Einschalten startete Sparkle sofort eine Hintergrundprüfung (Feed-Abruf
+  13:30:40, User-Agent `Mika+Player/1.2 Sparkle/2.9.3`) – „Nach Updates suchen …“ **inaktiv**, danach wieder aktiv.
+  Zeitreihe bei der geplanten Prüfung beim Start (letzte Prüfung zurückdatiert, Abruf 13:32:27): +3, +6, +9, +12 s inaktiv,
+  ab +15 s aktiv.
+- Feed-Pflicht wirkt: unsignierter Feed im Hintergrund still verworfen, `SUInitialFailedFeedSigningValidationDate` gesetzt
+  (Beginn der 20-Tage-Frist, OF-15).
+- Manuelle Prüfung: Fenster „Softwareupdate“ / „Nach Updates suchen …“ / „Abbrechen“ (**deutsch**, AK-02); Eintrag während
+  dieser Prüfung **aktiv** (Sparkle, OF-11); danach Dialog „Fehler beim Aktualisieren!“ mit englischem Text „The update
+  feed is improperly signed and could not be validated. …“ und Knopf „Aktualisierung abbrechen“ (OF-13).
+- **Englische Systemsprache** (`-AppleLanguages (en)`): Menüleiste „Ablage, Bearbeiten, Darstellung, Fenster, Hilfe“,
+  App-Menü und Sparkle-Fenster weiter deutsch.
+- Startprotokolle ohne Fehler. Keine Wiedergabe, kein Ton.
+
+**Aufräumen** · Selbsttest-Prozesse und Feed-Server beendet, Debug-Einstellungen zurückgespielt (wieder nur
+`SUHasLaunchedBefore`), Arbeits-`HOME` gelöscht; zusätzliche DerivedData-Ordner siehe Abschnitt 4 und Übergabe.
+
+## Übergabe
+
+Status bleibt `building`. Nächste Schritte: (1) notarytool-Profil im Terminal anlegen, Test-Notarisierung nachholen
+(eigener kurzer Auftrag oder beim Deploy); (2) `/sdd-klaeren B09` für OF-11 bis OF-14 (Auslöser erfüllt: Bau
+abgeschlossen); (3) danach `/sdd-qa B09` **in einer neuen Session**.

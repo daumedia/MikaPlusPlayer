@@ -139,29 +139,103 @@ final class B09ReleaseConfigTests: XCTestCase {
         XCTAssertNil(sparkle["from"], "Sparkle wieder mit Bereichsangabe statt exakter Version")
     }
 
-    // MARK: - Offene Befunde (XCTExpectFailure, bis behoben)
+    // MARK: - Durchlauf 2 (2026-10-02): Fehlerauftrag und Zielentwurf
 
-    /// FB-05 / BUG-03 · Release ist ad-hoc signiert (`CODE_SIGN_IDENTITY: "-"`) statt mit Developer ID.
-    /// Offen: braucht Apple-Developer-Team, Zertifikat und Notarisierung.
+    /// FB-05 / BUG-03 (BF-03) · Das Release des macOS-Targets wird mit Developer ID signiert; Debug und Test-Bundle
+    /// bleiben ad hoc (Entwurf, Entscheidung 1 und 12).
     func testFB05_releaseSignedWithDeveloperID() throws {
-        XCTExpectFailure("BUG-03 offen: ad-hoc-Signatur statt Developer ID, keine Notarisierung (braucht Apple-Team)")
         let yml = try read("project.yml")
-        XCTAssertFalse(yml.contains(#"CODE_SIGN_IDENTITY: "-""#), "macOS-Target ist ad-hoc signiert (CODE_SIGN_IDENTITY \"-\")")
+        let release = Self.yamlBlock(["targets", "MikaPlusPlayer-macOS", "settings", "configs", "Release"], in: yml)
+        XCTAssertEqual(release["CODE_SIGN_IDENTITY"], "Developer ID Application", "macOS-Release nicht mit Developer ID signiert")
+        let base = Self.yamlBlock(["targets", "MikaPlusPlayer-macOS", "settings", "base"], in: yml)
+        XCTAssertEqual(base["DEVELOPMENT_TEAM"], "CWJM4J4HFN")
+        XCTAssertEqual(base["CODE_SIGN_STYLE"], "Manual")
     }
 
-    /// FB-08 / BUG-08 (Teil) · Der Feed wird nicht als signiert verlangt. Offen: Mit `SURequireSignedFeed` verwirft
-    /// Sparkle jeden unsignierten Feed, die veröffentlichte `appcast.xml` ist noch unsigniert (release.sh signiert ab
-    /// dem nächsten Release).
+    /// FB-08 / BUG-08 (BF-08, AK-12) · Ab 1.2 verlangt die App einen signierten Feed. Ohne Prüfung vor dem Entpacken
+    /// startet Sparkle dann nicht (SPUUpdater.m: SUInvalidUpdaterError), deshalb beide Schlüssel gemeinsam.
     func testFB08_signedFeedRequired() throws {
-        XCTExpectFailure("BUG-08 offen: SURequireSignedFeed erst nach einem veröffentlichten signierten Feed")
-        XCTAssertEqual(try plist("Sources/Resources/Info.plist")["SURequireSignedFeed"] as? Bool, true)
+        let info = try plist("Sources/Resources/Info.plist")
+        XCTAssertEqual(info["SURequireSignedFeed"] as? Bool, true, "SURequireSignedFeed fehlt")
+        XCTAssertEqual(info["SUVerifyUpdateBeforeExtraction"] as? Bool, true, "Feed-Pflicht ohne Prüfung vor dem Entpacken: Updater startet nicht")
+        XCTAssertNil(info["SUSignedFeedFailureExpirationInterval"], "Notweg-Frist bleibt Sparkles Vorgabe (OF-15)")
     }
 
-    /// FB-04 / BUG-09 · `disable-library-validation` ist bei ad-hoc-Signatur nötig: ohne bricht das Release mit
-    /// Hardened Runtime beim Laden von VLCKit ab („different Team IDs“, Build-Bericht). Offen bis Developer ID.
+    /// FB-04 / BUG-09 (BF-09) · Mit Developer ID tragen Sparkle und VLCKit dieselbe Team-ID wie die App;
+    /// `disable-library-validation` entfällt.
     func testFB04_libraryValidationNotDisabled() throws {
-        XCTExpectFailure("BUG-09 offen: ohne Team-ID lädt VLCKit unter Hardened Runtime nur mit disable-library-validation")
         let entitlements = try plist("Sources/Resources/MikaPlusPlayer.entitlements")
         XCTAssertNil(entitlements["com.apple.security.cs.disable-library-validation"])
+    }
+
+    /// AK-01 / AK-02 (OF-01) · Die App deklariert sich als deutschsprachig: Entwicklungssprache `de` im Projekt,
+    /// einzige Lokalisierung `de`, keine gemischten Lokalisierungen (sonst folgten Frameworks evtl. der Systemsprache).
+    func testAK01_appDeclaresGermanOnly() throws {
+        let options = Self.yamlBlock(["options"], in: try read("project.yml"))
+        XCTAssertEqual(options["developmentLanguage"], "de", "Entwicklungssprache des Projekts nicht de")
+        let info = try plist("Sources/Resources/Info.plist")
+        XCTAssertEqual(info["CFBundleDevelopmentRegion"] as? String, "$(DEVELOPMENT_LANGUAGE)")
+        XCTAssertEqual(info["CFBundleLocalizations"] as? [String], ["de"], "CFBundleLocalizations ist nicht [de]")
+        XCTAssertNil(info["CFBundleAllowMixedLocalizations"])
+    }
+
+    /// BF-119 / OF-10 · Debug-Build und Test-Host tragen eine eigene Bundle-ID; Release und iOS bleiben unverändert.
+    func testBF119_debugUsesOwnBundleID() throws {
+        let yml = try read("project.yml")
+        let debug = Self.yamlBlock(["targets", "MikaPlusPlayer-macOS", "settings", "configs", "Debug"], in: yml)
+        XCTAssertEqual(debug["PRODUCT_BUNDLE_IDENTIFIER"], "lu.daumedia.MikaPlusPlayer.debug")
+        let release = Self.yamlBlock(["targets", "MikaPlusPlayer-macOS", "settings", "configs", "Release"], in: yml)
+        XCTAssertNil(release["PRODUCT_BUNDLE_IDENTIFIER"], "Release darf die Bundle-ID nicht ändern")
+        let base = Self.yamlBlock(["targetTemplates", "AppBase", "settings", "base"], in: yml)
+        XCTAssertEqual(base["PRODUCT_BUNDLE_IDENTIFIER"], "lu.daumedia.MikaPlusPlayer")
+        let templateDebug = Self.yamlBlock(["targetTemplates", "AppBase", "settings", "configs", "Debug"], in: yml)
+        XCTAssertNil(templateDebug["PRODUCT_BUNDLE_IDENTIFIER"], "Debug-ID gehört nicht ins gemeinsame Template (iOS)")
+    }
+
+    /// AK-03 / Entwurf Entscheidung 8 · Vorgabe der automatischen Prüfung je Konfiguration: Release an, Debug aus.
+    /// Sparkle liest den Info.plist-Wert auch als Text („YES“/„NO“, SUHost.m `convertObjectToBoolNumber`).
+    func testAK03_automaticChecksDefaultPerConfiguration() throws {
+        let info = try plist("Sources/Resources/Info.plist")
+        XCTAssertEqual(info["SUEnableAutomaticChecks"] as? String, "$(MIKA_SPARKLE_AUTOMATIC_CHECKS)")
+        let yml = try read("project.yml")
+        let base = Self.yamlBlock(["targetTemplates", "AppBase", "settings", "base"], in: yml)
+        XCTAssertEqual(base["MIKA_SPARKLE_AUTOMATIC_CHECKS"], "YES")
+        let debug = Self.yamlBlock(["targets", "MikaPlusPlayer-macOS", "settings", "configs", "Debug"], in: yml)
+        XCTAssertEqual(debug["MIKA_SPARKLE_AUTOMATIC_CHECKS"], "NO")
+        let release = Self.yamlBlock(["targets", "MikaPlusPlayer-macOS", "settings", "configs", "Release"], in: yml)
+        XCTAssertNil(release["MIKA_SPARKLE_AUTOMATIC_CHECKS"], "Release erbt die Vorgabe „an“")
+    }
+
+    /// OF-06 · Das nächste Release heißt 1.2.
+    func testOF06_marketingVersionIs12() throws {
+        let base = Self.yamlBlock(["targetTemplates", "AppBase", "settings", "base"], in: try read("project.yml"))
+        XCTAssertEqual(base["MARKETING_VERSION"], "1.2")
+    }
+
+    /// BF-119 · Die Testaktion ignoriert gespeicherten Fensterzustand und markiert den Test-Host.
+    func testBF119_testActionIgnoresSavedStateAndMarksTestHost() throws {
+        let yml = try read("project.yml")
+        let args = Self.yamlBlock(["schemes", "MikaPlusPlayer-macOS", "test", "commandLineArguments"], in: yml)
+        XCTAssertEqual(args["\"-ApplePersistenceIgnoreState YES\""], "true", "Startargument fehlt: \(args)")
+        let env = Self.yamlBlock(["schemes", "MikaPlusPlayer-macOS", "test", "environmentVariables"], in: yml)
+        XCTAssertEqual(env["MIKA_TEST_HOST"], "1")
+    }
+
+    /// BF-03 · Exportoptionen für „Developer ID“ liegen im Repository, ohne Geheimnisse.
+    func testBF03_exportOptionsForDeveloperID() throws {
+        let options = try plist("scripts/ExportOptions-DeveloperID.plist")
+        XCTAssertEqual(options["method"] as? String, "developer-id")
+        XCTAssertEqual(options["teamID"] as? String, "CWJM4J4HFN")
+        XCTAssertEqual(options["signingStyle"] as? String, "manual")
+        XCTAssertEqual(options["signingCertificate"] as? String, "Developer ID Application")
+        XCTAssertEqual(options["destination"] as? String, "export")
+    }
+
+    /// AK-12 · Ein signierter Feed muss byte-genau ausgeliefert werden: keine Zeilenende-Umwandlung durch Git.
+    func testAK12_appcastIsNotTransformedByGit() throws {
+        let attributes = try read(".gitattributes")
+        let line = attributes.components(separatedBy: "\n").first { $0.hasPrefix("appcast.xml ") }
+        XCTAssertNotNil(line, "kein Eintrag für appcast.xml in .gitattributes")
+        XCTAssertTrue(line?.contains("-text") == true || line?.contains("binary") == true, "appcast.xml nicht vor Zeilenende-Umwandlung geschützt: \(line ?? "-")")
     }
 }

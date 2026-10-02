@@ -26,7 +26,7 @@ struct MikaPlusPlayerApp: App {
     }
 
     #if os(macOS)
-    /// Sparkle-Auto-Updater (nur macOS).
+    /// Sparkle-Auto-Updater (nur macOS); im Test-Host angelegt, aber nicht gestartet (B09 · BF-49).
     @State private var updater = SparkleUpdater()
     /// Geteilte Multiview-Session (nur macOS): erreicht Haupt- und Multiview-Fenster.
     @State private var multiview = MultiviewSession()
@@ -49,11 +49,9 @@ struct MikaPlusPlayerApp: App {
         #if os(macOS)
         .windowResizability(.contentSize)
         .commands {
+            // B09 · BF-18 / AK-31: drei Update-Einträge als eigene Ansicht (Zustand im eigenen Rumpf beobachtet).
             CommandGroup(after: .appInfo) {
-                Button("Nach Updates suchen …") {
-                    updater.checkForUpdates()
-                }
-                .disabled(!updater.canCheckForUpdates)
+                UpdateMenu(updater: updater)
             }
             // B03 · BUG-09: der Weg, alle gespeicherten Daten zu entfernen.
             CommandGroup(after: .appSettings) {

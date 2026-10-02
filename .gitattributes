@@ -1,0 +1,3 @@
+# B09 · AK-12: Der Feed ist ab 1.2 signiert (Signatur über die Bytes der Datei, Block am Dateiende).
+# Git darf Zeilenenden nicht umwandeln, sonst passt die Signatur nach einem Checkout nicht mehr.
+appcast.xml -text

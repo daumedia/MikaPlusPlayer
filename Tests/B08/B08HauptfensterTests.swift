@@ -31,7 +31,7 @@ final class B08HauptfensterTests: B08UITestCase {
 
     /// Importiert `list.m3u` des Mocks über das echte Sheet im Fenster `w` und öffnet die Senderliste.
     private func importAndOpen(_ w: NSWindow, name: String) async throws {
-        let add = try XCTUnwrap(button(w, "Playlist importieren") ?? button(w, "Add"), "Import-Knopf")
+        let add = try XCTUnwrap(button(w, "Playlist importieren") ?? button(w, "Add") ?? button(w, "Hinzufügen"), "Import-Knopf")
         B08UI.click(add, in: w)
         _ = await B08QA.wait(4) { w.attachedSheet != nil }
         let sheet = try XCTUnwrap(w.attachedSheet, "Import-Sheet")
