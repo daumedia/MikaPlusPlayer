@@ -89,7 +89,8 @@ Jedes Kriterium ist ohne Codekenntnis prüfbar. „Die App" meint die macOS-App.
 - **AK-11** · Angenommen, das Release `v1.1` ist veröffentlicht, wenn das Asset `MikaPlusPlayer-v1.1.dmg` von GitHub geladen und die `sparkle:edSignature` aus `appcast.xml` mit dem `SUPublicEDKey` aus `Info.plist` geprüft wird, dann ist die Signatur **gültig**, Länge (36 455 860 Byte) und SHA-256 (`8da0620e…`) stimmen mit `appcast.xml`, der GitHub-Asset-Prüfsumme und dem lokalen `dist/`-DMG überein; eine um ein Byte veränderte Kopie ist **ungültig**. Die Download-URL im Feed (`github.com/daumedia/…`) leitet mit 302 auf `release-assets.githubusercontent.com` weiter, die alte URL (`github.com/Mukaarts/…`) mit 301 auf die neue.
   *(Beobachtet 2026-09-15.)*
 
-- **AK-12** · Angenommen, die App ab Version 1.2 ist installiert, wenn sie einen Feed ohne oder mit ungültiger Signatur abruft, dann verwirft sie ihn und bietet kein Update an; einen gültig signierten Feed verarbeitet sie wie bisher.
+- **AK-12** · Angenommen, die App ab Version 1.2 ist installiert, wenn sie einen Feed ohne oder mit ungültiger Signatur abruft, dann verwirft sie ihn und bietet kein Update an; einen gültig signierten Feed verarbeitet sie wie bisher. Schlagen die Prüfungen 20 Tage lang durchgehend fehl, nutzt sie den Feed nur noch eingeschränkt: Updates erst nach Bestätigung, ohne Versionshinweise und Links, ohne automatischen Download.
+  *(Neu gefasst 2026-10-02 nach `OF-15`. Vorher (Fassung vom 2026-10-01) endete das Kriterium nach „… verarbeitet sie wie bisher.“ Der Betreiber behält Sparkles Notweg für den Verlust des Update-Schlüssels; die 20 Tage sind Sparkles Vorgabe.)*
   *(Neu gefasst 2026-10-01 nach `OF-07`. Vorher stand hier „Angenommen, der Feed-Inhalt wurde verändert (andere Einträge, Links, Texte), wenn die App prüft, dann übernimmt sie ihn **ohne** eigene Signaturprüfung des Feeds; geschützt ist er nur durch TLS und den Zugang zum GitHub-Konto.“ mit dem Vermerk „`SURequireSignedFeed` nicht gesetzt, `Info.plist:27-32`. Die fehlende Absicherung ist als Lücke erfasst → FB-08.“ Der Betreiber hat die Feed-Pflicht ab 1.2 entschieden (BF-08). Heute erfüllt der Code das neue Kriterium noch nicht.)*
 
 ### Signatur und Berechtigungen des ausgelieferten Bundles
@@ -212,6 +213,35 @@ Katalog `~/.claude/sdd/sicherheit.md`, Stufe B (voller Katalog).
 - **OF-10** · Der Test-Host startet Sparkle weiterhin mit echter Feed-Abfrage und schreibt `SULastCheckTime` in die Einstellungen der installierten App (EC-01). Soll `SparkleUpdater` im Test-Host nicht starten? Nicht im Fehlerauftrag. — Nutzer. *(aus sdd-build 2026-09-16)*
   ✔ **Beantwortet 2026-10-01 (Betreiber): Ja – Sparkle startet im Test-Host nicht, und Debug-Build sowie Test-Host bekommen eine eigene Bundle-ID.** Folge: umgesetzt über die freigegebenen Befunde BF-49 und BF-119 in `/sdd-build B09`; `CLAUDE.md` wird dort ergänzt.
 
+Ergänzt beim Entwurf (`sdd-architektur`, 2026-10-02). Nicht im Entwurf entschieden, weil sie ein Kriterium betreffen oder vom
+Betreiber abhängen (Herleitung in `design.md`, *Offene Punkte aus dem Entwurf*):
+
+- **OF-11** · Soll „Nach Updates suchen …“ während einer vom Nutzer gestarteten Prüfung inaktiv sein (Erwartung aus BF-18)? Sparkle
+  2.9.3 meldet „Prüfung möglich“ in diesem Fall absichtlich; ein Klick holt ein angezeigtes Update-Fenster nach vorn oder bleibt
+  wirkungslos. Der Entwurf folgt Sparkle; inaktiv in jeder Prüfung ginge nur über einen nicht als beobachtbar dokumentierten
+  Sparkle-Zustand. — Betreiber.
+  ⏳ **Zurückgestellt 2026-10-02 (Betreiber) bis nach dem Bau** — der Betreiber hat den Bauweg „sdd-build mit Entwurf“ gewählt statt vorher zu klären; der Bau folgt dem Vorschlag in `design.md`. Auslöser: `/sdd-build B09` abgeschlossen; dann `/sdd-klaeren B09` vor der QA.
+- **OF-12** · AK-31 im Detail: Soll der zweite Schalter wie in Sparkles Update-Fenster „Updates automatisch laden und installieren“
+  heißen? Und soll er bei abgeschalteter automatischer Prüfung ausgegraut ohne Häkchen erscheinen und beim Wiedereinschalten den
+  alten Wert zurückbringen (so wirkt Sparkle; automatisches Installieren ohne automatische Prüfung hat keine Wirkung)? Sparkle blendet
+  dann im Update-Fenster auch „Später erinnern“ und das Kontrollkästchen aus. — Betreiber.
+  ⏳ **Zurückgestellt 2026-10-02 (Betreiber) bis nach dem Bau** — der Betreiber hat den Bauweg „sdd-build mit Entwurf“ gewählt statt vorher zu klären; der Bau folgt dem Vorschlag in `design.md`. Auslöser: `/sdd-build B09` abgeschlossen; dann `/sdd-klaeren B09` vor der QA.
+- **OF-13** · Sechs Sparkle-Meldungen sind in 2.9.3 nicht ins Deutsche übersetzt (u. a. „The update feed is improperly signed …“ zur
+  neuen Feed-Pflicht und „The updater failed to start …“), und das Installationsfenster läuft in einem eigenen Prozess, der
+  vermutlich der Systemsprache folgt. Hinnehmen, oder Sparkle anheben, sobald eine Version sie übersetzt? — Betreiber.
+  ⏳ **Zurückgestellt 2026-10-02 (Betreiber) bis nach dem Bau** — der Betreiber hat den Bauweg „sdd-build mit Entwurf“ gewählt statt vorher zu klären; der Bau folgt dem Vorschlag in `design.md`. Auslöser: `/sdd-build B09` abgeschlossen; dann `/sdd-klaeren B09` vor der QA.
+- **OF-14** · AK-01, AK-03, AK-06, AK-08, AK-09, AK-10, AK-13 bis AK-17, AK-20 bis AK-22, AK-24, AK-26 und AK-30 beschreiben das
+  Verhalten vom 2026-09-15 oder widersprechen den Freigaben vom 2026-10-01 (englische Texte, ad-hoc-Signatur, Prüfung nach dem
+  Entpacken, ungeschützter Branch, fehlender Schlüsselwechsel, gemeinsame Einstellungen von Debug und Release, „übrige Menüeinträge
+  System-Standard“, Prüfung beim ersten Start auch in Debug). Neufassung nach dem Zielentwurf — jetzt im Interview oder nach dem
+  Bau anhand der Beobachtung? — Betreiber (`sdd-klaeren`).
+  ⏳ **Zurückgestellt 2026-10-02 (Betreiber) bis nach dem Bau: Neufassung der genannten Kriterien anhand der Beobachtung am gebauten Release** — Auslöser: `/sdd-build B09` abgeschlossen; dann `/sdd-klaeren B09` vor der QA.
+- **OF-15** · Wie lange darf ein dauerhaft falsch signierter Feed verworfen werden, bevor Sparkle ihn eingeschränkt doch nutzt
+  (`SUSignedFeedFailureExpirationInterval`)? Frist 0: AK-12 gilt dauerhaft, ein Verlust des Update-Schlüssels beendet Updates für
+  1.2+ endgültig. Vorgabe 20 Tage: AK-12 gilt nur bis zur Frist, danach bietet Sparkle Updates ohne Hinweise und Links und nur mit
+  Bestätigung an — der einzige Weg aus einem Schlüsselverlust. — Betreiber, vor `/sdd-build B09`.
+  ✔ **Beantwortet 2026-10-02 (Betreiber, bei der Vorlage des Entwurfs): Sparkles Vorgabe von 20 Tagen bleibt; der Notweg für einen Schlüsselverlust bleibt erhalten.** Folge: AK-12 neu gefasst (Einschränkung nach 20 Tagen); `SUSignedFeedFailureExpirationInterval` wird nicht gesetzt; `design.md` Entscheidung 4 entsprechend.
+
 ## Decision Log
 
 Alle Einstufungen ohne Rückfrage entschieden (Zielmodus 2026-09-15) — zur Bestätigung durch den Nutzer.
@@ -242,6 +272,11 @@ Alle Einstufungen ohne Rückfrage entschieden (Zielmodus 2026-09-15) — zur Bes
 | 22 | Sprache von Sparkle und Systemmenüs (OF-01) | App als deutsch deklarieren; AK-01, AK-02 neu gefasst | passt zu „App nur Deutsch“ im PRD; Sparkle bringt `de.lproj` mit; eine Konfigurationszeile |
 | 23 | Abschaltbarkeit der automatischen Prüfung und Installation (OF-02) | zwei Menüschalter; neu AK-31, EC-12 neu gefasst | wer automatisches Installieren anhakt, braucht einen Rückweg in der App; Datenschutz: Nutzer kann die tägliche Abfrage abstellen |
 | 24 | Beiseitegelegte Datenbanken: Wiederherstellen, Aufräumen, Hinweis (OF-08) | so lassen, Hinweis bessern (Schlüsselbund, Löschweg, iOS ohne Pfad) | seltener Fall, ein Löschweg existiert seit B03; Wiederherstellen lohnt den Aufwand nicht |
+| 25 | Frist für dauerhaft falsch signierte Feeds (OF-15) | Sparkle-Vorgabe 20 Tage; AK-12 neu gefasst | einziger Weg aus einem Schlüsselverlust; Schlüssel ist offline gesichert (OF-05), Verlust unwahrscheinlich |
+| 26 | Neufassung überholter Kriterien (OF-14) | nach dem Bau, anhand der Beobachtung | Bauweg „sdd-build mit Entwurf“ gewählt; Kriterien werden am gebauten Ergebnis neu gefasst |
+| 27 | Klärung von OF-11 vor oder nach dem Bau | nach dem Bau; Bau folgt dem Entwurf | Betreiber wählte sdd-build mit Entwurf als Auftrag |
+| 28 | Klärung von OF-12 vor oder nach dem Bau | nach dem Bau; Bau folgt dem Entwurf | Betreiber wählte sdd-build mit Entwurf als Auftrag |
+| 29 | Klärung von OF-13 vor oder nach dem Bau | nach dem Bau; Bau folgt dem Entwurf | Betreiber wählte sdd-build mit Entwurf als Auftrag |
 
 ## Fehlbestand
 
