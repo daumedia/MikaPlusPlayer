@@ -1,0 +1,20 @@
+{
+  "site": "sc-domain:daumedia.lu",
+  "seiten_regex": "^https?://player\\.daumedia\\.lu/",
+  "name": "Mika+Player",
+  "sprachen": ["en"],
+  "themen": [
+    "mika player",
+    "iptv player mac",
+    "m3u player mac",
+    "m3u8 player mac",
+    "xtream codes player mac",
+    "iptv app macos"
+  ],
+  "sitemaps": ["https://player.daumedia.lu/sitemap.xml"],
+  "ohne_loop_2": "Die Seite verspricht „no analytics, no tracking scripts“ (web/app/privacy). Kein Umami einbauen.",
+  "ignorieren": {
+    "seiten": [],
+    "queries": []
+  }
+}
